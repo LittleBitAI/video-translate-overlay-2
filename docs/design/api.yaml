@@ -1,0 +1,353 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "video-translate-overlay-2",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/browser/open": {
+      "post": {
+        "operationId": "P1",
+        "summary": "주소 칸에 넣은 주소나 알림에 실린 주소를 앱 안 화면에 열고 영상 위에 오버레이를 얹는다. 유튜브를 처음 여는 때에는 구글의 계정 화면을 먼저 열고, 거기서 건너뛰거나 막히면 그대로 유튜브를 연다.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "description": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "opened_url": {
+                      "description": "string"
+                    },
+                    "site": {
+                      "description": "string"
+                    },
+                    "account_gate": {
+                      "description": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400"
+          }
+        }
+      }
+    },
+    "/browser/site-data": {
+      "delete": {
+        "operationId": "P2",
+        "summary": "앱 안 화면에 쌓인 쿠키와 사이트 자료를 지워 유튜브 계정 연결을 끊는다. 다음에 유튜브를 열면 구글의 계정 화면이 다시 먼저 뜬다.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cleared": {
+                      "description": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings": {
+      "get": {
+        "operationId": "P3",
+        "summary": "설정 화면에 보일 값을 준다. 개인키는 끝 네 글자만 남기고 가려서 주고, 최애의 목소리는 이번에 만들지 않으므로 늘 꺼짐으로 알린다.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "key_set": {
+                      "description": "boolean"
+                    },
+                    "key_masked": {
+                      "description": "string | null"
+                    },
+                    "translation_model": {
+                      "description": "string"
+                    },
+                    "favorite_voice_available": {
+                      "description": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings/api-key": {
+      "put": {
+        "operationId": "P4",
+        "summary": "개인키를 Gemini에 한 번 확인한 다음 기기의 보안 저장소에 넣는다. 응답과 기록에는 끝 네 글자만 남는다.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "api_key": {
+                    "description": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "key_set": {
+                      "description": "boolean"
+                    },
+                    "key_masked": {
+                      "description": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400"
+          },
+          "401": {
+            "description": "401"
+          },
+          "503": {
+            "description": "503"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "P5",
+        "summary": "개인키를 기기에서 지운다. 지운 뒤에 영상감지 버튼을 누르면 개인키를 넣으라는 안내가 뜬다.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "key_set": {
+                      "description": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs": {
+      "post": {
+        "operationId": "P6",
+        "summary": "영상감지 버튼이 부른다. 이미 자막이 있는 영상이면 다시 처리하지 않고 끝난 작업을 돌려준다. 아니면 개인키가 있는지, 오디오를 내려받을 수 있는지 확인한 뒤 작업을 만들고, 내려받기와 write, 번역, 알림을 화면과 상관없이 차례로 돌린다. 주소는 http나 https여야 하고 media_url은 기기 자신이나 사설망을 가리키면 받지 않는다.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "page_url": {
+                    "description": "string"
+                  },
+                  "media_url": {
+                    "description": "string | null"
+                  },
+                  "title": {
+                    "description": "string"
+                  },
+                  "duration_ms": {
+                    "description": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "job_id": {
+                      "description": "string"
+                    },
+                    "video_key": {
+                      "description": "string"
+                    },
+                    "stage": {
+                      "description": "string"
+                    },
+                    "reused": {
+                      "description": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400"
+          },
+          "409": {
+            "description": "409"
+          },
+          "422": {
+            "description": "422"
+          },
+          "428": {
+            "description": "428"
+          }
+        }
+      },
+      "get": {
+        "operationId": "P7",
+        "summary": "주소로 찾은 영상의 가장 최근 작업이 어디까지 왔는지 진행 상태를 준다. 어느 단계인지, 그 단계가 몇 퍼센트 됐는지, 실패했다면 그 까닭, 번역 모듈에 쓴 양으로 셈한 비용이 들어 있다. 앱을 껐다 켠 뒤에도 같은 주소로 물으면 이어진 작업이 나온다.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "page_url": {
+                    "description": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "job_id": {
+                      "description": "string"
+                    },
+                    "video_key": {
+                      "description": "string"
+                    },
+                    "title": {
+                      "description": "string"
+                    },
+                    "stage": {
+                      "description": "string"
+                    },
+                    "percent": {
+                      "description": "integer"
+                    },
+                    "failure_reason": {
+                      "description": "string | null"
+                    },
+                    "input_amount": {
+                      "description": "integer"
+                    },
+                    "output_amount": {
+                      "description": "integer"
+                    },
+                    "cost_krw": {
+                      "description": "number"
+                    },
+                    "notified": {
+                      "description": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400"
+          },
+          "404": {
+            "description": "404"
+          }
+        }
+      }
+    },
+    "/videos/{video_key}/subtitles": {
+      "get": {
+        "operationId": "P8",
+        "summary": "작업이 끝난 영상의 자막을 통째로 준다. 조각마다 본편 처음부터 잰 시작 시각과 끝 시각이 붙어 있어 오버레이가 재생 위치에 맞는 조각을 고른다. 광고를 가려낼 때 쓸 본편 길이도 함께 준다. 작업이 끝나기 전에는 자막을 주지 않는다.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "video_key": {
+                      "description": "string"
+                    },
+                    "duration_ms": {
+                      "description": "integer"
+                    },
+                    "source_language": {
+                      "description": "string"
+                    },
+                    "cues": {
+                      "description": "[{seq: integer, start_ms: integer, end_ms: integer, text_ko: string}]"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404"
+          },
+          "409": {
+            "description": "409"
+          }
+        }
+      }
+    }
+  }
+}
