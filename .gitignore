@@ -10,6 +10,7 @@ dist/
 build/
 target/
 bin/
+!src-tauri/src/bin/
 obj/
 coverage/
 .next/
