@@ -1,0 +1,8 @@
+agents = ["claude", "codex"]
+
+[slots]
+gate_cmd = ""
+review_dir = "artifacts/review"
+scratch_dirs = "artifacts/"
+live_cmd = ""
+server_stop = ""
