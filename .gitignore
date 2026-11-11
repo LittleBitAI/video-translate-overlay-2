@@ -18,3 +18,4 @@ coverage/
 .gradle/
 vendor/
 .DS_Store
+.vitest/

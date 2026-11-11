@@ -1,0 +1,10 @@
+# Each backend test drives its own copy of the app; a stuck one is killed after 5 minutes.
+[profile.default]
+slow-timeout = { period = "60s", terminate-after = 5 }
+
+[profile.ci]
+fail-fast = false
+slow-timeout = { period = "60s", terminate-after = 5 }
+
+[profile.ci.junit]
+path = "junit.xml"
