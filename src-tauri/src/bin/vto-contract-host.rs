@@ -180,11 +180,34 @@ impl Transcriber for FakeWhisper {
 
 // ---------------------------------------------------------------- host
 
+/// The data folder this host may own. The harness names an app's folder
+/// `vto-contract-{pid}-{nanos}`; when two tests of one test process read the
+/// same clock tick, their hosts get the same folder. A host that finds the
+/// folder held by another live host therefore moves into its own sub-folder,
+/// which is still under `data_dir` where the tests look. The lock dies with
+/// the process, so a restarted host takes back the folder its predecessor had.
+fn claim_data_dir(base: &std::path::Path) -> PathBuf {
+    let _ = std::fs::create_dir_all(base);
+    for n in 0..16 {
+        let lock = base.join(format!("host-{n}.lock"));
+        let Ok(f) = std::fs::OpenOptions::new().create(true).truncate(false).write(true).open(&lock) else { continue };
+        if f.try_lock().is_ok() {
+            std::mem::forget(f); // held until the process ends
+            let dir = if n == 0 { base.to_path_buf() } else { base.join(format!("instance-{n}")) };
+            if n > 0 {
+                vto::log(format!("data folder shared with another live host; using {}", dir.display()));
+            }
+            return dir;
+        }
+    }
+    base.to_path_buf()
+}
+
 fn main() {
     let path = std::env::var("VTO_CONTRACT_CONFIG").expect("VTO_CONTRACT_CONFIG");
     let cfg: Value = serde_json::from_slice(&std::fs::read(&path).expect("read the host config")).expect("host config JSON");
     let s = |k: &str| PathBuf::from(cfg[k].as_str().unwrap_or_else(|| panic!("config.{k}")));
-    let data_dir = s("data_dir");
+    let data_dir = claim_data_dir(&s("data_dir"));
     let webview = Arc::new(FakeWebview::new(data_dir.join("webview")));
     let youtube: HashMap<String, String> = serde_json::from_value(cfg["youtube_audio"].clone()).unwrap_or_default();
     let t = &cfg["transcriber"];
