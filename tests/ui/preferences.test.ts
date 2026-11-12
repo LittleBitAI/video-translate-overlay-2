@@ -28,8 +28,8 @@ test('a failed load says so and loads again', async () => {
   let fail = true;
   api(() => (fail ? [500, {}] : [200, NONE]));
   const s2 = open('/preferences');
-  // Under the field, which stays usable with its plain border: nothing typed is at fault.
-  await vi.waitFor(() => expect(text($(s2, '[role="alert"]')!)).toBe("설정을 불러오지 못했습니다. 잠시 뒤에 다시 눌러 주세요 다시 불러오기"));
+  // In its own box above the field, which keeps its plain border: nothing typed is at fault.
+  await vi.waitFor(() => expect(text($(s2, '[role="alert"]')!)).toBe("설정을 불러오지 못했습니다. 잠시 뒤에 다시 눌러 주세요. 다시 불러오기"));
   expect($(s2, '#api-key')!.getAttribute('aria-invalid')).toBeNull();
   fail = false;
   button(s2, '다시 불러오기').click();

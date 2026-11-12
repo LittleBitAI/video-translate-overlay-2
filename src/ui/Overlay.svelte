@@ -124,7 +124,7 @@
   const label = 'text-sm text-ink/60';
   const value = 'font-semibold text-ink';
   /** The subtitle line: a dark band and a shadow, so it reads over a bright scene too. */
-  const line = 'mx-auto mb-2 max-w-full rounded-md bg-black/60 px-3 py-1 text-center [text-shadow:0_1px_2px_#000] sm:mb-[6%]';
+  const line = 'mx-auto mb-2 max-w-full rounded-md bg-black/60 px-3 py-1 text-center [text-shadow:0_0_4px_rgb(0_0_0/0.9),0_1px_2px_#000] sm:mb-[6%]';
   /** A button in a notice: 44 px high, so a thumb finds it. */
   const action = 'pointer-events-auto mt-2 inline-flex min-h-11 items-center rounded-lg px-4';
   onDestroy(() => {
@@ -137,8 +137,8 @@
   <div data-feature="job-progress" role="status" class="{box} w-full sm:w-56">
     <p class={label}>진행 상태</p>
     <p class="flex justify-between gap-2 text-base font-semibold"><span>{stage}</span><span>{percent}%</span></p>
-    <div class="my-1 h-1 rounded-full bg-ink/25">
-      <div class="h-1 rounded-full bg-primary" style:width="{Math.min(100, Math.max(0, percent))}%"></div>
+    <div class="my-1 h-1.5 rounded-full bg-ink/25">
+      <div class="h-1.5 rounded-full bg-primary" style:width="{Math.min(100, Math.max(0, percent))}%"></div>
     </div>
     <p><span class={label}>든 비용</span> <span class={value}>{won(cost)}</span></p>
   </div>
@@ -154,7 +154,7 @@
     <!-- The job is done; only its subtitles are on their way (there is no stage or percent left to show). -->
     <div data-feature="job-progress" role="status" class="{box} w-full sm:w-56">
       <p><span class={value}>자막 불러오는 중</span> <span class={label}>· {won(job.cost_krw)}</span></p>
-      <div class="mt-1 h-1 overflow-hidden rounded-full bg-ink/25"><div class="h-1 w-1/3 animate-pulse rounded-full bg-primary"></div></div>
+      <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-ink/25"><div class="vto-indeterminate h-1.5 w-1/3 rounded-full bg-primary"></div></div>
     </div>
   {:else if ready && job}
     <p data-feature="job-progress" role="status" class="w-fit rounded-lg bg-surface/90 px-2 py-1 text-sm text-ink/80">
@@ -194,11 +194,13 @@
         <p class="max-w-[50%] rounded-lg bg-surface/90 px-2 py-1 text-sm">영상 창의 영상감지 버튼을 누르세요</p>
       {/if}
     {:else}
-      <!-- Always on the overlay: off while a job runs or its subtitles load; on a ready video it shows the saved subtitles again (R25). -->
+      <!-- Always on the overlay: off while a job runs or its subtitles load; on a ready video it is a quiet outline, since it only shows the saved subtitles again (R25). -->
       <button
         type="button"
         data-feature="detect-video"
-        class="pointer-events-auto min-h-11 shrink-0 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-surface shadow disabled:bg-ink/15 disabled:text-ink/50 disabled:shadow-none"
+        class="pointer-events-auto min-h-11 shrink-0 rounded-lg px-4 py-2 text-base font-semibold disabled:bg-ink/15 disabled:text-ink/50 disabled:shadow-none {ready
+          ? 'border border-ink/30 bg-surface/80 text-ink'
+          : 'bg-primary text-surface shadow'}"
         disabled={starting || look === 'checking' || active || subs === 'loading'}
         onclick={detect}>{starting ? '확인하는 중' : '영상감지'}</button
       >

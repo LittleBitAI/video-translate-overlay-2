@@ -110,6 +110,13 @@
 <main class="mx-auto flex max-w-2xl flex-col gap-4 p-2 sm:p-4">
   <section class={card} aria-busy={screen === 'loading'}>
     <h2 class="text-lg font-semibold">개인키</h2>
+    {#if screen === 'error'}
+      <!-- The saved settings did not load: its own box, apart from the field, whose place is for a key's own errors. -->
+      <div role="alert" class="my-2 flex flex-wrap items-center gap-2 rounded-lg border border-accent p-2">
+        <p class="min-w-0 flex-1 text-sm text-accent">설정을 불러오지 못했습니다. 잠시 뒤에 다시 눌러 주세요.</p>
+        <button type="button" class="min-h-11 rounded-lg border border-accent px-4 py-2 text-base text-accent" onclick={load}>다시 불러오기</button>
+      </div>
+    {/if}
     <p class="mt-1 text-sm text-ink/70">개인키는 이 기기에만 저장됩니다. 번역 비용은 개인키 주인에게 청구됩니다.</p>
 
     <form class="mt-4" onsubmit={save} novalidate>
@@ -143,13 +150,6 @@
       <p id="key-message" role={keyError ? 'alert' : 'status'} class="mt-1 text-sm {keyError ? 'text-accent' : 'text-ink/70'}">
         {#if keyError}{keyError}{:else if keySaved}Gemini가 확인한 개인키를 저장했습니다.{/if}
       </p>
-      {#if screen === 'error'}
-        <!-- The saved settings did not load: nothing typed is at fault, so the field keeps its plain border. -->
-        <div role="alert" class="mt-2 flex flex-wrap items-center gap-2">
-          <p class="text-sm text-accent">설정을 불러오지 못했습니다. 잠시 뒤에 다시 눌러 주세요</p>
-          <button type="button" class="min-h-11 rounded-lg border border-accent px-4 py-2 text-base text-accent" onclick={load}>다시 불러오기</button>
-        </div>
-      {/if}
     </form>
 
     {#if screen === 'loading'}
