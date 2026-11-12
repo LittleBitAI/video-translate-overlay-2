@@ -209,9 +209,25 @@ pub fn probe(url: &Url, allow_loopback: bool) -> Result<Source, Refusal> {
     }
     // Refused here, before a job, rather than failing it once downloaded (R20).
     let ext = file_ext(&head).ok_or_else(|| refuse("not_audio", "이 주소는 오디오나 영상 파일이 아니라 소리를 꺼낼 수 없습니다."))?;
+    let more: Vec<u8>;
     let silent = match ext {
         "ts" => crate::decode::ts_has_audio(&head) == Some(false),
-        "webm" => webm_has_audio(&head) == Some(false),
+        "webm" => {
+            // `Tracks` follows the header, SeekHead and Info; a large one is read on, up to 1 MiB.
+            let tracks = match webm_tracks(&head) {
+                Some(t) => t,
+                None if head.len() >= 65_536 => {
+                    more = fetch(url.as_str(), Some((0, 1 << 20)), 1 << 20, allow_loopback)?.1;
+                    webm_tracks(&more).ok_or_else(|| refuse("unverifiable", "영상의 트랙 정보를 찾지 못해 DRM 보호 여부를 확인할 수 없습니다."))?
+                }
+                // The whole file, and no tracks in it: nothing a decoder could read.
+                None => return Err(no_sound()),
+            };
+            if webm_encrypted(tracks) {
+                return Err(drm());
+            }
+            !webm_has_audio(tracks)
+        }
         _ => false,
     };
     if silent {
@@ -232,25 +248,43 @@ fn mp4_has_sound(moov: &[u8]) -> bool {
     moov.windows(4).enumerate().any(|(i, w)| w == b"hdlr" && moov.get(i + 12..i + 16) == Some(b"soun") || ENTRIES.iter().any(|e| w == *e))
 }
 
-/// Whether a WebM's `Tracks` has an audio track (`TrackType` 2), when the whole
-/// `Tracks` element is in `head`; `None` when it is not there to tell.
-fn webm_has_audio(head: &[u8]) -> Option<bool> {
-    const TRACKS: [u8; 4] = [0x16, 0x54, 0xAE, 0x6B];
-    // The element itself, not its ID listed in the SeekHead (SeekID 0x53AB, size 4).
-    let at = (3..head.len().saturating_sub(4)).find(|&i| head[i..i + 4] == TRACKS && head[i - 3..i] != [0x53, 0xAB, 0x84])? + 4;
-    // The element's size: an EBML variable-length integer.
-    let first = *head.get(at)?;
+/// The body of the EBML element whose size (a variable-length integer) starts at `at`, if all of it is in `b`.
+fn ebml_body(b: &[u8], at: usize) -> Option<&[u8]> {
+    let first = *b.get(at)?;
     let len = first.leading_zeros() as usize + 1;
     if len > 8 {
         return None;
     }
     let mut size = u64::from(first) & (0xFF >> len);
-    for b in head.get(at + 1..at + len)? {
-        size = size << 8 | u64::from(*b);
+    for x in b.get(at + 1..at + len)? {
+        size = size << 8 | u64::from(*x);
     }
-    let body = head.get(at + len..at + len + usize::try_from(size).ok()?)?;
+    let from = at + len;
+    b.get(from..from.checked_add(usize::try_from(size).ok()?)?)
+}
+
+/// A WebM's `Tracks` body, when the whole element is in `head`.
+fn webm_tracks(head: &[u8]) -> Option<&[u8]> {
+    const TRACKS: [u8; 4] = [0x16, 0x54, 0xAE, 0x6B];
+    // The element itself, not its ID listed in the SeekHead (SeekID 0x53AB, size 4).
+    let at = (3..head.len().saturating_sub(4)).find(|&i| head[i..i + 4] == TRACKS && head[i - 3..i] != [0x53, 0xAB, 0x84])? + 4;
+    ebml_body(head, at)
+}
+
+/// Whether `Tracks` has an audio track (`TrackType` 2).
+fn webm_has_audio(tracks: &[u8]) -> bool {
     // ponytail: a byte scan for TrackType (0x83), size 1, value 2.
-    Some(body.windows(3).any(|w| w == [0x83, 0x81, 0x02]))
+    tracks.windows(3).any(|w| w == [0x83, 0x81, 0x02])
+}
+
+/// Whether a track is encrypted (WebM's Common Encryption): a `ContentEncryption`
+/// (0x5035) element under its `ContentEncodings`, holding `ContentEncAlgo`
+/// (0x47E1) or `ContentEncKeyID` (0x47E2).
+fn webm_encrypted(tracks: &[u8]) -> bool {
+    // ponytail: a byte scan for the element, checked by its size and children, like `marked` for MP4.
+    (0..tracks.len().saturating_sub(2)).any(|i| {
+        tracks[i..i + 2] == [0x50, 0x35] && ebml_body(tracks, i + 2).is_some_and(|b| b.windows(2).any(|w| w == [0x47, 0xE1] || w == [0x47, 0xE2]))
+    })
 }
 
 /// An HLS playlist lists its pieces; they must also answer, or the audio cannot
@@ -670,6 +704,10 @@ mod tracks_tests;
 #[cfg(test)]
 #[path = "media_hls_start_tests.rs"]
 mod hls_start_tests;
+
+#[cfg(test)]
+#[path = "media_webm_drm_tests.rs"]
+mod webm_drm_tests;
 
 #[cfg(test)]
 mod tests {

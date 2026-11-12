@@ -405,14 +405,14 @@ pub(crate) mod portable {
         s.write_all(head.as_bytes()).map_err(err)?;
         s.write_all(body).map_err(err)?;
         let mut r = BufReader::new(s);
-        let mut line = String::new();
-        r.read_line(&mut line).map_err(err)?;
+        let mut used = 0;
+        let line = head_line(&mut r, &mut used).map_err(err)?;
         let status = line.split_whitespace().nth(1).and_then(|c| c.parse().ok()).unwrap_or(0);
         // Plain TCP never follows redirects; callers that want them get `location` back.
         let (mut content_type, mut content_length, mut chunked, mut location) = (None, None, false, None);
         loop {
-            let mut h = String::new();
-            if r.read_line(&mut h).map_err(err)? == 0 || h.trim().is_empty() {
+            let h = head_line(&mut r, &mut used).map_err(err)?;
+            if h.trim().is_empty() {
                 break;
             }
             if let Some((k, v)) = h.split_once(':') {
@@ -435,6 +435,25 @@ pub(crate) mod portable {
             Box::new(r)
         };
         Ok(Response { status, content_type, content_length, location, remote_ip, body })
+    }
+
+    /// A response head is read within bounds, whatever the server sends: a line
+    /// of at most [`MAX_LINE`] bytes and a head of at most [`MAX_HEAD`] in all.
+    pub(super) const MAX_LINE: u64 = 8 << 10;
+    pub(super) const MAX_HEAD: usize = 64 << 10;
+
+    /// The next line of the head, its CRLF kept; empty at the end of the stream.
+    pub(super) fn head_line<R: BufRead>(r: &mut R, used: &mut usize) -> io::Result<String> {
+        let mut l = Vec::new();
+        (&mut *r).take(MAX_LINE).read_until(b'\n', &mut l)?;
+        *used += l.len();
+        if l.len() as u64 == MAX_LINE && l.last() != Some(&b'\n') {
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "response header line too long"));
+        }
+        if *used > MAX_HEAD {
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "response head too large"));
+        }
+        Ok(String::from_utf8_lossy(&l).into_owned())
     }
 
     /// A chunked body, streamed: the server's chunk sizes only bound how much is
@@ -469,8 +488,14 @@ pub(crate) mod portable {
                 let hex = size.split(';').next().unwrap_or("").trim();
                 self.left = u64::from_str_radix(hex, 16).map_err(|_| bad(&format!("bad size {hex:?}")))?;
                 if self.left == 0 {
-                    // Trailer fields up to the blank line.
-                    while !self.line()?.is_empty() {}
+                    // Trailer fields up to the blank line, as many as a head may hold.
+                    let mut n = 0;
+                    while !self.line()?.is_empty() {
+                        n += 1;
+                        if n > MAX_HEAD / 16 {
+                            return Err(bad("too many trailer fields"));
+                        }
+                    }
                     self.done = true;
                     return Ok(0);
                 }
@@ -504,6 +529,10 @@ mod pin_tests;
 #[cfg(test)]
 #[path = "http_length_tests.rs"]
 mod length_tests;
+
+#[cfg(test)]
+#[path = "http_head_limits_tests.rs"]
+mod head_limits_tests;
 
 #[cfg(test)]
 mod tests {
