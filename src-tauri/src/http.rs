@@ -32,14 +32,16 @@ pub struct Request<'a> {
     pub headers: Vec<(String, String)>,
     pub body: Option<&'a [u8]>,
     pub timeout_ms: i32,
+    /// When false a 3xx comes back as is, with its `location`, so the caller can check the target.
+    pub follow_redirects: bool,
 }
 
 impl<'a> Request<'a> {
     pub fn get(url: &'a str) -> Self {
-        Request { method: "GET", url, headers: Vec::new(), body: None, timeout_ms: 30_000 }
+        Request { method: "GET", url, headers: Vec::new(), body: None, timeout_ms: 30_000, follow_redirects: true }
     }
     pub fn post(url: &'a str, body: &'a [u8]) -> Self {
-        Request { method: "POST", url, headers: Vec::new(), body: Some(body), timeout_ms: 120_000 }
+        Request { method: "POST", url, headers: Vec::new(), body: Some(body), timeout_ms: 120_000, follow_redirects: true }
     }
     pub fn header(mut self, name: &str, value: &str) -> Self {
         self.headers.push((name.into(), value.into()));
@@ -52,6 +54,7 @@ pub struct Response {
     pub status: u16,
     pub content_type: Option<String>,
     pub content_length: Option<u64>,
+    pub location: Option<String>,
     body: Box<dyn Read + Send>,
 }
 
@@ -97,6 +100,7 @@ mod imp {
         fn WinHttpQueryHeaders(h: *mut c_void, level: u32, name: *const u16, buf: *mut c_void, len: *mut u32, index: *mut u32) -> i32;
         fn WinHttpReadData(h: *mut c_void, buf: *mut c_void, n: u32, read: *mut u32) -> i32;
         fn WinHttpCloseHandle(h: *mut c_void) -> i32;
+        fn WinHttpSetOption(h: *mut c_void, option: u32, buf: *const c_void, len: u32) -> i32;
     }
     #[link(name = "kernel32", kind = "raw-dylib")]
     extern "system" {
@@ -109,6 +113,9 @@ mod imp {
     const QUERY_CONTENT_LENGTH: u32 = 5;
     const QUERY_CONTENT_TYPE: u32 = 1;
     const QUERY_FLAG_NUMBER: u32 = 0x2000_0000;
+    const QUERY_LOCATION: u32 = 33;
+    const OPTION_REDIRECT_POLICY: u32 = 88;
+    const REDIRECT_POLICY_NEVER: u32 = 0;
 
     fn wide(s: &str) -> Vec<u16> {
         s.encode_utf16().chain(std::iter::once(0)).collect()
@@ -185,6 +192,12 @@ mod imp {
         }
         let t = req.timeout_ms;
         unsafe { WinHttpSetTimeouts(h.request, t, t, t, t) };
+        if !req.follow_redirects {
+            let never = REDIRECT_POLICY_NEVER;
+            if unsafe { WinHttpSetOption(h.request, OPTION_REDIRECT_POLICY, &never as *const u32 as *const c_void, 4) } == 0 {
+                return Err(fail("WinHttpSetOption(redirect policy)"));
+            }
+        }
         let headers: String = req.headers.iter().map(|(k, v)| format!("{k}: {v}\r\n")).collect();
         let headers_w: Vec<u16> = headers.encode_utf16().collect();
         let body = req.body.unwrap_or(&[]);
@@ -219,7 +232,8 @@ mod imp {
         };
         let content_type = query_string(h.request, QUERY_CONTENT_TYPE);
         let content_length = query_string(h.request, QUERY_CONTENT_LENGTH).and_then(|s| s.trim().parse().ok());
-        Ok(Response { status: status as u16, content_type, content_length, body: Box::new(Body(h)) })
+        let location = query_string(h.request, QUERY_LOCATION);
+        Ok(Response { status: status as u16, content_type, content_length, location, body: Box::new(Body(h)) })
     }
 }
 
@@ -256,7 +270,8 @@ mod imp {
         let mut line = String::new();
         r.read_line(&mut line).map_err(err)?;
         let status = line.split_whitespace().nth(1).and_then(|c| c.parse().ok()).unwrap_or(0);
-        let (mut content_type, mut content_length, mut chunked) = (None, None, false);
+        // Plain TCP never follows redirects; callers that want them get `location` back.
+        let (mut content_type, mut content_length, mut chunked, mut location) = (None, None, false, None);
         loop {
             let mut h = String::new();
             if r.read_line(&mut h).map_err(err)? == 0 || h.trim().is_empty() {
@@ -268,6 +283,7 @@ mod imp {
                     "content-type" => content_type = Some(v),
                     "content-length" => content_length = v.parse().ok(),
                     "transfer-encoding" => chunked = v.to_ascii_lowercase().contains("chunked"),
+                    "location" => location = Some(v),
                     _ => {}
                 }
             }
@@ -291,6 +307,6 @@ mod imp {
         } else {
             Box::new(r)
         };
-        Ok(Response { status, content_type, content_length, body })
+        Ok(Response { status, content_type, content_length, location, body })
     }
 }

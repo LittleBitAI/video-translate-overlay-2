@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS job (
   updated_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS job_by_video ON job(video_key, created_at);
+CREATE UNIQUE INDEX IF NOT EXISTS one_running_job ON job(stage IN ('downloading','writing','translating'))
+  WHERE stage IN ('downloading','writing','translating');
 CREATE TABLE IF NOT EXISTS cue (
   video_key TEXT NOT NULL REFERENCES video(video_key),
   seq INTEGER NOT NULL,
@@ -113,6 +115,7 @@ pub struct Cue {
 
 pub struct Store {
     db: Db,
+    path: std::path::PathBuf,
 }
 
 type R<T> = Result<T, String>;
@@ -121,21 +124,10 @@ impl Store {
     pub fn open(path: &Path) -> R<Store> {
         let db = Db::open(path)?;
         db.exec(SCHEMA)?;
-        Ok(Store { db })
+        Ok(Store { db, path: path.to_path_buf() })
     }
 
     // ------------------------------------------------------------ videos
-
-    pub fn upsert_video(&self, key: &str, page_url: &str, site: &str, title: &str, duration_ms: i64) -> R<()> {
-        self.db.execute(
-            &format!(
-                "INSERT INTO video (video_key, page_url, site, title, duration_ms, created_at) VALUES (?,?,?,?,?,{NOW})
-                 ON CONFLICT(video_key) DO UPDATE SET page_url=excluded.page_url, title=excluded.title, duration_ms=excluded.duration_ms"
-            ),
-            p![key, page_url, site, title, duration_ms],
-        )?;
-        Ok(())
-    }
 
     pub fn video(&self, key: &str) -> R<Option<Video>> {
         Ok(self
@@ -161,24 +153,47 @@ impl Store {
         Ok(())
     }
 
-    /// Forgets an unfinished attempt's cues and glossary before a fresh job.
-    pub fn reset_video(&self, key: &str) -> R<()> {
-        self.db.execute("DELETE FROM cue WHERE video_key=?", p![key])?;
-        self.db.execute("UPDATE video SET terms=NULL, source_language=NULL WHERE video_key=?", p![key])?;
-        Ok(())
-    }
-
     // ------------------------------------------------------------ jobs
 
-    pub fn insert_job(&self, id: &str, video_key: &str, media_url: Option<&str>, model: &str) -> R<()> {
-        self.db.execute(
-            &format!(
-                "INSERT INTO job (id, video_key, media_url, stage, translation_model, created_at, updated_at)
-                 VALUES (?,?,?,'downloading',?,{NOW},{NOW})"
-            ),
-            p![id, video_key, media_url, model],
-        )?;
-        Ok(())
+    /// Records the video, forgets an unfinished earlier attempt's cues and
+    /// glossary, and inserts the job, in one transaction on its own
+    /// connection. The `one_running_job` index refuses a second running job
+    /// even if a caller skipped the checks.
+    #[allow(clippy::too_many_arguments)]
+    pub fn create_job(
+        &self,
+        id: &str,
+        key: &str,
+        page_url: &str,
+        site: &str,
+        title: &str,
+        duration_ms: i64,
+        media_url: Option<&str>,
+        model: &str,
+    ) -> R<()> {
+        let db = Db::open(&self.path)?;
+        db.exec("BEGIN IMMEDIATE")?;
+        let r = (|| {
+            db.execute(
+                &format!(
+                    "INSERT INTO video (video_key, page_url, site, title, duration_ms, created_at) VALUES (?,?,?,?,?,{NOW})
+                     ON CONFLICT(video_key) DO UPDATE SET page_url=excluded.page_url, title=excluded.title, duration_ms=excluded.duration_ms"
+                ),
+                p![key, page_url, site, title, duration_ms],
+            )?;
+            db.execute("DELETE FROM cue WHERE video_key=?", p![key])?;
+            db.execute("UPDATE video SET terms=NULL, source_language=NULL WHERE video_key=?", p![key])?;
+            db.execute(
+                &format!(
+                    "INSERT INTO job (id, video_key, media_url, stage, translation_model, created_at, updated_at)
+                     VALUES (?,?,?,'downloading',?,{NOW},{NOW})"
+                ),
+                p![id, key, media_url, model],
+            )?;
+            Ok(())
+        })();
+        db.exec(if r.is_ok() { "COMMIT" } else { "ROLLBACK" })?;
+        r
     }
 
     pub fn job(&self, id: &str) -> R<Option<Job>> {
@@ -230,11 +245,21 @@ impl Store {
         Ok(())
     }
 
+    /// Claims the job's one notification. True only for the first caller, so a
+    /// job resumed after a crash never notifies twice (E2 `notified_at`).
+    pub fn claim_notification(&self, id: &str) -> R<bool> {
+        Ok(self.db.execute(&format!("UPDATE job SET notified_at={NOW}, updated_at={NOW} WHERE id=? AND notified_at IS NULL"), p![id])? == 1)
+    }
+
     pub fn finish(&self, id: &str) -> R<()> {
-        self.db.execute(
-            &format!("UPDATE job SET stage='ready', percent=100, notified_at={NOW}, updated_at={NOW} WHERE id=?"),
-            p![id],
-        )?;
+        self.db.execute(&format!("UPDATE job SET stage='ready', percent=100, updated_at={NOW} WHERE id=?"), p![id])?;
+        Ok(())
+    }
+
+    /// Ends the writing stage: the job moves to translating and forgets its
+    /// audio in the same statement, so the audio file can be deleted afterwards.
+    pub fn end_writing(&self, id: &str) -> R<()> {
+        self.db.execute(&format!("UPDATE job SET stage='translating', percent=0, audio_path=NULL, updated_at={NOW} WHERE id=?"), p![id])?;
         Ok(())
     }
 
@@ -254,11 +279,12 @@ impl Store {
     pub fn save_region(&self, job_id: &str, video_key: &str, region: i64, cues: &[(i64, i64, String)]) -> R<()> {
         self.db.exec("BEGIN IMMEDIATE")?;
         let r = (|| {
-            let next = self.db.query_one("SELECT COALESCE(MAX(seq),0) FROM cue WHERE video_key=?", p![video_key])?.unwrap()[0].int();
+            // seq counts from 0 in start_ms order (E3).
+            let next = self.db.query_one("SELECT COALESCE(MAX(seq),-1)+1 FROM cue WHERE video_key=?", p![video_key])?.unwrap()[0].int();
             for (i, (a, b, text)) in cues.iter().enumerate() {
                 self.db.execute(
                     "INSERT INTO cue (video_key, seq, start_ms, end_ms, source_text) VALUES (?,?,?,?,?)",
-                    p![video_key, next + 1 + i as i64, *a, *b, text],
+                    p![video_key, next + i as i64, *a, *b, text],
                 )?;
             }
             self.db.execute(&format!("UPDATE job SET written_regions=?, updated_at={NOW} WHERE id=?"), p![region + 1, job_id])?;
@@ -320,16 +346,24 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("vto-store-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let s = Store::open(&dir.join("t.sqlite3")).unwrap();
-        s.upsert_video("v", "https://a.example/x", "web", "T", 1000).unwrap();
-        s.insert_job("j", "v", None, "m").unwrap();
+        s.create_job("j", "v", "https://a.example/x", "other", "T", 1000, None, "m").unwrap();
         s.save_region("j", "v", 0, &[(0, 10, "a".into()), (10, 20, "b".into())]).unwrap();
         s.save_region("j", "v", 1, &[(30, 40, "c".into())]).unwrap();
         let seqs: Vec<i64> = s.cues("v").unwrap().iter().map(|c| c.seq).collect();
-        assert_eq!(seqs, [1, 2, 3]);
+        assert_eq!(seqs, [0, 1, 2], "seq counts from 0 (E3)");
         assert_eq!(s.job("j").unwrap().unwrap().written_regions, 2);
         s.raise_percent("j", 40).unwrap();
         s.raise_percent("j", 30).unwrap();
         assert_eq!(s.job("j").unwrap().unwrap().percent, 40);
+
+        // A second running job is refused by the database itself.
+        assert!(s.create_job("k", "w", "https://a.example/y", "other", "T", 1000, None, "m").is_err());
+        assert!(s.job("k").unwrap().is_none(), "the refused job left a row");
+        assert_eq!(s.cues("v").unwrap().len(), 3, "the refused job touched another video");
+
+        // The one notification is claimed once, even across a resume.
+        assert!(s.claim_notification("j").unwrap());
+        assert!(!s.claim_notification("j").unwrap());
         drop(s);
         let _ = std::fs::remove_dir_all(&dir);
     }

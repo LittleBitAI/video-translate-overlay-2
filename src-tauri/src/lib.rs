@@ -28,6 +28,11 @@ pub struct Segment {
 
 /// The on-device speech model (whisper.cpp in the app).
 pub trait Transcriber: Send + Sync {
+    /// Makes sure the model file is on this device under `data_dir`, fetching it
+    /// if not; returns whether it had to be fetched. `progress` gets 0.0..=1.0.
+    fn prepare(&self, _data_dir: &std::path::Path, _progress: &mut dyn FnMut(f32)) -> Result<bool, String> {
+        Ok(false)
+    }
     /// `pcm` is 16 kHz mono; `progress` receives 0.0..=1.0 as the model works.
     fn transcribe(&self, pcm: &[f32], progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String>;
     /// The language the model heard, when it knows.
@@ -88,6 +93,8 @@ pub struct Core {
     pub store: store::Store,
     pub svc: Services,
     wake: (Mutex<bool>, Condvar),
+    /// Held while P6 checks for existing jobs and creates one.
+    pub(crate) create_lock: Mutex<()>,
 }
 
 impl Core {
@@ -95,7 +102,7 @@ impl Core {
     pub fn start(cfg: Config, svc: Services) -> Result<Arc<Core>, String> {
         std::fs::create_dir_all(cfg.data_dir.join("audio")).map_err(|e| format!("data folder: {e}"))?;
         let store = store::Store::open(&cfg.data_dir.join("app.sqlite3"))?;
-        let core = Arc::new(Core { cfg, store, svc, wake: (Mutex::new(false), Condvar::new()) });
+        let core = Arc::new(Core { cfg, store, svc, wake: (Mutex::new(false), Condvar::new()), create_lock: Mutex::new(()) });
         let worker = core.clone();
         std::thread::Builder::new().name("jobs".into()).spawn(move || pipeline::run_worker(worker)).map_err(|e| e.to_string())?;
         Ok(core)

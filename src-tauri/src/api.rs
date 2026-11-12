@@ -5,7 +5,6 @@ use crate::media::{self, Refusal};
 use crate::{log, youtube, Core};
 use serde::Serialize;
 use serde_json::{json, Value};
-use std::sync::atomic::{AtomicU64, Ordering};
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct ApiError {
@@ -42,30 +41,56 @@ fn http_url(raw: &str) -> Result<url::Url, ApiError> {
     Ok(u)
 }
 
-/// The stable key of the video a page shows.
+/// Query parameters that say how a link was shared, not which video it shows.
+const TRACKING: [&str; 14] =
+    ["fbclid", "gclid", "dclid", "msclkid", "yclid", "igshid", "mc_cid", "mc_eid", "si", "feature", "ref", "ref_src", "spm", "_ga"];
+
+fn is_tracking(name: &str) -> bool {
+    let n = name.to_ascii_lowercase();
+    n.starts_with("utm_") || TRACKING.contains(&n.as_str())
+}
+
+/// The stable key of the video a page shows (E1): the YouTube video id, or
+/// the SHA-256 of the page URL without its fragment and tracking parameters.
 pub fn video_key(page: &url::Url) -> String {
     if let Some(id) = youtube::video_id(page) {
-        return format!("yt-{id}");
+        return id;
     }
     let mut u = page.clone();
     u.set_fragment(None);
-    // FNV-1a: short and stable across runs and builds.
-    let h = u.as_str().bytes().fold(0xcbf2_9ce4_8422_2325u64, |h, b| (h ^ b as u64).wrapping_mul(0x100_0000_01b3));
-    format!("web-{h:016x}")
+    let kept: Vec<(String, String)> = u.query_pairs().filter(|(k, _)| !is_tracking(k)).map(|(k, v)| (k.into_owned(), v.into_owned())).collect();
+    if kept.is_empty() {
+        u.set_query(None);
+    } else {
+        u.query_pairs_mut().clear().extend_pairs(kept);
+    }
+    use sha2::{Digest, Sha256};
+    Sha256::digest(u.as_str().as_bytes()).iter().map(|b| format!("{b:02x}")).collect()
 }
 
-fn site(page: &url::Url) -> String {
+/// `youtube` or `other` (E1).
+fn site(page: &url::Url) -> &'static str {
     if youtube::is_youtube(page) {
-        "youtube".into()
+        "youtube"
     } else {
-        page.host_str().unwrap_or("").trim_start_matches("www.").to_string()
+        "other"
     }
 }
 
+/// A random (version 4) UUID.
 fn new_job_id() -> String {
-    static N: AtomicU64 = AtomicU64::new(0);
-    let t = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_nanos() as u64;
-    format!("job-{t:016x}-{:04x}", N.fetch_add(1, Ordering::Relaxed) & 0xffff)
+    let mut b = [0u8; 16];
+    getrandom::fill(&mut b).expect("OS random source");
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    let h: String = b.iter().map(|x| format!("{x:02x}")).collect();
+    format!("{}-{}-{}-{}-{}", &h[0..8], &h[8..12], &h[12..16], &h[16..20], &h[20..32])
+}
+
+/// Titles are cut at 200 characters (E1).
+fn clip_title(title: &str, fallback: &str) -> String {
+    let t = if title.trim().is_empty() { fallback.trim() } else { title.trim() };
+    t.chars().take(200).collect()
 }
 
 // ---------------------------------------------------------------- P1, P2
@@ -158,7 +183,13 @@ pub fn resolve_source(core: &Core, page: &url::Url, media_url: Option<&str>) -> 
 
 pub fn create_job(core: &Core, page_url: &str, media_url: Option<&str>, title: &str, duration_ms: i64) -> ApiResult {
     let page = http_url(page_url)?;
+    if duration_ms <= 0 {
+        return Err(err(400, "bad_duration", "영상 길이를 알 수 없습니다. 영상이 재생 준비된 뒤에 다시 눌러 주세요."));
+    }
     let key = video_key(&page);
+    // Check-then-create runs under one lock, so two presses can never make two
+    // jobs or let a late one wipe the cues of the first (one running job per device).
+    let _creating = core.create_lock.lock().unwrap_or_else(|p| p.into_inner());
 
     // Subtitles made before are shown again without any work (and without a key).
     if let Some(last) = core.store.latest_job(&key)? {
@@ -181,11 +212,9 @@ pub fn create_job(core: &Core, page_url: &str, media_url: Option<&str>, title: &
     resolve_source(core, &page, media_url)?;
 
     let id = new_job_id();
-    let title = if title.trim().is_empty() { page_url.trim() } else { title.trim() };
-    core.store.upsert_video(&key, page_url.trim(), &site(&page), title, duration_ms.max(0))?;
-    core.store.reset_video(&key)?;
-    core.store.insert_job(&id, &key, media_url.map(str::trim).filter(|m| !m.is_empty()), MODEL)?;
-    core.svc.notifier.ongoing(&id, "shown", title, 0);
+    let title = clip_title(title, page_url);
+    core.store.create_job(&id, &key, page_url.trim(), site(&page), &title, duration_ms, media_url.map(str::trim).filter(|m| !m.is_empty()), MODEL)?;
+    core.svc.notifier.ongoing(&id, "shown", &title, 0);
     log(format!("job {id} created for {key}"));
     core.wake_worker();
     Ok(json!({"job_id": id, "video_key": key, "stage": "downloading", "reused": false}))
@@ -236,10 +265,24 @@ mod tests {
     #[test]
     fn video_keys_follow_the_video_not_the_url_form() {
         let k = |s: &str| video_key(&url::Url::parse(s).unwrap());
-        assert_eq!(k("https://www.youtube.com/watch?v=abcDEF12345&t=30"), "yt-abcDEF12345");
-        assert_eq!(k("https://youtu.be/abcDEF12345"), "yt-abcDEF12345");
-        assert_eq!(k("https://m.youtube.com/shorts/abcDEF12345"), "yt-abcDEF12345");
-        assert_eq!(k("https://a.example/talk#x"), k("https://a.example/talk"));
-        assert_ne!(k("https://a.example/talk"), k("https://a.example/talk2"));
+        assert_eq!(k("https://www.youtube.com/watch?v=abcDEF12345&t=30"), "abcDEF12345");
+        assert_eq!(k("https://youtu.be/abcDEF12345?si=xyz"), "abcDEF12345");
+        assert_eq!(k("https://m.youtube.com/shorts/abcDEF12345"), "abcDEF12345");
+        let plain = k("https://a.example/talk");
+        assert_eq!(plain.len(), 64, "SHA-256 hex");
+        assert_eq!(k("https://a.example/talk#x"), plain);
+        assert_eq!(k("https://a.example/talk?utm_source=share&fbclid=1"), plain);
+        assert_eq!(k("https://a.example/talk?id=7&utm_medium=x"), k("https://a.example/talk?id=7"));
+        assert_ne!(k("https://a.example/talk?id=7"), plain);
+        assert_ne!(plain, k("https://a.example/talk2"));
+    }
+
+    #[test]
+    fn ids_and_titles_follow_the_entity_rules() {
+        let id = new_job_id();
+        assert_eq!((id.len(), &id[14..15]), (36, "4"), "{id}");
+        assert_ne!(id, new_job_id());
+        assert_eq!(clip_title(&"가".repeat(201), "x").chars().count(), 200);
+        assert_eq!(clip_title("  ", "https://a.example/t"), "https://a.example/t");
     }
 }

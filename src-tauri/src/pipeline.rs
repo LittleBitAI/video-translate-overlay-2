@@ -46,7 +46,6 @@ struct Ctx<'a> {
     store: &'a Store,
     title: String,
     page_url: String,
-    duration_ms: i64,
 }
 
 impl Ctx<'_> {
@@ -63,45 +62,59 @@ impl Ctx<'_> {
 
 fn run_job(core: &Core, store: &Store, job: Job) {
     let Ok(Some(video)) = store.video(&job.video_key) else {
-        let _ = store.fail(&job.id, "internal");
+        let _ = store.fail(&job.id, failure_reason("video row missing", &job.stage));
         return;
     };
-    let cx = Ctx { core, store, title: video.title.clone(), page_url: video.page_url.clone(), duration_ms: video.duration_ms };
+    let cx = Ctx { core, store, title: video.title.clone(), page_url: video.page_url.clone() };
     let result = (|| -> Result<(), Stop> {
-        let db = |e: String| -> Stop {
-            log(format!("job {}: {e}", job.id));
-            "internal".into()
-        };
         let mut stage = job.stage.clone();
         if stage == "downloading" {
             download(&cx, &job)?;
-            store.set_stage(&job.id, "writing").map_err(db)?;
+            store.set_stage(&job.id, "writing")?;
             stage = "writing".into();
         }
         if stage == "writing" {
-            let fresh = store.job(&job.id).map_err(db)?.ok_or("internal")?;
-            if !write(&cx, &fresh)? {
-                return Ok(()); // audio was gone: back to downloading, the worker picks it up again
-            }
-            store.set_stage(&job.id, "translating").map_err(db)?;
+            let fresh = store.job(&job.id)?.ok_or("job vanished")?;
+            write(&cx, &fresh)?;
         }
-        translate(&cx, &job.id)?;
-        let text = format!("한국어 자막이 준비됐습니다: {}", cx.title);
-        core.svc.notifier.ready(&job.id, &text, &cx.page_url);
+        // A job that already notified only has its ready mark left to write.
+        if !store.job(&job.id)?.is_some_and(|j| j.notified) {
+            translate(&cx, &job.id)?;
+        }
+        // At most one notification per job, claimed before it is sent.
+        if store.claim_notification(&job.id)? {
+            let text = format!("한국어 자막이 준비됐습니다: {}", cx.title);
+            core.svc.notifier.ready(&job.id, &text, &cx.page_url);
+        }
         core.svc.notifier.ongoing(&job.id, "hidden", &cx.title, 100);
-        store.finish(&job.id).map_err(db)?;
+        store.finish(&job.id)?;
         log(format!("job {} ready", job.id));
         Ok(())
     })();
-    if let Err(reason) = result {
-        log(format!("job {} failed: {reason}", job.id));
-        if let Ok(Some(j)) = store.job(&job.id) {
-            if let Some(p) = j.audio_path {
-                let _ = std::fs::remove_file(p);
-            }
+    if let Err(detail) = result {
+        let at = store.job(&job.id).ok().flatten();
+        let reason = failure_reason(&detail, at.as_ref().map_or("downloading", |j| j.stage.as_str()));
+        log(format!("job {} failed: {reason} ({detail})", job.id));
+        if let Some(p) = at.and_then(|j| j.audio_path) {
+            let _ = std::fs::remove_file(p);
         }
-        let _ = store.fail(&job.id, &reason);
+        let _ = store.fail(&job.id, reason);
         core.svc.notifier.ongoing(&job.id, "hidden", &cx.title, 0);
+    }
+}
+
+/// The `failure_reason` stored for a stop: one of the five values E2 allows.
+/// `detail` is the internal cause (logged); `stage` is where the job stopped.
+pub fn failure_reason(detail: &str, stage: &str) -> &'static str {
+    match detail {
+        "cost_limit" => "cost_limit",
+        "key_rejected" | "no_key" => "key_rejected",
+        "no_speech" => "no_speech",
+        _ if stage == "translating" => "translate_failed",
+        // Media refusals, network or decoding trouble, and a missing or broken
+        // model file (fetched in the downloading stage, A4) all mean the audio
+        // could not be turned into text.
+        _ => "download_failed",
     }
 }
 
@@ -119,10 +132,19 @@ fn download(cx: &Ctx, job: &Job) -> Result<(), Stop> {
             }
             Err(code) => return Err(code),
         };
-        let dest = cx.core.cfg.data_dir.join("audio").join(format!("{}.{}", job.id, src.ext()));
-        cx.store.set_audio(&job.id, Some(&dest.to_string_lossy())).map_err(|e| e.to_string())?;
+        // The on-device model is fetched here the first time (A4); its share of
+        // the stage is the first half when it has to come down.
         let mut last = -1;
-        match media::download(&src, &dest, &mut |p| cx.percent(&job.id, p, &mut last)) {
+        let fetched = cx
+            .core
+            .svc
+            .transcriber
+            .prepare(&cx.core.cfg.data_dir, &mut |p| cx.percent(&job.id, (p.clamp(0.0, 1.0) * 50.0) as i64, &mut last))
+            .map_err(|e| format!("model: {e}"))?;
+        let (base, span) = if fetched { (50, 50) } else { (0, 100) };
+        let dest = cx.core.cfg.data_dir.join("audio").join(format!("{}.{}", job.id, src.ext()));
+        cx.store.set_audio(&job.id, Some(&dest.to_string_lossy()))?;
+        match media::download(&src, &dest, cx.core.cfg.allow_loopback_media, &mut |p| cx.percent(&job.id, base + p * span / 100, &mut last)) {
             Ok(()) => return Ok(()),
             Err(e) if tries < 3 => {
                 tries += 1;
@@ -137,22 +159,14 @@ fn download(cx: &Ctx, job: &Job) -> Result<(), Stop> {
     }
 }
 
-/// Writes the speech regions not yet written. Returns false when the audio
-/// file is gone and the job went back to downloading.
-fn write(cx: &Ctx, job: &Job) -> Result<bool, Stop> {
+/// Writes the speech regions not yet written, then moves the job to
+/// translating. Stages never go back (E2), so a lost audio file fails the job.
+fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
     let path = job.audio_path.clone().filter(|p| std::path::Path::new(p).is_file());
     let Some(path) = path else {
-        log(format!("job {}: audio missing, downloading again", job.id));
-        cx.store.set_stage(&job.id, "downloading").map_err(|e| e.to_string())?;
-        return Ok(false);
+        return Err("audio file missing while writing".into());
     };
-    let pcm = audio::decode_file(path.as_ref()).map_err(|e| {
-        log(format!("job {}: {e}", job.id));
-        "decode_failed".to_string()
-    })?;
-    if cx.duration_ms <= 0 {
-        let _ = cx.store.upsert_video(&job.video_key, &cx.page_url, "", &cx.title, (pcm.len() * 1000 / audio::RATE) as i64);
-    }
+    let pcm = audio::decode_file(path.as_ref()).map_err(|e| format!("decode: {e}"))?;
     let regions = audio::speech_regions(&pcm);
     let total: usize = regions.iter().map(|r| r.end - r.start).sum::<usize>().max(1);
     let mut done: usize = regions.iter().take(job.written_regions as usize).map(|r| r.end - r.start).sum();
@@ -166,10 +180,7 @@ fn write(cx: &Ctx, job: &Job) -> Result<bool, Stop> {
             .svc
             .transcriber
             .transcribe(&samples, &mut |p| cx.percent(&job.id, ((done as f64 + p.clamp(0.0, 1.0) as f64 * len as f64) * 100.0 / total as f64) as i64, &mut last))
-            .map_err(|e| {
-                log(format!("job {}: model: {e}", job.id));
-                "write_failed".to_string()
-            })?;
+            .map_err(|e| format!("model: {e}"))?;
         let mut cues = Vec::new();
         for s in segs {
             let text = s.text.trim().to_string();
@@ -185,20 +196,24 @@ fn write(cx: &Ctx, job: &Job) -> Result<bool, Stop> {
         done += len;
         cx.percent(&job.id, (done * 100 / total) as i64, &mut last);
     }
+    if cx.store.cues(&job.video_key)?.is_empty() {
+        return Err("no_speech".into());
+    }
     if let Some(lang) = cx.core.svc.transcriber.language() {
         let _ = cx.store.set_language(&job.video_key, &lang);
     }
+    // Record the stage change first; only then is the audio no longer needed.
+    cx.store.end_writing(&job.id)?;
     let _ = std::fs::remove_file(&path);
-    cx.store.set_audio(&job.id, None).map_err(|e| e.to_string())?;
-    Ok(true)
+    Ok(())
 }
 
 fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
     let store = cx.store;
-    let video_key = store.job(job_id)?.ok_or("internal")?.video_key;
+    let video_key = store.job(job_id)?.ok_or("job vanished")?.video_key;
     let cues = store.cues(&video_key)?;
     if cues.is_empty() {
-        return Ok(());
+        return Err("no_speech".into());
     }
     let key = cx.core.svc.keystore.get()?.ok_or_else(|| "no_key".to_string())?;
     let model = store.job(job_id)?.map(|j| j.translation_model).unwrap_or_else(|| gemini::MODEL.into());
@@ -272,6 +287,29 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
         stalls = if progressed { 0 } else { stalls + 1 };
         if stalls >= 2 {
             return Err("translation_incomplete".into());
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::failure_reason;
+
+    #[test]
+    fn every_stop_maps_to_one_of_the_five_reasons() {
+        let cases = [
+            ("cost_limit", "translating", "cost_limit"),
+            ("no_key", "translating", "key_rejected"),
+            ("key_rejected", "translating", "key_rejected"),
+            ("no_speech", "writing", "no_speech"),
+            ("network", "translating", "translate_failed"),
+            ("translation_incomplete", "translating", "translate_failed"),
+            ("unreachable", "downloading", "download_failed"),
+            ("model: file missing", "downloading", "download_failed"),
+            ("decode: bad header", "writing", "download_failed"),
+        ];
+        for (detail, stage, want) in cases {
+            assert_eq!(failure_reason(detail, stage), want, "{detail} at {stage}");
         }
     }
 }
