@@ -39,6 +39,9 @@ getrandom = "0.3"
 # whisper.cpp, built from source for the target (CPU; Android through the NDK's CMake).
 whisper-rs = { version = "0.16", optional = true }
 tauri-plugin-notification = { version = "2", optional = true }
+# TLS where WinHTTP is not there (Android): ring and Mozilla's roots, no C toolchain beyond the NDK's.
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+webpki-roots = "1"
 # Decoding where Media Foundation is not there (Android); built everywhere so its tests run on Windows too.
 symphonia = { version = "0.5", default-features = false, features = ["aac", "isomp4", "mp3", "pcm"] }
 

@@ -1,7 +1,8 @@
 //! Outbound HTTP for the app: Gemini, media downloads, YouTube.
 //!
 //! Windows uses WinHTTP, so TLS, proxies and certificates are the OS's.
-//! Elsewhere only plain `http://` is available until a platform stack lands.
+//! Elsewhere (Android) [`portable`] speaks HTTP/1.1 itself, with TLS from
+//! rustls checked against Mozilla's root certificates.
 
 use std::io::{self, Read};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -270,22 +271,76 @@ mod imp {
 }
 
 #[cfg(not(windows))]
-mod imp {
+use portable as imp;
+
+/// HTTP/1.1 over TCP, or over rustls for `https`. Built on every OS so its
+/// tests run here; only non-Windows builds send through it.
+#[cfg_attr(windows, allow(dead_code))]
+pub(crate) mod portable {
     use super::*;
     use std::io::{BufRead, BufReader, Write};
-    use std::net::TcpStream;
+    use std::net::{TcpStream, ToSocketAddrs};
+    use std::sync::{Arc, OnceLock};
     use std::time::Duration;
 
-    pub fn send(url: &url::Url, req: &Request<'_>) -> Result<Response, HttpError> {
-        if url.scheme() != "http" {
-            return Err(HttpError("https needs the platform HTTP stack, not available on this OS yet".into()));
+    trait Conn: Read + Write + Send {}
+    impl<T: Read + Write + Send> Conn for T {}
+
+    fn tls() -> Result<Arc<rustls::ClientConfig>, HttpError> {
+        static CONFIG: OnceLock<Arc<rustls::ClientConfig>> = OnceLock::new();
+        if let Some(c) = CONFIG.get() {
+            return Ok(c.clone());
         }
-        let host = url.host_str().unwrap_or("");
+        let roots = rustls::RootCertStore { roots: webpki_roots::TLS_SERVER_ROOTS.to_vec() };
+        let c = rustls::ClientConfig::builder_with_provider(Arc::new(rustls::crypto::ring::default_provider()))
+            .with_safe_default_protocol_versions()
+            .map_err(|e| HttpError(e.to_string()))?
+            .with_root_certificates(roots)
+            .with_no_client_auth();
+        Ok(CONFIG.get_or_init(|| Arc::new(c)).clone())
+    }
+
+    /// Follows redirects (up to five) when the request asks for it.
+    pub fn send(url: &url::Url, req: &Request<'_>) -> Result<Response, HttpError> {
+        let mut url = url.clone();
+        for _ in 0..5 {
+            let r = once(&url, req)?;
+            match (&r.location, req.follow_redirects && (300..400).contains(&r.status)) {
+                (Some(to), true) => url = url.join(to).map_err(|e| HttpError(format!("bad redirect {to}: {e}")))?,
+                _ => return Ok(r),
+            }
+        }
+        Err(HttpError("too many redirects".into()))
+    }
+
+    fn once(url: &url::Url, req: &Request<'_>) -> Result<Response, HttpError> {
+        let host = url.host_str().unwrap_or("").trim_start_matches('[').trim_end_matches(']');
         let port = url.port_or_known_default().unwrap_or(80);
         let err = |e: io::Error| HttpError(e.to_string());
-        let mut s = TcpStream::connect((host, port)).map_err(err)?;
-        let remote_ip = s.peer_addr().ok().map(|a| a.ip());
-        s.set_read_timeout(Some(Duration::from_millis(req.timeout_ms as u64))).map_err(err)?;
+        let timeout = Duration::from_millis(req.timeout_ms.max(1) as u64);
+        let addrs: Vec<_> = (host, port).to_socket_addrs().map_err(err)?.collect();
+        let mut last = HttpError(format!("{host} has no address"));
+        let mut tcp = None;
+        for a in addrs {
+            match TcpStream::connect_timeout(&a, timeout) {
+                Ok(s) => {
+                    tcp = Some(s);
+                    break;
+                }
+                Err(e) => last = err(e),
+            }
+        }
+        let tcp = tcp.ok_or(last)?;
+        let remote_ip = tcp.peer_addr().ok().map(|a| a.ip());
+        tcp.set_read_timeout(Some(timeout)).map_err(err)?;
+        tcp.set_write_timeout(Some(timeout)).map_err(err)?;
+        let mut s: Box<dyn Conn> = if url.scheme() == "https" {
+            let name = rustls::pki_types::ServerName::try_from(host.to_string()).map_err(|e| HttpError(e.to_string()))?;
+            let c = rustls::ClientConnection::new(tls()?, name).map_err(|e| HttpError(e.to_string()))?;
+            Box::new(rustls::StreamOwned::new(c, tcp))
+        } else {
+            Box::new(tcp)
+        };
         let mut path = url.path().to_string();
         if let Some(q) = url.query() {
             path.push('?');
@@ -294,7 +349,9 @@ mod imp {
         let body = req.body.unwrap_or(&[]);
         let mut head = format!("{} {path} HTTP/1.1\r\nConnection: close\r\nContent-Length: {}\r\n", req.method, body.len());
         if !req.headers.iter().any(|(k, _)| k.eq_ignore_ascii_case("host")) {
-            head.push_str(&format!("Host: {host}:{port}\r\n"));
+            // The URL's own authority: brackets around IPv6, the port only when it is not the default.
+            let authority = &url[url::Position::BeforeHost..url::Position::AfterPort];
+            head.push_str(&format!("Host: {authority}\r\n"));
         }
         for (k, v) in &req.headers {
             head.push_str(&format!("{k}: {v}\r\n"));
@@ -346,6 +403,10 @@ mod imp {
         Ok(Response { status, content_type, content_length, location, remote_ip, body })
     }
 }
+
+#[cfg(test)]
+#[path = "http_portable_tests.rs"]
+mod portable_tests;
 
 #[cfg(test)]
 mod tests {
