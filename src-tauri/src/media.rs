@@ -313,20 +313,61 @@ fn pieces_answer(src: &Source, allow_loopback: bool) -> Result<(), Refusal> {
     Ok(())
 }
 
-/// The first section's audio, as with a file: an fMP4 init section must list a
-/// sound track, and an MPEG-TS segment's PMT an audio stream, or the playlist
-/// is refused as `not_audio` before a job is made (R20). ADTS and MP3 segments
-/// are audio by what they are.
+/// The bytes of a piece (its byte range, at most `limit` of them), from a
+/// server that answers the range or from one that ignores it and sends the
+/// whole file: the bytes before the range are then skipped, as the download
+/// skips them. Up to 64 MiB may be skipped (the command waits on this); past
+/// that the piece is refused as unverifiable, since an init section must be
+/// read for its protection marks.
+fn fetch_part(url: &str, range: Option<(u64, u64)>, limit: usize, allow_loopback: bool) -> Result<Vec<u8>, Refusal> {
+    const SKIP_CAP: u64 = 64 << 20;
+    let Some((off, len)) = range else { return Ok(fetch(url, None, limit, allow_loopback)?.1) };
+    let (mut r, _) = get(url, Some((off, len)), allow_loopback, 30_000)?;
+    if r.status != 206 && off > 0 {
+        if off > SKIP_CAP {
+            return Err(refuse("unverifiable", "이 서버는 영상을 나눠 받지 못해 DRM 보호 여부를 확인할 수 없습니다."));
+        }
+        let gone = std::io::copy(&mut (&mut r).take(off), &mut std::io::sink()).map_err(unreachable)?;
+        if gone < off {
+            return Ok(Vec::new());
+        }
+    }
+    let mut body = Vec::new();
+    (&mut r).take(len.min(limit as u64)).read_to_end(&mut body).map_err(unreachable)?;
+    Ok(body)
+}
+
+/// The playlist's audio, checked as a file's is before a job is made (R20):
+/// no init section may carry Common Encryption marks (`drm`; a section that
+/// cannot be decoded fails the whole file, so any section's counts), and the
+/// first section's audio must be there, its fMP4 init section listing a sound
+/// track and an MPEG-TS segment's PMT an audio stream (`not_audio`). ADTS and
+/// MP3 segments are audio by what they are. Each piece is read at its byte
+/// range, from a server that ignores Range too ([`fetch_part`]).
 fn hls_has_sound(src: &Source, allow_loopback: bool) -> Result<(), Refusal> {
     let Source::Hls { parts, ext, sections } = src else { return Ok(()) };
     let Some(first) = sections.first() else { return Ok(()) };
-    let silent = if let Some(init) = first.init.map(|i| &parts[i]) {
-        let (_, body, _) = fetch(&init.url, init.range, MAX_PLAYLIST, allow_loopback)?;
+    let mut seen: Vec<&Part> = Vec::new();
+    let mut first_init = None;
+    for i in sections.iter().filter_map(|s| s.init) {
+        if seen.contains(&&parts[i]) {
+            continue;
+        }
+        seen.push(&parts[i]);
+        let body = fetch_part(&parts[i].url, parts[i].range, MAX_PLAYLIST, allow_loopback)?;
+        if marked(&body) {
+            return Err(drm());
+        }
+        if first.init == Some(i) {
+            first_init = Some(body);
+        }
+    }
+    let silent = if let Some(body) = first_init {
         !mp4_has_sound(&body)
     } else if *ext == "ts" {
         let seg = &parts[first.part];
         let (off, len) = seg.range.map_or((0, 65_536), |(o, l)| (o, l.min(65_536)));
-        let (_, head, _) = fetch(&seg.url, Some((off, len)), len as usize, allow_loopback)?;
+        let head = fetch_part(&seg.url, Some((off, len)), len as usize, allow_loopback)?;
         crate::decode::ts_has_audio(&head) == Some(false)
     } else {
         false
@@ -728,6 +769,10 @@ mod webm_drm_tests;
 #[cfg(test)]
 #[path = "media_audio_group_tests.rs"]
 mod audio_group_tests;
+
+#[cfg(test)]
+#[path = "media_hls_init_tests.rs"]
+mod hls_init_tests;
 
 #[cfg(test)]
 mod tests {
