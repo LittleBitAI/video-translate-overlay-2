@@ -6,11 +6,11 @@
 use super::RATE;
 use std::path::{Path, PathBuf};
 
-fn fixture(name: &str) -> PathBuf {
+pub(super) fn fixture(name: &str) -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/audio").join(name)
 }
 
-fn rms(pcm: &[i16], from: f64, to: f64) -> f64 {
+pub(super) fn rms(pcm: &[i16], from: f64, to: f64) -> f64 {
     let s = &pcm[(from * RATE as f64) as usize..(to * RATE as f64) as usize];
     (s.iter().map(|&x| (x as f64).powi(2)).sum::<f64>() / s.len() as f64).sqrt()
 }
@@ -22,7 +22,7 @@ fn second_onset(pcm: &[i16]) -> f64 {
     (from + i) as f64 / RATE as f64
 }
 
-fn assert_gap_kept(name: &str, pcm: &[i16]) {
+pub(super) fn assert_gap_kept(name: &str, pcm: &[i16]) {
     let secs = pcm.len() as f64 / RATE as f64;
     assert!((13.8..14.4).contains(&secs), "{name}: {secs:.2} s long");
     assert!(rms(pcm, 0.3, 1.7) > 1_500.0, "{name}: no tone at the start");

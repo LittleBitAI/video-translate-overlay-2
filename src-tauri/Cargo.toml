@@ -45,7 +45,9 @@ tauri-plugin-notification = { version = "2", optional = true }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 webpki-roots = "1"
 # Decoding where Media Foundation is not there (Android); built everywhere so its tests run on Windows too.
-symphonia = { version = "0.5", default-features = false, features = ["aac", "isomp4", "mp3", "pcm"] }
+symphonia = { version = "0.5", default-features = false, features = ["aac", "isomp4", "mkv", "mp3", "pcm", "vorbis"] }
+# Opus (WebM audio): libopus, built from source by cmake for the target.
+symphonia-adapter-libopus = "0.2"
 
 [target.'cfg(target_os = "android")'.dependencies]
 libsqlite3-sys = { version = "0.30", features = ["bundled"] }

@@ -8,21 +8,23 @@ pub const RATE: usize = 16_000;
 /// Decodes a downloaded file to 16 kHz mono PCM16, streaming so that an hour of
 /// 48 kHz stereo never sits in memory as floats.
 ///
-/// WAV is parsed here. MPEG-TS goes through [`crate::decode`] everywhere: it
-/// places audio by its timestamps, so a gap stays a gap (Media Foundation's TS
-/// reader neither starts its clock at the first PTS nor reports the AAC rate it
-/// outputs). Everything else (AAC/ADTS, MP4/M4A, MP3) goes through Media
-/// Foundation on Windows and [`crate::decode`] elsewhere.
+/// WAV is parsed here; everything else goes through [`crate::decode`] on every
+/// OS, which places audio by its timestamps so a gap stays a gap. Media
+/// Foundation is only the fallback on Windows, for what symphonia cannot open.
 pub fn decode_file(path: &Path) -> Result<Vec<i16>, String> {
     let mut f = BufReader::new(std::fs::File::open(path).map_err(|e| format!("open audio: {e}"))?);
     let mut head = [0u8; 12];
     if f.read_exact(&mut head).is_ok() && &head[0..4] == b"RIFF" && &head[8..12] == b"WAVE" {
         return decode_wav(f);
     }
-    if crate::decode::is_ts(path) {
-        return crate::decode::decode(path);
+    let pcm = crate::decode::decode(path);
+    #[cfg(windows)]
+    if pcm.is_err() {
+        if let Ok(p) = platform::decode(path) {
+            return Ok(p);
+        }
     }
-    platform::decode(path)
+    pcm
 }
 
 /// Downmixes and box-filters (or holds, when upsampling) to 16 kHz as samples arrive.
@@ -60,6 +62,17 @@ impl Resampler {
     pub fn push_frames(&mut self, interleaved: &[f32], channels: usize) {
         for frame in interleaved.chunks(channels.max(1)) {
             self.push(frame.iter().sum::<f32>() / frame.len() as f32);
+        }
+    }
+
+    /// Silence up to source frame `at` when the next audio starts more than
+    /// 100 ms past what was pushed: a gap in the timestamps stays a gap here.
+    pub fn pad_to(&mut self, at: u64) {
+        let rate = (self.step * RATE as f64).round() as u64;
+        if at > self.seen + rate / 10 {
+            for _ in self.seen..at {
+                self.push(0.0);
+            }
         }
     }
 }
@@ -218,11 +231,13 @@ mod platform {
                 let mut rs = Resampler::new(rate);
                 loop {
                     let mut flags = 0u32;
+                    let mut at = 0i64; // 100 ns units
                     let mut sample: Option<IMFSample> = None;
                     reader
-                        .ReadSample(audio, 0, None, Some(&mut flags), None, Some(&mut sample))
+                        .ReadSample(audio, 0, None, Some(&mut flags), Some(&mut at), Some(&mut sample))
                         .map_err(e("read"))?;
                     if let Some(s) = sample {
+                        rs.pad_to((at.max(0) as u128 * rate as u128 / 10_000_000) as u64);
                         let buf = s.ConvertToContiguousBuffer().map_err(e("buffer"))?;
                         let mut ptr = std::ptr::null_mut();
                         let mut len = 0u32;
@@ -242,11 +257,6 @@ mod platform {
     }
 }
 
-#[cfg(not(windows))]
-mod platform {
-    pub use crate::decode::decode;
-}
-
 #[cfg(test)]
 #[path = "decode_tests.rs"]
 mod decode_tests;
@@ -254,6 +264,10 @@ mod decode_tests;
 #[cfg(test)]
 #[path = "decode_gap_tests.rs"]
 mod decode_gap_tests;
+
+#[cfg(test)]
+#[path = "decode_container_gap_tests.rs"]
+mod decode_container_gap_tests;
 
 #[cfg(test)]
 mod tests {

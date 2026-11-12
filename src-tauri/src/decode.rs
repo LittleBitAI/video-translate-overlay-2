@@ -1,12 +1,12 @@
-//! Pure-Rust decoding (symphonia) where Media Foundation is not there, such as
-//! Android: MP4/M4A, AAC (ADTS), MP3; and MPEG-TS on every OS, whose audio is
-//! unwrapped here (symphonia has no TS reader) and placed by its timestamps.
+//! Decoding on every OS (symphonia, and libopus for Opus): MP4/M4A, AAC (ADTS),
+//! MP3, WebM; and MPEG-TS, whose audio is unwrapped here (symphonia has no TS
+//! reader). Audio is placed by its timestamps, so a gap stays a gap.
 
 use crate::audio::{Resampler, RATE};
 use std::io::Cursor;
 use std::path::Path;
 use symphonia::core::audio::SampleBuffer;
-use symphonia::core::codecs::{DecoderOptions, CODEC_TYPE_NULL};
+use symphonia::core::codecs::{CodecRegistry, DecoderOptions, CODEC_TYPE_NULL};
 use symphonia::core::errors::Error;
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::{MediaSource, MediaSourceStream};
@@ -31,7 +31,7 @@ pub fn decode(path: &Path) -> Result<Vec<i16>, String> {
         let mut failed = None;
         for (i, &(start, at)) in runs.iter().enumerate() {
             let end = runs.get(i + 1).map_or(es.len(), |r| r.0);
-            match decode_stream(Box::new(Cursor::new(es[start..end].to_vec())), Some(ext)) {
+            match decode_stream(Box::new(Cursor::new(es[start..end].to_vec())), Some(ext), 0.0) {
                 Ok(pcm) => {
                     let at = (at * RATE as u64 / PTS_HZ) as usize;
                     if at > out.len() {
@@ -50,10 +50,24 @@ pub fn decode(path: &Path) -> Result<Vec<i16>, String> {
     }
     let ext = path.extension().and_then(|e| e.to_str()).map(str::to_string);
     let file = std::fs::File::open(path).map_err(|e| format!("open audio: {e}"))?;
-    decode_stream(Box::new(file), ext.as_deref())
+    decode_stream(Box::new(file), ext.as_deref(), mp4_lead(path).unwrap_or(0.0))
 }
 
-fn decode_stream(src: Box<dyn MediaSource>, ext: Option<&str>) -> Result<Vec<i16>, String> {
+/// Symphonia's codecs, plus Opus (WebM audio) through libopus.
+fn codecs() -> &'static CodecRegistry {
+    static CODECS: std::sync::OnceLock<CodecRegistry> = std::sync::OnceLock::new();
+    CODECS.get_or_init(|| {
+        let mut r = CodecRegistry::new();
+        symphonia::default::register_enabled_codecs(&mut r);
+        r.register_all::<symphonia_adapter_libopus::OpusDecoder>();
+        r
+    })
+}
+
+/// Decodes the first audio track, `lead` seconds of silence first, and every
+/// packet at its timestamp: a jump in the timestamps (an MP4 sample that lasts
+/// 10 s, a WebM block after a pause) is silence, not pulled-in speech.
+fn decode_stream(src: Box<dyn MediaSource>, ext: Option<&str>, lead: f64) -> Result<Vec<i16>, String> {
     let mut hint = Hint::new();
     if let Some(e) = ext {
         hint.with_extension(e);
@@ -64,8 +78,8 @@ fn decode_stream(src: Box<dyn MediaSource>, ext: Option<&str>) -> Result<Vec<i16
         .map_err(|e| format!("open media: {e}"))?;
     let mut format = probed.format;
     let track = format.tracks().iter().find(|t| t.codec_params.codec != CODEC_TYPE_NULL).ok_or("no audio stream")?;
-    let id = track.id;
-    let mut decoder = symphonia::default::get_codecs()
+    let (id, tb) = (track.id, track.codec_params.time_base);
+    let mut decoder = codecs()
         .make(&track.codec_params, &DecoderOptions::default())
         .map_err(|e| format!("no decoder for this audio: {e}"))?;
     let mut rs: Option<Resampler> = None;
@@ -85,7 +99,10 @@ fn decode_stream(src: Box<dyn MediaSource>, ext: Option<&str>) -> Result<Vec<i16
             Ok(audio) => {
                 let spec = *audio.spec();
                 let channels = spec.channels.count();
+                let rate = u64::from(spec.rate);
                 let rs = rs.get_or_insert_with(|| Resampler::new(spec.rate as usize));
+                let at = tb.map_or(0, |tb| (u128::from(packet.ts) * u128::from(tb.numer) * u128::from(rate) / u128::from(tb.denom.max(1))) as u64);
+                rs.pad_to((lead * rate as f64) as u64 + at);
                 if buf.as_ref().is_none_or(|b| b.capacity() < audio.capacity() * channels) {
                     buf = Some(SampleBuffer::new(audio.capacity() as u64, spec));
                 }
@@ -99,6 +116,73 @@ fn decode_stream(src: Box<dyn MediaSource>, ext: Option<&str>) -> Result<Vec<i16
         }
     }
     rs.map(|r| r.out).ok_or_else(|| "no audio decoded".to_string())
+}
+
+/// The boxes inside `b`: `(type, body)`.
+fn boxes(mut b: &[u8]) -> impl Iterator<Item = (&[u8], &[u8])> {
+    std::iter::from_fn(move || {
+        let (size, hdr) = crate::media::box_header(b)?;
+        let size = if size == 0 { b.len() as u64 } else { size };
+        let (this, rest) = b.split_at_checked(usize::try_from(size).ok()?)?;
+        b = rest;
+        Some((&this[4..8], this.get(hdr as usize..)?))
+    })
+}
+
+fn child<'a>(b: &'a [u8], kind: &[u8; 4]) -> Option<&'a [u8]> {
+    boxes(b).find(|(k, _)| k == kind).map(|(_, body)| body)
+}
+
+/// Seconds an MP4's audio starts after the movie does: the empty edits that
+/// open the audio track's edit list. Symphonia's reader does not apply edit
+/// lists, so without this a late-starting track would be pulled to 0.
+fn mp4_lead(path: &Path) -> Option<f64> {
+    use std::io::{Read, Seek, SeekFrom};
+    let mut f = std::fs::File::open(path).ok()?;
+    let mut off = 0u64;
+    let moov = loop {
+        f.seek(SeekFrom::Start(off)).ok()?;
+        let mut h = Vec::with_capacity(16);
+        (&mut f).take(16).read_to_end(&mut h).ok()?;
+        let (size, hdr) = crate::media::box_header(&h)?;
+        match &h[4..8] {
+            b"ftyp" if off == 0 => {}
+            _ if off == 0 => return None, // not MP4
+            b"moov" => {
+                let mut body = Vec::new();
+                f.seek(SeekFrom::Start(off + hdr)).ok()?;
+                (&mut f).take(size.saturating_sub(hdr).min(64 << 20)).read_to_end(&mut body).ok()?;
+                break body;
+            }
+            _ => {}
+        }
+        if size < hdr {
+            return None;
+        }
+        off += size;
+    };
+    let mvhd = child(&moov, b"mvhd")?;
+    let at = if mvhd.first()? == &1 { 20 } else { 12 };
+    let timescale = u32::from_be_bytes(mvhd.get(at..at + 4)?.try_into().ok()?);
+    let trak = boxes(&moov).filter(|(k, _)| k == b"trak").map(|(_, t)| t).find(|t| {
+        child(t, b"mdia").and_then(|m| child(m, b"hdlr")).and_then(|h| h.get(8..12)) == Some(b"soun")
+    })?;
+    let Some(elst) = child(trak, b"edts").and_then(|e| child(e, b"elst")) else { return Some(0.0) };
+    let (v1, count) = (elst.first()? == &1, u32::from_be_bytes(elst.get(4..8)?.try_into().ok()?));
+    let size = if v1 { 20 } else { 12 };
+    let mut empty = 0u64;
+    for e in elst.get(8..)?.chunks_exact(size).take(count as usize) {
+        let (duration, media_time) = if v1 {
+            (u64::from_be_bytes(e[..8].try_into().ok()?), i64::from_be_bytes(e[8..16].try_into().ok()?))
+        } else {
+            (u64::from(u32::from_be_bytes(e[..4].try_into().ok()?)), i64::from(i32::from_be_bytes(e[4..8].try_into().ok()?)))
+        };
+        if media_time != -1 {
+            break;
+        }
+        empty += duration;
+    }
+    Some(empty as f64 / f64::from(timescale.max(1)))
 }
 
 fn pid(hi: u8, lo: u8) -> u16 {

@@ -164,7 +164,7 @@ pub fn probe(url: &Url, allow_loopback: bool) -> Result<Source, Refusal> {
         let (_, whole, at) = fetch(url.as_str(), None, MAX_PLAYLIST, allow_loopback)?;
         return probe_hls(&at, &String::from_utf8_lossy(&whole), allow_loopback, 0);
     }
-    if head.len() > 8 && &head[4..8] == b"ftyp" && mp4_protected(url.as_str(), &head, allow_loopback) {
+    if head.len() > 8 && &head[4..8] == b"ftyp" && mp4_protected(url.as_str(), &head, allow_loopback)? {
         return Err(drm());
     }
     if ct.contains("dash+xml") || text.contains("<MPD") {
@@ -179,40 +179,92 @@ pub fn probe(url: &Url, allow_loopback: bool) -> Result<Source, Refusal> {
 /// Whether an MP4's `moov` marks a track as protected (Common Encryption puts
 /// `sinf`/`tenc` under an `enca`/`encv` sample entry, and `pssh` beside it).
 /// The top-level boxes are walked by size; a `moov` past the first read (a file
-/// that is not "fast start") is fetched by range.
-fn mp4_protected(url: &str, head: &[u8], allow_loopback: bool) -> bool {
-    const MARKS: [&[u8; 4]; 5] = [b"sinf", b"tenc", b"enca", b"encv", b"pssh"];
-    // Bytes `[off, off + n)`, from the head when it has them. A failed or
-    // non-ranged answer past the head means the walk cannot go on: `None`.
-    let read = |off: u64, n: u64| -> Option<Vec<u8>> {
+/// that is not "fast start") is fetched by range, or, from a server that
+/// ignores Range, read off one plain GET ([`mp4_protected_streamed`]). A file
+/// whose `moov` cannot be reached is refused, never taken as unprotected.
+fn mp4_protected(url: &str, head: &[u8], allow_loopback: bool) -> Result<bool, Refusal> {
+    // Bytes `[off, off + n)`, from the head when it has them. `None`: the
+    // server answered a range with the whole file. Past the end: what is there.
+    let read = |off: u64, n: u64| -> Result<Option<Vec<u8>>, Refusal> {
         let end = (off + n) as usize;
         if end <= head.len() {
-            return Some(head[off as usize..end].to_vec());
+            return Ok(Some(head[off as usize..end].to_vec()));
         }
-        let (r, _) = get(url, Some((off, n)), allow_loopback, 30_000).ok()?;
-        (r.status == 206).then(|| r.bytes(n as usize).ok()).flatten()
+        match get(url, Some((off, n)), allow_loopback, 30_000) {
+            Ok((r, _)) if r.status == 206 => Ok(Some(r.bytes(n as usize).map_err(unreachable)?)),
+            Ok(_) => Ok(None),
+            // A range starting at the end of the file: the walk is over.
+            Err(e) if e.message.contains("HTTP 416") => Ok(Some(Vec::new())),
+            Err(e) => Err(e),
+        }
     };
     let mut off = 0u64;
     for _ in 0..64 {
-        let Some(h) = read(off, 16).or_else(|| read(off, 8)).filter(|h| h.len() >= 8) else { return false };
-        let (mut size, mut hdr) = (u64::from(u32::from_be_bytes([h[0], h[1], h[2], h[3]])), 8);
-        if size == 1 && h.len() >= 16 {
-            size = u64::from_be_bytes(h[8..16].try_into().unwrap());
-            hdr = 16;
-        }
+        let Some(h) = read(off, 16)? else { return mp4_protected_streamed(url, allow_loopback) };
+        let Some((size, hdr)) = box_header(&h) else { return Ok(false) };
         if &h[4..8] == b"moov" {
             // size 0: the box runs to the end of the file.
             let n = if size == 0 { MAX_PLAYLIST as u64 } else { size.min(MAX_PLAYLIST as u64) };
-            let body = read(off, n).or_else(|| head.get(off as usize..).map(<[u8]>::to_vec));
-            // ponytail: a byte scan of `moov`, not a full box parse; a chunk offset that spells a mark refuses a clear file.
-            return body.is_some_and(|b| b.windows(4).any(|w| MARKS.iter().any(|m| w == *m)));
+            let Some(body) = read(off, n)? else { return mp4_protected_streamed(url, allow_loopback) };
+            return Ok(marked(&body));
         }
         if size < hdr {
-            return false;
+            return Ok(false);
         }
         off += size;
     }
-    false
+    Ok(false)
+}
+
+/// What a server that ignores Range lets the walk do: one GET from the start,
+/// box bodies skipped as they stream by. Up to 64 MiB may be skipped (the
+/// command waits on this); past that the file is refused as unverifiable.
+fn mp4_protected_streamed(url: &str, allow_loopback: bool) -> Result<bool, Refusal> {
+    const SKIP_CAP: u64 = 64 << 20;
+    let (mut r, _) = get(url, None, allow_loopback, 30_000)?;
+    let mut skipped = 0u64;
+    loop {
+        let mut h = Vec::with_capacity(16);
+        (&mut r).take(8).read_to_end(&mut h).map_err(unreachable)?;
+        if h.len() == 8 && h[..4] == [0, 0, 0, 1] {
+            (&mut r).take(8).read_to_end(&mut h).map_err(unreachable)?;
+        }
+        let Some((size, hdr)) = box_header(&h) else { return Ok(false) }; // the end, and no moov
+        if &h[4..8] == b"moov" {
+            let n = if size == 0 { MAX_PLAYLIST as u64 } else { (size - hdr).min(MAX_PLAYLIST as u64) };
+            let mut body = Vec::new();
+            (&mut r).take(n).read_to_end(&mut body).map_err(unreachable)?;
+            return Ok(marked(&body));
+        }
+        if size == 0 || size < hdr {
+            return Ok(false); // the last box, and not moov
+        }
+        skipped += size - hdr;
+        if skipped > SKIP_CAP {
+            return Err(refuse("unverifiable", "이 서버는 영상을 나눠 받지 못해 DRM 보호 여부를 확인할 수 없습니다."));
+        }
+        let gone = std::io::copy(&mut (&mut r).take(size - hdr), &mut std::io::sink()).map_err(unreachable)?;
+        if gone < size - hdr {
+            return Ok(false);
+        }
+    }
+}
+
+/// `(size, header length)` of the box at the start of `h`; size 0 runs to the end.
+pub(crate) fn box_header(h: &[u8]) -> Option<(u64, u64)> {
+    let size = u64::from(u32::from_be_bytes(h.get(..4)?.try_into().ok()?));
+    h.get(4..8)?;
+    if size == 1 {
+        return Some((u64::from_be_bytes(h.get(8..16)?.try_into().ok()?), 16));
+    }
+    Some((size, 8))
+}
+
+/// Common Encryption's marks in a `moov`.
+fn marked(moov: &[u8]) -> bool {
+    const MARKS: [&[u8; 4]; 5] = [b"sinf", b"tenc", b"enca", b"encv", b"pssh"];
+    // ponytail: a byte scan of `moov`, not a full box parse; a chunk offset that spells a mark refuses a clear file.
+    moov.windows(4).any(|w| MARKS.iter().any(|m| w == *m))
 }
 
 fn file_ext(ct: &str, url: &Url, head: &[u8]) -> &'static str {
@@ -409,6 +461,10 @@ mod probe_tests;
 #[cfg(test)]
 #[path = "media_dns_tests.rs"]
 mod dns_tests;
+
+#[cfg(test)]
+#[path = "media_norange_tests.rs"]
+mod norange_tests;
 
 #[cfg(test)]
 mod tests {

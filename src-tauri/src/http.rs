@@ -89,12 +89,41 @@ pub fn send(req: Request<'_>) -> Result<Response, HttpError> {
         "http" | "https" => {}
         s => return Err(HttpError(format!("unsupported scheme {s}"))),
     }
-    if req.connect_to.is_some() {
+    let mut r = if req.connect_to.is_some() {
         // WinHTTP cannot connect to a chosen address and still check the
         // certificate against the name, so pinned requests always go through rustls.
-        return portable::send(&url, &req);
+        portable::send(&url, &req)?
+    } else {
+        imp::send(&url, &req)?
+    };
+    // A body that ends before its Content-Length is an error for every caller,
+    // not a short file (a connection dropped mid-segment must not pass as complete).
+    if let Some(n) = r.content_length.filter(|_| req.method != "HEAD" && !matches!(r.status, 204 | 304)) {
+        let body = std::mem::replace(&mut r.body, Box::new(io::empty()));
+        r.body = Box::new(Exact { body, left: n });
     }
-    imp::send(&url, &req)
+    Ok(r)
+}
+
+/// A body of a declared length: an end before it is `UnexpectedEof`.
+struct Exact {
+    body: Box<dyn Read + Send>,
+    left: u64,
+}
+
+impl Read for Exact {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if self.left == 0 || buf.is_empty() {
+            return Ok(0);
+        }
+        let want = buf.len().min(usize::try_from(self.left).unwrap_or(usize::MAX));
+        let n = self.body.read(&mut buf[..want])?;
+        if n == 0 {
+            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, format!("body ended {} bytes short of its Content-Length", self.left)));
+        }
+        self.left -= n as u64;
+        Ok(n)
+    }
 }
 
 #[cfg(windows)]
@@ -398,6 +427,7 @@ pub(crate) mod portable {
             }
         }
         let body: Box<dyn Read + Send> = if chunked {
+            content_length = None; // RFC 9112: chunked framing wins over Content-Length
             Box::new(Chunked { r, left: 0, done: false })
         } else if let Some(n) = content_length {
             Box::new(r.take(n))
@@ -470,6 +500,10 @@ mod chunked_tests;
 #[cfg(test)]
 #[path = "http_pin_tests.rs"]
 mod pin_tests;
+
+#[cfg(test)]
+#[path = "http_length_tests.rs"]
+mod length_tests;
 
 #[cfg(test)]
 mod tests {
