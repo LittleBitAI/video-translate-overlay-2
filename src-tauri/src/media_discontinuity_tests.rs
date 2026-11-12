@@ -59,7 +59,7 @@ fn a_section_after_a_discontinuity_plays_where_the_playlist_puts_it() {
     let base = serve(dir(), Box::leak(playlist.into_boxed_str()));
     let src = probe(&Url::parse(&format!("{base}/index.m3u8")).unwrap(), true).unwrap();
     let Source::Hls { sections, .. } = &src else { panic!("not HLS") };
-    assert_eq!(sections, &[Section { part: 0, at: 0.0 }, Section { part: 1, at: 4.0 }]);
+    assert_eq!(sections, &[Section { part: 0, at: 0.0, init: None }, Section { part: 1, at: 4.0, init: None }]);
 
     let dest = std::env::temp_dir().join(format!("vto-disc-{}.ts", std::process::id()));
     download(&src, &dest, true, &mut |_| {}).unwrap();
@@ -84,7 +84,7 @@ fn sections_start_after_the_init_section_and_count_only_segments() {
     let fmp4 = "#EXTM3U\n#EXT-X-MAP:URI=\"init.mp4\"\n#EXTINF:6.5,\na.m4s\n#EXTINF:3.5,\nb.m4s\n\
                 #EXT-X-DISCONTINUITY\n#EXTINF:4,\nc.m4s\n#EXT-X-DISCONTINUITY-SEQUENCE:2\n#EXTINF:4,\nd.m4s\n#EXT-X-ENDLIST";
     let Source::Hls { sections, .. } = probe_hls(&base, fmp4, true, 0).unwrap() else { panic!("not HLS") };
-    assert_eq!(sections, [Section { part: 1, at: 0.0 }, Section { part: 3, at: 10.0 }]);
+    assert_eq!(sections, [Section { part: 1, at: 0.0, init: Some(0) }, Section { part: 3, at: 10.0, init: Some(0) }]);
     // A discontinuity before the first segment changes nothing.
     let leading = "#EXTM3U\n#EXT-X-DISCONTINUITY\n#EXTINF:4,\na.ts\n#EXTINF:4,\nb.ts\n#EXT-X-ENDLIST";
     let Source::Hls { sections, .. } = probe_hls(&base, leading, true, 0).unwrap() else { panic!("not HLS") };

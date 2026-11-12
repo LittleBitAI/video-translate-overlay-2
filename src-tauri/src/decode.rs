@@ -48,14 +48,14 @@ fn place(out: &mut Vec<i16>, at: usize, pcm: Vec<i16>, exact: bool) -> Result<()
     Ok(())
 }
 
-/// Every piece decoded; the error only when none decoded at all, or the audio is too long.
-fn collect(pieces: impl Iterator<Item = (usize, Result<Vec<i16>, String>)>, exact: bool) -> Result<Vec<i16>, String> {
+/// Every run of a TS stream decoded; the error only when none decoded at all, or the audio is too long.
+fn collect(pieces: impl Iterator<Item = (usize, Result<Vec<i16>, String>)>) -> Result<Vec<i16>, String> {
     let (mut out, mut failed) = (Vec::new(), None);
     for (at, pcm) in pieces {
         match pcm {
-            Ok(pcm) => place(&mut out, at, pcm, exact)?,
+            Ok(pcm) => place(&mut out, at, pcm, false)?,
             Err(e) if e == TOO_LONG => return Err(e),
-            // A piece of damaged data loses its own seconds, not the lecture.
+            // A run of damaged data loses its own seconds, not the lecture.
             Err(e) => failed = Some(e),
         }
     }
@@ -70,41 +70,40 @@ fn decode_ts(data: &[u8]) -> Result<Vec<i16>, String> {
     // Each run is decoded on its own and placed at its time: a gap in the audio stays a gap.
     let pieces = runs.iter().enumerate().map(|(i, &(start, at))| {
         let end = runs.get(i + 1).map_or(es.len(), |r| r.0);
-        ((at * RATE as u64 / PTS_HZ) as usize, decode_stream(Box::new(Cursor::new(es[start..end].to_vec())), Some(ext), 0.0))
+        ((at * RATE as u64 / PTS_HZ) as usize, decode_stream(Box::new(Cursor::new(es[start..end].to_vec())), Some(ext), Some(0.0)))
     });
-    collect(pieces, false)
+    collect(pieces)
 }
 
-/// An HLS download with `EXT-X-DISCONTINUITY` ([`crate::media::sections_path`]):
-/// each section's timestamps start afresh, so it is decoded on its own (after
-/// the init section) and placed where the playlist's EXTINFs put it, as players do.
+/// An HLS download in sections ([`crate::media::sections_path`]): each
+/// section's timestamps start afresh, so it is decoded on its own after its own
+/// init section and placed where the playlist's EXTINFs put it, as players do.
+/// A section that does not decode fails the whole file: a lecture is not
+/// written with a stretch of it silently missing.
 fn decode_sections(path: &Path, index: &str, ext: Option<&str>) -> Result<Vec<i16>, String> {
-    let mut lines = index.lines();
-    let init: usize = lines.next().and_then(|l| l.strip_prefix("init ")).and_then(|n| n.parse().ok()).ok_or("bad sections index")?;
-    let mut sections = Vec::new();
-    for l in lines {
-        let (off, at) = l.split_once(' ').ok_or("bad sections index")?;
-        let off: usize = off.parse().map_err(|_| "bad sections index")?;
-        let at: f64 = at.parse().ok().filter(|a: &f64| a.is_finite() && *a >= 0.0).ok_or("bad sections index")?;
-        sections.push((off, at));
-    }
     // ponytail: read whole, like a TS file (about 60 MB an hour).
     let data = std::fs::read(path).map_err(|e| format!("read audio: {e}"))?;
-    if init > data.len() || sections.windows(2).any(|w| w[1].0 < w[0].0) || sections.last().is_some_and(|s| s.0 > data.len()) {
-        return Err("sections index does not match the audio".into());
-    }
-    let pieces = sections.iter().enumerate().map(|(i, &(off, at))| {
-        let end = sections.get(i + 1).map_or(data.len(), |s| s.0);
-        let bytes = [&data[..init], &data[off.max(init)..end]].concat();
-        let at = (at * RATE as f64).round().min(usize::MAX as f64) as usize;
+    let bad = || "sections index does not match the audio".to_string();
+    let mut out = Vec::new();
+    for (i, l) in index.lines().enumerate() {
+        let f: Vec<&str> = l.split(' ').collect();
+        let [from, to, at, init_from, init_to] = f[..] else { return Err(bad()) };
+        let n = |s: &str| s.parse::<usize>().map_err(|_| bad());
+        let (from, to, init_from, init_to) = (n(from)?, n(to)?, n(init_from)?, n(init_to)?);
+        let at: f64 = at.parse().ok().filter(|a: &f64| a.is_finite() && *a >= 0.0).ok_or_else(bad)?;
+        if from > to || to > data.len() || init_from > init_to || init_to > data.len() {
+            return Err(bad());
+        }
+        let bytes = [&data[init_from..init_to], &data[from..to]].concat();
         let pcm = if bytes.len() > TS_PACKET && bytes[0] == 0x47 && bytes[TS_PACKET] == 0x47 {
             decode_ts(&bytes)
         } else {
-            decode_stream(Box::new(Cursor::new(bytes)), ext, 0.0)
-        };
-        (at, pcm)
-    });
-    collect(pieces, true)
+            decode_stream(Box::new(Cursor::new(bytes)), ext, None)
+        }
+        .map_err(|e| if e == TOO_LONG { e } else { format!("section {} of the playlist: {e}", i + 1) })?;
+        place(&mut out, (at * RATE as f64).round().min(usize::MAX as f64) as usize, pcm, true)?;
+    }
+    Ok(out)
 }
 
 /// Symphonia's codecs, plus Opus (WebM audio) through libopus.
@@ -121,8 +120,9 @@ fn codecs() -> &'static CodecRegistry {
 /// Decodes the first audio track with every packet at its timestamp plus
 /// `offset` seconds: a jump in the timestamps (an MP4 sample that lasts 10 s,
 /// a WebM block after a pause) is silence, not pulled-in speech, and audio
-/// placed before 0 (cut by an edit list) is dropped.
-fn decode_stream(src: Box<dyn MediaSource>, ext: Option<&str>, offset: f64) -> Result<Vec<i16>, String> {
+/// placed before 0 (cut by an edit list) is dropped. `offset` `None`: the
+/// first packet plays at 0 (an HLS section, whose timestamps start anywhere).
+fn decode_stream(src: Box<dyn MediaSource>, ext: Option<&str>, offset: Option<f64>) -> Result<Vec<i16>, String> {
     let mut hint = Hint::new();
     if let Some(e) = ext {
         hint.with_extension(e);
@@ -139,6 +139,7 @@ fn decode_stream(src: Box<dyn MediaSource>, ext: Option<&str>, offset: f64) -> R
         .map_err(|e| format!("no decoder for this audio: {e}"))?;
     let mut rs: Option<Resampler> = None;
     let mut buf: Option<SampleBuffer<f32>> = None;
+    let mut first: Option<i64> = None;
     loop {
         let packet = match format.next_packet() {
             Ok(p) => p,
@@ -162,7 +163,11 @@ fn decode_stream(src: Box<dyn MediaSource>, ext: Option<&str>, offset: f64) -> R
                 let rs = rs.get_or_insert_with(|| Resampler::new(spec.rate as usize));
                 let at = tb.map_or(0, |tb| (u128::from(packet.ts) * u128::from(tb.numer) * u128::from(rate) / u128::from(tb.denom.max(1))) as i64);
                 // Where this packet plays, in source frames; before 0 it was edited out.
-                let pos = (offset * rate as f64).round() as i64 + at;
+                let shift = match offset {
+                    Some(o) => (o * rate as f64).round() as i64,
+                    None => -*first.get_or_insert(at),
+                };
+                let pos = shift + at;
                 if buf.as_ref().is_none_or(|b| b.capacity() < audio.capacity() * channels) {
                     buf = Some(SampleBuffer::new(audio.capacity() as u64, spec));
                 }
@@ -274,7 +279,7 @@ fn decode_edited(path: &Path, ext: Option<&str>) -> Result<Vec<i16>, String> {
     if edits.iter().filter(|e| e.from.is_some()).count() <= 1 {
         let lead: f64 = edits.iter().take_while(|e| e.from.is_none()).map(|e| e.secs).sum();
         let media = edits.iter().find(|e| e.from.is_some());
-        let mut pcm = decode_stream(Box::new(open()?), ext, lead - media.and_then(|e| e.from).unwrap_or(0.0))?;
+        let mut pcm = decode_stream(Box::new(open()?), ext, Some(lead - media.and_then(|e| e.from).unwrap_or(0.0)))?;
         // The movie ends where the edits do: the media edit's length (track
         // audio past it is not played), then any empty edits after it (silence).
         // A media edit of length 0 runs to the end of the track.
@@ -290,7 +295,7 @@ fn decode_edited(path: &Path, ext: Option<&str>) -> Result<Vec<i16>, String> {
         return Ok(pcm);
     }
     // ponytail: a second copy of the PCM (about 115 MB for an hour) for files with several edits.
-    let track = decode_stream(Box::new(open()?), ext, 0.0)?;
+    let track = decode_stream(Box::new(open()?), ext, Some(0.0))?;
     apply_edits(&track, &edits)
 }
 
@@ -442,6 +447,51 @@ fn runs(es: &[u8], ext: &str, pes: &[(usize, Option<u64>)], lead: u64) -> Vec<(u
     out
 }
 
+/// PAT: the first program's PMT PID.
+fn pat_pmt(payload: &[u8]) -> Option<u16> {
+    section(payload)?.get(8..)?.chunks_exact(4).find(|e| e[0] != 0 || e[1] != 0).map(|e| pid(e[2], e[3]))
+}
+
+/// The first audio stream a PMT section lists (ADTS AAC or MPEG audio): its PID and extension.
+fn pmt_audio(s: &[u8]) -> Option<(u16, &'static str)> {
+    let info = usize::from(s.get(10)? & 0x0F) << 8 | usize::from(*s.get(11)?);
+    let mut j = 12 + info;
+    while j + 5 <= s.len() {
+        let kind = match s[j] {
+            0x0F => Some("aac"),
+            0x03 | 0x04 => Some("mp3"),
+            _ => None,
+        };
+        if let Some(k) = kind {
+            return Some((pid(s[j + 1], s[j + 2]), k));
+        }
+        j += 5 + (usize::from(s[j + 3] & 0x0F) << 8 | usize::from(s[j + 4]));
+    }
+    None
+}
+
+/// Whether the first program of an MPEG-TS head lists an audio stream this
+/// app decodes; `None` when its PMT is not in `data`.
+pub(crate) fn ts_has_audio(data: &[u8]) -> Option<bool> {
+    let mut pmt = None;
+    for p in data.chunks_exact(TS_PACKET).filter(|p| p[0] == 0x47 && p[1] & 0x40 != 0) {
+        let control = (p[3] >> 4) & 3;
+        let at = if control & 2 != 0 { 5 + usize::from(p[4]) } else { 4 };
+        if control & 1 == 0 || at >= TS_PACKET {
+            continue;
+        }
+        let (id, payload) = (pid(p[1], p[2]), &p[at..]);
+        if id == 0 && pmt.is_none() {
+            pmt = pat_pmt(payload);
+        } else if Some(id) == pmt {
+            if let Some(s) = section(payload) {
+                return Some(pmt_audio(s).is_some());
+            }
+        }
+    }
+    None
+}
+
 /// The first audio elementary stream of an MPEG-TS file (ADTS AAC or MPEG
 /// audio), the extension symphonia should read it as, and its [`runs`].
 fn ts_audio(data: &[u8]) -> Result<(Vec<u8>, &'static str, Vec<(usize, u64)>), String> {
@@ -461,27 +511,9 @@ fn ts_audio(data: &[u8]) -> Result<(Vec<u8>, &'static str, Vec<(usize, u64)>), S
         }
         let payload = &p[at..];
         if id == 0 && start && pmt.is_none() {
-            // PAT: the first program's PMT.
-            pmt = section(payload).and_then(|s| s.get(8..)).and_then(|e| {
-                e.chunks_exact(4).find(|e| e[0] != 0 || e[1] != 0).map(|e| pid(e[2], e[3]))
-            });
+            pmt = pat_pmt(payload);
         } else if Some(id) == pmt && start && audio.is_none() {
-            audio = section(payload).and_then(|s| {
-                let info = usize::from(s.get(10)? & 0x0F) << 8 | usize::from(*s.get(11)?);
-                let mut j = 12 + info;
-                while j + 5 <= s.len() {
-                    let kind = match s[j] {
-                        0x0F => Some("aac"),
-                        0x03 | 0x04 => Some("mp3"),
-                        _ => None,
-                    };
-                    if let Some(k) = kind {
-                        return Some((pid(s[j + 1], s[j + 2]), k));
-                    }
-                    j += 5 + (usize::from(s[j + 3] & 0x0F) << 8 | usize::from(s[j + 4]));
-                }
-                None
-            });
+            audio = section(payload).and_then(pmt_audio);
         } else if audio.is_some_and(|(a, _)| a == id) {
             if start {
                 // PES header: 00 00 01, stream id, length, two flag bytes, header length.

@@ -34,23 +34,27 @@ pub struct Part {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Source {
     File { url: String, ext: &'static str },
-    /// The init section (if any) first, then the segments, in playlist order.
-    /// `sections` is empty unless the playlist has `EXT-X-DISCONTINUITY`.
+    /// The pieces in playlist order, each init section (`EXT-X-MAP`) just before
+    /// the first segment it applies to. `sections` is empty unless the playlist
+    /// has `EXT-X-DISCONTINUITY` or changes its init section.
     Hls { parts: Vec<Part>, ext: &'static str, sections: Vec<Section> },
 }
 
-/// Where a playlist's discontinuity section starts: at `part` (an index into
-/// `parts`), and `at` seconds into the playlist (the `EXTINF`s before it). Its
-/// timestamps begin again there, so players place it by the playlist, and so
-/// does the decoder ([`sections_path`]).
+/// Where a playlist's section starts: at `part` (an index into `parts`), and
+/// `at` seconds into the playlist (the `EXTINF`s before it), decoded after the
+/// init section `init` (an index into `parts`). Its timestamps begin again
+/// there, so players place it by the playlist, and so does the decoder
+/// ([`sections_path`]). A section ends where the next one or its init begins.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Section {
     pub part: usize,
     pub at: f64,
+    pub init: Option<usize>,
 }
 
-/// Beside a downloaded HLS file with sections: the byte offset and playlist
-/// time of each, one `offset seconds` line apiece after an `init <bytes>` line.
+/// Beside a downloaded HLS file with sections, one line per section:
+/// `start end seconds init_start init_end`, byte offsets into the audio file
+/// (the init range empty when the section has none).
 pub fn sections_path(audio: &Path) -> std::path::PathBuf {
     let mut s = audio.as_os_str().to_owned();
     s.push(".sections");
@@ -185,8 +189,15 @@ pub fn probe(url: &Url, allow_loopback: bool) -> Result<Source, Refusal> {
         pieces_answer(&src, allow_loopback)?;
         return Ok(src);
     }
-    if head.len() > 8 && &head[4..8] == b"ftyp" && mp4_protected(url.as_str(), &head, allow_loopback)? {
-        return Err(drm());
+    if head.len() > 8 && &head[4..8] == b"ftyp" {
+        let moov = mp4_moov(url.as_str(), &head, allow_loopback)?;
+        if moov.as_deref().is_some_and(marked) {
+            return Err(drm());
+        }
+        // No moov (nothing a player could play either), or no sound track in it.
+        if !moov.as_deref().is_some_and(mp4_has_sound) {
+            return Err(no_sound());
+        }
     }
     if ct.contains("dash+xml") || text.contains("<MPD") {
         return Err(refuse("dash", "DASH 방식 영상은 아직 내려받을 수 없습니다."));
@@ -196,7 +207,48 @@ pub fn probe(url: &Url, allow_loopback: bool) -> Result<Source, Refusal> {
     }
     // Refused here, before a job, rather than failing it once downloaded (R20).
     let ext = file_ext(&head).ok_or_else(|| refuse("not_audio", "이 주소는 오디오나 영상 파일이 아니라 소리를 꺼낼 수 없습니다."))?;
+    let silent = match ext {
+        "ts" => crate::decode::ts_has_audio(&head) == Some(false),
+        "webm" => webm_has_audio(&head) == Some(false),
+        _ => false,
+    };
+    if silent {
+        return Err(no_sound());
+    }
     Ok(Source::File { url: url.to_string(), ext })
+}
+
+fn no_sound() -> Refusal {
+    refuse("not_audio", "이 영상에는 소리 트랙이 없어 자막을 만들 수 없습니다.")
+}
+
+/// Whether a `moov` has a sound track: a handler (`hdlr`) of type `soun`, or an
+/// audio sample entry.
+fn mp4_has_sound(moov: &[u8]) -> bool {
+    const ENTRIES: [&[u8; 4]; 7] = [b"mp4a", b"Opus", b"fLaC", b"alac", b"ac-3", b"ec-3", b".mp3"];
+    // ponytail: a byte scan like `marked`; the handler type sits 8 bytes after the `hdlr` type.
+    moov.windows(4).enumerate().any(|(i, w)| w == b"hdlr" && moov.get(i + 12..i + 16) == Some(b"soun") || ENTRIES.iter().any(|e| w == *e))
+}
+
+/// Whether a WebM's `Tracks` has an audio track (`TrackType` 2), when the whole
+/// `Tracks` element is in `head`; `None` when it is not there to tell.
+fn webm_has_audio(head: &[u8]) -> Option<bool> {
+    const TRACKS: [u8; 4] = [0x16, 0x54, 0xAE, 0x6B];
+    // The element itself, not its ID listed in the SeekHead (SeekID 0x53AB, size 4).
+    let at = (3..head.len().saturating_sub(4)).find(|&i| head[i..i + 4] == TRACKS && head[i - 3..i] != [0x53, 0xAB, 0x84])? + 4;
+    // The element's size: an EBML variable-length integer.
+    let first = *head.get(at)?;
+    let len = first.leading_zeros() as usize + 1;
+    if len > 8 {
+        return None;
+    }
+    let mut size = u64::from(first) & (0xFF >> len);
+    for b in head.get(at + 1..at + len)? {
+        size = size << 8 | u64::from(*b);
+    }
+    let body = head.get(at + len..at + len + usize::try_from(size).ok()?)?;
+    // ponytail: a byte scan for TrackType (0x83), size 1, value 2.
+    Some(body.windows(3).any(|w| w == [0x83, 0x81, 0x02]))
 }
 
 /// An HLS playlist lists its pieces; they must also answer, or the audio cannot
@@ -225,13 +277,13 @@ fn pieces_answer(src: &Source, allow_loopback: bool) -> Result<(), Refusal> {
     Ok(())
 }
 
-/// Whether an MP4's `moov` marks a track as protected (Common Encryption puts
-/// `sinf`/`tenc` under an `enca`/`encv` sample entry, and `pssh` beside it).
-/// The top-level boxes are walked by size; a `moov` past the first read (a file
-/// that is not "fast start") is fetched by range, or, from a server that
-/// ignores Range, read off one plain GET ([`mp4_protected_streamed`]). A file
-/// whose `moov` cannot be reached is refused, never taken as unprotected.
-fn mp4_protected(url: &str, head: &[u8], allow_loopback: bool) -> Result<bool, Refusal> {
+/// An MP4's `moov`, for its protection marks ([`marked`]) and its tracks
+/// ([`mp4_has_sound`]); `None` when the file has none. The top-level boxes are
+/// walked by size; a `moov` past the first read (a file that is not "fast
+/// start") is fetched by range, or, from a server that ignores Range, read off
+/// one plain GET ([`mp4_moov_streamed`]). A file whose `moov` cannot be
+/// reached is refused, never taken as unprotected.
+fn mp4_moov(url: &str, head: &[u8], allow_loopback: bool) -> Result<Option<Vec<u8>>, Refusal> {
     // Bytes `[off, off + n)`, from the head when it has them. `None`: the
     // server answered a range with the whole file. Past the end: what is there.
     let read = |off: u64, n: u64| -> Result<Option<Vec<u8>>, Refusal> {
@@ -249,26 +301,26 @@ fn mp4_protected(url: &str, head: &[u8], allow_loopback: bool) -> Result<bool, R
     };
     let mut off = 0u64;
     for _ in 0..64 {
-        let Some(h) = read(off, 16)? else { return mp4_protected_streamed(url, allow_loopback) };
-        let Some((size, hdr)) = box_header(&h) else { return Ok(false) };
+        let Some(h) = read(off, 16)? else { return mp4_moov_streamed(url, allow_loopback) };
+        let Some((size, hdr)) = box_header(&h) else { return Ok(None) };
         if &h[4..8] == b"moov" {
             // size 0: the box runs to the end of the file.
             let n = if size == 0 { MAX_PLAYLIST as u64 } else { size.min(MAX_PLAYLIST as u64) };
-            let Some(body) = read(off, n)? else { return mp4_protected_streamed(url, allow_loopback) };
-            return Ok(marked(&body));
+            let Some(body) = read(off, n)? else { return mp4_moov_streamed(url, allow_loopback) };
+            return Ok(Some(body));
         }
         if size < hdr {
-            return Ok(false);
+            return Ok(None);
         }
         off += size;
     }
-    Ok(false)
+    Ok(None)
 }
 
 /// What a server that ignores Range lets the walk do: one GET from the start,
 /// box bodies skipped as they stream by. Up to 64 MiB may be skipped (the
 /// command waits on this); past that the file is refused as unverifiable.
-fn mp4_protected_streamed(url: &str, allow_loopback: bool) -> Result<bool, Refusal> {
+fn mp4_moov_streamed(url: &str, allow_loopback: bool) -> Result<Option<Vec<u8>>, Refusal> {
     const SKIP_CAP: u64 = 64 << 20;
     let (mut r, _) = get(url, None, allow_loopback, 30_000)?;
     let mut skipped = 0u64;
@@ -278,15 +330,15 @@ fn mp4_protected_streamed(url: &str, allow_loopback: bool) -> Result<bool, Refus
         if h.len() == 8 && h[..4] == [0, 0, 0, 1] {
             (&mut r).take(8).read_to_end(&mut h).map_err(unreachable)?;
         }
-        let Some((size, hdr)) = box_header(&h) else { return Ok(false) }; // the end, and no moov
+        let Some((size, hdr)) = box_header(&h) else { return Ok(None) }; // the end, and no moov
         if &h[4..8] == b"moov" {
             let n = if size == 0 { MAX_PLAYLIST as u64 } else { (size - hdr).min(MAX_PLAYLIST as u64) };
             let mut body = Vec::new();
             (&mut r).take(n).read_to_end(&mut body).map_err(unreachable)?;
-            return Ok(marked(&body));
+            return Ok(Some(body));
         }
         if size == 0 || size < hdr {
-            return Ok(false); // the last box, and not moov
+            return Ok(None); // the last box, and not moov
         }
         skipped += size - hdr;
         if skipped > SKIP_CAP {
@@ -294,7 +346,7 @@ fn mp4_protected_streamed(url: &str, allow_loopback: bool) -> Result<bool, Refus
         }
         let gone = std::io::copy(&mut (&mut r).take(size - hdr), &mut std::io::sink()).map_err(unreachable)?;
         if gone < size - hdr {
-            return Ok(false);
+            return Ok(None);
         }
     }
 }
@@ -407,10 +459,13 @@ pub fn probe_hls(base: &Url, playlist: &str, allow_loopback: bool, depth: u8) ->
     }
     let mut ends = HashMap::new();
     let mut parts = Vec::new();
-    let mut init = false;
     let mut pending: Option<&str> = None;
-    // The playlist's clock (the EXTINFs so far), and whether a discontinuity comes before the next segment.
+    // The init section in force (its part, once a segment has followed it), and one declared but not yet pushed.
+    let (mut map, mut next_map): (Option<usize>, Option<Part>) = (None, None);
+    let mut init = false;
+    // The playlist's clock (the EXTINFs so far), and whether a new section starts at the next segment.
     let (mut clock, mut extinf, mut broken) = (0f64, 0f64, false);
+    let mut first: Option<(usize, Option<usize>)> = None;
     let mut sections = Vec::new();
     for l in &lines {
         if let Some(d) = l.strip_prefix("#EXTINF:") {
@@ -418,34 +473,42 @@ pub fn probe_hls(base: &Url, playlist: &str, allow_loopback: bool, depth: u8) ->
         } else if l.starts_with("#EXT-X-DISCONTINUITY") && !l.starts_with("#EXT-X-DISCONTINUITY-SEQUENCE") {
             broken = true;
         } else if l.starts_with("#EXT-X-MAP") {
-            // ponytail: only the first init section is kept; a mid-stream codec switch is not followed.
-            if init {
-                continue;
-            }
             let url = join(attr(l, "URI").ok_or_else(|| refuse("not_media", "재생 목록의 초기화 조각에 주소가 없습니다."))?)?.to_string();
             let range = attr(l, "BYTERANGE").map(|r| byte_range(r, &url, &mut ends)).transpose()?;
-            parts.push(Part { url, range });
+            let part = Part { url, range };
+            // The same init section again changes nothing; another one starts a section (a codec or track switch).
+            if map.is_none_or(|m| parts[m] != part) {
+                next_map = Some(part);
+            } else {
+                next_map = None;
+            }
             init = true;
         } else if let Some(spec) = l.strip_prefix("#EXT-X-BYTERANGE:") {
             pending = Some(spec);
         } else if !l.starts_with('#') {
             let url = join(l)?.to_string();
             let range = pending.take().map(|r| byte_range(r, &url, &mut ends)).transpose()?;
-            if std::mem::take(&mut broken) && parts.len() > usize::from(init) {
-                if sections.is_empty() {
-                    sections.push(Section { part: usize::from(init), at: 0.0 });
-                }
-                sections.push(Section { part: parts.len(), at: clock });
+            let switched = next_map.is_some() && first.is_some();
+            if let Some(m) = next_map.take() {
+                map = Some(parts.len());
+                parts.push(m);
             }
+            if (std::mem::take(&mut broken) || switched) && first.is_some() {
+                if sections.is_empty() {
+                    let (part, init) = first.unwrap();
+                    sections.push(Section { part, at: 0.0, init });
+                }
+                sections.push(Section { part: parts.len(), at: clock, init: map });
+            }
+            first.get_or_insert((parts.len(), map));
             parts.push(Part { url, range });
             clock += std::mem::take(&mut extinf);
         }
     }
-    let segments = &parts[usize::from(init)..];
-    if segments.is_empty() {
+    let Some((first, _)) = first else {
         return Err(refuse("not_media", "재생 목록에 조각이 없습니다."));
-    }
-    let first = segments[0].url.to_ascii_lowercase();
+    };
+    let first = parts[first].url.to_ascii_lowercase();
     let ext = if init || first.contains(".m4s") || first.contains(".mp4") || first.contains(".m4a") {
         "mp4"
     } else if first.contains(".aac") {
@@ -500,15 +563,10 @@ pub fn download(src: &Source, dest: &Path, allow_loopback: bool, progress: &mut 
         }
         Source::Hls { parts, sections, .. } => {
             let io = |e: std::io::Error| e.to_string();
-            let (mut written, mut index) = (0u64, String::new());
+            // Where each part starts in the file, and where the last ends.
+            let mut starts = vec![0u64];
+            let mut written = 0u64;
             for (i, part) in parts.iter().enumerate() {
-                if let Some(s) = sections.iter().find(|s| s.part == i) {
-                    if index.is_empty() {
-                        // The bytes before the first section: the init section, which every section needs.
-                        index = format!("init {written}\n");
-                    }
-                    index.push_str(&format!("{written} {}\n", s.at));
-                }
                 let mut r = get(&part.url, part.range)?;
                 match part.range {
                     Some((off, len)) => {
@@ -526,7 +584,15 @@ pub fn download(src: &Source, dest: &Path, allow_loopback: bool, progress: &mut 
                         written += std::io::copy(&mut r, &mut out).map_err(io)?;
                     }
                 }
+                starts.push(written);
                 progress(((i + 1) * 100 / parts.len()) as i64);
+            }
+            let mut index = String::new();
+            for (i, s) in sections.iter().enumerate() {
+                // A section ends where the next begins, or the next one's own init section before it.
+                let end = sections.get(i + 1).map_or(parts.len(), |n| n.init.filter(|&m| m > s.part).unwrap_or(n.part));
+                let (from, to) = s.init.map_or((0, 0), |m| (starts[m], starts[m + 1]));
+                index.push_str(&format!("{} {} {} {from} {to}\n", starts[s.part], starts[end], s.at));
             }
             // Written after the audio, so a download cut short never leaves an index that outruns it.
             if !index.is_empty() {
@@ -561,6 +627,10 @@ mod not_audio_tests;
 #[cfg(test)]
 #[path = "media_discontinuity_tests.rs"]
 mod discontinuity_tests;
+
+#[cfg(test)]
+#[path = "media_tracks_tests.rs"]
+mod tracks_tests;
 
 #[cfg(test)]
 mod tests {

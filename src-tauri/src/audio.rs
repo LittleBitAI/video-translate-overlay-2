@@ -24,8 +24,10 @@ pub fn decode_file(path: &Path) -> Result<Vec<i16>, String> {
         return decode_wav(f);
     }
     let pcm = crate::decode::decode(path);
+    // Not for an HLS download in sections: Media Foundation would read the joined
+    // file on one timeline, the very thing the sections are there to avoid.
     #[cfg(windows)]
-    if pcm.is_err() {
+    if pcm.is_err() && !crate::media::sections_path(path).exists() {
         if let Ok(p) = platform::decode(path) {
             return Ok(p);
         }
