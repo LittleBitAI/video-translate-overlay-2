@@ -22,7 +22,7 @@ fn delays_skips_and_repeats_land_where_the_player_plays_them() {
         Edit { from: Some(0.0), secs: 1.0 },     // 4-5 s: track 0-1 s again
         Edit { from: Some(9.5), secs: 1.0 },     // 5-6 s: track 9.5-10 s, then silence
     ];
-    let out = apply_edits(&t, &edits);
+    let out = apply_edits(&t, &edits).unwrap();
     assert_eq!(out.len(), 6 * RATE);
     assert_eq!(at(&out, 0.5), 0);
     assert_eq!(at(&out, 1.0), at(&t, 0.0));
@@ -36,6 +36,6 @@ fn delays_skips_and_repeats_land_where_the_player_plays_them() {
 #[test]
 fn a_media_edit_of_length_zero_runs_to_the_end() {
     let t = track(4);
-    let out = apply_edits(&t, &[Edit { from: Some(1.0), secs: 0.0 }]);
+    let out = apply_edits(&t, &[Edit { from: Some(1.0), secs: 0.0 }]).unwrap();
     assert_eq!(out, t[RATE..]);
 }

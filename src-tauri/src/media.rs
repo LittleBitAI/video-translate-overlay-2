@@ -175,7 +175,9 @@ pub fn probe(url: &Url, allow_loopback: bool) -> Result<Source, Refusal> {
     if ct.starts_with("text/html") || text.trim_start().starts_with('<') {
         return Err(refuse("not_media", "이 주소는 영상 파일이 아닌 웹 페이지입니다."));
     }
-    Ok(Source::File { url: url.to_string(), ext: file_ext(&ct, url, &head) })
+    // Refused here, before a job, rather than failing it once downloaded (R20).
+    let ext = file_ext(&head).ok_or_else(|| refuse("not_audio", "이 주소는 오디오나 영상 파일이 아니라 소리를 꺼낼 수 없습니다."))?;
+    Ok(Source::File { url: url.to_string(), ext })
 }
 
 /// An HLS playlist lists its pieces; they must also answer, or the audio cannot
@@ -295,29 +297,30 @@ fn marked(moov: &[u8]) -> bool {
     moov.windows(4).any(|w| MARKS.iter().any(|m| w == *m))
 }
 
-fn file_ext(ct: &str, url: &Url, head: &[u8]) -> &'static str {
-    if head.starts_with(b"RIFF") {
-        return "wav";
+/// The container a file is, by its first bytes, among those the decoder reads
+/// (WAV, MP4/M4A, WebM/Matroska, MP3, ADTS AAC, MPEG-TS); `None` for anything
+/// else (an image, a document, a page), which cannot be made into audio.
+fn file_ext(head: &[u8]) -> Option<&'static str> {
+    if head.len() >= 12 && head.starts_with(b"RIFF") && &head[8..12] == b"WAVE" {
+        return Some("wav");
     }
     if head.len() > 8 && &head[4..8] == b"ftyp" {
-        return "m4a";
+        return Some("m4a");
     }
     if head.starts_with(&[0x1A, 0x45, 0xDF, 0xA3]) {
-        return "webm";
+        return Some("webm");
     }
-    if head.starts_with(b"ID3") || head.len() > 1 && head[0] == 0xFF && head[1] & 0xE0 == 0xE0 {
-        return if head.len() > 1 && head[1] & 0x06 == 0 && !head.starts_with(b"ID3") { "aac" } else { "mp3" };
+    if head.starts_with(b"ID3") {
+        return Some("mp3");
     }
-    if head.first() == Some(&0x47) {
-        return "ts";
+    if head.len() > 1 && head[0] == 0xFF && head[1] & 0xE0 == 0xE0 {
+        // ADTS has layer bits 00; MPEG audio layers I-III do not.
+        return Some(if head[1] & 0x06 == 0 { "aac" } else { "mp3" });
     }
-    let path = url.path().to_ascii_lowercase();
-    for (needle, ext) in [("wav", "wav"), ("mp4", "m4a"), ("m4a", "m4a"), ("aac", "aac"), ("mpeg", "mp3"), ("mp3", "mp3"), ("webm", "webm")] {
-        if ct.contains(needle) || path.ends_with(&format!(".{needle}")) {
-            return ext;
-        }
+    if head.len() > 188 && head[0] == 0x47 && head[188] == 0x47 {
+        return Some("ts");
     }
-    "mp4"
+    None
 }
 
 fn attr<'a>(line: &'a str, name: &str) -> Option<&'a str> {
@@ -497,6 +500,10 @@ mod norange_tests;
 #[cfg(test)]
 #[path = "media_hls_pieces_tests.rs"]
 mod hls_pieces_tests;
+
+#[cfg(test)]
+#[path = "media_not_audio_tests.rs"]
+mod not_audio_tests;
 
 #[cfg(test)]
 mod tests {

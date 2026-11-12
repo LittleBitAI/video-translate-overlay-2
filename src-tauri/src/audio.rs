@@ -5,6 +5,12 @@ use std::path::Path;
 
 pub const RATE: usize = 16_000;
 
+/// The most audio decoded: six hours, about 690 MB of 16 kHz PCM. A file that
+/// decodes (or whose header or timestamps claim) more is an error, never an
+/// allocation the phone cannot make.
+pub const MAX_SAMPLES: usize = 6 * 3600 * RATE;
+pub const TOO_LONG: &str = "audio longer than six hours";
+
 /// Decodes a downloaded file to 16 kHz mono PCM16, streaming so that an hour of
 /// 48 kHz stereo never sits in memory as floats.
 ///
@@ -36,15 +42,29 @@ pub struct Resampler {
     n: u32,
     last: f32,
     pub out: Vec<i16>,
+    /// Set once [`MAX_SAMPLES`] are out: nothing more is kept.
+    pub over: bool,
 }
 
 impl Resampler {
     pub fn new(rate: usize) -> Self {
         let step = rate as f64 / RATE as f64;
-        Resampler { step, next: step, seen: 0, acc: 0.0, n: 0, last: 0.0, out: Vec::new() }
+        Resampler { step, next: step, seen: 0, acc: 0.0, n: 0, last: 0.0, out: Vec::new(), over: false }
+    }
+
+    /// The PCM, or [`TOO_LONG`] when it was cut at [`MAX_SAMPLES`].
+    pub fn finish(self) -> Result<Vec<i16>, String> {
+        if self.over {
+            return Err(TOO_LONG.into());
+        }
+        Ok(self.out)
     }
 
     pub fn push(&mut self, x: f32) {
+        if self.out.len() >= MAX_SAMPLES {
+            self.over = true;
+            return;
+        }
         self.acc += x;
         self.n += 1;
         self.seen += 1;
@@ -70,8 +90,13 @@ impl Resampler {
     pub fn pad_to(&mut self, at: u64) {
         let rate = (self.step * RATE as f64).round() as u64;
         if at > self.seen + rate / 10 {
-            for _ in self.seen..at {
+            // No more source frames than fit under the cap: a timestamp hours ahead costs no time.
+            let room = ((MAX_SAMPLES.saturating_sub(self.out.len()) + 1) as f64 * self.step).ceil() as u64;
+            for _ in self.seen..at.min(self.seen + room) {
                 self.push(0.0);
+            }
+            if at > self.seen {
+                self.over = true;
             }
         }
     }
@@ -85,6 +110,10 @@ fn decode_wav(mut f: impl Read) -> Result<Vec<i16>, String> {
         f.read_exact(&mut hdr).map_err(|_| "wav: no data chunk".to_string())?;
         let size = u32::from_le_bytes([hdr[4], hdr[5], hdr[6], hdr[7]]) as usize;
         if &hdr[0..4] == b"fmt " {
+            // 16 to 40 bytes in practice; a header claiming more is not read into memory.
+            if size > 1024 {
+                return Err("wav: fmt chunk too large".into());
+            }
             let mut b = vec![0u8; size + (size & 1)];
             f.read_exact(&mut b).map_err(|e| format!("wav fmt: {e}"))?;
             if size < 16 {
@@ -101,6 +130,10 @@ fn decode_wav(mut f: impl Read) -> Result<Vec<i16>, String> {
         } else if &hdr[0..4] == b"data" {
             if channels == 0 || rate == 0 {
                 return Err("wav: data before fmt".into());
+            }
+            // Real audio runs at 4-384 kHz; a rate of 1 Hz would make 16,000 samples of every one.
+            if !(4_000..=384_000).contains(&rate) || channels > 32 {
+                return Err(format!("wav: {rate} Hz with {channels} channels is not audio this app decodes"));
             }
             if !matches!((format, bits), (1, 8) | (1, 16) | (1, 24) | (1, 32) | (3, 32)) {
                 return Err(format!("wav: unsupported format {format}/{bits}"));
@@ -124,8 +157,11 @@ fn decode_wav(mut f: impl Read) -> Result<Vec<i16>, String> {
                     };
                 }
                 rs.push_frames(&floats, channels);
+                if rs.over {
+                    break;
+                }
             }
-            return Ok(rs.out);
+            return rs.finish();
         } else {
             std::io::copy(&mut (&mut f).take((size + (size & 1)) as u64), &mut std::io::sink()).map_err(|e| e.to_string())?;
         }
@@ -245,11 +281,11 @@ mod platform {
                         rs.push_frames(std::slice::from_raw_parts(ptr as *const f32, len as usize / 4), channels);
                         let _ = buf.Unlock();
                     }
-                    if flags & MF_SOURCE_READERF_ENDOFSTREAM.0 as u32 != 0 {
+                    if rs.over || flags & MF_SOURCE_READERF_ENDOFSTREAM.0 as u32 != 0 {
                         break;
                     }
                 }
-                Ok(rs.out)
+                rs.finish()
             })();
             let _ = MFShutdown();
             result
@@ -268,6 +304,10 @@ mod decode_gap_tests;
 #[cfg(test)]
 #[path = "decode_container_gap_tests.rs"]
 mod decode_container_gap_tests;
+
+#[cfg(test)]
+#[path = "decode_limits_tests.rs"]
+mod decode_limits_tests;
 
 #[cfg(test)]
 mod tests {

@@ -2,7 +2,7 @@
 //! MP3, WebM; and MPEG-TS, whose audio is unwrapped here (symphonia has no TS
 //! reader). Audio is placed by its timestamps, so a gap stays a gap.
 
-use crate::audio::{Resampler, RATE};
+use crate::audio::{Resampler, MAX_SAMPLES, RATE, TOO_LONG};
 use std::io::Cursor;
 use std::path::Path;
 use symphonia::core::audio::SampleBuffer;
@@ -34,11 +34,15 @@ pub fn decode(path: &Path) -> Result<Vec<i16>, String> {
             match decode_stream(Box::new(Cursor::new(es[start..end].to_vec())), Some(ext), 0.0) {
                 Ok(pcm) => {
                     let at = (at * RATE as u64 / PTS_HZ) as usize;
+                    if at.max(out.len()) + pcm.len() > MAX_SAMPLES {
+                        return Err(TOO_LONG.into());
+                    }
                     if at > out.len() {
                         out.resize(at, 0);
                     }
                     out.extend(pcm);
                 }
+                Err(e) if e == TOO_LONG => return Err(e),
                 // A run of damaged data loses its own seconds, not the lecture.
                 Err(e) => failed = Some(e),
             }
@@ -100,6 +104,10 @@ fn decode_stream(src: Box<dyn MediaSource>, ext: Option<&str>, offset: f64) -> R
                 let spec = *audio.spec();
                 let channels = spec.channels.count();
                 let rate = u64::from(spec.rate);
+                // As for WAV: a rate no real audio has would multiply every sample.
+                if !(4_000..=384_000).contains(&rate) {
+                    return Err(format!("{rate} Hz is not audio this app decodes"));
+                }
                 let rs = rs.get_or_insert_with(|| Resampler::new(spec.rate as usize));
                 let at = tb.map_or(0, |tb| (u128::from(packet.ts) * u128::from(tb.numer) * u128::from(rate) / u128::from(tb.denom.max(1))) as i64);
                 // Where this packet plays, in source frames; before 0 it was edited out.
@@ -114,13 +122,16 @@ fn decode_stream(src: Box<dyn MediaSource>, ext: Option<&str>, offset: f64) -> R
                     rs.pad_to(pos.max(0) as u64);
                     rs.push_frames(kept, channels);
                 }
+                if rs.over {
+                    break;
+                }
             }
             // One damaged frame does not end the lecture.
             Err(Error::DecodeError(_)) => continue,
             Err(e) => return Err(format!("decode: {e}")),
         }
     }
-    rs.map(|r| r.out).ok_or_else(|| "no audio decoded".to_string())
+    rs.ok_or_else(|| "no audio decoded".to_string())?.finish()
 }
 
 /// The boxes inside `b`: `(type, body)`.
@@ -218,34 +229,43 @@ fn decode_edited(path: &Path, ext: Option<&str>) -> Result<Vec<i16>, String> {
         // A media edit of length 0 runs to the end of the track.
         if let Some(e) = media.filter(|e| e.secs > 0.0) {
             let samples = |secs: f64| (secs * RATE as f64).round() as usize;
+            let end = samples(edits.iter().map(|e| e.secs).sum());
+            if end > MAX_SAMPLES {
+                return Err(TOO_LONG.into());
+            }
             pcm.truncate(samples(lead + e.secs));
-            pcm.resize(samples(edits.iter().map(|e| e.secs).sum()), 0);
+            pcm.resize(end, 0);
         }
         return Ok(pcm);
     }
     // ponytail: a second copy of the PCM (about 115 MB for an hour) for files with several edits.
     let track = decode_stream(Box::new(open()?), ext, 0.0)?;
-    Ok(apply_edits(&track, &edits))
+    apply_edits(&track, &edits)
 }
 
-/// The movie's timeline out of `track` (16 kHz, on the track's own timeline).
-fn apply_edits(track: &[i16], edits: &[Edit]) -> Vec<i16> {
+/// The movie's timeline out of `track` (16 kHz, on the track's own timeline);
+/// [`TOO_LONG`] when the edits add up to more than [`MAX_SAMPLES`].
+fn apply_edits(track: &[i16], edits: &[Edit]) -> Result<Vec<i16>, String> {
     let at = |secs: f64| (secs * RATE as f64).round() as usize;
     let mut out = Vec::new();
     for e in edits {
         let n = at(e.secs);
-        match e.from {
-            None => out.resize(out.len() + n, 0),
+        let (start, end) = match e.from {
+            None => (0, 0),
             Some(from) => {
                 let start = at(from).min(track.len());
                 // A length of 0 runs to the end of the track.
-                let end = if n == 0 { track.len() } else { (start + n).min(track.len()) };
-                out.extend_from_slice(&track[start..end]);
-                out.resize(out.len() + n.saturating_sub(end - start), 0);
+                (start, if n == 0 { track.len() } else { start.saturating_add(n).min(track.len()) })
             }
+        };
+        let len = n.max(end - start);
+        if out.len().saturating_add(len) > MAX_SAMPLES {
+            return Err(TOO_LONG.into());
         }
+        out.extend_from_slice(&track[start..end]);
+        out.resize(out.len() + len - (end - start), 0);
     }
-    out
+    Ok(out)
 }
 
 fn pid(hi: u8, lo: u8) -> u16 {

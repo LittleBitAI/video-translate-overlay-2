@@ -56,14 +56,19 @@ impl crate::AudioExtractor for InnertubeExtractor {
         )
         .map_err(|e| unavailable(e.0))?;
         let v: Value = serde_json::from_slice(&r.bytes(8 << 20).map_err(|e| unavailable(e.0))?).map_err(|e| unavailable(e.to_string()))?;
-        pick_audio(&v).ok_or_else(|| {
-            let status = v["playabilityStatus"]["status"].as_str().unwrap_or("?");
-            if v["playabilityStatus"]["liveStreamability"].is_object() || v["videoDetails"]["isLive"] == true {
-                return refuse("live", "라이브 방송은 번역하지 않습니다.");
-            }
-            unavailable(format!("no audio stream (playability {status})"))
-        })
+        audio_of(&v).map_err(|why| why.unwrap_or_else(|| unavailable(format!("no audio stream (playability {})", v["playabilityStatus"]["status"].as_str().unwrap_or("?")))))
     }
+}
+
+/// The audio stream of a player response. A live (or not yet started)
+/// broadcast is refused whether or not it lists audio (A3); `Err(None)` when
+/// there is no audio stream to take.
+fn audio_of(player: &Value) -> Result<String, Option<Refusal>> {
+    let details = &player["videoDetails"];
+    if details["isLive"] == true || details["isUpcoming"] == true || player["playabilityStatus"]["liveStreamability"].is_object() {
+        return Err(Some(refuse("live", "라이브 방송은 번역하지 않습니다.")));
+    }
+    pick_audio(player).ok_or(None)
 }
 
 /// A YouTube stream URL's own length, from its `dur` parameter (seconds):
@@ -86,6 +91,10 @@ fn pick_audio(player: &Value) -> Option<String> {
         })
         .and_then(|f| f["url"].as_str().map(String::from))
 }
+
+#[cfg(test)]
+#[path = "youtube_live_tests.rs"]
+mod live_tests;
 
 #[cfg(test)]
 mod tests {
