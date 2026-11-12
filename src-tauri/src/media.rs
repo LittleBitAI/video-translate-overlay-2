@@ -131,7 +131,9 @@ fn unreachable(e: impl std::fmt::Display) -> Refusal {
 }
 
 /// GET with redirects followed by hand, so every hop passes [`check_media_url`].
-fn get(url: &str, range: Option<(u64, u64)>, allow_loopback: bool, timeout_ms: i32) -> Result<http::Response, Refusal> {
+/// Also returns the URL that finally answered: relative references in what it
+/// serves resolve against that URL, not the one first asked for.
+fn get(url: &str, range: Option<(u64, u64)>, allow_loopback: bool, timeout_ms: i32) -> Result<(http::Response, Url), Refusal> {
     let (mut current, mut addr) = checked(url, allow_loopback)?;
     for _ in 0..=MAX_REDIRECTS {
         let (to, host) = pinned(&current, addr);
@@ -158,25 +160,33 @@ fn get(url: &str, range: Option<(u64, u64)>, allow_loopback: bool, timeout_ms: i
         if !(200..300).contains(&r.status) {
             return Err(unreachable(format!("HTTP {}", r.status)));
         }
-        return Ok(r);
+        return Ok((r, current));
     }
     Err(unreachable("too many redirects"))
 }
 
-fn fetch(url: &str, range: Option<(u64, u64)>, limit: usize, allow_loopback: bool) -> Result<(Option<String>, Vec<u8>), Refusal> {
-    let r = get(url, range, allow_loopback, 30_000)?;
+/// `(content type, body up to limit, final URL)`.
+fn fetch(url: &str, range: Option<(u64, u64)>, limit: usize, allow_loopback: bool) -> Result<(Option<String>, Vec<u8>, Url), Refusal> {
+    let (r, at) = get(url, range, allow_loopback, 30_000)?;
     let ct = r.content_type.clone();
-    Ok((ct, r.bytes(limit).map_err(unreachable)?))
+    Ok((ct, r.bytes(limit).map_err(unreachable)?, at))
+}
+
+fn drm() -> Refusal {
+    refuse("drm", "DRM으로 보호된 영상이라 오디오를 내려받을 수 없습니다.")
 }
 
 /// Looks at what the URL serves and decides whether and how to download it.
 pub fn probe(url: &Url, allow_loopback: bool) -> Result<Source, Refusal> {
-    let (ct, head) = fetch(url.as_str(), Some((0, 65_536)), 65_536, allow_loopback)?;
+    let (ct, head, _) = fetch(url.as_str(), Some((0, 65_536)), 65_536, allow_loopback)?;
     let ct = ct.unwrap_or_default().to_ascii_lowercase();
     let text = String::from_utf8_lossy(&head[..head.len().min(4096)]).to_string();
     if ct.contains("mpegurl") || text.trim_start().starts_with("#EXTM3U") {
-        let (_, whole) = fetch(url.as_str(), None, MAX_PLAYLIST, allow_loopback)?;
-        return probe_hls(url, &String::from_utf8_lossy(&whole), allow_loopback, 0);
+        let (_, whole, at) = fetch(url.as_str(), None, MAX_PLAYLIST, allow_loopback)?;
+        return probe_hls(&at, &String::from_utf8_lossy(&whole), allow_loopback, 0);
+    }
+    if head.len() > 8 && &head[4..8] == b"ftyp" && mp4_protected(url.as_str(), &head, allow_loopback) {
+        return Err(drm());
     }
     if ct.contains("dash+xml") || text.contains("<MPD") {
         return Err(refuse("dash", "DASH 방식 영상은 아직 내려받을 수 없습니다."));
@@ -185,6 +195,45 @@ pub fn probe(url: &Url, allow_loopback: bool) -> Result<Source, Refusal> {
         return Err(refuse("not_media", "이 주소는 영상 파일이 아닌 웹 페이지입니다."));
     }
     Ok(Source::File { url: url.to_string(), ext: file_ext(&ct, url, &head) })
+}
+
+/// Whether an MP4's `moov` marks a track as protected (Common Encryption puts
+/// `sinf`/`tenc` under an `enca`/`encv` sample entry, and `pssh` beside it).
+/// The top-level boxes are walked by size; a `moov` past the first read (a file
+/// that is not "fast start") is fetched by range.
+fn mp4_protected(url: &str, head: &[u8], allow_loopback: bool) -> bool {
+    const MARKS: [&[u8; 4]; 5] = [b"sinf", b"tenc", b"enca", b"encv", b"pssh"];
+    // Bytes `[off, off + n)`, from the head when it has them. A failed or
+    // non-ranged answer past the head means the walk cannot go on: `None`.
+    let read = |off: u64, n: u64| -> Option<Vec<u8>> {
+        let end = (off + n) as usize;
+        if end <= head.len() {
+            return Some(head[off as usize..end].to_vec());
+        }
+        let (r, _) = get(url, Some((off, n)), allow_loopback, 30_000).ok()?;
+        (r.status == 206).then(|| r.bytes(n as usize).ok()).flatten()
+    };
+    let mut off = 0u64;
+    for _ in 0..64 {
+        let Some(h) = read(off, 16).or_else(|| read(off, 8)).filter(|h| h.len() >= 8) else { return false };
+        let (mut size, mut hdr) = (u64::from(u32::from_be_bytes([h[0], h[1], h[2], h[3]])), 8);
+        if size == 1 && h.len() >= 16 {
+            size = u64::from_be_bytes(h[8..16].try_into().unwrap());
+            hdr = 16;
+        }
+        if &h[4..8] == b"moov" {
+            // size 0: the box runs to the end of the file.
+            let n = if size == 0 { MAX_PLAYLIST as u64 } else { size.min(MAX_PLAYLIST as u64) };
+            let body = read(off, n).or_else(|| head.get(off as usize..).map(<[u8]>::to_vec));
+            // ponytail: a byte scan of `moov`, not a full box parse; a chunk offset that spells a mark refuses a clear file.
+            return body.is_some_and(|b| b.windows(4).any(|w| MARKS.iter().any(|m| w == *m)));
+        }
+        if size < hdr {
+            return false;
+        }
+        off += size;
+    }
+    false
 }
 
 fn file_ext(ct: &str, url: &Url, head: &[u8]) -> &'static str {
@@ -250,7 +299,7 @@ pub fn probe_hls(base: &Url, playlist: &str, allow_loopback: bool, depth: u8) ->
         if l.starts_with("#EXT-X-KEY") || l.starts_with("#EXT-X-SESSION-KEY") {
             let method = attr(l, "METHOD").unwrap_or("");
             if method.starts_with("SAMPLE-AES") || attr(l, "KEYFORMAT").is_some_and(|f| f != "identity") {
-                return Err(refuse("drm", "DRM으로 보호된 영상이라 오디오를 내려받을 수 없습니다."));
+                return Err(drm());
             }
             if method != "NONE" {
                 return Err(refuse("encrypted", "암호화된 영상(AES-128)은 아직 내려받을 수 없습니다."));
@@ -269,8 +318,8 @@ pub fn probe_hls(base: &Url, playlist: &str, allow_loopback: bool, depth: u8) ->
             .min_by_key(|w| attr(w[0], "BANDWIDTH").and_then(|b| b.parse::<u64>().ok()).unwrap_or(u64::MAX))
             .map(|w| w[1]);
         let next = join(audio.or(variant).ok_or_else(|| refuse("not_media", "재생 목록에 영상이 없습니다."))?)?;
-        let (_, body) = fetch(next.as_str(), None, MAX_PLAYLIST, allow_loopback)?;
-        return probe_hls(&next, &String::from_utf8_lossy(&body), allow_loopback, depth + 1);
+        let (_, body, at) = fetch(next.as_str(), None, MAX_PLAYLIST, allow_loopback)?;
+        return probe_hls(&at, &String::from_utf8_lossy(&body), allow_loopback, depth + 1);
     }
     if !lines.iter().any(|l| l.starts_with("#EXT-X-ENDLIST")) {
         return Err(refuse("live", "라이브 방송은 번역하지 않습니다."));
@@ -327,7 +376,7 @@ impl Source {
 pub fn download(src: &Source, dest: &Path, allow_loopback: bool, progress: &mut dyn FnMut(i64)) -> Result<(), String> {
     let mut out = std::io::BufWriter::new(std::fs::File::create(dest).map_err(|e| e.to_string())?);
     let mut buf = vec![0u8; 1 << 16];
-    let get = |url: &str, range| get(url, range, allow_loopback, 60_000).map_err(|r| format!("{}: {}", r.code, r.message));
+    let get = |url: &str, range| get(url, range, allow_loopback, 60_000).map(|(r, _)| r).map_err(|r| format!("{}: {}", r.code, r.message));
     match src {
         Source::File { url, .. } => {
             let mut r = get(url, None)?;
@@ -373,6 +422,10 @@ pub fn download(src: &Source, dest: &Path, allow_loopback: bool, progress: &mut 
     }
     out.flush().map_err(|e| e.to_string())
 }
+
+#[cfg(test)]
+#[path = "media_probe_tests.rs"]
+mod probe_tests;
 
 #[cfg(test)]
 mod tests {
