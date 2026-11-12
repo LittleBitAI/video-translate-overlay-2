@@ -3,7 +3,6 @@
 //! reader). Audio is placed by its timestamps, so a gap stays a gap.
 
 use crate::audio::{Resampler, MAX_SAMPLES, RATE, TOO_LONG};
-use std::io::Cursor;
 use std::path::Path;
 use symphonia::core::audio::SampleBuffer;
 use symphonia::core::codecs::{CodecRegistry, DecoderOptions, CODEC_TYPE_NULL};
@@ -29,10 +28,74 @@ pub fn decode(path: &Path) -> Result<Vec<i16>, String> {
         return decode_sections(path, &index, ext.as_deref());
     }
     if is_ts(path) {
-        // ponytail: the TS audio is gathered in memory (about 60 MB for an hour of 128 kbit/s AAC).
-        return decode_ts(&std::fs::read(path).map_err(|e| format!("read audio: {e}"))?);
+        let len = std::fs::metadata(path).map_err(|e| format!("read audio: {e}"))?.len();
+        return decode_ts(&|| Ranges::open(path, vec![(0, len)]));
     }
     decode_edited(path, ext.as_deref())
+}
+
+/// Byte ranges of one file read as one stream (an HLS section: its init
+/// section, then its segments), straight from the file: a download is never
+/// held in memory, however long the lecture or large its video.
+struct Ranges {
+    f: std::fs::File,
+    parts: Vec<(u64, u64)>,
+    len: u64,
+    pos: u64,
+    /// Where the file is, when it is known: a read that follows on needs no seek.
+    at: Option<u64>,
+}
+
+impl Ranges {
+    /// `parts`: `(offset, length)` in the file, in order.
+    fn open(path: &Path, parts: Vec<(u64, u64)>) -> Result<Ranges, String> {
+        let f = std::fs::File::open(path).map_err(|e| format!("open audio: {e}"))?;
+        let parts: Vec<(u64, u64)> = parts.into_iter().filter(|p| p.1 > 0).collect();
+        Ok(Ranges { len: parts.iter().map(|p| p.1).sum(), f, parts, pos: 0, at: None })
+    }
+}
+
+impl std::io::Read for Ranges {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        use std::io::{Seek, SeekFrom};
+        let mut base = 0;
+        for &(off, n) in &self.parts {
+            if self.pos < base + n {
+                let within = self.pos - base;
+                if self.at != Some(off + within) {
+                    self.f.seek(SeekFrom::Start(off + within))?;
+                }
+                let want = (buf.len() as u64).min(n - within) as usize;
+                let got = self.f.read(&mut buf[..want])?;
+                self.pos += got as u64;
+                self.at = Some(off + within + got as u64);
+                return Ok(got);
+            }
+            base += n;
+        }
+        Ok(0)
+    }
+}
+
+impl std::io::Seek for Ranges {
+    fn seek(&mut self, to: std::io::SeekFrom) -> std::io::Result<u64> {
+        let to = match to {
+            std::io::SeekFrom::Start(n) => Some(n),
+            std::io::SeekFrom::End(d) => self.len.checked_add_signed(d),
+            std::io::SeekFrom::Current(d) => self.pos.checked_add_signed(d),
+        };
+        self.pos = to.ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidInput, "seek before the start"))?;
+        Ok(self.pos)
+    }
+}
+
+impl MediaSource for Ranges {
+    fn is_seekable(&self) -> bool {
+        true
+    }
+    fn byte_len(&self) -> Option<u64> {
+        Some(self.len)
+    }
 }
 
 /// Places `pcm` at sample `at`: what came before is cut or padded to end there.
@@ -40,6 +103,11 @@ pub fn decode(path: &Path) -> Result<Vec<i16>, String> {
 fn place(out: &mut Vec<i16>, at: usize, pcm: Vec<i16>, exact: bool) -> Result<(), String> {
     if at.saturating_add(pcm.len()) > MAX_SAMPLES || out.len().saturating_add(pcm.len()) > MAX_SAMPLES {
         return Err(TOO_LONG.into());
+    }
+    // The usual case, one piece from 0: kept as it is, not copied.
+    if out.is_empty() && at == 0 {
+        *out = pcm;
+        return Ok(());
     }
     if at > out.len() || exact {
         out.resize(at, 0);
@@ -65,12 +133,21 @@ fn collect(pieces: impl Iterator<Item = (usize, Result<Vec<i16>, String>)>) -> R
     }
 }
 
-fn decode_ts(data: &[u8]) -> Result<Vec<i16>, String> {
-    let (es, ext, runs) = ts_audio(data)?;
-    // Each run is decoded on its own and placed at its time: a gap in the audio stays a gap.
-    let pieces = runs.iter().enumerate().map(|(i, &(start, at))| {
-        let end = runs.get(i + 1).map_or(es.len(), |r| r.0);
-        ((at * RATE as u64 / PTS_HZ) as usize, decode_stream(Box::new(Cursor::new(es[start..end].to_vec())), Some(ext), Some(0.0)))
+/// An MPEG-TS stream (`open` gives it from its start, as often as asked), read
+/// twice and never whole: once for its audio stream and runs ([`ts_plan`]), then
+/// once per run, its audio handed to the decoder as it is read ([`TsAudio`]).
+/// Each run is placed at its time: a gap in the audio stays a gap.
+fn decode_ts(open: &dyn Fn() -> Result<Ranges, String>) -> Result<Vec<i16>, String> {
+    use std::io::{BufReader, Seek, SeekFrom};
+    let plan = ts_plan(&mut BufReader::with_capacity(1 << 18, open()?))?;
+    let pieces = plan.runs.iter().enumerate().map(|(i, r)| {
+        let end = plan.runs.get(i + 1).map_or(plan.es_len, |n| n.es);
+        let pcm = open().and_then(|mut src| {
+            src.seek(SeekFrom::Start(r.file)).map_err(|e| format!("read audio: {e}"))?;
+            let audio = TsAudio { r: BufReader::with_capacity(1 << 18, src), pid: plan.pid, left: end - r.es, buf: Vec::new(), at: 0 };
+            decode_stream(Box::new(symphonia::core::io::ReadOnlySource::new(audio)), Some(plan.ext), Some(0.0))
+        });
+        ((r.at.max(0) as u64 * RATE as u64 / PTS_HZ) as usize, pcm)
     });
     collect(pieces)
 }
@@ -81,26 +158,24 @@ fn decode_ts(data: &[u8]) -> Result<Vec<i16>, String> {
 /// A section that does not decode fails the whole file: a lecture is not
 /// written with a stretch of it silently missing.
 fn decode_sections(path: &Path, index: &str, ext: Option<&str>) -> Result<Vec<i16>, String> {
-    // ponytail: read whole, like a TS file (about 60 MB an hour).
-    let data = std::fs::read(path).map_err(|e| format!("read audio: {e}"))?;
+    let size = std::fs::metadata(path).map_err(|e| format!("read audio: {e}"))?.len();
     let bad = || "sections index does not match the audio".to_string();
     let mut out = Vec::new();
     for (i, l) in index.lines().enumerate() {
         let f: Vec<&str> = l.split(' ').collect();
         let [from, to, at, init_from, init_to] = f[..] else { return Err(bad()) };
-        let n = |s: &str| s.parse::<usize>().map_err(|_| bad());
+        let n = |s: &str| s.parse::<u64>().map_err(|_| bad());
         let (from, to, init_from, init_to) = (n(from)?, n(to)?, n(init_from)?, n(init_to)?);
         let at: f64 = at.parse().ok().filter(|a: &f64| a.is_finite() && *a >= 0.0).ok_or_else(bad)?;
-        if from > to || to > data.len() || init_from > init_to || init_to > data.len() {
+        if from > to || to > size || init_from > init_to || init_to > size {
             return Err(bad());
         }
-        let bytes = [&data[init_from..init_to], &data[from..to]].concat();
-        let pcm = if bytes.len() > TS_PACKET && bytes[0] == 0x47 && bytes[TS_PACKET] == 0x47 {
-            decode_ts(&bytes)
-        } else {
-            decode_stream(Box::new(Cursor::new(bytes)), ext, None)
-        }
-        .map_err(|e| if e == TOO_LONG { e } else { format!("section {} of the playlist: {e}", i + 1) })?;
+        let parts = vec![(init_from, init_to - init_from), (from, to - from)];
+        let open = || Ranges::open(path, parts.clone());
+        let mut head = [0u8; TS_PACKET + 1];
+        let ts = std::io::Read::read_exact(&mut open()?, &mut head).is_ok() && head[0] == 0x47 && head[TS_PACKET] == 0x47;
+        let pcm = if ts { decode_ts(&open) } else { decode_stream(Box::new(open()?), ext, None) }
+            .map_err(|e| if e == TOO_LONG { e } else { format!("section {} of the playlist: {e}", i + 1) })?;
         place(&mut out, (at * RATE as f64).round().min(usize::MAX as f64) as usize, pcm, true)?;
     }
     Ok(out)
@@ -407,44 +482,208 @@ fn frame(h: &[u8], ext: &str) -> Option<(usize, u64)> {
     (len >= 4).then_some((len as usize, samples * PTS_HZ / rate))
 }
 
-/// Where the audio runs start: `(byte offset in es, 90 kHz ticks on the
-/// presentation's timeline)`. The timeline starts at the earliest PTS of any
-/// stream, as players count it; a run starts wherever a PES's PTS is more than
-/// 100 ms past the end of the audio before it, so the gap is kept.
-fn runs(es: &[u8], ext: &str, pes: &[(usize, Option<u64>)], lead: u64) -> Vec<(usize, u64)> {
-    const TOLERANCE: i64 = PTS_HZ as i64 / 10;
-    let mut out = vec![(0, lead)];
-    let Some(first) = pes.iter().find_map(|p| p.1) else { return out };
-    // Audio before each byte offset, in ticks: the frames that start before it.
-    let (mut i, mut before) = (0usize, 0u64);
-    let next_frame = |upto: usize, i: &mut usize, before: &mut u64| {
-        while *i < upto.min(es.len()) {
-            match frame(&es[*i..], ext) {
-                Some((len, ticks)) => {
-                    *before += ticks;
-                    *i += len;
+/// The audio frames in an elementary stream fed to it piece by piece, and how
+/// long they play (90 kHz ticks): only a frame header is ever held.
+struct Frames {
+    ext: &'static str,
+    head: Vec<u8>,
+    skip: usize,
+    ticks: u64,
+}
+
+impl Frames {
+    fn feed(&mut self, mut b: &[u8]) {
+        while !b.is_empty() {
+            if self.skip > 0 {
+                let n = self.skip.min(b.len());
+                self.skip -= n;
+                b = &b[n..];
+                continue;
+            }
+            self.head.push(b[0]);
+            b = &b[1..];
+            // Seven bytes decide an ADTS or an MPEG audio header.
+            while self.head.len() >= 7 {
+                match frame(&self.head, self.ext) {
+                    Some((len, ticks)) => {
+                        self.ticks += ticks;
+                        if len >= self.head.len() {
+                            self.skip = len - self.head.len();
+                            self.head.clear();
+                        } else {
+                            self.head.drain(..len);
+                        }
+                    }
+                    // Not a frame here: look one byte on.
+                    None => {
+                        self.head.remove(0);
+                    }
                 }
-                None => *i += 1,
             }
         }
+    }
+}
+
+/// Where an audio run starts: the TS packet it starts in, its byte offset in
+/// the audio stream, and its 90 kHz ticks on the presentation's timeline.
+struct Run {
+    file: u64,
+    es: u64,
+    at: i64,
+}
+
+/// What [`ts_plan`] found: the audio stream, its runs, and its length in bytes.
+struct TsPlan {
+    pid: u16,
+    ext: &'static str,
+    runs: Vec<Run>,
+    es_len: u64,
+}
+
+/// Each 188-byte packet of `r` with its offset (one without its sync byte is passed over).
+fn packets(r: &mut impl std::io::Read, mut each: impl FnMut(u64, &[u8])) -> Result<(), String> {
+    let mut p = [0u8; TS_PACKET];
+    let mut off = 0u64;
+    loop {
+        match r.read_exact(&mut p) {
+            Ok(()) => {}
+            // The end, a cut-short last packet included.
+            Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => return Ok(()),
+            Err(e) => return Err(format!("read audio: {e}")),
+        }
+        if p[0] == 0x47 {
+            each(off, &p);
+        }
+        off += TS_PACKET as u64;
+    }
+}
+
+/// A packet's PID, whether it starts a PES or section, and its payload.
+fn split(p: &[u8]) -> Option<(u16, bool, &[u8])> {
+    let control = (p[3] >> 4) & 3;
+    let at = if control & 2 != 0 { 5 + usize::from(p[4]) } else { 4 };
+    if control & 1 == 0 || at >= TS_PACKET {
+        return None;
+    }
+    Some((pid(p[1], p[2]), p[1] & 0x40 != 0, &p[at..]))
+}
+
+/// The audio bytes of a PES packet: after its header on the first packet; `None` for a start that is no PES.
+fn audio_bytes(start: bool, payload: &[u8]) -> Option<&[u8]> {
+    if !start {
+        return Some(payload);
+    }
+    // PES header: 00 00 01, stream id, length, two flag bytes, header length.
+    if payload.len() < 9 || payload[..3] != [0, 0, 1] {
+        return None;
+    }
+    Some(payload.get(9 + usize::from(payload[8])..).unwrap_or(&[]))
+}
+
+/// The first pass over an MPEG-TS stream: its first audio stream (ADTS AAC or
+/// MPEG audio) and where its runs start. The timeline starts at the earliest
+/// PTS of any stream, as players count it; a run starts wherever a PES's PTS
+/// is more than 100 ms past the end of the audio before it, so the gap is kept.
+fn ts_plan(r: &mut impl std::io::Read) -> Result<TsPlan, String> {
+    const TOLERANCE: i64 = PTS_HZ as i64 / 10;
+    let (mut pmt, mut audio): (Option<u16>, Option<(u16, &'static str)>) = (None, None);
+    // The first PTS of every other audio or video stream, for where the timeline starts.
+    let mut firsts: Vec<(u16, u64)> = Vec::new();
+    let mut first_audio: Option<u64> = None;
+    let mut frames: Option<Frames> = None;
+    let mut runs = Vec::new();
+    let mut es_len = 0u64;
+    // The clock: the PTS before, the time now, and where the current run started (time, audio ticks).
+    let (mut prev, mut t, mut run_at, mut run_from): (Option<u64>, i64, i64, i64) = (None, 0, 0, 0);
+    packets(r, |off, p| {
+        let Some((id, start, payload)) = split(p) else { return };
+        if id == 0 && start && pmt.is_none() {
+            pmt = pat_pmt(payload);
+        } else if Some(id) == pmt && start && audio.is_none() {
+            audio = section(payload).and_then(pmt_audio);
+            if let Some((_, ext)) = audio {
+                frames = Some(Frames { ext, head: Vec::new(), skip: 0, ticks: 0 });
+                // Audio from the packet after the PMT that named it.
+                runs.push(Run { file: off + TS_PACKET as u64, es: 0, at: 0 });
+            }
+        } else if let Some(f) = frames.as_mut().filter(|_| audio.is_some_and(|(a, _)| a == id)) {
+            let Some(bytes) = audio_bytes(start, payload) else { return };
+            if let Some(p) = start.then(|| pts(payload)).flatten() {
+                first_audio.get_or_insert(p);
+                if let Some(q) = prev {
+                    t += ahead(q, p);
+                    let expected = run_at + (f.ticks as i64 - run_from);
+                    if t > expected + TOLERANCE {
+                        runs.push(Run { file: off, es: es_len, at: t });
+                        (run_at, run_from) = (t, f.ticks as i64);
+                    } else if t < expected - TOLERANCE {
+                        // The clock jumped back (a discontinuity): carry on where the audio is.
+                        t = expected;
+                    }
+                }
+                prev = Some(p);
+            }
+            f.feed(bytes);
+            es_len += bytes.len() as u64;
+        } else if start && payload.len() > 3 && payload[..3] == [0, 0, 1] && (0xC0..=0xEF).contains(&payload[3]) {
+            if let (Some(t), false) = (pts(payload), firsts.iter().any(|f| f.0 == id)) {
+                firsts.push((id, t));
+            }
+        }
+    })?;
+    let Some((pid, ext)) = audio.filter(|_| es_len > 0) else {
+        return Err("no AAC or MPEG audio in this MPEG-TS".into());
     };
-    let (mut prev, mut t) = (first, lead as i64);
-    let (mut run_at, mut run_from) = (lead as i64, 0i64);
-    for &(at, p) in pes {
-        next_frame(at, &mut i, &mut before);
-        let Some(p) = p else { continue };
-        t += ahead(prev, p);
-        prev = p;
-        let expected = run_at + (before as i64 - run_from);
-        if t > expected + TOLERANCE {
-            out.push((at, t as u64));
-            (run_at, run_from) = (t, before as i64);
-        } else if t < expected - TOLERANCE {
-            // The clock jumped back (a discontinuity): carry on where the audio is.
-            t = expected;
+    // How long after the earliest stream the audio starts.
+    let lead = first_audio.map_or(0, |a| firsts.iter().map(|f| -ahead(a, f.1)).max().unwrap_or(0).max(0));
+    for r in &mut runs {
+        r.at += lead;
+    }
+    Ok(TsPlan { pid, ext, runs, es_len })
+}
+
+/// The second pass: one run's audio bytes, read out of the TS packets as the decoder asks.
+struct TsAudio<R> {
+    r: R,
+    pid: u16,
+    left: u64,
+    buf: Vec<u8>,
+    at: usize,
+}
+
+impl<R: std::io::Read> std::io::Read for TsAudio<R> {
+    fn read(&mut self, out: &mut [u8]) -> std::io::Result<usize> {
+        loop {
+            if self.left == 0 || out.is_empty() {
+                return Ok(0);
+            }
+            if self.at < self.buf.len() {
+                let n = out.len().min(self.buf.len() - self.at).min(usize::try_from(self.left).unwrap_or(usize::MAX));
+                out[..n].copy_from_slice(&self.buf[self.at..self.at + n]);
+                self.at += n;
+                self.left -= n as u64;
+                return Ok(n);
+            }
+            let mut p = [0u8; TS_PACKET];
+            match self.r.read_exact(&mut p) {
+                Ok(()) => {}
+                Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => return Ok(0),
+                Err(e) => return Err(e),
+            }
+            if p[0] != 0x47 {
+                continue;
+            }
+            let Some((id, start, payload)) = split(&p) else { continue };
+            if id != self.pid {
+                continue;
+            }
+            if let Some(bytes) = audio_bytes(start, payload) {
+                self.buf.clear();
+                self.buf.extend_from_slice(bytes);
+                self.at = 0;
+            }
         }
     }
-    out
 }
 
 /// PAT: the first program's PMT PID.
@@ -490,54 +729,6 @@ pub(crate) fn ts_has_audio(data: &[u8]) -> Option<bool> {
         }
     }
     None
-}
-
-/// The first audio elementary stream of an MPEG-TS file (ADTS AAC or MPEG
-/// audio), the extension symphonia should read it as, and its [`runs`].
-fn ts_audio(data: &[u8]) -> Result<(Vec<u8>, &'static str, Vec<(usize, u64)>), String> {
-    let (mut pmt, mut audio): (Option<u16>, Option<(u16, &'static str)>) = (None, None);
-    let mut out = Vec::new();
-    // Each audio PES: where its payload starts in `out`, and its PTS.
-    let mut pes: Vec<(usize, Option<u64>)> = Vec::new();
-    // The first PTS of every other audio or video stream, for where the timeline starts.
-    let mut firsts: Vec<(u16, u64)> = Vec::new();
-    for p in data.chunks_exact(TS_PACKET).filter(|p| p[0] == 0x47) {
-        let start = p[1] & 0x40 != 0;
-        let id = pid(p[1], p[2]);
-        let control = (p[3] >> 4) & 3;
-        let at = if control & 2 != 0 { 5 + usize::from(p[4]) } else { 4 };
-        if control & 1 == 0 || at >= TS_PACKET {
-            continue;
-        }
-        let payload = &p[at..];
-        if id == 0 && start && pmt.is_none() {
-            pmt = pat_pmt(payload);
-        } else if Some(id) == pmt && start && audio.is_none() {
-            audio = section(payload).and_then(pmt_audio);
-        } else if audio.is_some_and(|(a, _)| a == id) {
-            if start {
-                // PES header: 00 00 01, stream id, length, two flag bytes, header length.
-                if payload.len() < 9 || payload[..3] != [0, 0, 1] {
-                    continue;
-                }
-                pes.push((out.len(), pts(payload)));
-                out.extend_from_slice(payload.get(9 + usize::from(payload[8])..).unwrap_or(&[]));
-            } else {
-                out.extend_from_slice(payload);
-            }
-        } else if start && payload.len() > 3 && payload[..3] == [0, 0, 1] && (0xC0..=0xEF).contains(&payload[3]) {
-            if let (Some(t), false) = (pts(payload), firsts.iter().any(|f| f.0 == id)) {
-                firsts.push((id, t));
-            }
-        }
-    }
-    let Some((_, ext)) = audio.filter(|_| !out.is_empty()) else {
-        return Err("no AAC or MPEG audio in this MPEG-TS".into());
-    };
-    // How long after the earliest stream the audio starts.
-    let lead = pes.iter().find_map(|p| p.1).map_or(0, |a| firsts.iter().map(|f| -ahead(a, f.1)).max().unwrap_or(0).max(0) as u64);
-    let runs = runs(&out, ext, &pes, lead);
-    Ok((out, ext, runs))
 }
 
 #[cfg(test)]

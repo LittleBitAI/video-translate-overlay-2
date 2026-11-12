@@ -119,15 +119,38 @@ const SCHEME: &str = "vto-open";
 
 /// Opens the video of a `vto-open:<job id>` argument, if there is one. Only a
 /// job that finished here can be named, so a link elsewhere cannot steer the app.
-fn open_from_args(h: &Handle, args: &[String]) {
-    let Some(id) = args.iter().find_map(|a| a.strip_prefix(SCHEME)?.strip_prefix(':')) else { return };
+/// False when the arguments name no video to open.
+fn open_from_args(h: &Handle, args: &[String]) -> bool {
+    let Some(id) = args.iter().find_map(|a| a.strip_prefix(SCHEME)?.strip_prefix(':')) else { return false };
     let id = id.trim_matches('/');
-    let Ok(app) = app(h) else { return };
+    let Ok(app) = app(h) else { return false };
     let core = app.state::<Arc<Core>>();
     let page = core.store.job(id).ok().flatten().filter(|j| j.notified).and_then(|j| core.store.video(&j.video_key).ok().flatten());
     match page {
-        Some(v) => open_video(h, &v.page_url),
-        None => vto::log(format!("{SCHEME}: no finished job {id}")),
+        Some(v) => {
+            open_video(h, &v.page_url);
+            true
+        }
+        None => {
+            vto::log(format!("{SCHEME}: no finished job {id}"));
+            false
+        }
+    }
+}
+
+/// A second launch of the app (from its shortcut, or a toast naming no video
+/// it can open): the running app's settings screen comes back, shown and in
+/// front, though it was hidden while a job ran (R6).
+#[cfg(desktop)]
+fn relaunched(h: &Handle, args: &[String]) {
+    if open_from_args(h, args) {
+        return;
+    }
+    let Ok(app) = app(h) else { return };
+    if let Some(w) = app.get_webview_window("main") {
+        let _ = w.unminimize();
+        let _ = w.show();
+        let _ = w.set_focus();
     }
 }
 
@@ -229,7 +252,7 @@ pub fn run() {
     #[cfg(desktop)]
     let builder = {
         let h = handle.clone();
-        builder.plugin(tauri_plugin_single_instance::init(move |_, args, _| open_from_args(&h, &args)))
+        builder.plugin(tauri_plugin_single_instance::init(move |_, args, _| relaunched(&h, &args)))
     };
     #[cfg(target_os = "android")]
     let builder = builder.plugin(crate::android::plugin());
@@ -270,7 +293,9 @@ pub fn run() {
             #[cfg(target_os = "android")]
             {
                 let h = setup_handle.clone();
-                let open = move |id: &str| open_from_args(&h, &[format!("{SCHEME}:{id}")]);
+                let open = move |id: &str| {
+                    open_from_args(&h, &[format!("{SCHEME}:{id}")]);
+                };
                 if let Err(e) = app.state::<crate::android::Mobile>().watch_open(open) {
                     vto::log(e);
                 }
@@ -281,7 +306,7 @@ pub fn run() {
                 vto::log(e);
             }
             // Started by a clicked toast while the app was not running.
-            open_from_args(&setup_handle, &std::env::args().collect::<Vec<_>>());
+            let _ = open_from_args(&setup_handle, &std::env::args().collect::<Vec<_>>());
             Ok(())
         })
         .on_window_event(|window, event| {
