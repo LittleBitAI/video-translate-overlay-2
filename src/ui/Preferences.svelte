@@ -130,13 +130,11 @@
         />
         <button
           data-feature="set-api-key"
-          class="inline-flex min-h-11 min-w-36 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-surface disabled:cursor-wait disabled:opacity-80"
+          class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-surface sm:min-w-36 {saving ? 'cursor-wait opacity-80' : 'disabled:opacity-50'}"
           disabled={saving || screen === 'loading'}
         >
           {#if saving}
             <span class="size-4 animate-spin rounded-full border-2 border-surface border-t-transparent" aria-hidden="true"></span>확인하는 중
-          {:else if screen === 'loading'}
-            불러오는 중
           {:else}
             저장
           {/if}
@@ -171,7 +169,7 @@
         <dd>{s.translation_model}</dd>
       </dl>
     {:else}
-      <p class="mt-2 text-sm text-accent">개인키를 넣어야 영상감지 버튼이 작업을 시작합니다</p>
+      <p class="mt-2 flex items-center gap-2 text-sm text-ink/70"><svg aria-hidden="true" viewBox="0 0 16 16" class="size-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="7" /><path d="M8 7v4.5M8 4.5v.01" stroke-linecap="round" /></svg>개인키를 넣어야 영상감지 버튼이 작업을 시작합니다</p>
       <dl class="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
         <dt>저장된 개인키</dt>
         <dd class="text-ink/60">없음</dd>

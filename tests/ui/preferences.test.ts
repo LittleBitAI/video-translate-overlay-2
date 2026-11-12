@@ -20,7 +20,7 @@ test('loading: the cards are sketched and nothing can be sent until P3 answers',
   api(() => 'hang');
   const s2 = open('/preferences');
   expect($(s2, '[aria-busy="true"]')).not.toBeNull();
-  expect(button(s2, '불러오는 중').disabled).toBe(true);
+  expect(button(s2, '저장').disabled).toBe(true);
   expect(features(s2)).toEqual(['delete-api-key', 'set-api-key', 'youtube-logout']);
 });
 

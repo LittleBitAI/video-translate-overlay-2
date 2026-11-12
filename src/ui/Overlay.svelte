@@ -150,8 +150,13 @@
     <div class="h-6"></div>
   {:else if active && job}
     {@render progress(STAGE[job.stage], job.percent, job.cost_krw)}
-  {:else if (ready || subs === 'loading') && job}
-    <!-- A finished job is 자막 준비됨 at once, while its subtitles are still on their way too. -->
+  {:else if subs === 'loading' && job}
+    <!-- The job is done; only its subtitles are on their way (there is no stage or percent left to show). -->
+    <div data-feature="job-progress" role="status" class="{box} w-full sm:w-56">
+      <p><span class={value}>자막 불러오는 중</span> <span class={label}>· {won(job.cost_krw)}</span></p>
+      <div class="mt-1 h-1 overflow-hidden rounded-full bg-ink/25"><div class="h-1 w-1/3 animate-pulse rounded-full bg-primary"></div></div>
+    </div>
+  {:else if ready && job}
     <p data-feature="job-progress" role="status" class="w-fit rounded-lg bg-surface/90 px-2 py-1 text-sm text-ink/80">
       자막 준비됨 · {won(job.cost_krw)}
     </p>
@@ -193,7 +198,7 @@
       <button
         type="button"
         data-feature="detect-video"
-        class="pointer-events-auto min-h-11 shrink-0 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-surface shadow disabled:opacity-60"
+        class="pointer-events-auto min-h-11 shrink-0 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-surface shadow disabled:bg-ink/15 disabled:text-ink/50 disabled:shadow-none"
         disabled={starting || look === 'checking' || active || subs === 'loading'}
         onclick={detect}>{starting ? '확인하는 중' : '영상감지'}</button
       >
@@ -204,8 +209,6 @@
     <p data-feature="watch-subtitles" class="{line} text-base text-ink sm:text-lg lg:text-2xl">
       {cue.text_ko}
     </p>
-  {:else if subs === 'loading'}
-    <p data-feature="watch-subtitles" class="{line} text-sm text-ink/70">자막을 불러오는 중</p>
   {:else if !ready && look === 'done' && subs === 'none'}
     <!-- Where the subtitles will be; they come only once the whole job is done (R11). -->
     <p data-feature="watch-subtitles" class="{line} text-sm text-ink/70">
