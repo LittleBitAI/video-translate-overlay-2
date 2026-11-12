@@ -270,6 +270,9 @@ fn sweep_audio(store: &Store) {
     }
 }
 
+/// How often the glossary is asked for before the job fails without one.
+const GLOSSARY_TRIES: usize = 3;
+
 fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
     let store = cx.store;
     let video_key = store.job(job_id)?.ok_or("job vanished")?.video_key;
@@ -329,7 +332,19 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
         Some(g) => g,
         None => {
             let transcript: Vec<String> = cues.iter().map(|c| c.source_text.clone()).collect();
-            let g = call(&gemini::glossary_order(&video.title, &transcript))?.map(|r| gemini::parse_terms(&r)).unwrap_or_default();
+            let order = gemini::glossary_order(&video.title, &transcript);
+            // Every batch carries the glossary (A6, R9): a reply that is not one is
+            // asked for again, and a job that gets none fails instead of translating
+            // without it. A list with no terms in it is a glossary (a talk may have none).
+            let mut g = None;
+            for _ in 0..GLOSSARY_TRIES {
+                if let Some(r) = call(&order)?.filter(|r| r["terms"].is_array()) {
+                    g = Some(gemini::parse_terms(&r));
+                    break;
+                }
+                log(format!("job {job_id}: the glossary reply has no term list"));
+            }
+            let g = g.ok_or_else(|| "glossary_failed".to_string())?;
             store.set_terms(&video_key, &Value::from(g.clone()).to_string())?;
             g
         }
@@ -371,6 +386,10 @@ mod audio_tests;
 #[cfg(test)]
 #[path = "pipeline_cost_tests.rs"]
 mod cost_tests;
+
+#[cfg(test)]
+#[path = "pipeline_glossary_tests.rs"]
+mod glossary_tests;
 
 #[cfg(test)]
 mod tests {
