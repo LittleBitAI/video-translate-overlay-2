@@ -102,7 +102,7 @@
 
 <header class="border-b border-ink/10">
   <div class="mx-auto flex max-w-2xl items-center gap-4 p-4">
-    <Link href="/" class="inline-flex min-h-11 items-center text-base underline underline-offset-4">← 영상으로</Link>
+    <Link href="/" class="inline-flex min-h-11 items-center rounded-lg border border-ink/30 px-4 text-base">← 영상으로</Link>
     <h1 class="text-lg font-semibold">설정</h1>
   </div>
 </header>
@@ -118,34 +118,39 @@
         <input
           id="api-key"
           data-feature="set-api-key"
-          class="min-h-11 min-w-0 flex-1 rounded-lg border bg-ink/5 px-4 py-2 text-base placeholder:text-ink/50 {keyError || screen === 'error' ? 'border-accent' : 'border-ink/30'}"
+          class="min-h-11 min-w-0 flex-1 rounded-lg border bg-ink/5 px-4 py-2 text-base placeholder:text-ink/50 {keyError ? 'border-accent' : 'border-ink/30'} disabled:opacity-60"
           type="password"
           autocomplete="off"
           spellcheck="false"
           placeholder="개인키 붙여 넣기"
           aria-describedby="key-message"
           aria-invalid={keyError ? 'true' : undefined}
-          disabled={screen === 'loading'}
-          readonly={saving}
+          disabled={saving || screen === 'loading'}
           bind:value={key}
         />
         <button
           data-feature="set-api-key"
-          class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-surface sm:min-w-36 {saving || screen === 'loading' ? 'cursor-wait' : ''}"
+          class="inline-flex min-h-11 min-w-36 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-surface disabled:cursor-wait disabled:opacity-80"
           disabled={saving || screen === 'loading'}
         >
-          {#if saving || screen === 'loading'}
+          {#if saving}
             <span class="size-4 animate-spin rounded-full border-2 border-surface border-t-transparent" aria-hidden="true"></span>확인하는 중
+          {:else if screen === 'loading'}
+            불러오는 중
           {:else}
             저장
           {/if}
         </button>
       </div>
-      <p id="key-message" role={keyError || screen === 'error' ? 'alert' : 'status'} class="mt-1 text-sm {keyError || screen === 'error' ? 'text-accent' : 'text-ink/70'}">
-        {#if keyError}{keyError}{:else if screen === 'error'}지금은 확인할 수 없습니다. 잠시 뒤에 다시 불러와 주세요.{:else if keySaved}Gemini가 확인한 개인키를 저장했습니다.{/if}
+      <p id="key-message" role={keyError ? 'alert' : 'status'} class="mt-1 text-sm {keyError ? 'text-accent' : 'text-ink/70'}">
+        {#if keyError}{keyError}{:else if keySaved}Gemini가 확인한 개인키를 저장했습니다.{/if}
       </p>
       {#if screen === 'error'}
-        <button type="button" class="{outline} mt-2" onclick={load}>다시 불러오기</button>
+        <!-- The saved settings did not load: nothing typed is at fault, so the field keeps its plain border. -->
+        <div role="alert" class="mt-2 flex flex-wrap items-center gap-2">
+          <p class="text-sm text-accent">설정을 불러오지 못했습니다. 잠시 뒤에 다시 눌러 주세요</p>
+          <button type="button" class="min-h-11 rounded-lg border border-accent px-4 py-2 text-base text-accent" onclick={load}>다시 불러오기</button>
+        </div>
       {/if}
     </form>
 
@@ -176,7 +181,7 @@
     {/if}
 
     <hr class="my-4 border-ink/15" />
-    <p class="mb-4 text-sm text-ink/70">지우면 이 기기에서 사라지고, 영상감지 버튼을 누를 때 개인키를 넣으라는 안내가 뜹니다.</p>
+    <p class="mb-4 text-sm {s.key_set ? 'text-ink/70' : 'text-ink/40'}">지우면 이 기기에서 사라지고, 영상감지 버튼을 누를 때 개인키를 넣으라는 안내가 뜹니다.</p>
     {#if asking === 'delete'}
       {@render confirmRow('delete', '개인키를 지울까요?', '지우기', 'delete-api-key')}
     {:else}

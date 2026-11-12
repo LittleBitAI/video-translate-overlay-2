@@ -123,6 +123,8 @@
   const box = 'rounded-lg bg-surface/90 p-2 text-sm';
   const label = 'text-sm text-ink/60';
   const value = 'font-semibold text-ink';
+  /** The subtitle line: a dark band and a shadow, so it reads over a bright scene too. */
+  const line = 'mx-auto mb-2 max-w-full rounded-md bg-black/60 px-3 py-1 text-center [text-shadow:0_1px_2px_#000] sm:mb-[6%]';
   /** A button in a notice: 44 px high, so a thumb finds it. */
   const action = 'pointer-events-auto mt-2 inline-flex min-h-11 items-center rounded-lg px-4';
   onDestroy(() => {
@@ -148,10 +150,9 @@
     <div class="h-6"></div>
   {:else if active && job}
     {@render progress(STAGE[job.stage], job.percent, job.cost_krw)}
-  {:else if subs === 'loading' && job}
-    {@render progress('자막 받는 중', job.percent, job.cost_krw)}
-  {:else if ready && job}
-    <p data-feature="job-progress" role="status" class="w-fit rounded-lg bg-surface/90 px-2 py-1 text-sm text-accent">
+  {:else if (ready || subs === 'loading') && job}
+    <!-- A finished job is 자막 준비됨 at once, while its subtitles are still on their way too. -->
+    <p data-feature="job-progress" role="status" class="w-fit rounded-lg bg-surface/90 px-2 py-1 text-sm text-ink/80">
       자막 준비됨 · {won(job.cost_krw)}
     </p>
   {:else if subs === 'failed' || notice || look === 'failed' || job?.stage === 'failed'}
@@ -200,12 +201,14 @@
   </div>
 
   {#if cue}
-    <p data-feature="watch-subtitles" class="mx-auto mb-2 max-w-full rounded bg-black/80 px-2 py-1 text-center text-base text-ink sm:mb-[6%] sm:text-lg lg:text-2xl">
+    <p data-feature="watch-subtitles" class="{line} text-base text-ink sm:text-lg lg:text-2xl">
       {cue.text_ko}
     </p>
+  {:else if subs === 'loading'}
+    <p data-feature="watch-subtitles" class="{line} text-sm text-ink/70">자막을 불러오는 중</p>
   {:else if !ready && look === 'done' && subs === 'none'}
     <!-- Where the subtitles will be; they come only once the whole job is done (R11). -->
-    <p data-feature="watch-subtitles" class="mx-auto mb-2 max-w-full rounded bg-black/60 px-2 py-1 text-center text-sm text-ink/70 sm:mb-[6%]">
+    <p data-feature="watch-subtitles" class="{line} text-sm text-ink/70">
       {active ? '자막은 작업이 다 끝나면 여기에 뜹니다' : '한국어 자막이 여기에 뜹니다'}
     </p>
   {/if}

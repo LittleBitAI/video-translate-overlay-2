@@ -145,12 +145,12 @@ test('a job that stopped shows why and offers 영상감지 again', async () => {
 
 const READY = { url: FILE, job: { job_id: 'j', video_key: 'vk', stage: 'ready', percent: 100, cost_krw: 0.4, failure_reason: null } };
 
-test("a ready video's subtitles while they load: a progress step, with 영상감지 off and no subtitle line", async () => {
+test("a ready video's subtitles while they load: 자막 준비됨 at once, the subtitle line says they are coming, 영상감지 off", async () => {
   api((c) => (c.path === '/browser' ? [200, READY] : 'hang'));
   const s1 = open('/');
-  await vi.waitFor(() => expect(text($(s1, '[data-feature="job-progress"]')!)).toMatch(/진행 상태 ?자막 받는 중 ?100% ?든 비용 0.4원/));
+  await vi.waitFor(() => expect(text($(s1, '[data-feature="watch-subtitles"]')!)).toBe('자막을 불러오는 중'));
+  expect(text($(s1, '[data-feature="job-progress"]')!)).toBe('자막 준비됨 · 0.4원');
   expect(button(s1, '영상감지').disabled).toBe(true);
-  expect($(s1, '[data-feature="watch-subtitles"]')).toBeNull();
 });
 
 test("a ready video's subtitles that fail to load: the reason, and 영상감지 brings them back", async () => {

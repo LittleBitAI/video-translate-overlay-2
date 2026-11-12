@@ -20,7 +20,7 @@ test('loading: the cards are sketched and nothing can be sent until P3 answers',
   api(() => 'hang');
   const s2 = open('/preferences');
   expect($(s2, '[aria-busy="true"]')).not.toBeNull();
-  expect(button(s2, '확인하는 중').disabled).toBe(true);
+  expect(button(s2, '불러오는 중').disabled).toBe(true);
   expect(features(s2)).toEqual(['delete-api-key', 'set-api-key', 'youtube-logout']);
 });
 
@@ -28,9 +28,9 @@ test('a failed load says so and loads again', async () => {
   let fail = true;
   api(() => (fail ? [500, {}] : [200, NONE]));
   const s2 = open('/preferences');
-  // Said where a key's own errors are, under the field, which stays.
-  await vi.waitFor(() => expect(text($(s2, '#key-message')!)).toBe('지금은 확인할 수 없습니다. 잠시 뒤에 다시 불러와 주세요.'));
-  expect($(s2, '#api-key')).not.toBeNull();
+  // Under the field, which stays usable with its plain border: nothing typed is at fault.
+  await vi.waitFor(() => expect(text($(s2, '[role="alert"]')!)).toBe("설정을 불러오지 못했습니다. 잠시 뒤에 다시 눌러 주세요 다시 불러오기"));
+  expect($(s2, '#api-key')!.getAttribute('aria-invalid')).toBeNull();
   fail = false;
   button(s2, '다시 불러오기').click();
   await vi.waitFor(() => expect(text(s2)).toContain('개인키를 넣어야'));
