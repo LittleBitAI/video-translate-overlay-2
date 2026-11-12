@@ -83,4 +83,3 @@ impl KeyStore for CredentialStore {
         Ok(())
     }
 }
-
