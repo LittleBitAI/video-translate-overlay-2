@@ -241,7 +241,7 @@ impl Store {
 
     pub fn fail(&self, id: &str, reason: &str) -> R<()> {
         self.db.execute(
-            &format!("UPDATE job SET stage='failed', failure_reason=?, audio_path=NULL, updated_at={NOW} WHERE id=?"),
+            &format!("UPDATE job SET stage='failed', failure_reason=?, updated_at={NOW} WHERE id=?"),
             p![reason, id],
         )?;
         Ok(())
@@ -258,11 +258,22 @@ impl Store {
         Ok(())
     }
 
-    /// Ends the writing stage: the job moves to translating and forgets its
-    /// audio in the same statement, so the audio file can be deleted afterwards.
+    /// Ends the writing stage. The audio path stays until the file is gone
+    /// (`set_audio(id, None)` after the delete), so a kill or a failed delete
+    /// in between leaves it for [`Store::leftover_audio`].
     pub fn end_writing(&self, id: &str) -> R<()> {
-        self.db.execute(&format!("UPDATE job SET stage='translating', percent=0, audio_path=NULL, updated_at={NOW} WHERE id=?"), p![id])?;
+        self.db.execute(&format!("UPDATE job SET stage='translating', percent=0, updated_at={NOW} WHERE id=?"), p![id])?;
         Ok(())
+    }
+
+    /// `(job id, audio path)` of jobs past writing whose audio file was not
+    /// deleted yet: write is over for them, so the file must go (A3).
+    pub fn leftover_audio(&self) -> R<Vec<(String, String)>> {
+        let rows = self.db.query(
+            "SELECT id, audio_path FROM job WHERE audio_path IS NOT NULL AND stage NOT IN ('downloading', 'writing')",
+            &[],
+        )?;
+        Ok(rows.iter().map(|r| (r[0].text(), r[1].text())).collect())
     }
 
     pub fn add_usage(&self, id: &str, input: i64, output: i64, cost_of: impl Fn(i64, i64) -> f64) -> R<Job> {

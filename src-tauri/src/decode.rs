@@ -50,7 +50,7 @@ pub fn decode(path: &Path) -> Result<Vec<i16>, String> {
     }
     let ext = path.extension().and_then(|e| e.to_str()).map(str::to_string);
     let file = std::fs::File::open(path).map_err(|e| format!("open audio: {e}"))?;
-    decode_stream(Box::new(file), ext.as_deref(), mp4_lead(path).unwrap_or(0.0))
+    decode_stream(Box::new(file), ext.as_deref(), mp4_offset(path).unwrap_or(0.0))
 }
 
 /// Symphonia's codecs, plus Opus (WebM audio) through libopus.
@@ -64,10 +64,11 @@ fn codecs() -> &'static CodecRegistry {
     })
 }
 
-/// Decodes the first audio track, `lead` seconds of silence first, and every
-/// packet at its timestamp: a jump in the timestamps (an MP4 sample that lasts
-/// 10 s, a WebM block after a pause) is silence, not pulled-in speech.
-fn decode_stream(src: Box<dyn MediaSource>, ext: Option<&str>, lead: f64) -> Result<Vec<i16>, String> {
+/// Decodes the first audio track with every packet at its timestamp plus
+/// `offset` seconds: a jump in the timestamps (an MP4 sample that lasts 10 s,
+/// a WebM block after a pause) is silence, not pulled-in speech, and audio
+/// placed before 0 (cut by an edit list) is dropped.
+fn decode_stream(src: Box<dyn MediaSource>, ext: Option<&str>, offset: f64) -> Result<Vec<i16>, String> {
     let mut hint = Hint::new();
     if let Some(e) = ext {
         hint.with_extension(e);
@@ -101,14 +102,19 @@ fn decode_stream(src: Box<dyn MediaSource>, ext: Option<&str>, lead: f64) -> Res
                 let channels = spec.channels.count();
                 let rate = u64::from(spec.rate);
                 let rs = rs.get_or_insert_with(|| Resampler::new(spec.rate as usize));
-                let at = tb.map_or(0, |tb| (u128::from(packet.ts) * u128::from(tb.numer) * u128::from(rate) / u128::from(tb.denom.max(1))) as u64);
-                rs.pad_to((lead * rate as f64) as u64 + at);
+                let at = tb.map_or(0, |tb| (u128::from(packet.ts) * u128::from(tb.numer) * u128::from(rate) / u128::from(tb.denom.max(1))) as i64);
+                // Where this packet plays, in source frames; before 0 it was edited out.
+                let pos = (offset * rate as f64).round() as i64 + at;
                 if buf.as_ref().is_none_or(|b| b.capacity() < audio.capacity() * channels) {
                     buf = Some(SampleBuffer::new(audio.capacity() as u64, spec));
                 }
                 let b = buf.as_mut().unwrap();
                 b.copy_interleaved_ref(audio);
-                rs.push_frames(b.samples(), channels);
+                let cut = usize::try_from(-pos).unwrap_or(0).saturating_mul(channels);
+                if let Some(kept) = b.samples().get(cut..).filter(|s| !s.is_empty()) {
+                    rs.pad_to(pos.max(0) as u64);
+                    rs.push_frames(kept, channels);
+                }
             }
             // One damaged frame does not end the lecture.
             Err(Error::DecodeError(_)) => continue,
@@ -133,10 +139,12 @@ fn child<'a>(b: &'a [u8], kind: &[u8; 4]) -> Option<&'a [u8]> {
     boxes(b).find(|(k, _)| k == kind).map(|(_, body)| body)
 }
 
-/// Seconds an MP4's audio starts after the movie does: the empty edits that
-/// open the audio track's edit list. Symphonia's reader does not apply edit
-/// lists, so without this a late-starting track would be pulled to 0.
-fn mp4_lead(path: &Path) -> Option<f64> {
+/// Seconds to add to an MP4 audio track's own timestamps to get the movie's
+/// (the player's) time: the empty edits that open its edit list, minus the
+/// media time its first real edit starts at. Symphonia's reader does not
+/// apply edit lists, so without this a late-starting track would be pulled to
+/// 0 and a trimmed one would play its cut part.
+fn mp4_offset(path: &Path) -> Option<f64> {
     use std::io::{Read, Seek, SeekFrom};
     let mut f = std::fs::File::open(path).ok()?;
     let mut off = 0u64;
@@ -161,12 +169,16 @@ fn mp4_lead(path: &Path) -> Option<f64> {
         }
         off += size;
     };
-    let mvhd = child(&moov, b"mvhd")?;
-    let at = if mvhd.first()? == &1 { 20 } else { 12 };
-    let timescale = u32::from_be_bytes(mvhd.get(at..at + 4)?.try_into().ok()?);
+    // mvhd and mdhd keep their timescale at the same place.
+    let timescale = |b: &[u8]| -> Option<f64> {
+        let at = if b.first()? == &1 { 20 } else { 12 };
+        Some(f64::from(u32::from_be_bytes(b.get(at..at + 4)?.try_into().ok()?).max(1)))
+    };
+    let movie = timescale(child(&moov, b"mvhd")?)?;
     let trak = boxes(&moov).filter(|(k, _)| k == b"trak").map(|(_, t)| t).find(|t| {
         child(t, b"mdia").and_then(|m| child(m, b"hdlr")).and_then(|h| h.get(8..12)) == Some(b"soun")
     })?;
+    let media = timescale(child(child(trak, b"mdia")?, b"mdhd")?)?;
     let Some(elst) = child(trak, b"edts").and_then(|e| child(e, b"elst")) else { return Some(0.0) };
     let (v1, count) = (elst.first()? == &1, u32::from_be_bytes(elst.get(4..8)?.try_into().ok()?));
     let size = if v1 { 20 } else { 12 };
@@ -178,11 +190,12 @@ fn mp4_lead(path: &Path) -> Option<f64> {
             (u64::from(u32::from_be_bytes(e[..4].try_into().ok()?)), i64::from(i32::from_be_bytes(e[4..8].try_into().ok()?)))
         };
         if media_time != -1 {
-            break;
+            // ponytail: only the first media edit is applied; later edits that skip or repeat parts are not.
+            return Some(empty as f64 / movie - media_time as f64 / media);
         }
         empty += duration;
     }
-    Some(empty as f64 / f64::from(timescale.max(1)))
+    Some(empty as f64 / movie)
 }
 
 fn pid(hi: u8, lo: u8) -> u16 {

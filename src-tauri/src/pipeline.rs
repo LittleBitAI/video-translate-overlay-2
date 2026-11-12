@@ -17,6 +17,8 @@ pub fn run_worker(core: Arc<Core>) {
     let Ok(mut store) = open() else { return };
     let mut resumed = false;
     loop {
+        // Audio a kill or a failed delete left behind (on start, then once a round).
+        sweep_audio(&store);
         match store.active_job() {
             Ok(Some(job)) => {
                 let title = store.video(&job.video_key).ok().flatten().map(|v| v.title).unwrap_or_default();
@@ -131,10 +133,10 @@ fn give_up(core: &Core, store: &Store, job_id: &str, title: &str, detail: &str) 
     let at = store.job(job_id).ok().flatten();
     let reason = failure_reason(detail, at.as_ref().map_or("downloading", |j| j.stage.as_str()));
     log(format!("job {job_id} failed: {reason} ({detail})"));
-    if let Some(p) = at.and_then(|j| j.audio_path) {
-        let _ = std::fs::remove_file(p);
-    }
     let _ = store.fail(job_id, reason);
+    if let Some(p) = at.and_then(|j| j.audio_path) {
+        drop_audio(store, job_id, &p);
+    }
     core.svc.notifier.ongoing(job_id, "hidden", title, 0);
 }
 
@@ -242,8 +244,27 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
     }
     // Record the stage change first; only then is the audio no longer needed.
     cx.store.end_writing(&job.id)?;
-    let _ = std::fs::remove_file(&path);
+    drop_audio(cx.store, &job.id, &path);
     Ok(())
+}
+
+/// Deletes a job's audio file, and only then forgets its path: a process
+/// killed in between, or a delete that fails, leaves the path recorded, and
+/// the worker's next [`sweep_audio`] tries again.
+fn drop_audio(store: &Store, job_id: &str, path: &str) {
+    match std::fs::remove_file(path) {
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => log(format!("job {job_id}: audio not deleted yet: {e}")),
+        _ => {
+            let _ = store.set_audio(job_id, None);
+        }
+    }
+}
+
+/// Deletes the audio of every job past writing that still has one (A3).
+fn sweep_audio(store: &Store) {
+    for (id, path) in store.leftover_audio().unwrap_or_default() {
+        drop_audio(store, &id, &path);
+    }
 }
 
 fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
@@ -332,6 +353,10 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
 #[cfg(test)]
 #[path = "pipeline_worker_tests.rs"]
 mod worker_tests;
+
+#[cfg(test)]
+#[path = "pipeline_audio_tests.rs"]
+mod audio_tests;
 
 #[cfg(test)]
 mod tests {
