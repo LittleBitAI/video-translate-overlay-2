@@ -144,9 +144,18 @@ fn decode_wav(mut f: impl Read) -> Result<Vec<i16>, String> {
             let mut rs = Resampler::new(rate);
             let mut frame = vec![0u8; width * channels];
             let mut floats = vec![0f32; channels];
-            for _ in 0..size / frame.len() {
-                if f.read_exact(&mut frame).is_err() {
-                    break; // a truncated download still yields what it has
+            // A size of 0 or 0xFFFFFFFF is a stream's, whose length was not known
+            // when its header was written: it is read to its end. Any other size is
+            // the audio's, and data that ends before it is a file cut short: it
+            // fails rather than leave the rest of the lecture without subtitles.
+            let streamed = size == 0 || size == u32::MAX as usize;
+            let frames = if streamed { usize::MAX } else { size / frame.len() };
+            for i in 0..frames {
+                if let Err(e) = f.read_exact(&mut frame) {
+                    if streamed && e.kind() == std::io::ErrorKind::UnexpectedEof {
+                        break;
+                    }
+                    return Err(format!("wav: the data ends at {} of its {size} bytes ({e})", i * frame.len()));
                 }
                 for (c, v) in floats.iter_mut().enumerate() {
                     let d = &frame[c * width..(c + 1) * width];
@@ -191,6 +200,7 @@ const MERGE_GAP_FRAMES: usize = 40; // pauses under 800 ms stay inside one span
 const MIN_FRAMES: usize = 8; // drop blips under 160 ms
 const PAD: usize = RATE / 5; // 200 ms of context on each side
 const MAX_REGION: usize = 30 * RATE; // what the model takes at once
+const MIN_LEVEL: f32 = 1e-4; // -80 dBFS: below it a frame is silence however quiet the file
 
 /// Speech spans with silence cut out, so the model never sees long silence
 /// (where Whisper-style models invent text). Deterministic for given audio,
@@ -206,8 +216,14 @@ pub fn speech_regions(pcm: &[i16]) -> Vec<Region> {
     let mut sorted = rms.clone();
     sorted.sort_by(|a, b| a.total_cmp(b));
     let floor = sorted[sorted.len() / 10];
+    // The loudest frames, speech if there is any: in a recording made (or kept)
+    // quiet, the lower bound comes down with them, to a quarter of their level,
+    // so quiet speech still reaches the model. A steady hum, however quiet, stays
+    // under three times its own floor, and digital silence under -80 dBFS.
+    let loud = sorted[(sorted.len() * 99 / 100).min(sorted.len() - 1)];
+    let lowest = (loud * 0.25).clamp(MIN_LEVEL, 0.006);
     // Three times the noise floor, kept between a whisper and quiet speech.
-    let threshold = (floor * 3.0).clamp(0.006, 0.02);
+    let threshold = (floor * 3.0).clamp(lowest, 0.02);
 
     let mut spans: Vec<(usize, usize)> = Vec::new(); // frame ranges
     for (i, &v) in rms.iter().enumerate() {
@@ -310,6 +326,10 @@ mod decode_container_gap_tests;
 #[cfg(test)]
 #[path = "decode_limits_tests.rs"]
 mod decode_limits_tests;
+
+#[cfg(test)]
+#[path = "audio_quiet_and_cut_tests.rs"]
+mod quiet_and_cut_tests;
 
 #[cfg(test)]
 mod tests {
