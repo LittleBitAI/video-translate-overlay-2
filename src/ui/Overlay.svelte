@@ -148,6 +148,12 @@
           <p class="text-accent">작업이 멈췄습니다. {STOPPED[job.failure_reason ?? ''] ?? job.failure_reason ?? ''}</p>
         {/if}
       </div>
+    {:else if look === 'done'}
+      <!-- No job yet: where its progress and cost will show. -->
+      <div data-feature="job-progress" role="status" class="w-40 max-w-[55%] rounded-lg bg-surface/90 p-2 text-sm">
+        <p>진행 상태 <b>작업 전</b></p>
+        <p>든 비용 {won(0)}</p>
+      </div>
     {:else}
       <div></div>
     {/if}
@@ -170,6 +176,11 @@
   {#if cue}
     <p data-feature="watch-subtitles" class="mx-auto mb-[8%] max-w-full rounded bg-black/80 px-2 py-1 text-center text-base text-ink sm:text-lg lg:text-2xl">
       {cue.text_ko}
+    </p>
+  {:else if !ready && look === 'done'}
+    <!-- Where the subtitles will be; they come only once the whole job is done (R11). -->
+    <p data-feature="watch-subtitles" class="mx-auto mb-[8%] max-w-full rounded bg-black/60 px-2 py-1 text-center text-sm text-ink/70">
+      {active ? '자막은 작업이 다 끝나면 여기에 뜹니다' : '한국어 자막이 여기에 뜹니다'}
     </p>
   {/if}
 </div>

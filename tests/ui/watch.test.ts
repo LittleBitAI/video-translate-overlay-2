@@ -53,7 +53,10 @@ test('an address that cannot be opened is told under the address bar; one that c
   button(s1, '열기').click();
   await vi.waitFor(() => expect($(s1, 'video')?.getAttribute('src')).toBe(FILE));
   expect($(s1, '#address-error')).toBeNull();
-  expect(features(s1)).toEqual(['detect-video', 'open-site']);
+  // Every feature of the first screen is on it before any job: where progress and subtitles will show.
+  expect(features(s1)).toEqual(['detect-video', 'job-progress', 'open-site', 'watch-subtitles']);
+  expect(text($(s1, '[data-feature="job-progress"]')!)).toBe('진행 상태 작업 전 든 비용 0원');
+  expect(text($(s1, '[data-feature="watch-subtitles"]')!)).toBe('한국어 자막이 여기에 뜹니다');
   // P9 again after P1: the page's job comes with it, so P7 is not asked for a page that has none.
   expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual(['GET /browser', 'POST /browser/open', 'POST /browser/open', 'GET /browser']);
 });
@@ -122,7 +125,8 @@ test('a running job shows its stage, percent and cost each second, then its subt
   const s1 = open('/');
   await vi.waitFor(() => expect(text(s1)).toMatch(/진행 상태 write 중 ?40% 든 비용 0원/));
   // Subtitles wait for the whole job (R11), and 영상감지 is not offered while it runs.
-  expect(features(s1)).toEqual(['job-progress', 'open-site']);
+  expect(features(s1)).toEqual(['job-progress', 'open-site', 'watch-subtitles']);
+  expect(text($(s1, '[data-feature="watch-subtitles"]')!)).toBe('자막은 작업이 다 끝나면 여기에 뜹니다');
   await vi.waitFor(() => expect(text(s1)).toMatch(/번역 중 ?70% 든 비용 8.3원/), { timeout: 3_000 });
   await vi.waitFor(() => expect(text(s1)).toContain('자막 준비됨 · 12.5원'), { timeout: 3_000 });
   expect(calls.filter((c) => c.path === '/jobs').every((c) => c.query.page_url === FILE)).toBe(true);
@@ -133,5 +137,5 @@ test('a job that stopped shows why and offers 영상감지 again', async () => {
   api(() => [200, { url: FILE, job: { job_id: 'j', video_key: 'vk', stage: 'failed', percent: 30, cost_krw: 1, failure_reason: 'no_speech' } }]);
   const s1 = open('/');
   await vi.waitFor(() => expect(text(s1)).toContain('작업이 멈췄습니다. 영상에서 말소리를 찾지 못했습니다.'));
-  expect(features(s1)).toEqual(['detect-video', 'job-progress', 'open-site']);
+  expect(features(s1)).toEqual(['detect-video', 'job-progress', 'open-site', 'watch-subtitles']);
 });
