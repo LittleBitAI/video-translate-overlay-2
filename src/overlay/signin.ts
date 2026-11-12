@@ -15,13 +15,20 @@ const REFUSED_TEXT = [
   '이 브라우저 또는 앱은 안전하지 않을 수 있습니다',
 ];
 
-/** A YouTube address over https, or nothing: the button never leads anywhere else. */
+/**
+ * A YouTube address, always over https, or nothing: the button never leads
+ * anywhere else. P1 takes http addresses too, and YouTube serves only https,
+ * so an http one is the same video and goes there over https.
+ */
 function youtubeTarget(raw: string | null): string | null {
   if (!raw) return null;
   try {
     const u = new URL(raw);
     const youtube = /(^|\.)youtube\.com$/.test(u.hostname) || u.hostname === 'youtu.be';
-    return u.protocol === 'https:' && youtube ? u.href : null;
+    if (!youtube || (u.protocol !== 'https:' && u.protocol !== 'http:')) return null;
+    u.protocol = 'https:';
+    u.port = '';
+    return u.href;
   } catch {
     return null;
   }
