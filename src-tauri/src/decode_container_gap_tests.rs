@@ -5,7 +5,7 @@
 //! between; the MP4 has 14 s of video, its gap is one 10 s sample duration.
 //! `lead.mp4`: 6 s of video, the tone at 3-5 s, placed by an empty edit.
 //! `trim.mp4` is an ffmpeg file whose `elst` media time was set to 5 s by hand;
-//! `skip.mp4` one whose `elst` was given a second edit by hand.
+//! `skip.mp4` and `cut.mp4` ones whose `elst` was given a second edit by hand.
 
 use super::decode_gap_tests::{assert_gap_kept, fixture, rms};
 use super::RATE;
@@ -37,6 +37,18 @@ fn an_mp4_edit_that_trims_the_start_moves_the_speech_with_it() {
     let onset = pcm.iter().position(|s| s.unsigned_abs() > 3_000).unwrap() as f64 / RATE as f64;
     assert!(onset < 0.05, "the tone starts at {onset:.3} s, not where the player plays it (0 s)");
     assert!(rms(&pcm, 0.2, 2.8) > 1_500.0, "no tone at 0-3 s");
+}
+
+/// `cut.mp4`: a 10 s track with a tone at 0.5-1.5 s and 3-4 s, and an edit
+/// list that plays media 0-2 s then 4 s of silence: the player never plays
+/// the second tone, so it must not be written either.
+#[test]
+fn an_mp4_media_edit_ends_where_its_length_does() {
+    let pcm = crate::decode::decode(&fixture("cut.mp4")).unwrap();
+    let secs = pcm.len() as f64 / RATE as f64;
+    assert!((secs - 6.0).abs() < 0.05, "{secs:.2} s long, not the 6 s the player plays");
+    assert!(rms(&pcm, 0.7, 1.3) > 1_500.0, "no tone at 0.5-1.5 s");
+    assert!(rms(&pcm, 2.0, 5.9) < 50.0, "audio past the media edit's length was kept");
 }
 
 /// `skip.mp4`: a 10 s track with a tone at 0.5-1.5 s and 7-8 s, and an edit

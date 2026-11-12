@@ -211,8 +211,17 @@ fn decode_edited(path: &Path, ext: Option<&str>) -> Result<Vec<i16>, String> {
     let edits = mp4_edits(path).unwrap_or_default();
     if edits.iter().filter(|e| e.from.is_some()).count() <= 1 {
         let lead: f64 = edits.iter().take_while(|e| e.from.is_none()).map(|e| e.secs).sum();
-        let from = edits.iter().find_map(|e| e.from).unwrap_or(0.0);
-        return decode_stream(Box::new(open()?), ext, lead - from);
+        let media = edits.iter().find(|e| e.from.is_some());
+        let mut pcm = decode_stream(Box::new(open()?), ext, lead - media.and_then(|e| e.from).unwrap_or(0.0))?;
+        // The movie ends where the edits do: the media edit's length (track
+        // audio past it is not played), then any empty edits after it (silence).
+        // A media edit of length 0 runs to the end of the track.
+        if let Some(e) = media.filter(|e| e.secs > 0.0) {
+            let samples = |secs: f64| (secs * RATE as f64).round() as usize;
+            pcm.truncate(samples(lead + e.secs));
+            pcm.resize(samples(edits.iter().map(|e| e.secs).sum()), 0);
+        }
+        return Ok(pcm);
     }
     // ponytail: a second copy of the PCM (about 115 MB for an hour) for files with several edits.
     let track = decode_stream(Box::new(open()?), ext, 0.0)?;

@@ -279,10 +279,17 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
     let client = Client { base_url: cx.core.cfg.gemini_base_url.clone(), key, model };
     let limit = gemini::limit_krw(store.video(&video_key)?.map(|v| v.duration_ms).unwrap_or(0));
 
-    // Every call is billed, so usage is added and the limit checked after each one.
+    // Every call is billed, so usage is added and the limit checked after each
+    // one, and before each one too: a job resumed after a kill may already be
+    // over the limit with its failure not yet recorded (A6: no call past it).
     let mut attempts = 0u32;
     let mut call = |order: &Value| -> Result<Option<Value>, Stop> {
         loop {
+            let spent = store.job(job_id)?.ok_or("job vanished")?.cost_krw;
+            if spent >= limit {
+                log(format!("job {job_id}: cost {spent:.2} KRW already at the limit {limit:.2}"));
+                return Err("cost_limit".into());
+            }
             let (reply, usage) = match client.order(order) {
                 Ok((v, u)) => (Some(v), u),
                 Err(gemini::Error::Reply(e, u)) => {
@@ -357,6 +364,10 @@ mod worker_tests;
 #[cfg(test)]
 #[path = "pipeline_audio_tests.rs"]
 mod audio_tests;
+
+#[cfg(test)]
+#[path = "pipeline_cost_tests.rs"]
+mod cost_tests;
 
 #[cfg(test)]
 mod tests {

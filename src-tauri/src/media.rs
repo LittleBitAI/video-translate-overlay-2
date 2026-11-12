@@ -162,7 +162,9 @@ pub fn probe(url: &Url, allow_loopback: bool) -> Result<Source, Refusal> {
     let text = String::from_utf8_lossy(&head[..head.len().min(4096)]).to_string();
     if ct.contains("mpegurl") || text.trim_start().starts_with("#EXTM3U") {
         let (_, whole, at) = fetch(url.as_str(), None, MAX_PLAYLIST, allow_loopback)?;
-        return probe_hls(&at, &String::from_utf8_lossy(&whole), allow_loopback, 0);
+        let src = probe_hls(&at, &String::from_utf8_lossy(&whole), allow_loopback, 0)?;
+        pieces_answer(&src, allow_loopback)?;
+        return Ok(src);
     }
     if head.len() > 8 && &head[4..8] == b"ftyp" && mp4_protected(url.as_str(), &head, allow_loopback)? {
         return Err(drm());
@@ -174,6 +176,32 @@ pub fn probe(url: &Url, allow_loopback: bool) -> Result<Source, Refusal> {
         return Err(refuse("not_media", "이 주소는 영상 파일이 아닌 웹 페이지입니다."));
     }
     Ok(Source::File { url: url.to_string(), ext: file_ext(&ct, url, &head) })
+}
+
+/// An HLS playlist lists its pieces; they must also answer, or the audio cannot
+/// be downloaded and no job is made (R20). The first piece (the init section
+/// when there is one), the first segment and the last are asked for one byte.
+/// ponytail: segments in between are not asked; one that fails later fails the job as `download_failed`.
+fn pieces_answer(src: &Source, allow_loopback: bool) -> Result<(), Refusal> {
+    let Source::Hls { parts, .. } = src else { return Ok(()) };
+    let mut asked: Vec<&Part> = Vec::new();
+    for p in parts.iter().take(2).chain(parts.last()) {
+        if asked.contains(&p) {
+            continue;
+        }
+        asked.push(p);
+        let at = p.range.map_or(0, |(off, _)| off);
+        let got = fetch(&p.url, Some((at, 1)), 1, allow_loopback);
+        match got {
+            Ok((_, b, _)) if !b.is_empty() => {}
+            Err(e) if e.code == "private_address" => return Err(e),
+            other => {
+                crate::log(format!("an hls piece does not answer: {:?}", other.err().map(|e| e.message)));
+                return Err(refuse("segment_unavailable", "재생 목록의 오디오 조각을 받을 수 없습니다."));
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Whether an MP4's `moov` marks a track as protected (Common Encryption puts
@@ -465,6 +493,10 @@ mod dns_tests;
 #[cfg(test)]
 #[path = "media_norange_tests.rs"]
 mod norange_tests;
+
+#[cfg(test)]
+#[path = "media_hls_pieces_tests.rs"]
+mod hls_pieces_tests;
 
 #[cfg(test)]
 mod tests {

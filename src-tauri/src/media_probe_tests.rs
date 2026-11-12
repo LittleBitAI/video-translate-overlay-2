@@ -60,6 +60,8 @@ fn a_redirected_playlist_resolves_against_where_it_landed() {
         "/vod/index.m3u8" | "/media/a/index.m3u8" => playlist(vod),
         "/master.m3u8" => playlist("#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\nv/redir.m3u8\n"),
         "/v/redir.m3u8" => redirect("/media/a/index.m3u8"),
+        // The probe asks a segment for a byte: only those where the playlists landed exist.
+        "/vod/seg0.aac" | "/media/a/seg0.aac" => (200, String::new(), vec![0xFF, 0xF1, 0x50]),
         _ => (404, String::new(), Vec::new()),
     });
     let first = |path: &str| match probe(&Url::parse(&format!("{base}{path}")).unwrap(), true).unwrap() {
