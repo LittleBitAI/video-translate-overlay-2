@@ -1,0 +1,169 @@
+// What the injected script does on a page, in every frame of it. One overlay
+// per page, on its largest video, whether that is in the page itself or in an
+// iframe (an embedded player). Frames report their video to the top frame by
+// postMessage; the top picks the largest and grants that frame the overlay.
+// A frame's overlay asks P6-P8 through the top frame, which owns the page: the
+// job is made for the page's address and title (a YouTube embed keeps its own
+// address, which names the video), and only the top frame reaches the app.
+
+import { mountOverlay, videoMediaUrl, type Reply, type Request } from './index';
+
+const TAG = 'vto-frames-1';
+/** How long a frame's report stands without another. */
+const STALE_MS = 3_000;
+/** A job is made before POST /jobs answers; the media probe can take a while. */
+const REQUEST_MS = 120_000;
+
+/** The document's main video: the largest one on screen. */
+export function mainVideo(doc: Document = document): HTMLVideoElement | null {
+  let best: HTMLVideoElement | null = null;
+  let area = 0;
+  doc.querySelectorAll('video').forEach((v) => {
+    const a = boxArea(v);
+    if (a > area) {
+      area = a;
+      best = v;
+    }
+  });
+  return best;
+}
+
+function boxArea(v: Element): number {
+  const r = v.getBoundingClientRect();
+  return r.width * r.height;
+}
+
+export function pageTitle(): string {
+  const og = document.querySelector<HTMLMetaElement>('meta[property="og:title"]')?.content;
+  return (og || document.title).replace(/\s+-\s+YouTube$/, '').trim();
+}
+
+function isYoutube(raw: unknown): boolean {
+  try {
+    const h = new URL(String(raw)).hostname;
+    return /(^|\.)(youtube|youtube-nocookie)\.com$/.test(h) || h === 'youtu.be';
+  } catch {
+    return false;
+  }
+}
+
+export interface PageOptions {
+  /** `null` in the top frame; in an iframe, the top frame to report to. */
+  top: Window | null;
+  /** P6-P8 (the top frame's; an iframe asks the top instead). */
+  request: Request;
+}
+
+export function startPage({ top, request }: PageOptions): { stop(): void } {
+  let mounted: { destroy(): void; video: HTMLVideoElement; url: string } | null = null;
+  // The playlist a blob: player fetched is looked up in Resource Timing; keep more
+  // than the default 250 entries so a busy page still has it.
+  performance.setResourceTimingBufferSize?.(5_000);
+  // When the page URL last changed: playlists fetched before belong to an earlier page.
+  let url = location.href;
+  let since = 0;
+
+  const send = (to: Window, m: object) => to.postMessage({ [TAG]: true, ...m }, '*');
+  // Top frame: the frames with a video, and the one granted the overlay.
+  const frames = new Map<Window, { area: number; at: number }>();
+  let granted: Window | null = null;
+  // An iframe: whether the top chose its video, and its requests awaiting a reply.
+  let chosen = false;
+  const pending = new Map<number, (r: Reply) => void>();
+  let nextId = 1;
+
+  const viaTop: Request = (method, path, body) =>
+    new Promise((resolve) => {
+      const id = nextId++;
+      const timer = setTimeout(() => {
+        pending.delete(id);
+        resolve({ status: 503, body: { error: 'no_page', message: '영상이 있는 페이지와 연결되지 않았습니다.' } });
+      }, REQUEST_MS);
+      pending.set(id, (r) => {
+        clearTimeout(timer);
+        resolve(r);
+      });
+      send(top!, { kind: 'request', id, method, path, body });
+    });
+
+  const onMessage = async (e: MessageEvent) => {
+    const m = e.data;
+    if (!m || m[TAG] !== true || !e.source) return;
+    const from = e.source as Window;
+    if (!top) {
+      if (m.kind === 'video') frames.set(from, { area: Number(m.area) || 0, at: performance.now() });
+      else if (m.kind === 'request' && from === granted) {
+        let body = m.body;
+        if (m.path === '/jobs' && body && !isYoutube(body.page_url)) {
+          body = { ...body, page_url: location.href, ...(m.method === 'POST' ? { title: pageTitle() || body.title } : {}) };
+        }
+        const reply = await request(m.method, m.path, body);
+        send(from, { kind: 'reply', id: m.id, reply });
+      }
+    } else if (from === top) {
+      if (m.kind === 'grant') chosen = m.yes === true;
+      else if (m.kind === 'reply') {
+        pending.get(m.id)?.(m.reply);
+        pending.delete(m.id);
+      }
+    }
+  };
+  window.addEventListener('message', onMessage);
+
+  // Video sites swap pages and players without a reload: re-mount when either changes.
+  const check = () => {
+    if (url !== location.href) {
+      url = location.href;
+      // Seen up to one check (a second) after it happened.
+      since = Math.max(0, performance.now() - 1_000);
+    }
+    const video = mainVideo();
+    const own = video ? boxArea(video) : 0;
+    let want = video;
+    if (!top) {
+      // The largest video wins, here or in a frame (ties stay here).
+      const now = performance.now();
+      let best: Window | null = null;
+      let most = own;
+      for (const [w, f] of frames) {
+        if (now - f.at > STALE_MS || w.closed) frames.delete(w);
+        else if (f.area > most) [best, most] = [w, f.area];
+      }
+      if (granted && granted !== best) send(granted, { kind: 'grant', yes: false });
+      granted = best;
+      // Sent on every check: a frame that reloaded learns it again.
+      if (granted) {
+        send(granted, { kind: 'grant', yes: true });
+        want = null;
+      }
+    } else {
+      if (own > 0 || chosen) send(top, { kind: 'video', area: own });
+      if (!chosen) want = null;
+    }
+    if (mounted && mounted.video === want && mounted.url === location.href) return;
+    mounted?.destroy();
+    mounted = null;
+    if (!want || !document.body) return;
+    const v = want;
+    const from = since;
+    const o = mountOverlay({
+      video: v,
+      pageUrl: location.href,
+      title: pageTitle(),
+      mediaUrl: () => videoMediaUrl(v, from),
+      request: top ? viaTop : request,
+    });
+    mounted = { ...o, video: v, url: location.href };
+  };
+  const interval = setInterval(check, 1_000);
+  check();
+
+  return {
+    stop() {
+      clearInterval(interval);
+      window.removeEventListener('message', onMessage);
+      mounted?.destroy();
+      mounted = null;
+    },
+  };
+}

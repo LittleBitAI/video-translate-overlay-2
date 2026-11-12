@@ -1,12 +1,15 @@
-// The app's initialization script for site pages: mounts the overlay on the
-// page's main <video> and bridges its requests to the Tauri commands P6-P8.
-// Built into one IIFE by `vite build -c vite.overlay.config.ts` (the app's build.rs).
+// The app's initialization script for site pages, run in every frame: mounts
+// the overlay on the page's main <video> (`page.ts`) and bridges its requests
+// to the Tauri commands P6-P8. Built into one IIFE by
+// `vite build -c vite.overlay.config.ts` (the app's build.rs).
 
-import { mountOverlay, videoMediaUrl, type Reply, type Request } from './index';
+import type { Reply, Request } from './index';
+import { startPage } from './page';
+import { signInHelp } from './signin';
 
 type Invoke = (cmd: string, args?: unknown) => Promise<unknown>;
 
-/** Google's sign-in pages never get the overlay (R23). */
+/** Google's sign-in pages never get the overlay, only the skip button (R22, R23). */
 const SIGN_IN_HOSTS = ['accounts.google.com', 'accounts.youtube.com'];
 
 const invoke = (): Invoke | undefined => (window as any).__TAURI_INTERNALS__?.invoke;
@@ -31,52 +34,13 @@ export const request: Request = async (method, path, body) => {
   }
 };
 
-/** The page's main video: the largest one on screen. */
-function mainVideo(): HTMLVideoElement | null {
-  let best: HTMLVideoElement | null = null;
-  let area = 0;
-  document.querySelectorAll('video').forEach((v) => {
-    const r = v.getBoundingClientRect();
-    if (r.width * r.height > area) {
-      area = r.width * r.height;
-      best = v;
-    }
-  });
-  return best;
-}
-
-function title(): string {
-  const og = document.querySelector<HTMLMetaElement>('meta[property="og:title"]')?.content;
-  return (og || document.title).replace(/\s+-\s+YouTube$/, '').trim();
-}
-
 function start() {
-  if (window.top !== window || SIGN_IN_HOSTS.includes(location.hostname)) return;
-  let mounted: { destroy(): void; video: HTMLVideoElement; url: string } | null = null;
-  // The playlist a blob: player fetched is looked up in Resource Timing; keep more
-  // than the default 250 entries so a busy page still has it.
-  performance.setResourceTimingBufferSize?.(5_000);
-  // When the page URL last changed: playlists fetched before belong to an earlier page.
-  let url = location.href;
-  let since = 0;
-  // Video sites swap pages and players without a reload: re-mount when either changes.
-  const check = () => {
-    if (url !== location.href) {
-      url = location.href;
-      // Seen up to one check (a second) after it happened.
-      since = Math.max(0, performance.now() - 1_000);
-    }
-    const video = mainVideo();
-    if (mounted && mounted.video === video && mounted.url === location.href) return;
-    mounted?.destroy();
-    mounted = null;
-    if (!video || !document.body) return;
-    const from = since;
-    const o = mountOverlay({ video, pageUrl: location.href, title: title(), mediaUrl: () => videoMediaUrl(video, from), request });
-    mounted = { ...o, video, url: location.href };
-  };
-  setInterval(check, 1_000);
-  check();
+  const top = window.top === window ? null : window.top;
+  if (SIGN_IN_HOSTS.includes(location.hostname)) {
+    if (!top) signInHelp({ store: sessionStorage, go: (u) => location.assign(u) });
+    return;
+  }
+  startPage({ top, request });
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);

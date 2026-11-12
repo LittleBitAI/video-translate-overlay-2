@@ -85,8 +85,8 @@ fn sections_start_after_the_init_section_and_count_only_segments() {
                 #EXT-X-DISCONTINUITY\n#EXTINF:4,\nc.m4s\n#EXT-X-DISCONTINUITY-SEQUENCE:2\n#EXTINF:4,\nd.m4s\n#EXT-X-ENDLIST";
     let Source::Hls { sections, .. } = probe_hls(&base, fmp4, true, 0).unwrap() else { panic!("not HLS") };
     assert_eq!(sections, [Section { part: 1, at: 0.0, init: Some(0) }, Section { part: 3, at: 10.0, init: Some(0) }]);
-    // A discontinuity before the first segment changes nothing.
+    // A discontinuity before the first segment adds no section to the one every playlist has.
     let leading = "#EXTM3U\n#EXT-X-DISCONTINUITY\n#EXTINF:4,\na.ts\n#EXTINF:4,\nb.ts\n#EXT-X-ENDLIST";
     let Source::Hls { sections, .. } = probe_hls(&base, leading, true, 0).unwrap() else { panic!("not HLS") };
-    assert!(sections.is_empty());
+    assert_eq!(sections, [Section { part: 0, at: 0.0, init: None }]);
 }

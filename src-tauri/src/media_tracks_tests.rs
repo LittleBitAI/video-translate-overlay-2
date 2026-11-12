@@ -13,7 +13,7 @@ use super::*;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
-fn fixtures(dir: &str) -> PathBuf {
+pub(super) fn fixtures(dir: &str) -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures").join(dir)
 }
 
@@ -53,7 +53,7 @@ fn serve(files: Vec<(String, Vec<u8>)>) -> String {
     format!("http://127.0.0.1:{port}")
 }
 
-fn serve_dir(dir: &str, extra: Vec<(String, Vec<u8>)>) -> String {
+pub(super) fn serve_dir(dir: &str, extra: Vec<(String, Vec<u8>)>) -> String {
     let mut files: Vec<(String, Vec<u8>)> = std::fs::read_dir(fixtures(dir))
         .unwrap()
         .map(|e| e.unwrap().path())
@@ -63,12 +63,12 @@ fn serve_dir(dir: &str, extra: Vec<(String, Vec<u8>)>) -> String {
     serve(files)
 }
 
-fn rms(pcm: &[i16], from: f64, to: f64) -> f64 {
+pub(super) fn rms(pcm: &[i16], from: f64, to: f64) -> f64 {
     let s = &pcm[(from * 16_000.0) as usize..(to * 16_000.0) as usize];
     (s.iter().map(|&x| (x as f64).powi(2)).sum::<f64>() / s.len() as f64).sqrt()
 }
 
-fn download_and_decode(src: &Source, name: &str) -> Result<Vec<i16>, String> {
+pub(super) fn download_and_decode(src: &Source, name: &str) -> Result<Vec<i16>, String> {
     let dest = std::env::temp_dir().join(format!("vto-maps-{}-{name}.mp4", std::process::id()));
     download(src, &dest, true, &mut |_| {}).unwrap();
     let pcm = crate::audio::decode_file(&dest);
@@ -122,10 +122,10 @@ fn an_init_section_switch_starts_a_section_and_a_repeat_does_not() {
     assert_eq!(sections(switch), (4, vec![Section { part: 1, at: 0.0, init: Some(0) }, Section { part: 3, at: 4.0, init: Some(2) }]));
     // The same EXT-X-MAP again is neither fetched again nor a section.
     let repeat = "#EXTM3U\n#EXT-X-MAP:URI=\"a.mp4\"\n#EXTINF:4,\n1.m4s\n#EXT-X-MAP:URI=\"a.mp4\"\n#EXTINF:4,\n2.m4s\n#EXT-X-ENDLIST";
-    assert_eq!(sections(repeat), (3, vec![]));
+    assert_eq!(sections(repeat), (3, vec![Section { part: 1, at: 0.0, init: Some(0) }]));
     // An EXT-X-MAP after the last segment is not downloaded.
     let trailing = "#EXTM3U\n#EXTINF:4,\n1.m4s\n#EXT-X-MAP:URI=\"z.mp4\"\n#EXT-X-ENDLIST";
-    assert_eq!(sections(trailing), (1, vec![]));
+    assert_eq!(sections(trailing), (1, vec![Section { part: 0, at: 0.0, init: None }]));
 }
 
 #[test]

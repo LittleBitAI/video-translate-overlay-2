@@ -41,15 +41,23 @@ const FAILURE_KO: Record<string, string> = {
   no_key: '설정에서 Gemini API 키를 넣어 주세요.',
 };
 
+// The root lies over the video's box (the part of it on screen): the button at
+// its top left, the subtitle low in it, above where players put their controls.
+// `--w`/`--h` are that box's size. A video with too little of it on screen gets
+// the root across the bottom of the screen instead, so the button is never lost.
 const CSS = `
 :host { all: initial; }
-.root { position: fixed; left: 0; right: 0; bottom: 16px; z-index: 2147483647; pointer-events: none;
-  display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 16px; box-sizing: border-box;
+.root { position: fixed; z-index: 2147483647; pointer-events: none; box-sizing: border-box;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 8px; padding: 8px;
   font-family: system-ui, "Noto Sans KR", sans-serif; }
-.sub { pointer-events: none; max-width: 100%; box-sizing: border-box; padding: 4px 10px; border-radius: 4px;
-  background: rgba(0, 0, 0, 0.78); color: #fff; font-size: clamp(14px, 2.4vw, 22px); line-height: 1.4;
+.root.loose { justify-content: flex-end; align-items: center; padding: 0 16px; }
+.sub { pointer-events: none; align-self: center; max-width: 100%; box-sizing: border-box; padding: 4px 10px; border-radius: 4px;
+  margin-bottom: calc(var(--h, 0px) * 0.1);
+  background: rgba(0, 0, 0, 0.78); color: #fff; font-size: clamp(14px, calc(var(--w, 100vw) * 0.03), 26px); line-height: 1.4;
   text-align: center; overflow-wrap: anywhere; word-break: keep-all; white-space: pre-wrap; }
-.bar { pointer-events: auto; display: flex; align-items: center; gap: 8px; max-width: 100%; }
+.loose .sub { order: -1; margin-bottom: 0; }
+.bar { pointer-events: auto; align-self: flex-start; display: flex; align-items: center; gap: 8px; max-width: 100%; }
+.loose .bar { align-self: center; }
 button { font: inherit; font-size: 14px; padding: 6px 12px; border: 0; border-radius: 16px; background: #e53935;
   color: #fff; cursor: pointer; flex: none; }
 button:disabled { background: #757575; cursor: default; }
@@ -61,6 +69,8 @@ button:disabled { background: #757575; cursor: default; }
 export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: OverlayOptions): { destroy(): void } {
   const host = document.createElement('div');
   host.setAttribute('data-vto', 'overlay');
+  // Inside a site's player (in full screen) its rules must not reach the host either.
+  host.style.setProperty('all', 'initial', 'important');
   const shadow = host.attachShadow({ mode: 'open' });
   shadow.innerHTML = `<style>${CSS}</style>`;
   const root = el('div', 'root');
@@ -76,9 +86,47 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
   status.dataset.vto = 'status';
   status.setAttribute('role', 'status');
   bar.append(button, status);
-  root.append(sub, bar);
+  root.append(bar, sub);
   shadow.append(root);
-  document.body.append(host);
+
+  let placed = '';
+  /** Over the video, inside the full-screen element when the player is in full screen. */
+  const place = () => {
+    const d = document as Document & { webkitFullscreenElement?: Element | null };
+    const full = d.fullscreenElement ?? d.webkitFullscreenElement ?? null;
+    // ponytail: a <video> itself in full screen shows no children; the overlay waits for it to leave.
+    const parent = full && full !== video && full.contains(video) ? full : document.body ?? document.documentElement;
+    if (host.parentNode !== parent) parent.append(host);
+    const r = video.getBoundingClientRect();
+    const left = Math.max(0, r.left);
+    const top = Math.max(0, r.top);
+    const w = Math.min(innerWidth, r.right) - left;
+    const h = Math.min(innerHeight, r.bottom) - top;
+    const loose = !(w >= 160 && h >= 90);
+    const key = loose ? 'loose' : `${left},${top},${w},${h}`;
+    if (key === placed) return;
+    placed = key;
+    root.classList.toggle('loose', loose);
+    const s = root.style;
+    if (loose) {
+      s.cssText = 'left:0;right:0;bottom:16px';
+    } else {
+      s.cssText = `left:${left}px;top:${top}px;width:${w}px;height:${h}px`;
+      s.setProperty('--w', `${w}px`);
+      s.setProperty('--h', `${h}px`);
+    }
+  };
+  place();
+  const placer = setInterval(place, 250);
+  const resized = typeof ResizeObserver === 'function' ? new ResizeObserver(place) : null;
+  resized?.observe(video);
+  const moves: [EventTarget, string][] = [
+    [window, 'resize'],
+    [window, 'scroll'],
+    [document, 'fullscreenchange'],
+    [document, 'webkitfullscreenchange'],
+  ];
+  moves.forEach(([t, e]) => t.addEventListener(e, place, { capture: true, passive: true }));
 
   let cues: Cue[] = [];
   let mainMs = 0;
@@ -94,6 +142,7 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
   };
 
   const render = () => {
+    place();
     const t = video.currentTime * 1000;
     const cue = cues.length && !isAd() ? findCue(cues, t) : undefined;
     const text = cue?.text_ko ?? '';
@@ -196,6 +245,9 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
       destroyed = true;
       stopPolling();
       if (ticker) clearInterval(ticker);
+      clearInterval(placer);
+      resized?.disconnect();
+      moves.forEach(([t, e]) => t.removeEventListener(e, place, { capture: true }));
       events.forEach((e) => video.removeEventListener(e, render));
       document.removeEventListener('visibilitychange', onVisible);
       host.remove();

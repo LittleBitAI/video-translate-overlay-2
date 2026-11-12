@@ -35,8 +35,9 @@ pub struct Part {
 pub enum Source {
     File { url: String, ext: &'static str },
     /// The pieces in playlist order, each init section (`EXT-X-MAP`) just before
-    /// the first segment it applies to. `sections` is empty unless the playlist
-    /// has `EXT-X-DISCONTINUITY` or changes its init section.
+    /// the first segment it applies to. `sections` has one section from the
+    /// first segment, and one more at each `EXT-X-DISCONTINUITY` or init
+    /// section change.
     Hls { parts: Vec<Part>, ext: &'static str, sections: Vec<Section> },
 }
 
@@ -187,6 +188,7 @@ pub fn probe(url: &Url, allow_loopback: bool) -> Result<Source, Refusal> {
         let (_, whole, at) = fetch(url.as_str(), None, MAX_PLAYLIST, allow_loopback)?;
         let src = probe_hls(&at, &String::from_utf8_lossy(&whole), allow_loopback, 0)?;
         pieces_answer(&src, allow_loopback)?;
+        hls_has_sound(&src, allow_loopback)?;
         return Ok(src);
     }
     if head.len() > 8 && &head[4..8] == b"ftyp" {
@@ -273,6 +275,30 @@ fn pieces_answer(src: &Source, allow_loopback: bool) -> Result<(), Refusal> {
                 return Err(refuse("segment_unavailable", "재생 목록의 오디오 조각을 받을 수 없습니다."));
             }
         }
+    }
+    Ok(())
+}
+
+/// The first section's audio, as with a file: an fMP4 init section must list a
+/// sound track, and an MPEG-TS segment's PMT an audio stream, or the playlist
+/// is refused as `not_audio` before a job is made (R20). ADTS and MP3 segments
+/// are audio by what they are.
+fn hls_has_sound(src: &Source, allow_loopback: bool) -> Result<(), Refusal> {
+    let Source::Hls { parts, ext, sections } = src else { return Ok(()) };
+    let Some(first) = sections.first() else { return Ok(()) };
+    let silent = if let Some(init) = first.init.map(|i| &parts[i]) {
+        let (_, body, _) = fetch(&init.url, init.range, MAX_PLAYLIST, allow_loopback)?;
+        !mp4_has_sound(&body)
+    } else if *ext == "ts" {
+        let seg = &parts[first.part];
+        let (off, len) = seg.range.map_or((0, 65_536), |(o, l)| (o, l.min(65_536)));
+        let (_, head, _) = fetch(&seg.url, Some((off, len)), len as usize, allow_loopback)?;
+        crate::decode::ts_has_audio(&head) == Some(false)
+    } else {
+        false
+    };
+    if silent {
+        return Err(no_sound());
     }
     Ok(())
 }
@@ -445,9 +471,13 @@ pub fn probe_hls(base: &Url, playlist: &str, allow_loopback: bool, depth: u8) ->
             return Err(refuse("not_media", "재생 목록이 너무 깊게 이어져 있습니다."));
         }
         let audio = lines.iter().find(|l| l.starts_with("#EXT-X-MEDIA") && l.contains("TYPE=AUDIO")).and_then(|l| attr(l, "URI"));
-        let variant = lines
-            .windows(2)
-            .filter(|w| w[0].starts_with("#EXT-X-STREAM-INF") && !w[1].starts_with('#'))
+        let variants: Vec<&[&str]> = lines.windows(2).filter(|w| w[0].starts_with("#EXT-X-STREAM-INF") && !w[1].starts_with('#')).collect();
+        // A variant whose CODECS names no audio codec has no sound; one without CODECS may.
+        const AUDIO: [&str; 6] = ["mp4a", "ac-3", "ec-3", "opus", "flac", "alac"];
+        let sounds = |w: &&[&str]| attr(w[0], "CODECS").is_none_or(|c| AUDIO.iter().any(|a| c.to_ascii_lowercase().contains(a)));
+        let pool: Vec<&[&str]> = if variants.iter().any(sounds) { variants.iter().copied().filter(sounds).collect() } else { variants };
+        let variant = pool
+            .iter()
             .min_by_key(|w| attr(w[0], "BANDWIDTH").and_then(|b| b.parse::<u64>().ok()).unwrap_or(u64::MAX))
             .map(|w| w[1]);
         let next = join(audio.or(variant).ok_or_else(|| refuse("not_media", "재생 목록에 영상이 없습니다."))?)?;
@@ -505,9 +535,14 @@ pub fn probe_hls(base: &Url, playlist: &str, allow_loopback: bool, depth: u8) ->
             clock += std::mem::take(&mut extinf);
         }
     }
-    let Some((first, _)) = first else {
+    let Some((first, first_init)) = first else {
         return Err(refuse("not_media", "재생 목록에 조각이 없습니다."));
     };
+    // One section at least: players start an HLS timeline at its first segment, whatever
+    // its timestamps say (fMP4 from 10 s plays from 0), and so does the decoder.
+    if sections.is_empty() {
+        sections.push(Section { part: first, at: 0.0, init: first_init });
+    }
     let first = parts[first].url.to_ascii_lowercase();
     let ext = if init || first.contains(".m4s") || first.contains(".mp4") || first.contains(".m4a") {
         "mp4"
@@ -633,6 +668,10 @@ mod discontinuity_tests;
 mod tracks_tests;
 
 #[cfg(test)]
+#[path = "media_hls_start_tests.rs"]
+mod hls_start_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -656,7 +695,7 @@ mod tests {
         let part = |u: &str| Part { url: u.into(), range: None };
         assert_eq!(
             probe_hls(&base(), vod, true, 0).unwrap(),
-            Source::Hls { parts: vec![part("https://cdn.example.org/v/seg0.aac"), part("https://cdn.example.org/x/seg1.aac")], ext: "aac", sections: vec![] }
+            Source::Hls { parts: vec![part("https://cdn.example.org/v/seg0.aac"), part("https://cdn.example.org/x/seg1.aac")], ext: "aac", sections: vec![Section { part: 0, at: 0.0, init: None }] }
         );
     }
 

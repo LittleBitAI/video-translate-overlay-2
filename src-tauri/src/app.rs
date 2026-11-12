@@ -23,8 +23,9 @@ fn app(h: &Handle) -> Result<&AppHandle<Wry>, String> {
 /// app has one webview, "main" (the back button returns to the settings screen).
 const SITE: &str = if cfg!(mobile) { "main" } else { "site" };
 
-/// The site window. Its overlay script runs on every page it loads and
-/// stays off Google's sign-in pages itself, so `overlay` needs no switch here.
+/// The site window. Its overlay script runs in every frame of every page it
+/// loads and keeps the overlay off Google's sign-in pages itself (it puts only
+/// a skip button there), so `overlay` needs no switch here.
 struct TauriBrowser(Handle);
 
 impl Browser for TauriBrowser {
@@ -37,7 +38,7 @@ impl Browser for TauriBrowser {
             let _ = w.set_focus();
             return Ok(());
         }
-        let b = WebviewWindowBuilder::new(app, "site", WebviewUrl::External(url)).initialization_script(OVERLAY_JS);
+        let b = WebviewWindowBuilder::new(app, "site", WebviewUrl::External(url)).initialization_script_for_all_frames(OVERLAY_JS);
         #[cfg(desktop)]
         let b = b.title("영상").inner_size(1280.0, 800.0);
         b.build().map(|_| ()).map_err(|e| e.to_string())
@@ -264,7 +265,7 @@ pub fn run() {
             let main = main.title("영상 번역 오버레이").inner_size(480.0, 720.0);
             // The one window is also the site window on Android.
             #[cfg(mobile)]
-            let main = main.initialization_script(OVERLAY_JS);
+            let main = main.initialization_script_for_all_frames(OVERLAY_JS);
             main.build()?;
             #[cfg(target_os = "android")]
             {
