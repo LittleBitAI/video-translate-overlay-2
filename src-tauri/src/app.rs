@@ -146,17 +146,16 @@ fn open_from_args(h: &Handle, args: &[String]) -> bool {
 
 /// A second launch of the app (from its shortcut, or a toast naming no video
 /// it can open): the running app's screen comes back, shown and in
-/// front, though it was hidden while a job ran (R6).
+/// front, though it was hidden while a job ran (R6), or made again when it
+/// was closed while the site window kept the app running.
 #[cfg(desktop)]
 fn relaunched(h: &Handle, args: &[String]) {
     if open_from_args(h, args) {
         return;
     }
     let Ok(app) = app(h) else { return };
-    if let Some(w) = app.get_webview_window("main") {
-        let _ = w.unminimize();
-        let _ = w.show();
-        let _ = w.set_focus();
+    if let Err(e) = crate::screens::show_main(app, None) {
+        vto::log(format!("screens window: {e}"));
     }
 }
 
@@ -289,13 +288,8 @@ pub fn run() {
                 },
             )?;
             app.manage(core);
-            let main = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()));
-            #[cfg(desktop)]
-            let main = main.title("영상 번역 오버레이").inner_size(1024.0, 760.0);
             // The one window is also the site window on Android.
-            #[cfg(mobile)]
-            let main = main.initialization_script_for_all_frames(OVERLAY_JS);
-            main.build()?;
+            crate::screens::show_main(&*app, cfg!(mobile).then_some(OVERLAY_JS))?;
             #[cfg(target_os = "android")]
             {
                 let h = setup_handle.clone();

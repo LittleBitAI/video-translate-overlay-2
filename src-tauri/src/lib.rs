@@ -17,6 +17,7 @@ pub mod http;
 pub mod media;
 pub mod pipeline;
 pub mod platform;
+pub mod screens;
 pub mod store;
 pub mod web;
 #[cfg(feature = "whisper")]

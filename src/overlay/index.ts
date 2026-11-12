@@ -184,9 +184,13 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
     timer = undefined;
   };
 
+  /** Whether the first look at the job was made: one skipped while hidden is made on return. */
+  let looked = false;
+
   /** One look at the job: shows its progress, or loads the subtitles once ready. */
   const poll = async () => {
     if (document.visibilityState === 'hidden') return;
+    looked = true;
     const r = await request('GET', '/jobs', { page_url: pageUrl });
     if (destroyed || r.status !== 200) return;
     const j = r.body;
@@ -237,7 +241,7 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
   });
 
   const onVisible = () => {
-    if (document.visibilityState === 'visible' && timer) poll();
+    if (document.visibilityState === 'visible' && (timer || !looked)) poll();
   };
   document.addEventListener('visibilitychange', onVisible);
 

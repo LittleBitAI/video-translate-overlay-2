@@ -14,23 +14,43 @@ const STALE_MS = 3_000;
 /** A job is made before POST /jobs answers; the media probe can take a while. */
 const REQUEST_MS = 120_000;
 
-/** The document's main video: the largest one on screen. */
+/**
+ * The document's main video: the one with the most of it on screen. When none
+ * is on screen (the page is scrolled past its player), the largest shown one,
+ * so the overlay stays at the bottom of the screen for it.
+ */
 export function mainVideo(doc: Document = document): HTMLVideoElement | null {
   let best: HTMLVideoElement | null = null;
-  let area = 0;
+  let most = [0, 0];
   doc.querySelectorAll('video').forEach((v) => {
-    const a = boxArea(v);
-    if (a > area) {
-      area = a;
-      best = v;
-    }
+    if (!shown(v)) return;
+    const r = v.getBoundingClientRect();
+    const a = [visibleArea(v), r.width * r.height];
+    if (a[0] > most[0] || (a[0] === most[0] && a[1] > most[1])) [most, best] = [a, v];
   });
   return best;
 }
 
-function boxArea(v: Element): number {
-  const r = v.getBoundingClientRect();
-  return r.width * r.height;
+/** Not hidden by CSS (display, visibility, opacity). */
+function shown(e: Element): boolean {
+  return e.checkVisibility?.({ opacityProperty: true, visibilityProperty: true }) ?? true;
+}
+
+/** How much of an element is inside its window's viewport, in px² (0 when hidden). */
+export function visibleArea(e: Element): number {
+  if (!shown(e)) return 0;
+  const r = e.getBoundingClientRect();
+  const view = e.ownerDocument.defaultView ?? window;
+  const w = Math.min(view.innerWidth, r.right) - Math.max(0, r.left);
+  const h = Math.min(view.innerHeight, r.bottom) - Math.max(0, r.top);
+  return w > 0 && h > 0 ? w * h : 0;
+}
+
+/** A frame's video can be on screen in the frame and still not on the page: the top clips it by the iframe. */
+function frameArea(from: Window, reported: number): number {
+  const el = [...document.querySelectorAll('iframe')].find((f) => f.contentWindow === from);
+  // ponytail: a frame nested in another frame has no element here; its own report stands.
+  return el ? Math.min(reported, visibleArea(el)) : reported;
 }
 
 export function pageTitle(): string {
@@ -118,7 +138,7 @@ export function startPage({ top, request }: PageOptions): { stop(): void } {
       since = Math.max(0, performance.now() - 1_000);
     }
     const video = mainVideo();
-    const own = video ? boxArea(video) : 0;
+    const own = video ? visibleArea(video) : 0;
     let want = video;
     if (!top) {
       // The largest video wins, here or in a frame (ties stay here).
@@ -127,7 +147,10 @@ export function startPage({ top, request }: PageOptions): { stop(): void } {
       let most = own;
       for (const [w, f] of frames) {
         if (now - f.at > STALE_MS || w.closed) frames.delete(w);
-        else if (f.area > most) [best, most] = [w, f.area];
+        else {
+          const a = frameArea(w, f.area);
+          if (a > most) [best, most] = [w, a];
+        }
       }
       if (granted && granted !== best) send(granted, { kind: 'grant', yes: false });
       granted = best;
