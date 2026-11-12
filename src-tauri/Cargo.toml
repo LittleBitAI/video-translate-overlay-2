@@ -15,6 +15,11 @@ crate-type = ["rlib", "cdylib"]
 name = "vto-contract-host"
 path = "src/bin/vto-contract-host.rs"
 
+# The screens and the API over HTTP on $PORT, data under $APP_DATA_DIR (`scripts/live.mjs`).
+[[bin]]
+name = "vto-web"
+path = "src/bin/vto-web.rs"
+
 # The app itself: real webview windows, notifications and whisper.cpp.
 # `cargo build --features app --bin video-translate-overlay` (bindgen needs
 # libclang: set LIBCLANG_PATH).
@@ -24,7 +29,9 @@ path = "src/main.rs"
 required-features = ["app"]
 
 [features]
-app = ["dep:whisper-rs", "dep:tauri-build", "dep:tauri-plugin-notification", "dep:tauri-plugin-single-instance", "tauri/custom-protocol"]
+app = ["whisper", "dep:tauri-build", "dep:tauri-plugin-notification", "dep:tauri-plugin-single-instance", "tauri/custom-protocol"]
+# The on-device model alone, for `vto-web` (bindgen needs libclang: set LIBCLANG_PATH).
+whisper = ["dep:whisper-rs"]
 
 [build-dependencies]
 tauri-build = { version = "2", optional = true }

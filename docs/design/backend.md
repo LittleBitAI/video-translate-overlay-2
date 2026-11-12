@@ -45,6 +45,7 @@
 ## 에이전트가 정한 가정
 
 - **A1** 설계에 적은 method와 path는 Tauri 명령의 계약을 적는 표기이고, 실제로는 포트를 열지 않고 앱 안에서만 부른다. 방문한 사이트 페이지에 얹힌 오버레이에는 P6, P7, P8만 열어 준다. 개인키는 SQLite가 아닌 기기의 보안 저장소(윈도우 자격 증명 관리자, 안드로이드 Keystore)에 둔다. — 이유: 포트를 열면 같은 기기의 다른 프로그램이 명령을 부를 수 있다. 오버레이는 남의 사이트 페이지 안에서 도는 스크립트라서, 그 사이트가 개인키를 읽거나 바꿀 길을 막아야 한다. / 버린 안: 기기 안에 HTTP 서버를 띄우는 방법, 개인키를 SQLite 파일에 그대로 적는 방법.
+  - Added with the frontend: the app itself still opens no port. `vto-web` (`src-tauri/src/web.rs`) is a separate program that serves the same screens and commands over HTTP on one port, for running them in a browser and for the screen checks. It listens on 127.0.0.1 only, answers only requests whose `Host` names it (no DNS rebinding) and refuses any request a browser sends from another origin, so no site can reach the key. It keeps its data in its own folder and its key in Credential Manager under a name tied to that folder.
 - **A2** 최애의 목소리(R10)는 이번에 만들지 않는다. 설정 조회가 이 기능이 꺼져 있다고 알려 주는 데까지만 두고, 목소리를 고르거나 만드는 명령은 넣지 않는다. — 이유: R10은 후에 확장으로 미뤄 둔 항목인데 시나리오로 잡혀 있어, 맡을 엔드포인트와 테스트가 있어야 설계가 통과한다. 꺼져 있다는 사실을 확인하는 데서 그치면 범위 밖 기능을 들이지 않는다. / 버린 안: 목소리 합성 명령을 미리 만들어 두는 방법. 이번 범위에 없는 기능이 들어온다.
 - **A3** 유튜브 영상은 Rust로 짠 추출기로 오디오만 받는다. 그 밖의 사이트는 오버레이가 페이지에서 잡아낸 미디어 주소가 직접 파일이거나 HLS 목록일 때만 받는다. DASH나 DRM이 걸린 영상, 라이브 방송은 내려받을 수 없는 영상으로 보고 R20의 안내를 띄운다. 받은 오디오는 write가 끝나면 지운다. — 이유: 안드로이드 APK에는 yt-dlp 같은 파이썬 도구나 ffmpeg 실행 파일을 넣기 어렵다. 유튜브는 추출을 자주 막고 약관도 내려받기를 허락하지 않으므로, 오디오는 write에 쓰는 동안만 기기에 둔다. 유튜브가 방식을 바꾸면 추출기가 깨질 수 있고, 그때는 R20의 안내로 떨어진다. / 버린 안: yt-dlp 실행 파일을 함께 넣는 방법, 내려받기만 맡는 서버를 따로 두는 방법.
 - **A4** 자체 모델은 whisper.cpp로 돌리는 Whisper large-v3-turbo 양자화 파일(약 0.6GB)이다. APK에 넣지 않고 첫 작업 때 내려받아 기기에 두며, 그 시간은 내려받는 중 단계에 넣는다. 목소리 감지로 말 있는 구간만 골라 write하고, 기기에서는 한 번에 한 작업만 돌린다. — 이유: R24가 빠르기보다 정확도를 먼저 보라고 했고, 작은 모델은 기술 용어를 자주 틀린다. 휴대폰에서 두 작업을 함께 돌리면 둘 다 한참 늦어진다. 갤럭시 S21 울트라에서 얼마나 걸리는지는 아직 재 보지 않았다. / 버린 안: small이나 base 모델(빠르지만 덜 정확하다), 모델을 APK에 묶는 방법(설치 파일이 지나치게 커진다), 작업을 줄 세우는 방법(진행 상태에 없는 단계가 생긴다).
@@ -113,6 +114,7 @@ erDiagram
 | P6 | POST | `/jobs` | 영상감지 버튼이 부른다. 이미 자막이 있는 영상이면 다시 처리하지 않고 끝난 작업을 돌려준다. 아니면 개인키가 있는지, 오디오를 내려받을 수 있는지 확인한 뒤 작업을 만들고, 내려받기와 write, 번역, 알림을 화면과 상관없이 차례로 돌린다. 주소는 http나 https여야 하고 media_url은 기기 자신이나 사설망을 가리키면 받지 않는다. |
 | P7 | GET | `/jobs` | 주소로 찾은 영상의 가장 최근 작업이 어디까지 왔는지 진행 상태를 준다. 어느 단계인지, 그 단계가 몇 퍼센트 됐는지, 실패했다면 그 까닭, 번역 모듈에 쓴 양으로 셈한 비용이 들어 있다. 앱을 껐다 켠 뒤에도 같은 주소로 물으면 이어진 작업이 나온다. |
 | P8 | GET | `/videos/{video_key}/subtitles` | 작업이 끝난 영상의 자막을 통째로 준다. 조각마다 본편 처음부터 잰 시작 시각과 끝 시각이 붙어 있어 오버레이가 재생 위치에 맞는 조각을 고른다. 광고를 가려낼 때 쓸 본편 길이도 함께 준다. 작업이 끝나기 전에는 자막을 주지 않는다. |
+| P9 | GET | `/browser` | Added with the frontend: the page P1 last opened (Google's account screen while it is shown) and that page's latest job as P7 gives it, or null. The first screen shows them again after a restart, and asks nothing that answers 404 for a page with no job. |
 
 ## 시나리오와 확인할 테스트
 

@@ -1,4 +1,4 @@
-//! The app: the settings screen ("main"), the in-app browser ("site") with
+//! The app: its screens ("main": S1 `/` and S2 `/preferences`, built into `dist/`), the in-app browser ("site") with
 //! the overlay injected into every page, OS notifications, and whisper.cpp.
 //! Built with `--features app`; the contract host is the test-only twin.
 //! A library module, because Android loads the app as a shared library;
@@ -20,7 +20,7 @@ fn app(h: &Handle) -> Result<&AppHandle<Wry>, String> {
 }
 
 /// The window site pages show in: "site" on the desktop; on Android, where an
-/// app has one webview, "main" (the back button returns to the settings screen).
+/// app has one webview, "main" (the back button returns to the app's screens).
 const SITE: &str = if cfg!(mobile) { "main" } else { "site" };
 
 /// The site window. Its overlay script runs in every frame of every page it
@@ -92,7 +92,7 @@ impl Notifier for TauriNotifier {
     }
 
     fn ready(&self, job_id: &str, text: &str, url: &str) {
-        // The settings screen lists it with an open button too.
+        // The first screen shows it with an open button too.
         if let Ok(app) = app(&self.0) {
             if let Some(w) = app.get_webview_window("main") {
                 let _ = w.eval(format!("window.vtoReady && window.vtoReady({})", serde_json::json!({ "text": text, "url": url })));
@@ -145,7 +145,7 @@ fn open_from_args(h: &Handle, args: &[String]) -> bool {
 }
 
 /// A second launch of the app (from its shortcut, or a toast naming no video
-/// it can open): the running app's settings screen comes back, shown and in
+/// it can open): the running app's screen comes back, shown and in
 /// front, though it was hidden while a job ran (R6).
 #[cfg(desktop)]
 fn relaunched(h: &Handle, args: &[String]) {
@@ -271,7 +271,7 @@ pub fn run() {
             #[cfg(target_os = "android")]
             let keystore: Box<dyn vto::KeyStore> = Box::new(app.state::<crate::android::Mobile>().inner().clone());
             #[cfg(not(target_os = "android"))]
-            let keystore: Box<dyn vto::KeyStore> = Box::new(crate::platform::CredentialStore);
+            let keystore: Box<dyn vto::KeyStore> = Box::new(crate::platform::CredentialStore::default());
             // Debug builds only: device tests name a stand-in Gemini in the app's private data folder.
             #[cfg(debug_assertions)]
             let gemini = std::fs::read_to_string(data_dir.join("gemini_base_url.txt")).ok().map(|s| s.trim().to_string());
@@ -291,7 +291,7 @@ pub fn run() {
             app.manage(core);
             let main = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()));
             #[cfg(desktop)]
-            let main = main.title("영상 번역 오버레이").inner_size(480.0, 720.0);
+            let main = main.title("영상 번역 오버레이").inner_size(1024.0, 760.0);
             // The one window is also the site window on Android.
             #[cfg(mobile)]
             let main = main.initialization_script_for_all_frames(OVERLAY_JS);

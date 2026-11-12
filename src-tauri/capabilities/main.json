@@ -5,6 +5,7 @@
   "windows": ["main"],
   "permissions": [
     "allow-browser-open",
+    "allow-get-browser",
     "allow-clear-site-data",
     "allow-get-settings",
     "allow-put-api-key",

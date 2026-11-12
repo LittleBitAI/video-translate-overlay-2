@@ -1,4 +1,4 @@
-//! The Tauri side: commands P1-P8 and the capabilities that decide who may call them.
+//! The Tauri side: commands P1-P9 and the capabilities that decide who may call them.
 //!
 //! The app's own screen (local origin) may call every command. Site pages in
 //! the in-app browser, where the overlay runs, may call only P6-P8, so a site
@@ -13,9 +13,9 @@ use tauri::ipc::RuntimeAuthority;
 use tauri::utils::acl::{capability::Capability, manifest::Manifest, resolved::Resolved, APP_ACL_KEY};
 use tauri::{Runtime, State};
 
-/// Every registered command, P1 to P8.
-pub const COMMANDS: [&str; 8] =
-    ["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles"];
+/// Every registered command, P1 to P9.
+pub const COMMANDS: [&str; 9] =
+    ["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles", "get_browser"];
 
 /// The commands a site page (the overlay) may call.
 pub const OVERLAY_COMMANDS: [&str; 3] = ["create_job", "get_job", "get_subtitles"];
@@ -66,6 +66,12 @@ type Shared<'a> = State<'a, Arc<Core>>;
 pub async fn browser_open(core: Shared<'_>, url: String) -> ApiResult {
     let core = core.inner().clone();
     blocking(move || api::browser_open(&core, &url)).await
+}
+
+#[tauri::command(async, rename_all = "snake_case")]
+pub async fn get_browser(core: Shared<'_>) -> ApiResult {
+    let core = core.inner().clone();
+    blocking(move || api::get_browser(&core)).await
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
@@ -125,7 +131,8 @@ pub fn handlers<R: Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
         delete_api_key,
         create_job,
         get_job,
-        get_subtitles
+        get_subtitles,
+        get_browser
     ])
 }
 
@@ -134,6 +141,7 @@ pub fn route(method: &str, path: &str, body: &Value) -> Option<(&'static str, Va
     let mut args = if body.is_object() { body.clone() } else { json!({}) };
     let cmd = match (method, path) {
         ("POST", "/browser/open") => "browser_open",
+        ("GET", "/browser") => "get_browser",
         ("DELETE", "/browser/site-data") => "clear_site_data",
         ("GET", "/settings") => "get_settings",
         ("PUT", "/settings/api-key") => "put_api_key",
@@ -184,6 +192,7 @@ mod tests {
             ("POST", "/jobs"),
             ("GET", "/jobs"),
             ("GET", "/videos/yt-abc/subtitles"),
+            ("GET", "/browser"),
         ]
         .iter()
         .map(|(m, p)| route(m, p, &Value::Null).unwrap().0)

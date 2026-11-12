@@ -1,6 +1,7 @@
 //! Only the `app` feature (the real app binary) needs a build step: the
-//! overlay bundle it injects into site pages, and tauri-build's context.
-//! The contract-test build skips both.
+//! screens (`dist/`, tauri.conf.json's frontendDist), the overlay bundle it
+//! injects into site pages, and tauri-build's context. The contract-test
+//! build skips them all.
 
 fn main() {
     #[cfg(feature = "app")]
@@ -13,17 +14,19 @@ fn app() {
     let manifest = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
     let root = manifest.parent().unwrap();
     let out = PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("overlay");
-    for p in ["src/overlay", "vite.overlay.config.ts"] {
+    for p in ["src/overlay", "src/ui", "index.html", "vite.config.ts", "vite.overlay.config.ts"] {
         println!("cargo:rerun-if-changed={}", root.join(p).display());
     }
-    let status = std::process::Command::new("node")
-        .arg(root.join("node_modules/vite/bin/vite.js"))
-        .args(["build", "-c", "vite.overlay.config.ts", "--logLevel", "warn"])
-        .env("VTO_OVERLAY_OUT", &out)
-        .current_dir(root)
-        .status()
-        .expect("run node (npm ci first)");
-    assert!(status.success(), "bundling the overlay failed");
+    for (config, what) in [("vite.config.ts", "the screens"), ("vite.overlay.config.ts", "the overlay")] {
+        let status = std::process::Command::new("node")
+            .arg(root.join("node_modules/vite/bin/vite.js"))
+            .args(["build", "-c", config, "--logLevel", "warn"])
+            .env("VTO_OVERLAY_OUT", &out)
+            .current_dir(root)
+            .status()
+            .expect("run node (npm ci first)");
+        assert!(status.success(), "building {what} failed");
+    }
 
     // whisper-rs-sys tests the host OS, not the target, and asks for advapi32 even
     // on Android when built on Windows. Nothing uses it there: give the linker an empty one.
@@ -34,7 +37,7 @@ fn app() {
         println!("cargo:rustc-link-search=native={}", stub.display());
     }
 
-    // The same eight commands commands::COMMANDS registers, as `allow-<command>` permissions.
-    const COMMANDS: &[&str] = &["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles"];
+    // The same nine commands commands::COMMANDS registers, as `allow-<command>` permissions.
+    const COMMANDS: &[&str] = &["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles", "get_browser"];
     tauri_build::try_build(tauri_build::Attributes::new().app_manifest(tauri_build::AppManifest::new().commands(COMMANDS))).expect("tauri-build");
 }

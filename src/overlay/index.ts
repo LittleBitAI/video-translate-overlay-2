@@ -76,14 +76,17 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
   const root = el('div', 'root');
   const sub = el('div', 'sub');
   sub.dataset.vto = 'subtitle';
+  sub.dataset.feature = 'watch-subtitles';
   sub.hidden = true;
   const bar = el('div', 'bar');
   const button = el('button') as HTMLButtonElement;
   button.dataset.vto = 'detect';
+  button.dataset.feature = 'detect-video';
   button.type = 'button';
   button.textContent = '영상감지';
   const status = el('div', 'status');
   status.dataset.vto = 'status';
+  status.dataset.feature = 'job-progress';
   status.setAttribute('role', 'status');
   bar.append(button, status);
   root.append(bar, sub);

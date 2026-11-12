@@ -1,0 +1,4 @@
+[
+  { "method": "POST", "path": "/browser/open", "body": { "url": "https://www.youtube.com/watch?v=kCc8FmEb1nY" } },
+  { "method": "POST", "path": "/browser/open", "body": { "url": "https://www.youtube.com/watch?v=kCc8FmEb1nY" } }
+]

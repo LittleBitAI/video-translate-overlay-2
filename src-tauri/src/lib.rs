@@ -1,4 +1,4 @@
-//! video-translate-overlay backend: Tauri commands P1-P8, the background job
+//! video-translate-overlay backend: Tauri commands P1-P9 (also over HTTP, `web`), the background job
 //! pipeline (download → write on device → translate with Gemini → notify),
 //! and the device services those need.
 
@@ -18,7 +18,8 @@ pub mod media;
 pub mod pipeline;
 pub mod platform;
 pub mod store;
-#[cfg(feature = "app")]
+pub mod web;
+#[cfg(feature = "whisper")]
 pub mod whisper;
 pub mod youtube;
 

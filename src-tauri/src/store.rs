@@ -48,7 +48,12 @@ CREATE TABLE IF NOT EXISTS setting (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   youtube_gate_seen INTEGER NOT NULL DEFAULT 0
 );
-INSERT OR IGNORE INTO setting (id) VALUES (1)
+INSERT OR IGNORE INTO setting (id) VALUES (1);
+-- The page the in-app browser was last sent to (P9).
+CREATE TABLE IF NOT EXISTS browser (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  url TEXT NOT NULL
+)
 ";
 
 const NOW: &str = "strftime('%Y-%m-%dT%H:%M:%fZ','now')";
@@ -337,6 +342,15 @@ impl Store {
 
     pub fn set_youtube_gate_seen(&self, seen: bool) -> R<()> {
         self.db.execute("UPDATE setting SET youtube_gate_seen=? WHERE id=1", p![seen as i64])?;
+        Ok(())
+    }
+
+    pub fn opened_url(&self) -> R<Option<String>> {
+        Ok(self.db.query_one("SELECT url FROM browser WHERE id=1", &[])?.map(|r| r[0].text()))
+    }
+
+    pub fn set_opened_url(&self, url: &str) -> R<()> {
+        self.db.execute("INSERT INTO browser (id, url) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET url=excluded.url", p![url])?;
         Ok(())
     }
 }

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "identifier": "dev.vto.overlay",
   "build": {
-    "frontendDist": "../ui"
+    "frontendDist": "../dist"
   },
   "app": {
     "windows": [],

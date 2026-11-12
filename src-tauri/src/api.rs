@@ -104,10 +104,26 @@ pub fn browser_open(core: &Core, raw: &str) -> ApiResult {
         gate.query_pairs_mut().append_pair("service", "youtube").append_pair("continue", raw.trim());
         core.svc.browser.navigate(gate.as_str(), false)?;
         core.store.set_youtube_gate_seen(true)?;
+        core.store.set_opened_url(gate.as_str())?;
         return Ok(json!({"opened_url": gate.as_str(), "site": site, "account_gate": true}));
     }
     core.svc.browser.navigate(raw.trim(), true)?;
+    core.store.set_opened_url(raw.trim())?;
     Ok(json!({"opened_url": raw.trim(), "site": site, "account_gate": false}))
+}
+
+/// P9: the page P1 last sent the in-app browser to (Google's account screen
+/// while it is shown), so the first screen can show it again after a restart,
+/// and that page's latest job as P7 gives it (`null` when it has none), so
+/// opening the screen asks nothing that answers "not found".
+pub fn get_browser(core: &Core) -> ApiResult {
+    let url = core.store.opened_url()?;
+    let job = match url.as_deref().map(|u| get_job(core, u)) {
+        Some(Ok(job)) => job,
+        Some(Err(e)) if e.status != 404 => return Err(e),
+        _ => Value::Null,
+    };
+    Ok(json!({"url": url, "job": job}))
 }
 
 pub fn clear_site_data(core: &Core) -> ApiResult {

@@ -51,6 +51,32 @@
         }
       }
     },
+    "/browser": {
+      "get": {
+        "operationId": "P9",
+        "summary": "The page P1 last opened in the in-app browser (Google's account screen while it is shown) and that page's latest job as P7 gives it, or null when it has none. The first screen shows them again after a restart, and asks nothing that answers 404 for a page with no job.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "description": "string | null"
+                    },
+                    "job": {
+                      "description": "P7's body | null"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/browser/site-data": {
       "delete": {
         "operationId": "P2",
