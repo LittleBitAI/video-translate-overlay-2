@@ -22,7 +22,7 @@ path = "src/main.rs"
 required-features = ["app"]
 
 [features]
-app = ["dep:whisper-rs", "dep:tauri-build", "dep:tauri-plugin-notification", "tauri/custom-protocol"]
+app = ["dep:whisper-rs", "dep:tauri-build", "dep:tauri-plugin-notification", "dep:tauri-winrt-notification", "tauri/custom-protocol"]
 
 [build-dependencies]
 tauri-build = { version = "2", optional = true }
@@ -41,6 +41,8 @@ whisper-rs = { version = "0.16", optional = true }
 tauri-plugin-notification = { version = "2", optional = true }
 
 [target.'cfg(windows)'.dependencies]
+# The ready toast with a click handler (the notification plugin has none on desktop).
+tauri-winrt-notification = { version = "0.7", optional = true }
 windows = { version = "0.61", features = [
   "Win32_Foundation",
   "Win32_Media_MediaFoundation",

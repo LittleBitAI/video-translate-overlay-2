@@ -55,6 +55,8 @@ pub struct Response {
     pub content_type: Option<String>,
     pub content_length: Option<u64>,
     pub location: Option<String>,
+    /// The address the connection really went to, when the stack reports it.
+    pub remote_ip: Option<std::net::IpAddr>,
     body: Box<dyn Read + Send>,
 }
 
@@ -101,6 +103,8 @@ mod imp {
         fn WinHttpReadData(h: *mut c_void, buf: *mut c_void, n: u32, read: *mut u32) -> i32;
         fn WinHttpCloseHandle(h: *mut c_void) -> i32;
         fn WinHttpSetOption(h: *mut c_void, option: u32, buf: *const c_void, len: u32) -> i32;
+        fn WinHttpQueryOption(h: *mut c_void, option: u32, buf: *mut c_void, len: *mut u32) -> i32;
+        fn WinHttpAddRequestHeaders(h: *mut c_void, headers: *const u16, len: u32, modifiers: u32) -> i32;
     }
     #[link(name = "kernel32", kind = "raw-dylib")]
     extern "system" {
@@ -116,6 +120,24 @@ mod imp {
     const QUERY_LOCATION: u32 = 33;
     const OPTION_REDIRECT_POLICY: u32 = 88;
     const REDIRECT_POLICY_NEVER: u32 = 0;
+    const OPTION_CONNECTION_INFO: u32 = 93;
+    const ADDREQ_ADD_OR_REPLACE: u32 = 0x2000_0000 | 0x8000_0000;
+
+    /// WINHTTP_CONNECTION_INFO: cbSize, then two SOCKADDR_STORAGE. winhttp.h packs it
+    /// to 8 on 64-bit Windows (the addresses start at 8) and to 4 on 32-bit.
+    const ADDR_AT: usize = if cfg!(target_pointer_width = "64") { 8 } else { 4 };
+    pub(super) const INFO_LEN: usize = ADDR_AT + 2 * 128;
+    pub(super) const REMOTE_AT: usize = ADDR_AT + 128;
+
+    /// The remote address in a WINHTTP_CONNECTION_INFO.
+    pub(super) fn remote_ip(info: &[u8; INFO_LEN]) -> Option<std::net::IpAddr> {
+        let sa = &info[REMOTE_AT..];
+        match u16::from_le_bytes([sa[0], sa[1]]) {
+            2 => Some(std::net::Ipv4Addr::new(sa[4], sa[5], sa[6], sa[7]).into()),
+            23 => Some(std::net::Ipv6Addr::from(<[u8; 16]>::try_from(&sa[8..24]).unwrap()).into()),
+            _ => None,
+        }
+    }
 
     fn wide(s: &str) -> Vec<u16> {
         s.encode_utf16().chain(std::iter::once(0)).collect()
@@ -198,14 +220,19 @@ mod imp {
                 return Err(fail("WinHttpSetOption(redirect policy)"));
             }
         }
-        let headers: String = req.headers.iter().map(|(k, v)| format!("{k}: {v}\r\n")).collect();
-        let headers_w: Vec<u16> = headers.encode_utf16().collect();
+        // Added one by one with replace-or-add, so `Host` replaces WinHTTP's own instead of doubling it.
+        for (k, v) in &req.headers {
+            let line: Vec<u16> = format!("{k}: {v}").encode_utf16().collect();
+            if unsafe { WinHttpAddRequestHeaders(h.request, line.as_ptr(), line.len() as u32, ADDREQ_ADD_OR_REPLACE) } == 0 {
+                return Err(fail("WinHttpAddRequestHeaders"));
+            }
+        }
         let body = req.body.unwrap_or(&[]);
         let ok = unsafe {
             WinHttpSendRequest(
                 h.request,
-                if headers_w.is_empty() { std::ptr::null() } else { headers_w.as_ptr() },
-                headers_w.len() as u32,
+                std::ptr::null(),
+                0,
                 if body.is_empty() { std::ptr::null() } else { body.as_ptr() as *const c_void },
                 body.len() as u32,
                 body.len() as u32,
@@ -233,7 +260,12 @@ mod imp {
         let content_type = query_string(h.request, QUERY_CONTENT_TYPE);
         let content_length = query_string(h.request, QUERY_CONTENT_LENGTH).and_then(|s| s.trim().parse().ok());
         let location = query_string(h.request, QUERY_LOCATION);
-        Ok(Response { status: status as u16, content_type, content_length, location, body: Box::new(Body(h)) })
+        let mut info = [0u8; INFO_LEN];
+        info[..4].copy_from_slice(&(INFO_LEN as u32).to_le_bytes());
+        let mut len = info.len() as u32;
+        let ok = unsafe { WinHttpQueryOption(h.request, OPTION_CONNECTION_INFO, info.as_mut_ptr() as *mut c_void, &mut len) };
+        let remote_ip = if ok != 0 { remote_ip(&info) } else { None };
+        Ok(Response { status: status as u16, content_type, content_length, location, remote_ip, body: Box::new(Body(h)) })
     }
 }
 
@@ -252,6 +284,7 @@ mod imp {
         let port = url.port_or_known_default().unwrap_or(80);
         let err = |e: io::Error| HttpError(e.to_string());
         let mut s = TcpStream::connect((host, port)).map_err(err)?;
+        let remote_ip = s.peer_addr().ok().map(|a| a.ip());
         s.set_read_timeout(Some(Duration::from_millis(req.timeout_ms as u64))).map_err(err)?;
         let mut path = url.path().to_string();
         if let Some(q) = url.query() {
@@ -259,7 +292,10 @@ mod imp {
             path.push_str(q);
         }
         let body = req.body.unwrap_or(&[]);
-        let mut head = format!("{} {path} HTTP/1.1\r\nHost: {host}:{port}\r\nConnection: close\r\nContent-Length: {}\r\n", req.method, body.len());
+        let mut head = format!("{} {path} HTTP/1.1\r\nConnection: close\r\nContent-Length: {}\r\n", req.method, body.len());
+        if !req.headers.iter().any(|(k, _)| k.eq_ignore_ascii_case("host")) {
+            head.push_str(&format!("Host: {host}:{port}\r\n"));
+        }
         for (k, v) in &req.headers {
             head.push_str(&format!("{k}: {v}\r\n"));
         }
@@ -307,6 +343,52 @@ mod imp {
         } else {
             Box::new(r)
         };
-        Ok(Response { status, content_type, content_length, location, body })
+        Ok(Response { status, content_type, content_length, location, remote_ip, body })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::{BufRead, BufReader, Write};
+
+    #[test]
+    fn a_pinned_request_carries_its_host_name_and_reports_the_peer() {
+        let server = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = server.local_addr().unwrap().port();
+        let seen = std::thread::spawn(move || {
+            let (s, _) = server.accept().unwrap();
+            let mut r = BufReader::new(s.try_clone().unwrap());
+            let mut head = Vec::new();
+            loop {
+                let mut l = String::new();
+                if r.read_line(&mut l).unwrap() == 0 || l.trim().is_empty() {
+                    break;
+                }
+                head.push(l.trim().to_string());
+            }
+            (&s).write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok").unwrap();
+            head
+        });
+        let url = format!("http://127.0.0.1:{port}/a.m4a");
+        let r = send(Request::get(&url).header("Host", "media.example.org:8080")).unwrap();
+        assert_eq!(r.status, 200);
+        assert_eq!(r.remote_ip, Some(std::net::Ipv4Addr::LOCALHOST.into()));
+        let head = seen.join().unwrap();
+        let hosts: Vec<&String> = head.iter().filter(|l| l.to_ascii_lowercase().starts_with("host:")).collect();
+        assert_eq!(hosts, [&"Host: media.example.org:8080".to_string()], "{head:?}");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn connection_info_addresses_are_read() {
+        let at = imp::REMOTE_AT;
+        let mut info = [0u8; imp::INFO_LEN];
+        info[at..at + 2].copy_from_slice(&2u16.to_le_bytes());
+        info[at + 4..at + 8].copy_from_slice(&[10, 0, 0, 7]);
+        assert_eq!(imp::remote_ip(&info), Some(std::net::Ipv4Addr::new(10, 0, 0, 7).into()));
+        info[at..at + 2].copy_from_slice(&23u16.to_le_bytes());
+        info[at + 8..at + 24].copy_from_slice(&std::net::Ipv6Addr::LOCALHOST.octets());
+        assert_eq!(imp::remote_ip(&info), Some(std::net::Ipv6Addr::LOCALHOST.into()));
     }
 }

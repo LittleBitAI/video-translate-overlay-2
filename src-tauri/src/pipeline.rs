@@ -166,6 +166,9 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
     let Some(path) = path else {
         return Err("audio file missing while writing".into());
     };
+    // A job resumed here after a restart never passed through downloading in
+    // this process: make sure the model is on the device (normally a size check).
+    cx.core.svc.transcriber.prepare(&cx.core.cfg.data_dir, &mut |_| {}).map_err(|e| format!("model: {e}"))?;
     let pcm = audio::decode_file(path.as_ref()).map_err(|e| format!("decode: {e}"))?;
     let regions = audio::speech_regions(&pcm);
     let total: usize = regions.iter().map(|r| r.end - r.start).sum::<usize>().max(1);

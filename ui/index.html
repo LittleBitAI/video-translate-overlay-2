@@ -27,6 +27,11 @@
 </form>
 <p class="note">영상 위에 뜨는 <b>영상감지</b> 버튼을 누르면 자막을 만들기 시작합니다. 다 되면 알림이 갑니다.</p>
 
+<section id="ready-section" hidden>
+  <h2>자막 준비 완료</h2>
+  <ul id="ready"></ul>
+</section>
+
 <h2>Gemini API 키</h2>
 <p id="key-state">확인하는 중…</p>
 <form id="key">
@@ -46,6 +51,21 @@
   const $ = (id) => document.getElementById(id);
   const say = (text, error) => { $('message').textContent = text; $('message').className = error ? 'error' : ''; };
   const fail = (e) => say(e?.message ?? String(e), true);
+  const open = async (url) => {
+    try { await invoke('browser_open', { url }); say(''); } catch (e) { fail(e); }
+  };
+
+  // Called by the app when a job's subtitles are ready (the same notice as the OS notification).
+  window.vtoReady = ({ text, url }) => {
+    const li = document.createElement('li');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = '열기';
+    button.addEventListener('click', () => open(url));
+    li.append(`${text} `, button);
+    $('ready').prepend(li);
+    $('ready-section').hidden = false;
+  };
 
   async function refresh() {
     try {
@@ -56,7 +76,7 @@
 
   $('open').addEventListener('submit', async (ev) => {
     ev.preventDefault();
-    try { await invoke('browser_open', { url: $('url').value }); say(''); } catch (e) { fail(e); }
+    await open($('url').value);
   });
   $('key').addEventListener('submit', async (ev) => {
     ev.preventDefault();

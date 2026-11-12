@@ -30,13 +30,14 @@ fn the_model_writes_synthesized_speech() {
     let pcm = vto::audio::decode_file(&wav).unwrap();
     let regions = vto::audio::speech_regions(&pcm);
     assert!(!regions.is_empty(), "no speech found");
-    let w = Whisper::new(Some(model.into()));
-    assert!(!w.prepare(&dir, &mut |_| {}).unwrap(), "an override model is never fetched");
+    // A fresh instance writes without `prepare`, as one restarted in the writing stage does.
+    let w = Whisper::new(&dir, Some(model.into()));
     let mut text = String::new();
     let mut last_progress = 0.0f32;
     for r in &regions {
         let samples: Vec<f32> = pcm[r.start..r.end].iter().map(|&s| s as f32 / 32768.0).collect();
-        let segs = w.transcribe(&samples, &mut |p| last_progress = p).unwrap();        for s in &segs {
+        let segs = w.transcribe(&samples, &mut |p| last_progress = p).unwrap();
+        for s in &segs {
             assert!(0 <= s.start_ms && s.start_ms <= s.end_ms && s.end_ms <= r.end_ms() - r.start_ms() + 1000, "{s:?} outside its region");
             text.push_str(&s.text);
             text.push(' ');
@@ -49,4 +50,6 @@ fn the_model_writes_synthesized_speech() {
     }
     assert_eq!(last_progress, 1.0);
     assert_eq!(w.language().as_deref(), Some("en"));
+    assert!(!w.prepare(&dir, &mut |_| {}).unwrap(), "an override model is never fetched");
+    assert_eq!(w.language(), None, "prepare starts a job: the language is detected again");
 }

@@ -17,26 +17,30 @@ pub const MODEL_URL: &str = "https://huggingface.co/ggerganov/whisper.cpp/resolv
 pub const MODEL_SHA256: &str = "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2";
 pub const MODEL_BYTES: u64 = 574_041_195;
 
-#[derive(Default)]
 pub struct Whisper {
-    /// A model file to use instead of fetching one (`VTO_WHISPER_MODEL`).
-    pub model_override: Option<PathBuf>,
-    path: Mutex<Option<PathBuf>>,
+    /// The model file. It is known from the start, so a process restarted in
+    /// the writing stage loads it without passing through downloading again.
+    path: PathBuf,
+    /// Whether `prepare` may fetch the file (false for `VTO_WHISPER_MODEL`).
+    fetch: bool,
     ctx: Mutex<Option<WhisperContext>>,
     language: Mutex<Option<String>>,
 }
 
 impl Whisper {
-    pub fn new(model_override: Option<PathBuf>) -> Self {
+    /// The model under `data_dir/models`, fetched on first use; or `model_override` as is.
+    pub fn new(data_dir: &Path, model_override: Option<PathBuf>) -> Self {
         whisper_rs::install_logging_hooks(); // whisper.cpp's own logging off: it prints per call
-        Whisper { model_override, ..Default::default() }
+        let fetch = model_override.is_none();
+        let path = model_override.unwrap_or_else(|| data_dir.join("models").join(MODEL_FILE));
+        Whisper { path, fetch, ctx: Mutex::new(None), language: Mutex::new(None) }
     }
 
     fn context(&self) -> Result<std::sync::MutexGuard<'_, Option<WhisperContext>>, String> {
         let mut ctx = self.ctx.lock().unwrap();
         if ctx.is_none() {
-            let path = self.model_override.clone().or_else(|| self.path.lock().unwrap().clone()).ok_or("model not prepared")?;
-            let c = WhisperContext::new_with_params(&path, WhisperContextParameters::default()).map_err(|e| format!("cannot load {}: {e}", path.display()))?;
+            let c = WhisperContext::new_with_params(&self.path, WhisperContextParameters::default())
+                .map_err(|e| format!("cannot load {}: {e}", self.path.display()))?;
             *ctx = Some(c);
         }
         Ok(ctx)
@@ -76,28 +80,27 @@ fn fetch_model(dest: &Path, progress: &mut dyn FnMut(f32)) -> Result<(), String>
 }
 
 impl Transcriber for Whisper {
-    fn prepare(&self, data_dir: &Path, progress: &mut dyn FnMut(f32)) -> Result<bool, String> {
-        // A new job: its language is detected afresh on its first window.
+    fn prepare(&self, _data_dir: &Path, progress: &mut dyn FnMut(f32)) -> Result<bool, String> {
+        // The start of a job's downloading or writing: its language is detected
+        // afresh on the first window it writes.
         *self.language.lock().unwrap() = None;
-        if let Some(p) = &self.model_override {
-            return if p.is_file() { Ok(false) } else { Err(format!("model file missing: {}", p.display())) };
+        if !self.fetch {
+            return if self.path.is_file() { Ok(false) } else { Err(format!("model file missing: {}", self.path.display())) };
         }
-        let dest = data_dir.join("models").join(MODEL_FILE);
-        let have = std::fs::metadata(&dest).is_ok_and(|m| m.len() == MODEL_BYTES);
-        if !have {
-            std::fs::create_dir_all(dest.parent().unwrap()).map_err(|e| e.to_string())?;
-            let mut tries = 0;
-            while let Err(e) = fetch_model(&dest, progress) {
-                tries += 1;
-                if tries >= 3 {
-                    return Err(e);
-                }
-                crate::log(format!("{e}; retrying"));
-                std::thread::sleep(Duration::from_secs(5 * tries));
+        if std::fs::metadata(&self.path).is_ok_and(|m| m.len() == MODEL_BYTES) {
+            return Ok(false);
+        }
+        std::fs::create_dir_all(self.path.parent().unwrap()).map_err(|e| e.to_string())?;
+        let mut tries = 0;
+        while let Err(e) = fetch_model(&self.path, progress) {
+            tries += 1;
+            if tries >= 3 {
+                return Err(e);
             }
+            crate::log(format!("{e}; retrying"));
+            std::thread::sleep(Duration::from_secs(5 * tries));
         }
-        *self.path.lock().unwrap() = Some(dest);
-        Ok(!have)
+        Ok(true)
     }
 
     fn transcribe(&self, pcm: &[f32], progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String> {

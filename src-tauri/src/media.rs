@@ -8,7 +8,7 @@
 use crate::http::{self, Request};
 use std::collections::HashMap;
 use std::io::{Read, Write};
-use std::net::{IpAddr, ToSocketAddrs};
+use std::net::{IpAddr, SocketAddr, ToSocketAddrs};
 use std::path::Path;
 use url::Url;
 
@@ -46,34 +46,67 @@ const MAX_REDIRECTS: usize = 5;
 /// (the contract host serves media from loopback). Host names are resolved and
 /// refused if any address they resolve to is private.
 pub fn check_media_url(raw: &str, allow_loopback: bool) -> Result<Url, Refusal> {
+    checked(raw, allow_loopback).map(|(url, _)| url)
+}
+
+fn private_address() -> Refusal {
+    refuse("private_address", "기기 자신이나 사설망을 가리키는 주소는 받지 않습니다.")
+}
+
+/// [`check_media_url`], plus the public address a host name resolved to, so
+/// the request can go to exactly the address that was checked.
+fn checked(raw: &str, allow_loopback: bool) -> Result<(Url, Option<SocketAddr>), Refusal> {
     let url = Url::parse(raw).map_err(|_| refuse("bad_url", "영상 주소를 읽을 수 없습니다."))?;
     if !matches!(url.scheme(), "http" | "https") {
         return Err(refuse("bad_url", "http나 https 주소만 받을 수 있습니다."));
     }
     if allow_loopback {
-        return Ok(url);
+        return Ok((url, None));
     }
-    let private = match url.host() {
-        Some(url::Host::Ipv4(ip)) => is_private(IpAddr::V4(ip)),
-        Some(url::Host::Ipv6(ip)) => is_private(IpAddr::V6(ip)),
+    let port = url.port_or_known_default().unwrap_or(443);
+    let addr = match url.host() {
+        Some(url::Host::Ipv4(ip)) => (!is_private(IpAddr::V4(ip))).then_some(None),
+        Some(url::Host::Ipv6(ip)) => (!is_private(IpAddr::V6(ip))).then_some(None),
         Some(url::Host::Domain(d)) => {
             let d = d.to_ascii_lowercase();
-            d == "localhost"
-                || [".localhost", ".local", ".internal"].iter().any(|s| d.ends_with(s))
-                || (d.as_str(), url.port_or_known_default().unwrap_or(443))
-                    .to_socket_addrs()
+            if d == "localhost" || [".localhost", ".local", ".internal"].iter().any(|s| d.ends_with(s)) {
+                None
+            } else {
+                match (d.as_str(), port).to_socket_addrs() {
+                    // Any private answer refuses the name: the connection could pick that one.
+                    Ok(addrs) => {
+                        let addrs: Vec<SocketAddr> = addrs.collect();
+                        (!addrs.iter().any(|a| is_private(a.ip()))).then(|| addrs.first().copied())
+                    }
                     // A name that does not resolve cannot be connected to either.
-                    .map(|mut addrs| addrs.any(|a| is_private(a.ip())))
-                    .unwrap_or(false)
+                    Err(_) => Some(None),
+                }
+            }
         }
-        None => true,
+        None => None,
     };
-    // ponytail: the HTTP stack resolves the name again when it connects (a DNS
-    // rebinding window of milliseconds); connect to the checked address if that matters.
-    if private {
-        return Err(refuse("private_address", "기기 자신이나 사설망을 가리키는 주소는 받지 않습니다."));
+    addr.map(|a| (url, a)).ok_or_else(private_address)
+}
+
+/// Where a request for `url` actually goes. Plain HTTP is sent to the checked
+/// address with the name in `Host`, so a name that resolves differently the
+/// second time (DNS rebinding) cannot redirect it. HTTPS keeps the name: the
+/// certificate must prove that name, so a rebound connection fails its
+/// handshake before any request is sent, and [`get`] also checks the address
+/// actually connected to.
+fn pinned(url: &Url, addr: Option<SocketAddr>) -> (Url, Option<String>) {
+    match addr {
+        Some(a) if url.scheme() == "http" => {
+            let mut to = url.clone();
+            let _ = to.set_ip_host(a.ip());
+            let host = match url.port() {
+                Some(p) => format!("{}:{p}", url.host_str().unwrap_or("")),
+                None => url.host_str().unwrap_or("").to_string(),
+            };
+            (to, Some(host))
+        }
+        _ => (url.clone(), None),
     }
-    Ok(url)
 }
 
 fn is_private(ip: IpAddr) -> bool {
@@ -99,19 +132,27 @@ fn unreachable(e: impl std::fmt::Display) -> Refusal {
 
 /// GET with redirects followed by hand, so every hop passes [`check_media_url`].
 fn get(url: &str, range: Option<(u64, u64)>, allow_loopback: bool, timeout_ms: i32) -> Result<http::Response, Refusal> {
-    let mut current = check_media_url(url, allow_loopback)?;
+    let (mut current, mut addr) = checked(url, allow_loopback)?;
     for _ in 0..=MAX_REDIRECTS {
-        let mut req = Request::get(current.as_str());
+        let (to, host) = pinned(&current, addr);
+        let mut req = Request::get(to.as_str());
         req.timeout_ms = timeout_ms;
         req.follow_redirects = false;
+        if let Some(h) = &host {
+            req = req.header("Host", h);
+        }
         if let Some((off, len)) = range {
             req = req.header("Range", &format!("bytes={off}-{}", off + len.max(1) - 1));
         }
         let r = http::send(req).map_err(unreachable)?;
+        // The address the stack really connected to, before any of the answer is used.
+        if !allow_loopback && r.remote_ip.is_some_and(is_private) {
+            return Err(private_address());
+        }
         if (300..400).contains(&r.status) {
             let to = r.location.clone().ok_or_else(|| unreachable(format!("HTTP {} without Location", r.status)))?;
             let to = current.join(to.trim()).map_err(|_| unreachable("bad redirect"))?;
-            current = check_media_url(to.as_str(), allow_loopback)?;
+            (current, addr) = checked(to.as_str(), allow_loopback)?;
             continue;
         }
         if !(200..300).contains(&r.status) {
@@ -381,6 +422,19 @@ mod tests {
         assert!(vod.len() > 65_536, "longer than the probe's first read");
         let Source::Hls { parts, .. } = probe_hls(&base(), &vod, true, 0).unwrap() else { panic!("not HLS") };
         assert_eq!(parts.len(), 5_000);
+    }
+
+    #[test]
+    fn plain_http_goes_to_the_checked_address() {
+        let addr: SocketAddr = "93.184.215.14:8080".parse().unwrap();
+        let (to, host) = pinned(&Url::parse("http://media.example.org:8080/v/a.m4a?x=1").unwrap(), Some(addr));
+        assert_eq!(to.as_str(), "http://93.184.215.14:8080/v/a.m4a?x=1");
+        assert_eq!(host.as_deref(), Some("media.example.org:8080"));
+        let (to, host) = pinned(&Url::parse("http://media.example.org/a.m4a").unwrap(), Some("[2606:2800::1]:80".parse().unwrap()));
+        assert_eq!((to.as_str(), host.as_deref()), ("http://[2606:2800::1]/a.m4a", Some("media.example.org")));
+        // HTTPS keeps the name: its certificate has to prove it.
+        let https = Url::parse("https://media.example.org/a.m4a").unwrap();
+        assert_eq!(pinned(&https, Some(addr)), (https.clone(), None));
     }
 
     #[test]

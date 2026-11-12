@@ -2,7 +2,7 @@
 // page's main <video> and bridges its requests to the Tauri commands P6-P8.
 // Built into one IIFE by `vite build -c vite.overlay.config.ts` (the app's build.rs).
 
-import { mountOverlay, type Reply, type Request } from './index';
+import { mountOverlay, videoMediaUrl, type Reply, type Request } from './index';
 
 type Invoke = (cmd: string, args?: unknown) => Promise<unknown>;
 
@@ -60,9 +60,7 @@ function start() {
     mounted?.destroy();
     mounted = null;
     if (!video || !document.body) return;
-    const src = video.currentSrc;
-    const mediaUrl = /^https?:/.test(src) ? src : null; // blob: players are resolved by the backend
-    const o = mountOverlay({ video, pageUrl: location.href, title: title(), mediaUrl, request });
+    const o = mountOverlay({ video, pageUrl: location.href, title: title(), mediaUrl: () => videoMediaUrl(video), request });
     mounted = { ...o, video, url: location.href };
   };
   setInterval(check, 1_000);

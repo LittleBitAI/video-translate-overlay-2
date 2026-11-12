@@ -14,7 +14,8 @@ export interface OverlayOptions {
   video: HTMLVideoElement;
   pageUrl: string;
   title: string;
-  mediaUrl: string | null;
+  /** A function is read when 영상감지 is pressed: sites often set the media after the player appears. */
+  mediaUrl: string | null | (() => string | null);
   /** P6, P7 and P8 of docs/design/api.yaml (Tauri `invoke` in the app). */
   request: Request;
 }
@@ -154,7 +155,8 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
     button.disabled = true;
     say('작업을 만드는 중…');
     const durationMs = Number.isFinite(video.duration) ? Math.round(video.duration * 1000) : 0;
-    const r = await request('POST', '/jobs', { page_url: pageUrl, media_url: mediaUrl, title, duration_ms: durationMs });
+    const media = typeof mediaUrl === 'function' ? mediaUrl() : mediaUrl;
+    const r = await request('POST', '/jobs', { page_url: pageUrl, media_url: media, title, duration_ms: durationMs });
     if (destroyed) return;
     if (r.status === 200) {
       if (r.body.stage === 'ready') {
@@ -194,6 +196,12 @@ function el(tag: string, cls?: string): HTMLElement {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
   return e;
+}
+
+/** The video's media as of now; blob: (MSE) players have none, and the backend resolves those pages. */
+export function videoMediaUrl(video: HTMLVideoElement): string | null {
+  const src = video.currentSrc || video.src || video.querySelector('source')?.src || '';
+  return /^https?:/.test(src) ? src : null;
 }
 
 /** The cue under `ms` (cues sorted by start, not overlapping). */

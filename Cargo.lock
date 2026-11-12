@@ -4147,6 +4147,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-notification",
+ "tauri-winrt-notification",
  "url",
  "whisper-rs",
  "windows",

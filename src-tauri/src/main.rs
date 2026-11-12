@@ -71,10 +71,57 @@ impl Notifier for TauriNotifier {
         }
     }
 
-    fn ready(&self, _job_id: &str, text: &str, _url: &str) {
-        // ponytail: the desktop plugin has no click handler, so the toast does not open the page.
+    fn ready(&self, _job_id: &str, text: &str, url: &str) {
+        // The settings screen lists it with an open button, which outlives the toast.
+        if let Ok(app) = app(&self.0) {
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.eval(format!("window.vtoReady && window.vtoReady({})", serde_json::json!({ "text": text, "url": url })));
+            }
+        }
+        #[cfg(windows)]
+        match ready_toast(self.0.clone(), text, url) {
+            Ok(()) => return,
+            Err(e) => vto::log(format!("ready toast: {e}")),
+        }
         self.show("자막 준비 완료", text);
     }
+}
+
+/// Opens the finished video in the site window (F4).
+fn open_video(h: &Handle, url: &str) {
+    if let Err(e) = TauriBrowser(h.clone()).navigate(url, true) {
+        vto::log(format!("open {url}: {e}"));
+    }
+}
+
+/// A Windows toast whose click opens the video. The toast is kept alive on its
+/// own thread for an hour: its click event only reaches a live object.
+#[cfg(windows)]
+fn ready_toast(h: Handle, text: &str, url: &str) -> Result<(), String> {
+    use tauri_winrt_notification::Toast;
+    let app = app(&h)?;
+    // An unpackaged build has no registered app id of its own; the plugin uses PowerShell's then too.
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    let dev = exe.parent().is_some_and(|d| d.ends_with("target/debug") || d.ends_with("target/release"));
+    let app_id = if dev { Toast::POWERSHELL_APP_ID.to_string() } else { app.config().identifier.clone() };
+    let (text, url) = (text.to_string(), url.to_string());
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let click = h.clone();
+        let target = url.clone();
+        let toast = Toast::new(&app_id).title("자막 준비 완료").text1(&text).on_activated(move |_| {
+            open_video(&click, &target);
+            Ok(())
+        });
+        let shown = toast.show().map_err(|e| e.to_string());
+        let ok = shown.is_ok();
+        let _ = tx.send(shown);
+        if ok {
+            std::thread::sleep(std::time::Duration::from_secs(3600));
+        }
+        drop(toast);
+    });
+    rx.recv().map_err(|e| e.to_string())?
 }
 
 fn main() {
@@ -87,13 +134,14 @@ fn main() {
         .setup(move |app| {
             let _ = setup_handle.set(app.handle().clone());
             let data_dir = app.path().app_local_data_dir()?;
+            let whisper = Whisper::new(&data_dir, std::env::var_os("VTO_WHISPER_MODEL").map(Into::into));
             let core = Core::start(
                 Config { data_dir, gemini_base_url: vto::GEMINI_BASE_URL.into(), allow_loopback_media: false },
                 Services {
                     keystore: Box::new(platform::CredentialStore),
                     browser: Box::new(TauriBrowser(setup_handle.clone())),
                     notifier: Box::new(TauriNotifier(setup_handle.clone())),
-                    transcriber: Box::new(Whisper::new(std::env::var_os("VTO_WHISPER_MODEL").map(Into::into))),
+                    transcriber: Box::new(whisper),
                     extractor: Box::new(youtube::InnertubeExtractor),
                 },
             )?;
