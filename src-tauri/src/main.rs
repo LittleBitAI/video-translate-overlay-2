@@ -71,18 +71,19 @@ impl Notifier for TauriNotifier {
         }
     }
 
-    fn ready(&self, _job_id: &str, text: &str, url: &str) {
-        // The settings screen lists it with an open button, which outlives the toast.
+    fn ready(&self, job_id: &str, text: &str, url: &str) {
+        // The settings screen lists it with an open button too.
         if let Ok(app) = app(&self.0) {
             if let Some(w) = app.get_webview_window("main") {
                 let _ = w.eval(format!("window.vtoReady && window.vtoReady({})", serde_json::json!({ "text": text, "url": url })));
             }
+            #[cfg(windows)]
+            match ready_toast(app, text, job_id) {
+                Ok(()) => return,
+                Err(e) => vto::log(format!("ready toast: {e}")),
+            }
         }
-        #[cfg(windows)]
-        match ready_toast(self.0.clone(), text, url) {
-            Ok(()) => return,
-            Err(e) => vto::log(format!("ready toast: {e}")),
-        }
+        let _ = job_id;
         self.show("자막 준비 완료", text);
     }
 }
@@ -94,34 +95,90 @@ fn open_video(h: &Handle, url: &str) {
     }
 }
 
-/// A Windows toast whose click opens the video. The toast is kept alive on its
-/// own thread for an hour: its click event only reaches a live object.
+/// The ready toast's click launches `vto-open:<job id>`.
+const SCHEME: &str = "vto-open";
+
+/// Opens the video of a `vto-open:<job id>` argument, if there is one. Only a
+/// job that finished here can be named, so a link elsewhere cannot steer the app.
+fn open_from_args(h: &Handle, args: &[String]) {
+    let Some(id) = args.iter().find_map(|a| a.strip_prefix(SCHEME)?.strip_prefix(':')) else { return };
+    let id = id.trim_matches('/');
+    let Ok(app) = app(h) else { return };
+    let core = app.state::<Arc<Core>>();
+    let page = core.store.job(id).ok().flatten().filter(|j| j.notified).and_then(|j| core.store.video(&j.video_key).ok().flatten());
+    match page {
+        Some(v) => open_video(h, &v.page_url),
+        None => vto::log(format!("{SCHEME}: no finished job {id}")),
+    }
+}
+
+/// A Windows toast whose click opens the video at any later time, even after
+/// the app has quit: it is a protocol launch of this executable, not an event
+/// on a live object. A running app gets the launch through single-instance.
 #[cfg(windows)]
-fn ready_toast(h: Handle, text: &str, url: &str) -> Result<(), String> {
-    use tauri_winrt_notification::Toast;
-    let app = app(&h)?;
-    // An unpackaged build has no registered app id of its own; the plugin uses PowerShell's then too.
+fn ready_toast(app: &AppHandle<Wry>, text: &str, job_id: &str) -> Result<(), String> {
+    use windows::core::HSTRING;
+    use windows::Data::Xml::Dom::XmlDocument;
+    use windows::UI::Notifications::{ToastNotification, ToastNotificationManager};
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    // An unpackaged build has no registered app id of its own; the plugin uses PowerShell's then too.
     let dev = exe.parent().is_some_and(|d| d.ends_with("target/debug") || d.ends_with("target/release"));
-    let app_id = if dev { Toast::POWERSHELL_APP_ID.to_string() } else { app.config().identifier.clone() };
-    let (text, url) = (text.to_string(), url.to_string());
-    let (tx, rx) = std::sync::mpsc::channel();
-    std::thread::spawn(move || {
-        let click = h.clone();
-        let target = url.clone();
-        let toast = Toast::new(&app_id).title("자막 준비 완료").text1(&text).on_activated(move |_| {
-            open_video(&click, &target);
-            Ok(())
-        });
-        let shown = toast.show().map_err(|e| e.to_string());
-        let ok = shown.is_ok();
-        let _ = tx.send(shown);
-        if ok {
-            std::thread::sleep(std::time::Duration::from_secs(3600));
-        }
-        drop(toast);
-    });
-    rx.recv().map_err(|e| e.to_string())?
+    let app_id = if dev { POWERSHELL_APP_ID.to_string() } else { app.config().identifier.clone() };
+    let xml = toast_xml(text, job_id);
+    // WinRT needs COM on this (the worker's) thread; an earlier init is fine too.
+    unsafe {
+        let _ = windows::Win32::System::Com::CoInitializeEx(None, windows::Win32::System::Com::COINIT_MULTITHREADED);
+    }
+    (|| -> windows::core::Result<()> {
+        let doc = XmlDocument::new()?;
+        doc.LoadXml(&HSTRING::from(xml))?;
+        ToastNotificationManager::CreateToastNotifierWithId(&HSTRING::from(app_id))?.Show(&ToastNotification::CreateToastNotification(&doc)?)
+    })()
+    .map_err(|e| e.to_string())
+}
+
+/// The ready toast; a click launches `vto-open:<job id>`.
+#[cfg(windows)]
+fn toast_xml(text: &str, job_id: &str) -> String {
+    let esc = |s: &str| s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;");
+    format!(
+        r#"<toast activationType="protocol" launch="{SCHEME}:{}"><visual><binding template="ToastGeneric"><text>자막 준비 완료</text><text>{}</text></binding></visual></toast>"#,
+        esc(job_id),
+        esc(text)
+    )
+}
+
+#[cfg(all(test, windows))]
+#[path = "main_toast_tests.rs"]
+mod toast_tests;
+
+#[cfg(windows)]
+const POWERSHELL_APP_ID: &str = r"{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe";
+
+/// `HKCU\Software\Classes\vto-open`: this user's protocol handler, pointing at this executable.
+#[cfg(windows)]
+fn register_scheme(exe: &std::path::Path) -> Result<(), String> {
+    use windows::core::HSTRING;
+    use windows::Win32::System::Registry::{RegSetKeyValueW, HKEY_CURRENT_USER, REG_SZ};
+    let set = |key: &str, name: Option<&str>, value: &str| {
+        let wide: Vec<u16> = value.encode_utf16().chain([0]).collect();
+        let bytes = unsafe { std::slice::from_raw_parts(wide.as_ptr().cast::<u8>(), wide.len() * 2) };
+        let name = name.map(HSTRING::from);
+        let err = unsafe {
+            RegSetKeyValueW(
+                HKEY_CURRENT_USER,
+                &HSTRING::from(format!(r"Software\Classes\{SCHEME}{key}")),
+                name.as_ref().map_or(windows::core::PCWSTR::null(), |n| windows::core::PCWSTR(n.as_ptr())),
+                REG_SZ.0,
+                Some(bytes.as_ptr().cast()),
+                bytes.len() as u32,
+            )
+        };
+        err.ok().map_err(|e| format!("register {SCHEME}: {e}"))
+    };
+    set("", None, "URL:영상 번역 오버레이")?;
+    set("", Some("URL Protocol"), "")?;
+    set(r"\shell\open\command", None, &format!("\"{}\" \"%1\"", exe.display()))
 }
 
 fn main() {
@@ -129,7 +186,15 @@ fn main() {
     let setup_handle = handle.clone();
     let mut ctx = tauri::generate_context!();
     *ctx.runtime_authority_mut() = commands::authority();
-    commands::handlers(tauri::Builder::default())
+    let builder = commands::handlers(tauri::Builder::default());
+    // Registered first: a second launch (a clicked toast) hands its arguments over and exits
+    // before it opens the store the running app's worker uses.
+    #[cfg(desktop)]
+    let builder = {
+        let h = handle.clone();
+        builder.plugin(tauri_plugin_single_instance::init(move |_, args, _| open_from_args(&h, &args)))
+    };
+    builder
         .plugin(tauri_plugin_notification::init())
         .setup(move |app| {
             let _ = setup_handle.set(app.handle().clone());
@@ -150,6 +215,13 @@ fn main() {
             #[cfg(desktop)]
             let main = main.title("영상 번역 오버레이").inner_size(480.0, 720.0);
             main.build()?;
+            // On every start, so the handler follows the executable if it moves.
+            #[cfg(windows)]
+            if let Err(e) = std::env::current_exe().map_err(|e| e.to_string()).and_then(|exe| register_scheme(&exe)) {
+                vto::log(e);
+            }
+            // Started by a clicked toast while the app was not running.
+            open_from_args(&setup_handle, &std::env::args().collect::<Vec<_>>());
             Ok(())
         })
         .on_window_event(|window, event| {

@@ -9,7 +9,7 @@ pub const RATE: usize = 16_000;
 /// 48 kHz stereo never sits in memory as floats.
 ///
 /// WAV is parsed here; everything else (AAC/ADTS, MP4/M4A, MP3, MPEG-TS) goes
-/// through the platform decoder (Media Foundation on Windows).
+/// through Media Foundation on Windows and [`crate::decode`] elsewhere.
 pub fn decode_file(path: &Path) -> Result<Vec<i16>, String> {
     let mut f = BufReader::new(std::fs::File::open(path).map_err(|e| format!("open audio: {e}"))?);
     let mut head = [0u8; 12];
@@ -238,11 +238,12 @@ mod platform {
 
 #[cfg(not(windows))]
 mod platform {
-    // ponytail: Android needs a MediaCodec binding here; until then only WAV decodes off Windows.
-    pub fn decode(_path: &std::path::Path) -> Result<Vec<i16>, String> {
-        Err("only WAV can be decoded on this OS yet".into())
-    }
+    pub use crate::decode::decode;
 }
+
+#[cfg(test)]
+#[path = "decode_tests.rs"]
+mod decode_tests;
 
 #[cfg(test)]
 mod tests {

@@ -22,7 +22,7 @@ path = "src/main.rs"
 required-features = ["app"]
 
 [features]
-app = ["dep:whisper-rs", "dep:tauri-build", "dep:tauri-plugin-notification", "dep:tauri-winrt-notification", "tauri/custom-protocol"]
+app = ["dep:whisper-rs", "dep:tauri-build", "dep:tauri-plugin-notification", "dep:tauri-plugin-single-instance", "tauri/custom-protocol"]
 
 [build-dependencies]
 tauri-build = { version = "2", optional = true }
@@ -39,12 +39,19 @@ getrandom = "0.3"
 # whisper.cpp, built from source for the target (CPU; Android through the NDK's CMake).
 whisper-rs = { version = "0.16", optional = true }
 tauri-plugin-notification = { version = "2", optional = true }
+# Decoding where Media Foundation is not there (Android); built everywhere so its tests run on Windows too.
+symphonia = { version = "0.5", default-features = false, features = ["aac", "isomp4", "mp3", "pcm"] }
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+# A clicked ready toast starts the app again with `vto-open:<job id>`; this hands it to the running one.
+tauri-plugin-single-instance = { version = "2", optional = true }
 
 [target.'cfg(windows)'.dependencies]
-# The ready toast with a click handler (the notification plugin has none on desktop).
-tauri-winrt-notification = { version = "0.7", optional = true }
 windows = { version = "0.61", features = [
+  "Data_Xml_Dom",
+  "UI_Notifications",
   "Win32_Foundation",
+  "Win32_System_Registry",
   "Win32_Media_MediaFoundation",
   "Win32_Security_Credentials",
   "Win32_System_Com",

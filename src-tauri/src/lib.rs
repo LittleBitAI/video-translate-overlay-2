@@ -6,6 +6,9 @@ pub mod api;
 pub mod audio;
 pub mod commands;
 pub mod db;
+// Used off Windows; built here too so its tests run against Media Foundation.
+#[cfg_attr(windows, allow(dead_code))]
+mod decode;
 pub mod gemini;
 pub mod http;
 pub mod media;
