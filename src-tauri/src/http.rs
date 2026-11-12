@@ -382,19 +382,7 @@ pub(crate) mod portable {
             }
         }
         let body: Box<dyn Read + Send> = if chunked {
-            let mut all = Vec::new();
-            loop {
-                let mut size = String::new();
-                r.read_line(&mut size).map_err(err)?;
-                let n = usize::from_str_radix(size.trim().split(';').next().unwrap_or("0"), 16).unwrap_or(0);
-                let mut chunk = vec![0; n + 2];
-                r.read_exact(&mut chunk).map_err(err)?;
-                if n == 0 {
-                    break;
-                }
-                all.extend_from_slice(&chunk[..n]);
-            }
-            Box::new(io::Cursor::new(all))
+            Box::new(Chunked { r, left: 0, done: false })
         } else if let Some(n) = content_length {
             Box::new(r.take(n))
         } else {
@@ -402,11 +390,66 @@ pub(crate) mod portable {
         };
         Ok(Response { status, content_type, content_length, location, remote_ip, body })
     }
+
+    /// A chunked body, streamed: the server's chunk sizes only bound how much is
+    /// read next, so no size it sends can make this allocate. A size line that
+    /// is not hex, or one past 16 hex digits, is an error, not the end.
+    pub(super) struct Chunked<R> {
+        pub(super) r: R,
+        pub(super) left: u64,
+        pub(super) done: bool,
+    }
+
+    impl<R: BufRead> Chunked<R> {
+        /// A line of at most 1 KiB, without its CRLF.
+        fn line(&mut self) -> io::Result<String> {
+            let mut l = Vec::new();
+            (&mut self.r).take(1024).read_until(b'\n', &mut l)?;
+            if l.last() != Some(&b'\n') {
+                return Err(io::Error::new(io::ErrorKind::InvalidData, "chunked: line cut short or too long"));
+            }
+            Ok(String::from_utf8_lossy(&l).trim_end_matches(['\r', '\n']).to_string())
+        }
+    }
+
+    impl<R: BufRead> Read for Chunked<R> {
+        fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+            let bad = |m: &str| io::Error::new(io::ErrorKind::InvalidData, format!("chunked: {m}"));
+            if self.done || buf.is_empty() {
+                return Ok(0);
+            }
+            if self.left == 0 {
+                let size = self.line()?;
+                let hex = size.split(';').next().unwrap_or("").trim();
+                self.left = u64::from_str_radix(hex, 16).map_err(|_| bad(&format!("bad size {hex:?}")))?;
+                if self.left == 0 {
+                    // Trailer fields up to the blank line.
+                    while !self.line()?.is_empty() {}
+                    self.done = true;
+                    return Ok(0);
+                }
+            }
+            let want = buf.len().min(usize::try_from(self.left).unwrap_or(usize::MAX));
+            let n = self.r.read(&mut buf[..want])?;
+            if n == 0 {
+                return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "chunked: body cut short"));
+            }
+            self.left -= n as u64;
+            if self.left == 0 && !self.line()?.is_empty() {
+                return Err(bad("no CRLF after a chunk"));
+            }
+            Ok(n)
+        }
+    }
 }
 
 #[cfg(test)]
 #[path = "http_portable_tests.rs"]
 mod portable_tests;
+
+#[cfg(test)]
+#[path = "http_chunked_tests.rs"]
+mod chunked_tests;
 
 #[cfg(test)]
 mod tests {

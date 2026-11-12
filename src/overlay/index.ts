@@ -198,10 +198,23 @@ function el(tag: string, cls?: string): HTMLElement {
   return e;
 }
 
-/** The video's media as of now; blob: (MSE) players have none, and the backend resolves those pages. */
-export function videoMediaUrl(video: HTMLVideoElement): string | null {
+/**
+ * The video's media as of now. A blob: (MediaSource) player such as hls.js plays
+ * a playlist its script fetched; Resource Timing saw that fetch, so the first
+ * playlist the page loaded at or after `since` (when its URL last changed) stands
+ * in for it. The backend probes master playlists and their variants itself, and
+ * resolves YouTube pages on its own.
+ */
+export function videoMediaUrl(video: HTMLVideoElement, since = 0): string | null {
   const src = video.currentSrc || video.src || video.querySelector('source')?.src || '';
-  return /^https?:/.test(src) ? src : null;
+  if (/^https?:/.test(src)) return src;
+  if (!src.startsWith('blob:')) return null;
+  // ponytail: the first playlist since the URL changed; a page that plays an HLS ad
+  // first sends the ad's. Upgrade path: hook MediaSource to see what the player attached.
+  const playlist = performance
+    .getEntriesByType('resource')
+    .find((e) => e.startTime >= since && /^https?:/.test(e.name) && /\.(m3u8|mpd)$/i.test(new URL(e.name).pathname));
+  return playlist?.name ?? null;
 }
 
 /** The cue under `ms` (cues sorted by start, not overlapping). */

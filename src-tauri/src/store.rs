@@ -244,10 +244,10 @@ impl Store {
         Ok(())
     }
 
-    /// Claims the job's one notification. True only for the first caller, so a
-    /// job resumed after a crash never notifies twice (E2 `notified_at`).
-    pub fn claim_notification(&self, id: &str) -> R<bool> {
-        Ok(self.db.execute(&format!("UPDATE job SET notified_at={NOW}, updated_at={NOW} WHERE id=? AND notified_at IS NULL"), p![id])? == 1)
+    /// Records that the ready notice went out (E2 `notified_at`); the first time stays.
+    pub fn mark_notified(&self, id: &str) -> R<()> {
+        self.db.execute(&format!("UPDATE job SET notified_at={NOW}, updated_at={NOW} WHERE id=? AND notified_at IS NULL"), p![id])?;
+        Ok(())
     }
 
     pub fn finish(&self, id: &str) -> R<()> {
@@ -351,9 +351,10 @@ mod tests {
         assert!(s.job("k").unwrap().is_none(), "the refused job left a row");
         assert_eq!(s.cues("v").unwrap().len(), 3, "the refused job touched another video");
 
-        // The one notification is claimed once, even across a resume.
-        assert!(s.claim_notification("j").unwrap());
-        assert!(!s.claim_notification("j").unwrap());
+        // The ready notice is recorded once it went out.
+        assert!(!s.job("j").unwrap().unwrap().notified);
+        s.mark_notified("j").unwrap();
+        assert!(s.job("j").unwrap().unwrap().notified);
         drop(s);
         let _ = std::fs::remove_dir_all(&dir);
     }

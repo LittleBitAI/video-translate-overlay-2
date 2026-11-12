@@ -44,7 +44,8 @@ const MAX_REDIRECTS: usize = 5;
 
 /// Only http(s), and never this device or a private network unless allowed
 /// (the contract host serves media from loopback). Host names are resolved and
-/// refused if any address they resolve to is private.
+/// refused if any address they resolve to is private, or if they do not
+/// resolve at all (`unreachable`, which a job retries).
 pub fn check_media_url(raw: &str, allow_loopback: bool) -> Result<Url, Refusal> {
     checked(raw, allow_loopback).map(|(url, _)| url)
 }
@@ -72,14 +73,13 @@ fn checked(raw: &str, allow_loopback: bool) -> Result<(Url, Option<SocketAddr>),
             if d == "localhost" || [".localhost", ".local", ".internal"].iter().any(|s| d.ends_with(s)) {
                 None
             } else {
-                match (d.as_str(), port).to_socket_addrs() {
+                match (d.as_str(), port).to_socket_addrs().map(|a| a.collect::<Vec<SocketAddr>>()) {
                     // Any private answer refuses the name: the connection could pick that one.
-                    Ok(addrs) => {
-                        let addrs: Vec<SocketAddr> = addrs.collect();
-                        (!addrs.iter().any(|a| is_private(a.ip()))).then(|| addrs.first().copied())
-                    }
-                    // A name that does not resolve cannot be connected to either.
-                    Err(_) => Some(None),
+                    Ok(addrs) if !addrs.is_empty() => (!addrs.iter().any(|a| is_private(a.ip()))).then(|| addrs.first().copied()),
+                    // No checked address, no request: the HTTP client would resolve the
+                    // name again itself, and that answer could be this device.
+                    Ok(_) => return Err(unreachable(format!("{d} has no address"))),
+                    Err(e) => return Err(unreachable(format!("{d}: {e}"))),
                 }
             }
         }
@@ -426,6 +426,10 @@ pub fn download(src: &Source, dest: &Path, allow_loopback: bool, progress: &mut 
 #[cfg(test)]
 #[path = "media_probe_tests.rs"]
 mod probe_tests;
+
+#[cfg(test)]
+#[path = "media_dns_tests.rs"]
+mod dns_tests;
 
 #[cfg(test)]
 mod tests {

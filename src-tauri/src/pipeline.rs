@@ -13,21 +13,29 @@ type Stop = String;
 
 pub fn run_worker(core: Arc<Core>) {
     // Its own connection, so the worker's transactions never mix with the commands' writes.
-    let store = match Store::open(&core.db_path()) {
-        Ok(s) => s,
-        Err(e) => return log(format!("worker cannot open the database: {e}")),
-    };
+    let open = || Store::open(&core.db_path()).map_err(|e| log(format!("worker cannot open the database: {e}")));
+    let Ok(mut store) = open() else { return };
     let mut resumed = false;
     loop {
         match store.active_job() {
             Ok(Some(job)) => {
+                let title = store.video(&job.video_key).ok().flatten().map(|v| v.title).unwrap_or_default();
                 if !resumed {
                     log(format!("resuming job {} at {}", job.id, job.stage));
-                    let title = store.video(&job.video_key).ok().flatten().map(|v| v.title).unwrap_or_default();
                     core.svc.notifier.ongoing(&job.id, "shown", &title, job.percent);
                 }
                 resumed = true;
-                run_job(&core, &store, job);
+                let id = job.id.clone();
+                let run = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| run_job(&core, &store, job)));
+                if run.is_err() {
+                    // A bug must not leave the job active, holding up every later one. The
+                    // old connection is dropped (rolling back anything it left open) and a
+                    // fresh one records the failure.
+                    drop(store);
+                    let Ok(fresh) = open() else { return };
+                    store = fresh;
+                    give_up(&core, &store, &id, &title, "panic");
+                }
             }
             Ok(None) => {
                 resumed = true;
@@ -101,11 +109,11 @@ fn run_job(core: &Core, store: &Store, job: Job) {
         // A job that already notified only has its ready mark left to write.
         if !store.job(&job.id)?.is_some_and(|j| j.notified) {
             translate(&cx, &job.id)?;
-        }
-        // At most one notification per job, claimed before it is sent.
-        if store.claim_notification(&job.id)? {
+            // Sent first, recorded after: a process killed in between notifies again
+            // when the job resumes, rather than never. Only this worker sends it.
             let text = format!("한국어 자막이 준비됐습니다: {}", cx.title);
             core.svc.notifier.ready(&job.id, &text, &cx.page_url);
+            store.mark_notified(&job.id)?;
         }
         core.svc.notifier.ongoing(&job.id, "hidden", &cx.title, 100);
         store.finish(&job.id)?;
@@ -113,15 +121,21 @@ fn run_job(core: &Core, store: &Store, job: Job) {
         Ok(())
     })();
     if let Err(detail) = result {
-        let at = store.job(&job.id).ok().flatten();
-        let reason = failure_reason(&detail, at.as_ref().map_or("downloading", |j| j.stage.as_str()));
-        log(format!("job {} failed: {reason} ({detail})", job.id));
-        if let Some(p) = at.and_then(|j| j.audio_path) {
-            let _ = std::fs::remove_file(p);
-        }
-        let _ = store.fail(&job.id, reason);
-        core.svc.notifier.ongoing(&job.id, "hidden", &cx.title, 0);
+        give_up(core, store, &job.id, &cx.title, &detail);
     }
+}
+
+/// Fails the job for good: the reason for the stage it stopped in, its audio
+/// file removed, and the ongoing notice taken down.
+fn give_up(core: &Core, store: &Store, job_id: &str, title: &str, detail: &str) {
+    let at = store.job(job_id).ok().flatten();
+    let reason = failure_reason(detail, at.as_ref().map_or("downloading", |j| j.stage.as_str()));
+    log(format!("job {job_id} failed: {reason} ({detail})"));
+    if let Some(p) = at.and_then(|j| j.audio_path) {
+        let _ = std::fs::remove_file(p);
+    }
+    let _ = store.fail(job_id, reason);
+    core.svc.notifier.ongoing(job_id, "hidden", title, 0);
 }
 
 /// The `failure_reason` stored for a stop: one of the five values E2 allows.
@@ -316,8 +330,8 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
 }
 
 #[cfg(test)]
-#[path = "pipeline_progress_tests.rs"]
-mod progress_tests;
+#[path = "pipeline_worker_tests.rs"]
+mod worker_tests;
 
 #[cfg(test)]
 mod tests {

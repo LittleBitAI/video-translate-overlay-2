@@ -53,14 +53,26 @@ function title(): string {
 function start() {
   if (window.top !== window || SIGN_IN_HOSTS.includes(location.hostname)) return;
   let mounted: { destroy(): void; video: HTMLVideoElement; url: string } | null = null;
+  // The playlist a blob: player fetched is looked up in Resource Timing; keep more
+  // than the default 250 entries so a busy page still has it.
+  performance.setResourceTimingBufferSize?.(5_000);
+  // When the page URL last changed: playlists fetched before belong to an earlier page.
+  let url = location.href;
+  let since = 0;
   // Video sites swap pages and players without a reload: re-mount when either changes.
   const check = () => {
+    if (url !== location.href) {
+      url = location.href;
+      // Seen up to one check (a second) after it happened.
+      since = Math.max(0, performance.now() - 1_000);
+    }
     const video = mainVideo();
     if (mounted && mounted.video === video && mounted.url === location.href) return;
     mounted?.destroy();
     mounted = null;
     if (!video || !document.body) return;
-    const o = mountOverlay({ video, pageUrl: location.href, title: title(), mediaUrl: () => videoMediaUrl(video), request });
+    const from = since;
+    const o = mountOverlay({ video, pageUrl: location.href, title: title(), mediaUrl: () => videoMediaUrl(video, from), request });
     mounted = { ...o, video, url: location.href };
   };
   setInterval(check, 1_000);
