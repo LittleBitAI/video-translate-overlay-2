@@ -23,11 +23,123 @@ pub fn refuse(code: &'static str, message: impl Into<String>) -> Refusal {
     Refusal { code, message: message.into() }
 }
 
-/// One piece to fetch: a URL and, for `EXT-X-BYTERANGE`, the `(offset, length)` inside it.
+/// One piece to fetch: a URL and, for `EXT-X-BYTERANGE`, the `(offset, length)`
+/// inside it, and how it is encrypted, when it is.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Part {
     pub url: String,
     pub range: Option<(u64, u64)>,
+    pub aes: Option<Aes>,
+}
+
+/// An HLS piece under `EXT-X-KEY:METHOD=AES-128` (an identity key, not DRM):
+/// all of it AES-128-CBC with PKCS#7 padding, under the 16 bytes served at
+/// `key`, from `iv` (the tag's, or the segment's media sequence number).
+#[derive(Debug, Clone, PartialEq)]
+pub struct Aes {
+    pub key: String,
+    pub iv: [u8; 16],
+}
+
+fn key_gone() -> Refusal {
+    refuse("key_unavailable", "재생 목록의 복호화 키를 받을 수 없습니다.")
+}
+
+/// The 16-byte key at `url`, checked as every media URL is.
+fn fetch_key(url: &str, allow_loopback: bool) -> Result<[u8; 16], Refusal> {
+    let body = match fetch(url, None, 64, allow_loopback) {
+        Ok((_, b, _)) => b,
+        Err(e) if e.code == "private_address" || e.code == "bad_url" => return Err(e),
+        Err(_) => return Err(key_gone()),
+    };
+    <[u8; 16]>::try_from(&body[..]).map_err(|_| key_gone())
+}
+
+/// The keys fetched so far, by URL: a playlist names one key for many pieces.
+type Keys = HashMap<String, [u8; 16]>;
+
+fn key_of(keys: &mut Keys, url: &str, allow_loopback: bool) -> Result<[u8; 16], Refusal> {
+    if let Some(k) = keys.get(url) {
+        return Ok(*k);
+    }
+    let k = fetch_key(url, allow_loopback)?;
+    keys.insert(url.to_string(), k);
+    Ok(k)
+}
+
+/// Reads up to 16 bytes: fewer only at the end of `r`.
+fn read_block(r: &mut impl Read, b: &mut [u8; 16]) -> std::io::Result<usize> {
+    let mut n = 0;
+    while n < 16 {
+        match r.read(&mut b[n..])? {
+            0 => break,
+            k => n += k,
+        }
+    }
+    Ok(n)
+}
+
+/// One AES-128-CBC block: `ct` decrypted, chained on `prev`, which becomes `ct`.
+fn cbc_block(c: &aes::Aes128, prev: &mut [u8; 16], ct: [u8; 16]) -> [u8; 16] {
+    use aes::cipher::{generic_array::GenericArray, BlockDecrypt};
+    let mut b = GenericArray::clone_from_slice(&ct);
+    c.decrypt_block(&mut b);
+    let mut p = [0u8; 16];
+    for i in 0..16 {
+        p[i] = b[i] ^ prev[i];
+    }
+    *prev = ct;
+    p
+}
+
+fn cipher(key: &[u8; 16]) -> aes::Aes128 {
+    use aes::cipher::{generic_array::GenericArray, KeyInit};
+    aes::Aes128::new(GenericArray::from_slice(key))
+}
+
+/// Decrypts AES-128-CBC with PKCS#7 padding from `r` into `out` as it is read,
+/// never holding the piece: `(bytes read, bytes written)`. A piece that is not
+/// whole blocks, or whose padding is wrong (the wrong key), is an error.
+fn decrypt_copy(r: impl Read, out: &mut impl Write, key: &[u8; 16], iv: [u8; 16]) -> std::io::Result<(u64, u64)> {
+    let bad = |what: &str| std::io::Error::new(std::io::ErrorKind::InvalidData, format!("AES-128: {what}"));
+    let (c, mut prev) = (cipher(key), iv);
+    let mut r = std::io::BufReader::with_capacity(1 << 16, r);
+    let (mut read, mut written) = (0u64, 0u64);
+    // The last block is held back: its padding is cut once the end shows it is the last.
+    let mut held: Option<[u8; 16]> = None;
+    let mut b = [0u8; 16];
+    loop {
+        match read_block(&mut r, &mut b)? {
+            0 => break,
+            16 => {}
+            _ => return Err(bad("not whole blocks")),
+        }
+        read += 16;
+        if let Some(p) = held.replace(cbc_block(&c, &mut prev, b)) {
+            out.write_all(&p)?;
+            written += 16;
+        }
+    }
+    let last = held.ok_or_else(|| bad("empty"))?;
+    let pad = usize::from(last[15]);
+    if !(1..=16).contains(&pad) || last[16 - pad..].iter().any(|&x| usize::from(x) != pad) {
+        return Err(bad("bad padding (the wrong key?)"));
+    }
+    out.write_all(&last[..16 - pad])?;
+    Ok((read, written + (16 - pad) as u64))
+}
+
+/// The whole blocks at the start of an AES-128-CBC piece, decrypted (its head, for a look inside).
+fn decrypt_head(data: &[u8], key: &[u8; 16], iv: [u8; 16]) -> Vec<u8> {
+    let (c, mut prev) = (cipher(key), iv);
+    data.chunks_exact(16).flat_map(|b| cbc_block(&c, &mut prev, b.try_into().unwrap())).collect()
+}
+
+/// An `IV` attribute: a 128-bit hexadecimal number, `0x` first.
+fn parse_iv(s: &str) -> Result<[u8; 16], Refusal> {
+    let hex = s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")).unwrap_or(s);
+    let n = (hex.len() <= 32).then(|| u128::from_str_radix(hex, 16).ok()).flatten();
+    n.map(u128::to_be_bytes).ok_or_else(|| refuse("not_media", "재생 목록의 암호화 IV를 읽을 수 없습니다."))
 }
 
 /// A source the downloader knows how to fetch.
@@ -187,8 +299,9 @@ pub fn probe(url: &Url, allow_loopback: bool) -> Result<Source, Refusal> {
     if ct.contains("mpegurl") || text.trim_start().starts_with("#EXTM3U") {
         let (_, whole, at) = fetch(url.as_str(), None, MAX_PLAYLIST, allow_loopback)?;
         let src = probe_hls(&at, &String::from_utf8_lossy(&whole), allow_loopback, 0)?;
-        pieces_answer(&src, allow_loopback)?;
-        hls_has_sound(&src, allow_loopback)?;
+        let mut keys = HashMap::new();
+        pieces_answer(&src, allow_loopback, &mut keys)?;
+        hls_has_sound(&src, allow_loopback, &mut keys)?;
         return Ok(src);
     }
     if head.len() > 8 && &head[4..8] == b"ftyp" {
@@ -291,7 +404,8 @@ fn webm_encrypted(tracks: &[u8]) -> bool {
 /// be downloaded and no job is made (R20). The first piece (the init section
 /// when there is one), the first segment and the last are asked for one byte.
 /// ponytail: segments in between are not asked; one that fails later fails the job as `download_failed`.
-fn pieces_answer(src: &Source, allow_loopback: bool) -> Result<(), Refusal> {
+/// An encrypted piece's key must be there too (`key_unavailable`).
+fn pieces_answer(src: &Source, allow_loopback: bool, keys: &mut Keys) -> Result<(), Refusal> {
     let Source::Hls { parts, .. } = src else { return Ok(()) };
     let mut asked: Vec<&Part> = Vec::new();
     for p in parts.iter().take(2).chain(parts.last()) {
@@ -308,6 +422,9 @@ fn pieces_answer(src: &Source, allow_loopback: bool) -> Result<(), Refusal> {
                 crate::log(format!("an hls piece does not answer: {:?}", other.err().map(|e| e.message)));
                 return Err(refuse("segment_unavailable", "재생 목록의 오디오 조각을 받을 수 없습니다."));
             }
+        }
+        if let Some(a) = &p.aes {
+            key_of(keys, &a.key, allow_loopback)?;
         }
     }
     Ok(())
@@ -344,7 +461,9 @@ fn fetch_part(url: &str, range: Option<(u64, u64)>, limit: usize, allow_loopback
 /// track and an MPEG-TS segment's PMT an audio stream (`not_audio`). ADTS and
 /// MP3 segments are audio by what they are. Each piece is read at its byte
 /// range, from a server that ignores Range too ([`fetch_part`]).
-fn hls_has_sound(src: &Source, allow_loopback: bool) -> Result<(), Refusal> {
+/// An encrypted piece is read decrypted; an init section that does not decrypt
+/// under its key is refused as `bad_key`, as the download would fail on it.
+fn hls_has_sound(src: &Source, allow_loopback: bool, keys: &mut Keys) -> Result<(), Refusal> {
     let Source::Hls { parts, ext, sections } = src else { return Ok(()) };
     let Some(first) = sections.first() else { return Ok(()) };
     let mut seen: Vec<&Part> = Vec::new();
@@ -354,7 +473,16 @@ fn hls_has_sound(src: &Source, allow_loopback: bool) -> Result<(), Refusal> {
             continue;
         }
         seen.push(&parts[i]);
-        let body = fetch_part(&parts[i].url, parts[i].range, MAX_PLAYLIST, allow_loopback)?;
+        let mut body = fetch_part(&parts[i].url, parts[i].range, MAX_PLAYLIST, allow_loopback)?;
+        if let Some(a) = &parts[i].aes {
+            let key = key_of(keys, &a.key, allow_loopback)?;
+            let mut plain = Vec::new();
+            decrypt_copy(&body[..], &mut plain, &key, a.iv).map_err(|e| {
+                crate::log(format!("an hls init section does not decrypt: {e}"));
+                refuse("bad_key", "재생 목록의 복호화 키로 영상을 풀 수 없습니다.")
+            })?;
+            body = plain;
+        }
         if marked(&body) {
             return Err(drm());
         }
@@ -367,7 +495,10 @@ fn hls_has_sound(src: &Source, allow_loopback: bool) -> Result<(), Refusal> {
     } else if *ext == "ts" {
         let seg = &parts[first.part];
         let (off, len) = seg.range.map_or((0, 65_536), |(o, l)| (o, l.min(65_536)));
-        let head = fetch_part(&seg.url, Some((off, len)), len as usize, allow_loopback)?;
+        let mut head = fetch_part(&seg.url, Some((off, len)), len as usize, allow_loopback)?;
+        if let Some(a) = &seg.aes {
+            head = decrypt_head(&head, &key_of(keys, &a.key, allow_loopback)?, a.iv);
+        }
         crate::decode::ts_has_audio(&head) == Some(false)
     } else {
         false
@@ -550,8 +681,10 @@ pub fn probe_hls(base: &Url, playlist: &str, allow_loopback: bool, depth: u8) ->
             if method.starts_with("SAMPLE-AES") || attr(l, "KEYFORMAT").is_some_and(|f| f != "identity") {
                 return Err(drm());
             }
-            if method != "NONE" {
-                return Err(refuse("encrypted", "암호화된 영상(AES-128)은 아직 내려받을 수 없습니다."));
+            // AES-128 with an identity key is plain encryption, its key served
+            // beside the segments: decrypted as they are downloaded.
+            if !matches!(method, "NONE" | "AES-128") {
+                return Err(refuse("encrypted", "이 방식으로 암호화된 영상은 내려받을 수 없습니다."));
             }
         }
     }
@@ -588,15 +721,32 @@ pub fn probe_hls(base: &Url, playlist: &str, allow_loopback: bool, depth: u8) ->
     let (mut clock, mut extinf, mut broken) = (0f64, 0f64, false);
     let mut first: Option<(usize, Option<usize>)> = None;
     let mut sections = Vec::new();
+    // The key in force (`EXT-X-KEY`: its URL and IV, if the tag gives one), and
+    // the next media segment's sequence number, its IV when the tag gives none.
+    let mut key: Option<(String, Option<[u8; 16]>)> = None;
+    let mut seq: u64 = lines.iter().find_map(|l| l.strip_prefix("#EXT-X-MEDIA-SEQUENCE:")).and_then(|n| n.trim().parse().ok()).unwrap_or(0);
+    let aes = |key: &Option<(String, Option<[u8; 16]>)>, seq: u64| {
+        key.as_ref().map(|(k, iv)| Aes { key: k.clone(), iv: iv.unwrap_or_else(|| u128::from(seq).to_be_bytes()) })
+    };
     for l in &lines {
-        if let Some(d) = l.strip_prefix("#EXTINF:") {
+        if l.starts_with("#EXT-X-KEY:") {
+            key = match attr(l, "METHOD") {
+                Some("AES-128") => {
+                    let uri = attr(l, "URI").ok_or_else(|| refuse("not_media", "재생 목록의 암호화 키에 주소가 없습니다."))?;
+                    Some((join(uri)?.to_string(), attr(l, "IV").map(parse_iv).transpose()?))
+                }
+                _ => None,
+            };
+        } else if let Some(d) = l.strip_prefix("#EXTINF:") {
             extinf = d.split(',').next().and_then(|s| s.trim().parse().ok()).filter(|s: &f64| s.is_finite() && *s >= 0.0).unwrap_or(0.0);
         } else if l.starts_with("#EXT-X-DISCONTINUITY") && !l.starts_with("#EXT-X-DISCONTINUITY-SEQUENCE") {
             broken = true;
         } else if l.starts_with("#EXT-X-MAP") {
             let url = join(attr(l, "URI").ok_or_else(|| refuse("not_media", "재생 목록의 초기화 조각에 주소가 없습니다."))?)?.to_string();
             let range = attr(l, "BYTERANGE").map(|r| byte_range(r, &url, &mut ends)).transpose()?;
-            let part = Part { url, range };
+            // An encrypted init section must have the tag's IV (RFC 8216); without
+            // one, zero stands in, the same each time so a repeat stays a repeat.
+            let part = Part { url, range, aes: aes(&key, 0) };
             // The same init section again changes nothing; another one starts a section (a codec or track switch).
             if map.is_none_or(|m| parts[m] != part) {
                 next_map = Some(part);
@@ -622,7 +772,8 @@ pub fn probe_hls(base: &Url, playlist: &str, allow_loopback: bool, depth: u8) ->
                 sections.push(Section { part: parts.len(), at: clock, init: map });
             }
             first.get_or_insert((parts.len(), map));
-            parts.push(Part { url, range });
+            parts.push(Part { url, range, aes: aes(&key, seq) });
+            seq += 1;
             clock += std::mem::take(&mut extinf);
         }
     }
@@ -692,7 +843,19 @@ pub fn download(src: &Source, dest: &Path, allow_loopback: bool, progress: &mut 
             // Where each part starts in the file, and where the last ends.
             let mut starts = vec![0u64];
             let mut written = 0u64;
+            let mut keys = Keys::new();
             for (i, part) in parts.iter().enumerate() {
+                // An AES-128 piece is written decrypted, so the file and its sections index hold plain media.
+                let key = match &part.aes {
+                    Some(a) => Some((key_of(&mut keys, &a.key, allow_loopback).map_err(|r| format!("{}: {}", r.code, r.message))?, a.iv)),
+                    None => None,
+                };
+                let mut copy = |r: &mut dyn Read| -> Result<(u64, u64), String> {
+                    match key {
+                        Some((k, iv)) => decrypt_copy(r, &mut out, &k, iv).map_err(|e| format!("{}: {e}", part.url)),
+                        None => std::io::copy(r, &mut out).map(|n| (n, n)).map_err(io),
+                    }
+                };
                 let mut r = get(&part.url, part.range)?;
                 match part.range {
                     Some((off, len)) => {
@@ -700,14 +863,14 @@ pub fn download(src: &Source, dest: &Path, allow_loopback: bool, progress: &mut 
                         if r.status != 206 {
                             std::io::copy(&mut (&mut r).take(off), &mut std::io::sink()).map_err(io)?;
                         }
-                        let n = std::io::copy(&mut (&mut r).take(len), &mut out).map_err(io)?;
+                        let (n, w) = copy(&mut (&mut r).take(len))?;
                         if n < len {
                             return Err(format!("range of {} ended at {n} of {len} bytes", part.url));
                         }
-                        written += n;
+                        written += w;
                     }
                     None => {
-                        written += std::io::copy(&mut r, &mut out).map_err(io)?;
+                        written += copy(&mut r)?.1;
                     }
                 }
                 starts.push(written);
@@ -775,6 +938,10 @@ mod audio_group_tests;
 mod hls_init_tests;
 
 #[cfg(test)]
+#[path = "media_hls_aes_tests.rs"]
+mod hls_aes_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -786,8 +953,12 @@ mod tests {
     fn hls_refusals_name_their_reason() {
         let drm = "#EXTM3U\n#EXT-X-KEY:METHOD=SAMPLE-AES,URI=\"skd://k\",KEYFORMAT=\"com.apple.streamingkeydelivery\"\n#EXTINF:4,\na.aac\n#EXT-X-ENDLIST";
         assert_eq!(probe_hls(&base(), drm, true, 0).unwrap_err().code, "drm");
-        let aes = "#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI=\"k.bin\"\n#EXTINF:4,\na.ts\n#EXT-X-ENDLIST";
-        assert_eq!(probe_hls(&base(), aes, true, 0).unwrap_err().code, "encrypted");
+        let other = "#EXTM3U\n#EXT-X-KEY:METHOD=AES-256,URI=\"k.bin\"\n#EXTINF:4,\na.ts\n#EXT-X-ENDLIST";
+        assert_eq!(probe_hls(&base(), other, true, 0).unwrap_err().code, "encrypted");
+        // AES-128 with an identity key is taken, its pieces decrypted as they are downloaded.
+        let aes = "#EXTM3U\n#EXT-X-MEDIA-SEQUENCE:7\n#EXT-X-KEY:METHOD=AES-128,URI=\"k.bin\"\n#EXTINF:4,\na.ts\n#EXT-X-ENDLIST";
+        let Source::Hls { parts, .. } = probe_hls(&base(), aes, true, 0).unwrap() else { panic!("not HLS") };
+        assert_eq!(parts[0].aes, Some(Aes { key: "https://cdn.example.org/v/k.bin".into(), iv: 7u128.to_be_bytes() }));
         let live = "#EXTM3U\n#EXTINF:4,\na.ts\n";
         assert_eq!(probe_hls(&base(), live, true, 0).unwrap_err().code, "live");
     }
@@ -795,7 +966,7 @@ mod tests {
     #[test]
     fn vod_hls_lists_absolute_segments() {
         let vod = "#EXTM3U\n#EXTINF:4,\nseg0.aac\n#EXTINF:4,\n/x/seg1.aac\n#EXT-X-ENDLIST";
-        let part = |u: &str| Part { url: u.into(), range: None };
+        let part = |u: &str| Part { url: u.into(), range: None, aes: None };
         assert_eq!(
             probe_hls(&base(), vod, true, 0).unwrap(),
             Source::Hls { parts: vec![part("https://cdn.example.org/v/seg0.aac"), part("https://cdn.example.org/x/seg1.aac")], ext: "aac", sections: vec![Section { part: 0, at: 0.0, init: None }] }

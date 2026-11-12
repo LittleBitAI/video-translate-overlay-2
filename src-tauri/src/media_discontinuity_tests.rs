@@ -72,7 +72,7 @@ fn a_section_after_a_discontinuity_plays_where_the_playlist_puts_it() {
     assert!((onset - 5.0).abs() < 0.1, "the second section's tone starts at {onset:.2} s, not 5 s");
 
     // The same file name downloaded again from a playlist without one loses the old index.
-    let plain = Source::Hls { parts: vec![Part { url: format!("{base}/seg0.ts"), range: None }], ext: "ts", sections: vec![] };
+    let plain = Source::Hls { parts: vec![Part { url: format!("{base}/seg0.ts"), range: None, aes: None }], ext: "ts", sections: vec![] };
     download(&plain, &dest, true, &mut |_| {}).unwrap();
     assert!(!sections_path(&dest).exists(), "a stale sections index was kept");
     let _ = std::fs::remove_file(&dest);
