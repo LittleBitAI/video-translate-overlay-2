@@ -174,13 +174,14 @@ fn decode_sections(path: &Path, index: &str, ext: Option<&str>) -> Result<Vec<i1
         let open = || Ranges::open(path, parts.clone());
         let mut head = [0u8; TS_PACKET + 1];
         let ts = std::io::Read::read_exact(&mut open()?, &mut head).is_ok() && head[0] == 0x47 && head[TS_PACKET] == 0x47;
-        // fMP4: the audio track's start after the section's earliest track; other
-        // sections (packed audio) have one stream, which starts the section.
+        // fMP4: each fragment at its tfdt, the section starting where its earliest
+        // track does, as players start it; other sections (packed audio) have
+        // one stream, whose first timestamp starts the section.
         let timing = if ts { None } else { fmp4_timing(path, (init_from, init_to), (from, to)) };
         let pcm = if ts {
             decode_ts(&open)
         } else {
-            let (start, jumps) = timing.map_or((None, Vec::new()), |t| (Some(t.lead), t.jumps));
+            let (start, jumps) = timing.map_or((None, Vec::new()), |t| (Some(t.edit - t.earliest), t.jumps));
             decode_stream(Box::new(open()?), ext, start, &jumps)
         }
             .map_err(|e| if e == TOO_LONG { e } else { format!("section {} of the playlist: {e}", i + 1) })?;
@@ -296,11 +297,19 @@ fn child<'a>(b: &'a [u8], kind: &[u8; 4]) -> Option<&'a [u8]> {
 /// reader does not apply edit lists, so without it a late-starting track would
 /// be pulled to 0, a trimmed one would play its cut part, and a skipped part
 /// would push every later word late.
-fn mp4_edits(path: &Path) -> Option<Vec<Edit>> {
+fn mp4_edits(moov: &[u8]) -> Option<Vec<Edit>> {
+    let movie = timescale(child(moov, b"mvhd")?)?;
+    let trak = traks(moov).find(|t| is_sound(t))?;
+    track_edits(trak, movie)
+}
+
+/// An MP4's `moov` body and where the box ends in the file; `None` when the
+/// file is not MP4 (its first box is not `ftyp`).
+fn mp4_moov(path: &Path) -> Option<(Vec<u8>, u64)> {
     use std::io::{Read, Seek, SeekFrom};
     let mut f = std::fs::File::open(path).ok()?;
     let mut off = 0u64;
-    let moov = loop {
+    loop {
         f.seek(SeekFrom::Start(off)).ok()?;
         let mut h = Vec::with_capacity(16);
         (&mut f).take(16).read_to_end(&mut h).ok()?;
@@ -312,7 +321,7 @@ fn mp4_edits(path: &Path) -> Option<Vec<Edit>> {
                 let mut body = Vec::new();
                 f.seek(SeekFrom::Start(off + hdr)).ok()?;
                 (&mut f).take(size.saturating_sub(hdr).min(64 << 20)).read_to_end(&mut body).ok()?;
-                break body;
+                return Some((body, off.checked_add(size)?));
             }
             _ => {}
         }
@@ -320,10 +329,16 @@ fn mp4_edits(path: &Path) -> Option<Vec<Edit>> {
             return None;
         }
         off += size;
-    };
-    let movie = timescale(child(&moov, b"mvhd")?)?;
-    let trak = traks(&moov).find(|t| is_sound(t))?;
-    track_edits(trak, movie)
+    }
+}
+
+/// The ticks of a track's samples in the `moov` itself (none in fMP4's init),
+/// where symphonia starts the track's first fragment.
+fn stts_ticks(trak: &[u8]) -> u64 {
+    let stts = child(trak, b"mdia").and_then(|m| child(m, b"minf")).and_then(|m| child(m, b"stbl")).and_then(|s| child(s, b"stts"));
+    let Some(stts) = stts else { return 0 };
+    let n = be32(stts, 4).unwrap_or(0) as usize;
+    stts.get(8..).unwrap_or_default().chunks_exact(8).take(n).map(|e| u64::from(be32(e, 0).unwrap_or(0)) * u64::from(be32(e, 4).unwrap_or(0))).sum()
 }
 
 /// The timescale of an `mvhd` or `mdhd`, which keep it at the same place.
@@ -378,12 +393,16 @@ fn edit_shift(edits: &[Edit]) -> f64 {
     lead - edits.iter().find_map(|e| e.from).unwrap_or(0.0)
 }
 
-/// How an fMP4 HLS section's audio is timed ([`fmp4_timing`]).
+/// How fragmented MP4 audio is timed ([`fmp4_timing`]).
 #[derive(Debug, Default, PartialEq)]
 struct Fmp4Timing {
-    /// How far after the earliest of the section's tracks its audio starts, in seconds.
-    lead: f64,
-    /// Where the audio's fragments jump: from the track tick symphonia gives a
+    /// Where the audio track's own time 0 plays on the movie's timeline, in
+    /// seconds, by its edit list.
+    edit: f64,
+    /// Where the earliest track's first fragment plays on the movie's timeline,
+    /// in seconds: where an HLS section starts.
+    earliest: f64,
+    /// Where the audio's fragments are: from the track tick symphonia gives a
     /// fragment's first packet on, the ticks to add to reach its `tfdt`.
     jumps: Vec<(u64, i64)>,
 }
@@ -418,15 +437,15 @@ fn traf_ticks(traf: &[u8], trex_default: u32) -> Option<u64> {
     Some(ticks)
 }
 
-/// How an fMP4 HLS section's audio is timed; `None` when the section is not
-/// fMP4. Players line a section's tracks up on the timeline they share, each
-/// from its first `tfdt` shifted by its edit list, and start the section where
-/// the earliest begins: audio that starts 2 s after the video is heard 2 s in.
-/// Every fragment then plays at its own `tfdt`: audio missing for ten seconds
-/// while the video runs on stays ten seconds of silence. Symphonia reads
-/// neither `tfdt` nor edit lists, timing each track from 0 and every fragment
-/// straight after the one before, so both are added back. Only the section's
-/// `moof` boxes are read, never its media.
+/// How fragmented MP4 audio is timed, an HLS section's (`init` its init
+/// section) or a downloaded file's (`init` its `ftyp` and `moov`, `section` the
+/// rest); `None` when it is not fragmented MP4. Every fragment plays at its own
+/// `tfdt`, shifted by its track's edit list: audio missing for ten seconds while
+/// the video runs on stays ten seconds of silence, and audio that starts 2 s
+/// after the video is heard 2 s in. Symphonia reads neither `tfdt` nor edit
+/// lists, timing each track from the end of its `moov` samples and every
+/// fragment straight after the one before, so both are added back. Only the
+/// `moof` boxes are read, never the media.
 fn fmp4_timing(path: &Path, init: (u64, u64), section: (u64, u64)) -> Option<Fmp4Timing> {
     use std::io::{Read, Seek, SeekFrom};
     let mut f = std::fs::File::open(path).ok()?;
@@ -449,15 +468,15 @@ fn fmp4_timing(path: &Path, init: (u64, u64), section: (u64, u64)) -> Option<Fmp
         })
         .collect();
     let sound = tracks.iter().position(|t| t.3)?;
+    let sound_trak = traks(moov).find(|t| is_sound(t))?;
     // The audio's default sample duration in the init's `mvex`.
     let trex_default = child(moov, b"mvex")
         .and_then(|m| boxes(m).filter(|(k, _)| k == b"trex").find(|(_, t)| be32(t, 4) == Some(tracks[sound].0)))
         .and_then(|(_, t)| be32(t, 12))
         .unwrap_or(0);
     let mut first: Vec<Option<f64>> = vec![None; tracks.len()];
-    // The audio's first tfdt, and the ticks of its fragments read so far (where
-    // symphonia starts the next one).
-    let (mut base0, mut played) = (None::<u64>, 0u64);
+    // Where symphonia starts the audio's next fragment.
+    let mut played = stts_ticks(sound_trak);
     let mut jumps: Vec<(u64, i64)> = Vec::new();
     let mut off = section.0;
     while off < section.1 {
@@ -485,8 +504,7 @@ fn fmp4_timing(path: &Path, init: (u64, u64), section: (u64, u64)) -> Option<Fmp
                     continue;
                 }
                 if let Some(base) = base {
-                    let b0 = *base0.get_or_insert(base);
-                    let shift = (i128::from(base) - i128::from(b0) - i128::from(played)).clamp(i64::MIN.into(), i64::MAX.into()) as i64;
+                    let shift = (i128::from(base) - i128::from(played)).clamp(i64::MIN.into(), i64::MAX.into()) as i64;
                     if shift != jumps.last().map_or(0, |j| j.1) {
                         jumps.push((played, shift));
                     }
@@ -498,20 +516,29 @@ fn fmp4_timing(path: &Path, init: (u64, u64), section: (u64, u64)) -> Option<Fmp
     }
     let audio = first[sound]?;
     let earliest = first.iter().flatten().copied().fold(audio, f64::min);
-    Some(Fmp4Timing { lead: audio - earliest, jumps })
+    Some(Fmp4Timing { edit: tracks[sound].2, earliest, jumps })
 }
 
 /// Decodes an MP4 (or any other file, whose edit list is empty) on the movie's
 /// timeline. With at most one media edit, the edit is an offset applied while
 /// decoding; edits that skip or repeat parts build the timeline from the
-/// track decoded on its own one.
+/// track decoded on its own one. A fragmented MP4 (a `moov` with `mvex`) has
+/// each fragment placed at its `tfdt` as well, as in an HLS section.
 fn decode_edited(path: &Path, ext: Option<&str>) -> Result<Vec<i16>, String> {
     let open = || std::fs::File::open(path).map_err(|e| format!("open audio: {e}"));
-    let edits = mp4_edits(path).unwrap_or_default();
+    let moov = mp4_moov(path);
+    let edits = moov.as_ref().and_then(|(m, _)| mp4_edits(m)).unwrap_or_default();
+    let jumps = match &moov {
+        Some((m, end)) if child(m, b"mvex").is_some() => {
+            let len = std::fs::metadata(path).map_err(|e| format!("read audio: {e}"))?.len();
+            fmp4_timing(path, (0, *end), (*end, len)).map(|t| t.jumps).unwrap_or_default()
+        }
+        _ => Vec::new(),
+    };
     if edits.iter().filter(|e| e.from.is_some()).count() <= 1 {
         let lead: f64 = edits.iter().take_while(|e| e.from.is_none()).map(|e| e.secs).sum();
         let media = edits.iter().find(|e| e.from.is_some());
-        let mut pcm = decode_stream(Box::new(open()?), ext, Some(edit_shift(&edits)), &[])?;
+        let mut pcm = decode_stream(Box::new(open()?), ext, Some(edit_shift(&edits)), &jumps)?;
         // The movie ends where the edits do: the media edit's length (track
         // audio past it is not played), then any empty edits after it (silence).
         // A media edit of length 0 runs to the end of the track.
@@ -527,7 +554,7 @@ fn decode_edited(path: &Path, ext: Option<&str>) -> Result<Vec<i16>, String> {
         return Ok(pcm);
     }
     // ponytail: a second copy of the PCM (about 115 MB for an hour) for files with several edits.
-    let track = decode_stream(Box::new(open()?), ext, Some(0.0), &[])?;
+    let track = decode_stream(Box::new(open()?), ext, Some(0.0), &jumps)?;
     apply_edits(&track, &edits)
 }
 
@@ -899,3 +926,7 @@ mod fmp4_lead_tests;
 #[cfg(test)]
 #[path = "decode_fmp4_gap_tests.rs"]
 mod fmp4_gap_tests;
+
+#[cfg(test)]
+#[path = "decode_fmp4_direct_tests.rs"]
+mod fmp4_direct_tests;
