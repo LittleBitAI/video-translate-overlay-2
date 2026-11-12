@@ -129,7 +129,8 @@ impl Db {
         if rc != OK {
             return Err(format!("open {}: {}", path.display(), db.err()));
         }
-        unsafe { sqlite3_busy_timeout(raw, 5_000) };
+        // Writers queue for each other; a phone under disk pressure can hold a commit for seconds.
+        unsafe { sqlite3_busy_timeout(raw, 30_000) };
         Ok(db)
     }
 

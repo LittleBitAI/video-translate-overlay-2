@@ -66,8 +66,8 @@ fn checked(raw: &str, allow_loopback: bool) -> Result<(Url, Option<SocketAddr>),
     }
     let port = url.port_or_known_default().unwrap_or(443);
     let addr = match url.host() {
-        Some(url::Host::Ipv4(ip)) => (!is_private(IpAddr::V4(ip))).then_some(None),
-        Some(url::Host::Ipv6(ip)) => (!is_private(IpAddr::V6(ip))).then_some(None),
+        Some(url::Host::Ipv4(ip)) => (!is_private(IpAddr::V4(ip))).then_some(Some(SocketAddr::new(ip.into(), port))),
+        Some(url::Host::Ipv6(ip)) => (!is_private(IpAddr::V6(ip))).then_some(Some(SocketAddr::new(ip.into(), port))),
         Some(url::Host::Domain(d)) => {
             let d = d.to_ascii_lowercase();
             if d == "localhost" || [".localhost", ".local", ".internal"].iter().any(|s| d.ends_with(s)) {
@@ -86,27 +86,6 @@ fn checked(raw: &str, allow_loopback: bool) -> Result<(Url, Option<SocketAddr>),
         None => None,
     };
     addr.map(|a| (url, a)).ok_or_else(private_address)
-}
-
-/// Where a request for `url` actually goes. Plain HTTP is sent to the checked
-/// address with the name in `Host`, so a name that resolves differently the
-/// second time (DNS rebinding) cannot redirect it. HTTPS keeps the name: the
-/// certificate must prove that name, so a rebound connection fails its
-/// handshake before any request is sent, and [`get`] also checks the address
-/// actually connected to.
-fn pinned(url: &Url, addr: Option<SocketAddr>) -> (Url, Option<String>) {
-    match addr {
-        Some(a) if url.scheme() == "http" => {
-            let mut to = url.clone();
-            let _ = to.set_ip_host(a.ip());
-            let host = match url.port() {
-                Some(p) => format!("{}:{p}", url.host_str().unwrap_or("")),
-                None => url.host_str().unwrap_or("").to_string(),
-            };
-            (to, Some(host))
-        }
-        _ => (url.clone(), None),
-    }
 }
 
 fn is_private(ip: IpAddr) -> bool {
@@ -136,13 +115,13 @@ fn unreachable(e: impl std::fmt::Display) -> Refusal {
 fn get(url: &str, range: Option<(u64, u64)>, allow_loopback: bool, timeout_ms: i32) -> Result<(http::Response, Url), Refusal> {
     let (mut current, mut addr) = checked(url, allow_loopback)?;
     for _ in 0..=MAX_REDIRECTS {
-        let (to, host) = pinned(&current, addr);
-        let mut req = Request::get(to.as_str());
+        let mut req = Request::get(current.as_str());
         req.timeout_ms = timeout_ms;
         req.follow_redirects = false;
-        if let Some(h) = &host {
-            req = req.header("Host", h);
-        }
+        // Sent to exactly the address that was checked, http and https alike: a
+        // name that resolves differently the second time (DNS rebinding) cannot
+        // move it. The name still goes in Host, SNI and the certificate check.
+        req.connect_to = addr;
         if let Some((off, len)) = range {
             req = req.header("Range", &format!("bytes={off}-{}", off + len.max(1) - 1));
         }
@@ -479,19 +458,6 @@ mod tests {
         assert!(vod.len() > 65_536, "longer than the probe's first read");
         let Source::Hls { parts, .. } = probe_hls(&base(), &vod, true, 0).unwrap() else { panic!("not HLS") };
         assert_eq!(parts.len(), 5_000);
-    }
-
-    #[test]
-    fn plain_http_goes_to_the_checked_address() {
-        let addr: SocketAddr = "93.184.215.14:8080".parse().unwrap();
-        let (to, host) = pinned(&Url::parse("http://media.example.org:8080/v/a.m4a?x=1").unwrap(), Some(addr));
-        assert_eq!(to.as_str(), "http://93.184.215.14:8080/v/a.m4a?x=1");
-        assert_eq!(host.as_deref(), Some("media.example.org:8080"));
-        let (to, host) = pinned(&Url::parse("http://media.example.org/a.m4a").unwrap(), Some("[2606:2800::1]:80".parse().unwrap()));
-        assert_eq!((to.as_str(), host.as_deref()), ("http://[2606:2800::1]/a.m4a", Some("media.example.org")));
-        // HTTPS keeps the name: its certificate has to prove it.
-        let https = Url::parse("https://media.example.org/a.m4a").unwrap();
-        assert_eq!(pinned(&https, Some(addr)), (https.clone(), None));
     }
 
     #[test]

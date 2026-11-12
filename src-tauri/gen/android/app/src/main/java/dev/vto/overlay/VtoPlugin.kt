@@ -136,6 +136,12 @@ class VtoPlugin(private val activity: Activity) : Plugin(activity) {
     fun ready(invoke: Invoke) = guard(invoke) {
         val a = invoke.parseArgs(ReadyArgs::class.java)
         val nm = activity.getSystemService(NotificationManager::class.java)
+        // A job resumed after a crash between showing its notice and recording it
+        // sends again: while that job's notice is still up, it gets no second one (E2).
+        if (nm.activeNotifications.any { it.tag == READY_CHANNEL && it.id == a.jobId.hashCode() }) {
+            invoke.resolve()
+            return@guard
+        }
         if (Build.VERSION.SDK_INT >= 26) {
             nm.createNotificationChannel(NotificationChannel(READY_CHANNEL, "자막 준비 완료", NotificationManager.IMPORTANCE_DEFAULT))
         }
@@ -151,7 +157,7 @@ class VtoPlugin(private val activity: Activity) : Plugin(activity) {
             .setContentIntent(tap)
             .setAutoCancel(true)
             .build()
-        nm.notify(a.jobId.hashCode(), n)
+        nm.notify(READY_CHANNEL, a.jobId.hashCode(), n)
         invoke.resolve()
     }
 

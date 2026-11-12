@@ -18,7 +18,8 @@ android {
     compileSdk = 36
     namespace = "dev.vto.overlay"
     defaultConfig {
-        manifestPlaceholders["usesCleartextTraffic"] = "false"
+        // The in-app browser opens http pages as well as https ones (P1), release builds included.
+        manifestPlaceholders["usesCleartextTraffic"] = "true"
         applicationId = "dev.vto.overlay"
         minSdk = 24
         targetSdk = 36
@@ -27,7 +28,6 @@ android {
     }
     buildTypes {
         getByName("debug") {
-            manifestPlaceholders["usesCleartextTraffic"] = "true"
             isDebuggable = true
             isJniDebuggable = true
             isMinifyEnabled = false

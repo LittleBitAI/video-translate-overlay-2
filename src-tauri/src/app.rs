@@ -135,25 +135,42 @@ fn open_from_args(h: &Handle, args: &[String]) {
 /// on a live object. A running app gets the launch through single-instance.
 #[cfg(windows)]
 fn ready_toast(app: &AppHandle<Wry>, text: &str, job_id: &str) -> Result<(), String> {
-    use windows::core::HSTRING;
-    use windows::Data::Xml::Dom::XmlDocument;
-    use windows::UI::Notifications::{ToastNotification, ToastNotificationManager};
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
     // An unpackaged build has no registered app id of its own; the plugin uses PowerShell's then too.
     let dev = exe.parent().is_some_and(|d| d.ends_with("target/debug") || d.ends_with("target/release"));
     let app_id = if dev { POWERSHELL_APP_ID.to_string() } else { app.config().identifier.clone() };
-    let xml = toast_xml(text, job_id);
     // WinRT needs COM on this (the worker's) thread; an earlier init is fine too.
     unsafe {
         let _ = windows::Win32::System::Com::CoInitializeEx(None, windows::Win32::System::Com::COINIT_MULTITHREADED);
     }
-    (|| -> windows::core::Result<()> {
-        let doc = XmlDocument::new()?;
-        doc.LoadXml(&HSTRING::from(xml))?;
-        ToastNotificationManager::CreateToastNotifierWithId(&HSTRING::from(app_id))?.Show(&ToastNotification::CreateToastNotification(&doc)?)
-    })()
-    .map_err(|e| e.to_string())
+    show_once(&app_id, &toast_xml(text, job_id), job_id).map(|_| ()).map_err(|e| e.to_string())
 }
+
+/// Shows the toast tagged with its job, unless that job's toast is still in
+/// Action Center: a job resumed after a crash between showing its notice and
+/// recording it sends again, and that must not make a second one (E2).
+/// True when it was shown.
+#[cfg(windows)]
+fn show_once(app_id: &str, xml: &str, job_id: &str) -> windows::core::Result<bool> {
+    use windows::core::HSTRING;
+    use windows::Data::Xml::Dom::XmlDocument;
+    use windows::UI::Notifications::{ToastNotification, ToastNotificationManager};
+    let (app_id, tag) = (HSTRING::from(app_id), HSTRING::from(job_id));
+    let earlier = ToastNotificationManager::History()?.GetHistoryWithId(&app_id)?;
+    if earlier.into_iter().any(|t| t.Tag().is_ok_and(|g| g == tag) && t.Group().is_ok_and(|g| g == TOAST_GROUP)) {
+        return Ok(false);
+    }
+    let doc = XmlDocument::new()?;
+    doc.LoadXml(&HSTRING::from(xml))?;
+    let toast = ToastNotification::CreateToastNotification(&doc)?;
+    toast.SetTag(&tag)?; // job ids are 36 characters; tags may have 64
+    toast.SetGroup(&HSTRING::from(TOAST_GROUP))?;
+    ToastNotificationManager::CreateToastNotifierWithId(&app_id)?.Show(&toast)?;
+    Ok(true)
+}
+
+#[cfg(windows)]
+const TOAST_GROUP: &str = "vto-ready";
 
 /// The ready toast; a click launches `vto-open:<job id>`.
 #[cfg(windows)]

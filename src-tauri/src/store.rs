@@ -122,6 +122,9 @@ type R<T> = Result<T, String>;
 impl Store {
     pub fn open(path: &Path) -> R<Store> {
         let db = Db::open(path)?;
+        // Readers (the overlay polling a job) never wait on the worker's writes,
+        // even when a slow disk stalls a commit. The mode stays with the file.
+        db.exec("PRAGMA journal_mode=WAL")?;
         db.exec(SCHEMA)?;
         Ok(Store { db, path: path.to_path_buf() })
     }
@@ -326,6 +329,10 @@ impl Store {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "store_wal_tests.rs"]
+mod wal_tests;
 
 #[cfg(test)]
 mod tests {

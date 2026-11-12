@@ -2,7 +2,8 @@
 //!
 //! Windows uses WinHTTP, so TLS, proxies and certificates are the OS's.
 //! Elsewhere (Android) [`portable`] speaks HTTP/1.1 itself, with TLS from
-//! rustls checked against Mozilla's root certificates.
+//! rustls checked against Mozilla's root certificates; so does every request
+//! pinned to a checked address (media), on Windows too.
 
 use std::io::{self, Read};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -35,14 +36,18 @@ pub struct Request<'a> {
     pub timeout_ms: i32,
     /// When false a 3xx comes back as is, with its `location`, so the caller can check the target.
     pub follow_redirects: bool,
+    /// Connect to this address instead of resolving the URL's host again; the
+    /// URL's name still goes in `Host`, SNI and the certificate check. Applies to
+    /// the first hop only (a followed redirect resolves its own host).
+    pub connect_to: Option<std::net::SocketAddr>,
 }
 
 impl<'a> Request<'a> {
     pub fn get(url: &'a str) -> Self {
-        Request { method: "GET", url, headers: Vec::new(), body: None, timeout_ms: 30_000, follow_redirects: true }
+        Request { method: "GET", url, headers: Vec::new(), body: None, timeout_ms: 30_000, follow_redirects: true, connect_to: None }
     }
     pub fn post(url: &'a str, body: &'a [u8]) -> Self {
-        Request { method: "POST", url, headers: Vec::new(), body: Some(body), timeout_ms: 120_000, follow_redirects: true }
+        Request { method: "POST", url, headers: Vec::new(), body: Some(body), timeout_ms: 120_000, follow_redirects: true, connect_to: None }
     }
     pub fn header(mut self, name: &str, value: &str) -> Self {
         self.headers.push((name.into(), value.into()));
@@ -83,6 +88,11 @@ pub fn send(req: Request<'_>) -> Result<Response, HttpError> {
     match url.scheme() {
         "http" | "https" => {}
         s => return Err(HttpError(format!("unsupported scheme {s}"))),
+    }
+    if req.connect_to.is_some() {
+        // WinHTTP cannot connect to a chosen address and still check the
+        // certificate against the name, so pinned requests always go through rustls.
+        return portable::send(&url, &req);
     }
     imp::send(&url, &req)
 }
@@ -273,9 +283,8 @@ mod imp {
 #[cfg(not(windows))]
 use portable as imp;
 
-/// HTTP/1.1 over TCP, or over rustls for `https`. Built on every OS so its
-/// tests run here; only non-Windows builds send through it.
-#[cfg_attr(windows, allow(dead_code))]
+/// HTTP/1.1 over TCP, or over rustls for `https`: every request off Windows,
+/// and pinned ones on Windows.
 pub(crate) mod portable {
     use super::*;
     use std::io::{BufRead, BufReader, Write};
@@ -303,22 +312,29 @@ pub(crate) mod portable {
     /// Follows redirects (up to five) when the request asks for it.
     pub fn send(url: &url::Url, req: &Request<'_>) -> Result<Response, HttpError> {
         let mut url = url.clone();
+        let mut pin = req.connect_to;
         for _ in 0..5 {
-            let r = once(&url, req)?;
+            let r = once(&url, req, pin)?;
             match (&r.location, req.follow_redirects && (300..400).contains(&r.status)) {
-                (Some(to), true) => url = url.join(to).map_err(|e| HttpError(format!("bad redirect {to}: {e}")))?,
+                (Some(to), true) => {
+                    url = url.join(to).map_err(|e| HttpError(format!("bad redirect {to}: {e}")))?;
+                    pin = None;
+                }
                 _ => return Ok(r),
             }
         }
         Err(HttpError("too many redirects".into()))
     }
 
-    fn once(url: &url::Url, req: &Request<'_>) -> Result<Response, HttpError> {
+    fn once(url: &url::Url, req: &Request<'_>, pin: Option<std::net::SocketAddr>) -> Result<Response, HttpError> {
         let host = url.host_str().unwrap_or("").trim_start_matches('[').trim_end_matches(']');
         let port = url.port_or_known_default().unwrap_or(80);
         let err = |e: io::Error| HttpError(e.to_string());
         let timeout = Duration::from_millis(req.timeout_ms.max(1) as u64);
-        let addrs: Vec<_> = (host, port).to_socket_addrs().map_err(err)?.collect();
+        let addrs: Vec<_> = match pin {
+            Some(a) => vec![a],
+            None => (host, port).to_socket_addrs().map_err(err)?.collect(),
+        };
         let mut last = HttpError(format!("{host} has no address"));
         let mut tcp = None;
         for a in addrs {
@@ -450,6 +466,10 @@ mod portable_tests;
 #[cfg(test)]
 #[path = "http_chunked_tests.rs"]
 mod chunked_tests;
+
+#[cfg(test)]
+#[path = "http_pin_tests.rs"]
+mod pin_tests;
 
 #[cfg(test)]
 mod tests {

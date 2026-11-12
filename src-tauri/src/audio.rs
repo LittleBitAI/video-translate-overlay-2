@@ -8,13 +8,19 @@ pub const RATE: usize = 16_000;
 /// Decodes a downloaded file to 16 kHz mono PCM16, streaming so that an hour of
 /// 48 kHz stereo never sits in memory as floats.
 ///
-/// WAV is parsed here; everything else (AAC/ADTS, MP4/M4A, MP3, MPEG-TS) goes
-/// through Media Foundation on Windows and [`crate::decode`] elsewhere.
+/// WAV is parsed here. MPEG-TS goes through [`crate::decode`] everywhere: it
+/// places audio by its timestamps, so a gap stays a gap (Media Foundation's TS
+/// reader neither starts its clock at the first PTS nor reports the AAC rate it
+/// outputs). Everything else (AAC/ADTS, MP4/M4A, MP3) goes through Media
+/// Foundation on Windows and [`crate::decode`] elsewhere.
 pub fn decode_file(path: &Path) -> Result<Vec<i16>, String> {
     let mut f = BufReader::new(std::fs::File::open(path).map_err(|e| format!("open audio: {e}"))?);
     let mut head = [0u8; 12];
     if f.read_exact(&mut head).is_ok() && &head[0..4] == b"RIFF" && &head[8..12] == b"WAVE" {
         return decode_wav(f);
+    }
+    if crate::decode::is_ts(path) {
+        return crate::decode::decode(path);
     }
     platform::decode(path)
 }
@@ -244,6 +250,10 @@ mod platform {
 #[cfg(test)]
 #[path = "decode_tests.rs"]
 mod decode_tests;
+
+#[cfg(test)]
+#[path = "decode_gap_tests.rs"]
+mod decode_gap_tests;
 
 #[cfg(test)]
 mod tests {

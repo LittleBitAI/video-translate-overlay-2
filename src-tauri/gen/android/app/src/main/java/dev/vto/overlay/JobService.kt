@@ -27,20 +27,48 @@ class JobService : Service() {
         } else {
             startForeground(ID, n)
         }
+        synchronized(Companion) {
+            started = true
+            // The job ended before this ran: stopping it then would have crashed the app.
+            if (stopAsked) {
+                stopAsked = false
+                stopSelf()
+            }
+        }
         // A killed process resumes its job on the next start (pipeline.rs), not from here.
         return START_NOT_STICKY
+    }
+
+    override fun onDestroy() {
+        synchronized(Companion) { started = false }
+        super.onDestroy()
     }
 
     companion object {
         const val CHANNEL = "vto-job"
         const val ID = 1
 
-        fun show(ctx: Context, state: String, title: String, percent: Int) {
+        // Whether onStartCommand has run (startForeground called), and a stop that came before it.
+        private var started = false
+        private var stopAsked = false
+
+        fun show(ctx: Context, state: String, title: String, percent: Int) = synchronized(Companion) {
             val i = Intent(ctx, JobService::class.java).putExtra("title", title).putExtra("percent", percent)
             when (state) {
-                "shown" -> ContextCompat.startForegroundService(ctx, i)
+                "shown" -> {
+                    stopAsked = false
+                    ContextCompat.startForegroundService(ctx, i)
+                }
                 "updated" -> ctx.getSystemService(NotificationManager::class.java).notify(ID, notice(ctx, title, percent))
-                else -> ctx.stopService(i)
+                // A service asked to start must call startForeground before it may stop
+                // (Android kills the app otherwise): a job that ends first leaves the stop to it.
+                else -> if (started) {
+                    ctx.stopService(i)
+                } else {
+                    stopAsked = true
+                    // Progress posted while the service never started (refused) goes too.
+                    ctx.getSystemService(NotificationManager::class.java).cancel(ID)
+                }
             }
         }
 

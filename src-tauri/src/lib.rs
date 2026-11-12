@@ -10,8 +10,7 @@ pub mod app;
 pub mod audio;
 pub mod commands;
 pub mod db;
-// Used off Windows; built here too so its tests run against Media Foundation.
-#[cfg_attr(windows, allow(dead_code))]
+// MPEG-TS everywhere; every other format off Windows.
 mod decode;
 pub mod gemini;
 pub mod http;
