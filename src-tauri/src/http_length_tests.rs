@@ -45,7 +45,7 @@ fn a_cut_hls_segment_fails_the_download() {
     let at = short_server(1);
     let parts = vec![crate::media::Part { url: format!("http://{at}/seg0.aac"), range: None }];
     let dest = std::env::temp_dir().join(format!("vto-cut-{}.aac", std::process::id()));
-    let r = crate::media::download(&crate::media::Source::Hls { parts, ext: "aac" }, &dest, true, &mut |_| {});
+    let r = crate::media::download(&crate::media::Source::Hls { parts, ext: "aac", sections: vec![] }, &dest, true, &mut |_| {});
     let _ = std::fs::remove_file(&dest);
     assert!(r.is_err(), "a segment that ended early passed as complete");
 }

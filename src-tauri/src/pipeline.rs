@@ -5,6 +5,7 @@ use crate::gemini::{self, Client};
 use crate::store::{Job, Store};
 use crate::{api, audio, log, media, Core};
 use serde_json::Value;
+use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -252,6 +253,8 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
 /// killed in between, or a delete that fails, leaves the path recorded, and
 /// the worker's next [`sweep_audio`] tries again.
 fn drop_audio(store: &Store, job_id: &str, path: &str) {
+    // The HLS sections index goes first: an index without its audio is never read.
+    let _ = std::fs::remove_file(media::sections_path(Path::new(path)));
     match std::fs::remove_file(path) {
         Err(e) if e.kind() != std::io::ErrorKind::NotFound => log(format!("job {job_id}: audio not deleted yet: {e}")),
         _ => {

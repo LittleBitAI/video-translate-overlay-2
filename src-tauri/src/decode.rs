@@ -22,38 +22,89 @@ pub fn is_ts(path: &Path) -> bool {
 }
 
 pub fn decode(path: &Path) -> Result<Vec<i16>, String> {
+    let ext = path.extension().and_then(|e| e.to_str()).map(str::to_string);
+    let sidecar = crate::media::sections_path(path);
+    if sidecar.exists() {
+        let index = std::fs::read_to_string(&sidecar).map_err(|e| format!("read sections: {e}"))?;
+        return decode_sections(path, &index, ext.as_deref());
+    }
     if is_ts(path) {
         // ponytail: the TS audio is gathered in memory (about 60 MB for an hour of 128 kbit/s AAC).
-        let data = std::fs::read(path).map_err(|e| format!("read audio: {e}"))?;
-        let (es, ext, runs) = ts_audio(&data)?;
-        // Each run is decoded on its own and placed at its time: a gap in the audio stays a gap.
-        let mut out = Vec::new();
-        let mut failed = None;
-        for (i, &(start, at)) in runs.iter().enumerate() {
-            let end = runs.get(i + 1).map_or(es.len(), |r| r.0);
-            match decode_stream(Box::new(Cursor::new(es[start..end].to_vec())), Some(ext), 0.0) {
-                Ok(pcm) => {
-                    let at = (at * RATE as u64 / PTS_HZ) as usize;
-                    if at.max(out.len()) + pcm.len() > MAX_SAMPLES {
-                        return Err(TOO_LONG.into());
-                    }
-                    if at > out.len() {
-                        out.resize(at, 0);
-                    }
-                    out.extend(pcm);
-                }
-                Err(e) if e == TOO_LONG => return Err(e),
-                // A run of damaged data loses its own seconds, not the lecture.
-                Err(e) => failed = Some(e),
-            }
-        }
-        return match failed {
-            Some(e) if out.is_empty() => Err(e),
-            _ => Ok(out),
-        };
+        return decode_ts(&std::fs::read(path).map_err(|e| format!("read audio: {e}"))?);
     }
-    let ext = path.extension().and_then(|e| e.to_str()).map(str::to_string);
     decode_edited(path, ext.as_deref())
+}
+
+/// Places `pcm` at sample `at`: what came before is cut or padded to end there.
+/// `exact` cuts too; otherwise only a gap is padded and overlapping audio runs on.
+fn place(out: &mut Vec<i16>, at: usize, pcm: Vec<i16>, exact: bool) -> Result<(), String> {
+    if at.saturating_add(pcm.len()) > MAX_SAMPLES || out.len().saturating_add(pcm.len()) > MAX_SAMPLES {
+        return Err(TOO_LONG.into());
+    }
+    if at > out.len() || exact {
+        out.resize(at, 0);
+    }
+    out.extend(pcm);
+    Ok(())
+}
+
+/// Every piece decoded; the error only when none decoded at all, or the audio is too long.
+fn collect(pieces: impl Iterator<Item = (usize, Result<Vec<i16>, String>)>, exact: bool) -> Result<Vec<i16>, String> {
+    let (mut out, mut failed) = (Vec::new(), None);
+    for (at, pcm) in pieces {
+        match pcm {
+            Ok(pcm) => place(&mut out, at, pcm, exact)?,
+            Err(e) if e == TOO_LONG => return Err(e),
+            // A piece of damaged data loses its own seconds, not the lecture.
+            Err(e) => failed = Some(e),
+        }
+    }
+    match failed {
+        Some(e) if out.is_empty() => Err(e),
+        _ => Ok(out),
+    }
+}
+
+fn decode_ts(data: &[u8]) -> Result<Vec<i16>, String> {
+    let (es, ext, runs) = ts_audio(data)?;
+    // Each run is decoded on its own and placed at its time: a gap in the audio stays a gap.
+    let pieces = runs.iter().enumerate().map(|(i, &(start, at))| {
+        let end = runs.get(i + 1).map_or(es.len(), |r| r.0);
+        ((at * RATE as u64 / PTS_HZ) as usize, decode_stream(Box::new(Cursor::new(es[start..end].to_vec())), Some(ext), 0.0))
+    });
+    collect(pieces, false)
+}
+
+/// An HLS download with `EXT-X-DISCONTINUITY` ([`crate::media::sections_path`]):
+/// each section's timestamps start afresh, so it is decoded on its own (after
+/// the init section) and placed where the playlist's EXTINFs put it, as players do.
+fn decode_sections(path: &Path, index: &str, ext: Option<&str>) -> Result<Vec<i16>, String> {
+    let mut lines = index.lines();
+    let init: usize = lines.next().and_then(|l| l.strip_prefix("init ")).and_then(|n| n.parse().ok()).ok_or("bad sections index")?;
+    let mut sections = Vec::new();
+    for l in lines {
+        let (off, at) = l.split_once(' ').ok_or("bad sections index")?;
+        let off: usize = off.parse().map_err(|_| "bad sections index")?;
+        let at: f64 = at.parse().ok().filter(|a: &f64| a.is_finite() && *a >= 0.0).ok_or("bad sections index")?;
+        sections.push((off, at));
+    }
+    // ponytail: read whole, like a TS file (about 60 MB an hour).
+    let data = std::fs::read(path).map_err(|e| format!("read audio: {e}"))?;
+    if init > data.len() || sections.windows(2).any(|w| w[1].0 < w[0].0) || sections.last().is_some_and(|s| s.0 > data.len()) {
+        return Err("sections index does not match the audio".into());
+    }
+    let pieces = sections.iter().enumerate().map(|(i, &(off, at))| {
+        let end = sections.get(i + 1).map_or(data.len(), |s| s.0);
+        let bytes = [&data[..init], &data[off.max(init)..end]].concat();
+        let at = (at * RATE as f64).round().min(usize::MAX as f64) as usize;
+        let pcm = if bytes.len() > TS_PACKET && bytes[0] == 0x47 && bytes[TS_PACKET] == 0x47 {
+            decode_ts(&bytes)
+        } else {
+            decode_stream(Box::new(Cursor::new(bytes)), ext, 0.0)
+        };
+        (at, pcm)
+    });
+    collect(pieces, true)
 }
 
 /// Symphonia's codecs, plus Opus (WebM audio) through libopus.

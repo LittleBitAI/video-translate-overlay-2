@@ -35,7 +35,26 @@ pub struct Part {
 pub enum Source {
     File { url: String, ext: &'static str },
     /// The init section (if any) first, then the segments, in playlist order.
-    Hls { parts: Vec<Part>, ext: &'static str },
+    /// `sections` is empty unless the playlist has `EXT-X-DISCONTINUITY`.
+    Hls { parts: Vec<Part>, ext: &'static str, sections: Vec<Section> },
+}
+
+/// Where a playlist's discontinuity section starts: at `part` (an index into
+/// `parts`), and `at` seconds into the playlist (the `EXTINF`s before it). Its
+/// timestamps begin again there, so players place it by the playlist, and so
+/// does the decoder ([`sections_path`]).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Section {
+    pub part: usize,
+    pub at: f64,
+}
+
+/// Beside a downloaded HLS file with sections: the byte offset and playlist
+/// time of each, one `offset seconds` line apiece after an `init <bytes>` line.
+pub fn sections_path(audio: &Path) -> std::path::PathBuf {
+    let mut s = audio.as_os_str().to_owned();
+    s.push(".sections");
+    s.into()
 }
 
 /// Whole playlists are read (a 64 KiB head can cut a long VOD before `#EXT-X-ENDLIST`).
@@ -390,8 +409,15 @@ pub fn probe_hls(base: &Url, playlist: &str, allow_loopback: bool, depth: u8) ->
     let mut parts = Vec::new();
     let mut init = false;
     let mut pending: Option<&str> = None;
+    // The playlist's clock (the EXTINFs so far), and whether a discontinuity comes before the next segment.
+    let (mut clock, mut extinf, mut broken) = (0f64, 0f64, false);
+    let mut sections = Vec::new();
     for l in &lines {
-        if l.starts_with("#EXT-X-MAP") {
+        if let Some(d) = l.strip_prefix("#EXTINF:") {
+            extinf = d.split(',').next().and_then(|s| s.trim().parse().ok()).filter(|s: &f64| s.is_finite() && *s >= 0.0).unwrap_or(0.0);
+        } else if l.starts_with("#EXT-X-DISCONTINUITY") && !l.starts_with("#EXT-X-DISCONTINUITY-SEQUENCE") {
+            broken = true;
+        } else if l.starts_with("#EXT-X-MAP") {
             // ponytail: only the first init section is kept; a mid-stream codec switch is not followed.
             if init {
                 continue;
@@ -405,7 +431,14 @@ pub fn probe_hls(base: &Url, playlist: &str, allow_loopback: bool, depth: u8) ->
         } else if !l.starts_with('#') {
             let url = join(l)?.to_string();
             let range = pending.take().map(|r| byte_range(r, &url, &mut ends)).transpose()?;
+            if std::mem::take(&mut broken) && parts.len() > usize::from(init) {
+                if sections.is_empty() {
+                    sections.push(Section { part: usize::from(init), at: 0.0 });
+                }
+                sections.push(Section { part: parts.len(), at: clock });
+            }
             parts.push(Part { url, range });
+            clock += std::mem::take(&mut extinf);
         }
     }
     let segments = &parts[usize::from(init)..];
@@ -422,7 +455,7 @@ pub fn probe_hls(base: &Url, playlist: &str, allow_loopback: bool, depth: u8) ->
     } else {
         "ts"
     };
-    Ok(Source::Hls { parts, ext })
+    Ok(Source::Hls { parts, ext, sections })
 }
 
 impl Source {
@@ -436,6 +469,12 @@ impl Source {
 /// Downloads `src` into `dest`, reporting a 0..=100 percent. Every request
 /// (and redirect) is checked against the same URL policy as the probe.
 pub fn download(src: &Source, dest: &Path, allow_loopback: bool, progress: &mut dyn FnMut(i64)) -> Result<(), String> {
+    // An index from an earlier attempt describes other bytes.
+    let sidecar = sections_path(dest);
+    match std::fs::remove_file(&sidecar) {
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(format!("stale sections index: {e}")),
+        _ => {}
+    }
     let mut out = std::io::BufWriter::new(std::fs::File::create(dest).map_err(|e| e.to_string())?);
     let mut buf = vec![0u8; 1 << 16];
     let get = |url: &str, range| get(url, range, allow_loopback, 60_000).map(|(r, _)| r).map_err(|r| format!("{}: {}", r.code, r.message));
@@ -459,9 +498,17 @@ pub fn download(src: &Source, dest: &Path, allow_loopback: bool, progress: &mut 
                 return Err(format!("download ended at {done} of {total} bytes"));
             }
         }
-        Source::Hls { parts, .. } => {
+        Source::Hls { parts, sections, .. } => {
             let io = |e: std::io::Error| e.to_string();
+            let (mut written, mut index) = (0u64, String::new());
             for (i, part) in parts.iter().enumerate() {
+                if let Some(s) = sections.iter().find(|s| s.part == i) {
+                    if index.is_empty() {
+                        // The bytes before the first section: the init section, which every section needs.
+                        index = format!("init {written}\n");
+                    }
+                    index.push_str(&format!("{written} {}\n", s.at));
+                }
                 let mut r = get(&part.url, part.range)?;
                 match part.range {
                     Some((off, len)) => {
@@ -473,12 +520,18 @@ pub fn download(src: &Source, dest: &Path, allow_loopback: bool, progress: &mut 
                         if n < len {
                             return Err(format!("range of {} ended at {n} of {len} bytes", part.url));
                         }
+                        written += n;
                     }
                     None => {
-                        std::io::copy(&mut r, &mut out).map_err(io)?;
+                        written += std::io::copy(&mut r, &mut out).map_err(io)?;
                     }
                 }
                 progress(((i + 1) * 100 / parts.len()) as i64);
+            }
+            // Written after the audio, so a download cut short never leaves an index that outruns it.
+            if !index.is_empty() {
+                out.flush().map_err(|e| e.to_string())?;
+                std::fs::write(&sidecar, index).map_err(|e| e.to_string())?;
             }
         }
     }
@@ -506,6 +559,10 @@ mod hls_pieces_tests;
 mod not_audio_tests;
 
 #[cfg(test)]
+#[path = "media_discontinuity_tests.rs"]
+mod discontinuity_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -529,7 +586,7 @@ mod tests {
         let part = |u: &str| Part { url: u.into(), range: None };
         assert_eq!(
             probe_hls(&base(), vod, true, 0).unwrap(),
-            Source::Hls { parts: vec![part("https://cdn.example.org/v/seg0.aac"), part("https://cdn.example.org/x/seg1.aac")], ext: "aac" }
+            Source::Hls { parts: vec![part("https://cdn.example.org/v/seg0.aac"), part("https://cdn.example.org/x/seg1.aac")], ext: "aac", sections: vec![] }
         );
     }
 
@@ -537,7 +594,7 @@ mod tests {
     fn byte_ranges_are_kept_and_continue_from_the_previous_one() {
         let vod = "#EXTM3U\n#EXT-X-MAP:URI=\"media.mp4\",BYTERANGE=\"720@0\"\n#EXTINF:4,\n#EXT-X-BYTERANGE:1000@720\nmedia.mp4\n\
                    #EXTINF:4,\n#EXT-X-BYTERANGE:500\nmedia.mp4\n#EXT-X-ENDLIST";
-        let Source::Hls { parts, ext } = probe_hls(&base(), vod, true, 0).unwrap() else { panic!("not HLS") };
+        let Source::Hls { parts, ext, .. } = probe_hls(&base(), vod, true, 0).unwrap() else { panic!("not HLS") };
         assert_eq!(ext, "mp4");
         let ranges: Vec<_> = parts.iter().map(|p| p.range).collect();
         assert_eq!(ranges, [Some((0, 720)), Some((720, 1000)), Some((1720, 500))]);
