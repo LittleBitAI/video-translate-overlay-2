@@ -7,16 +7,19 @@ The Rust side of the app, as designed in `docs/design/backend.md` and `docs/desi
 | `src/commands.rs` | Tauri commands P1-P8 and the ACL. `capabilities/main.json` gives the app's own screen every command. `capabilities/overlay.json` gives site pages only P6-P8. |
 | `src/api.rs` | What each command does: the YouTube sign-in gate, key masking, job creation rules (reuse, 409, 422, 428), progress and subtitles. |
 | `src/pipeline.rs` | The background worker. It runs one job at a time: download, then write on the device, then translate, then notify. It records every step in SQLite, so a killed process resumes from the last written region. |
-| `src/audio.rs` | Decoding to 16 kHz mono (WAV here, everything else through Media Foundation on Windows) and the voice-activity regions the model is given. Cue times are always on the source timeline. |
-| `src/media.rs` | Media URL policy (http/https only; no loopback or private addresses, checked after DNS resolution and again on every redirect hop, variant, init section and segment; plain HTTP is sent to the checked address, and the connected address is checked before a response is used), HLS/DASH/DRM/live probing over the whole playlist, `EXT-X-BYTERANGE`, and the download itself. |
+| `src/audio.rs` | Decoding to 16 kHz mono (WAV here; everything else through Media Foundation on Windows and `src/decode.rs` elsewhere) and the voice-activity regions the model is given. Cue times are always on the source timeline. |
+| `src/decode.rs` | Decoding where Media Foundation is not there (Android): symphonia for MP4/M4A, ADTS AAC and MP3, plus a small MPEG-TS demuxer for HLS `.ts` segments. Its tests run on Windows against Media Foundation. |
+| `src/media.rs` | Media URL policy (http/https only; no loopback or private addresses, checked after DNS resolution and again on every redirect hop, variant, init section and segment; plain HTTP is sent to the checked address, and the connected address is checked before a response is used), HLS/DASH/DRM/live probing over the whole playlist (relative URIs resolve against where redirects land), protected MP4 files (`sinf`/`tenc`/`pssh` in `moov`, fetched by range when it comes after `mdat`), `EXT-X-BYTERANGE`, and the download itself. |
 | `src/gemini.rs` | `gemini-3.1-flash-lite` calls. One glossary order runs first, then numbered batches of 40 segments with no timestamps. This file also holds pricing, cost and the 1,000 KRW per hour limit. |
 | `src/store.rs`, `src/db.rs` | The SQLite schema and a small binding to the OS SQLite (`winsqlite3.dll` on Windows). |
-| `src/http.rs` | Outbound HTTP through WinHTTP on Windows. Each response reports the address it really connected to. |
+| `src/http.rs` | Outbound HTTP through WinHTTP on Windows, and elsewhere through its own HTTP/1.1 client with rustls (ring, Mozilla's roots). Each response reports the address it really connected to. |
 | `src/youtube.rs` | YouTube URL parsing and the best-effort audio extractor. |
 | `src/platform.rs` | Windows Credential Manager for the key. |
+| `src/android.rs` | Android: the key sealed with an Android Keystore AES-GCM key, the job's foreground service and its ongoing progress notification, and the ready notice whose tap opens the video. The Kotlin half is `gen/android/app/src/main/java/dev/vto/overlay/` (`VtoPlugin.kt`, `JobService.kt`). No page can call it: the ACL grants no plugin command. |
 | `src/whisper.rs` | The on-device model (`app` feature): whisper.cpp with large-v3-turbo q5_0, fetched on the first job into the data folder and checked against a pinned SHA-256. It uses beam search, and the language is detected once per job. |
-| `src/main.rs` | The app (`app` feature). It has the settings screen (`../ui/index.html`), the "site" webview with the overlay bundle injected into every page, OS notifications, and a main window that only hides while a job runs. Clicking the ready toast on Windows, or its "열기" entry on the settings screen, opens the video. |
+| `src/app.rs` | The app (`app` feature), a library module because Android loads it as `libvto.so`; `src/main.rs` runs it on the desktop. It has the settings screen (`../ui/index.html`), the site webview with the overlay bundle injected into every page (its own "site" window on the desktop, the one window on Android, where `capabilities/overlay-android.json` applies), OS notifications, and a main window that only hides while a job runs. The ready toast on Windows launches `vto-open:<job id>`, a per-user protocol registered at start, so a click opens the video at any later time, after a restart too. A running app gets the launch through single-instance. |
 | `build.rs` | For the `app` feature only: bundles `src/overlay/inject.ts` with `vite.overlay.config.ts` and runs tauri-build. |
+| `android/whisper.toolchain.cmake` | The NDK toolchain for whisper.cpp in cross builds (`.cargo/config.toml` points there). |
 | `src/bin/vto-contract-host.rs` | The contract host that `contract-tests` drives. It is the real core on Tauri's mock runtime, with the stand-ins that `contract-tests/src/lib.rs` lists. |
 
 Run the tests with the repository gate:
@@ -28,8 +31,17 @@ Build and run the app on Windows. This needs `npm ci` first and libclang for whi
 The real model has its own opt-in test:
 `VTO_WHISPER_MODEL=<file> cargo test --release -p video-translate-overlay --features app --test whisper_model -- --ignored`.
 
+## Build for Android
+
+The project is in `gen/android` (Tauri's Android Studio project, with the Kotlin plugin and service). It needs JDK 17, the Android SDK (platform 36, build-tools 35), NDK 27, Ninja on `PATH`, `LIBCLANG_PATH` as above, `rustup target add aarch64-linux-android` (or `x86_64-linux-android` for the emulator), and the Tauri CLI 2 (`cargo install tauri-cli --version ^2`):
+`cargo tauri android build --apk --target aarch64 --features app` (`--debug --target x86_64` for the emulator).
+On Windows the CLI ends by symlinking `libvto.so` into `gen/android/app/src/main/jniLibs/<abi>/`, which needs developer mode. Without it, copy `target/<triple>/debug/libvto.so` and the NDK's `libc++_shared.so` there, then run `gradlew assemble<Abi>Debug -x rustBuild<Abi>Debug` in `gen/android`.
+A cmake cache from another generator makes whisper.cpp fail; delete `target/<triple>/*/build/whisper-rs-sys-*` then.
+
 ## Not in this build yet
 
-- Android has not been built: this machine has no Android target, NDK or SDK. It still lacks the Keystore binding, MediaCodec decoding, the foreground service, ongoing notifications and HTTPS. Off Windows, only WAV decodes and only plain-HTTP requests work, and the key store refuses to keep a key rather than write it in plain text.
-- On the desktop, progress shows in the window title. A ready toast opens the video only while the app is running and for an hour after it appears; after that, use the "열기" entry on the settings screen.
+- Android is built and tested on the emulator only (Android 14, x86_64): the key in the Keystore, a job running on with the app in the background under the foreground service, on-device writing, the progress and ready notices, and the tap that opens the video. A real Galaxy S21 Ultra (aarch64) has not run it, and no release signing is set up.
+- Off Windows, WebM/Opus audio does not decode (MP4/M4A, AAC, MP3, MPEG-TS and WAV do). Such a source fails the job with `download_failed`.
+- Linux and macOS have no key store yet: the key is refused rather than written in plain text.
+- On the desktop, progress shows in the window title.
 - The YouTube extractor is unverified against the live service. When it fails, the job is refused with `youtube_unavailable` (R20).

@@ -3,6 +3,10 @@
 //! and the device services those need.
 
 pub mod api;
+#[cfg(all(feature = "app", target_os = "android"))]
+pub mod android;
+#[cfg(feature = "app")]
+pub mod app;
 pub mod audio;
 pub mod commands;
 pub mod db;

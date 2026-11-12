@@ -97,7 +97,6 @@ erDiagram
     }
     Setting {
         INTEGER id PK
-        TEXT_NULL key_last4
         INTEGER youtube_gate_seen
     }
     Job }o--|| Video : ""

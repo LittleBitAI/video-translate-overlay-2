@@ -1,11 +1,15 @@
-//! A small binding to the SQLite the OS ships: `winsqlite3.dll` on Windows,
-//! the system `libsqlite3` elsewhere. Only what the store needs.
+//! A small binding to SQLite: the OS's `winsqlite3.dll` on Windows, a copy
+//! built into the app on Android (apps may not link the system one), the
+//! system `libsqlite3` elsewhere. Only what the store needs.
 
 use std::ffi::{c_char, c_int, c_void, CStr, CString};
 use std::path::Path;
 
+#[cfg(target_os = "android")]
+use libsqlite3_sys as _;
+
 #[cfg_attr(windows, link(name = "winsqlite3", kind = "raw-dylib"))]
-#[cfg_attr(not(windows), link(name = "sqlite3"))]
+#[cfg_attr(all(not(windows), not(target_os = "android")), link(name = "sqlite3"))]
 extern "C" {
     fn sqlite3_open_v2(filename: *const c_char, db: *mut *mut c_void, flags: c_int, vfs: *const c_char) -> c_int;
     fn sqlite3_close_v2(db: *mut c_void) -> c_int;

@@ -46,7 +46,6 @@ CREATE TABLE IF NOT EXISTS cue (
 );
 CREATE TABLE IF NOT EXISTS setting (
   id INTEGER PRIMARY KEY CHECK (id = 1),
-  key_last4 TEXT,
   youtube_gate_seen INTEGER NOT NULL DEFAULT 0
 );
 INSERT OR IGNORE INTO setting (id) VALUES (1)
@@ -317,15 +316,6 @@ impl Store {
     }
 
     // ------------------------------------------------------------ settings
-
-    pub fn key_last4(&self) -> R<Option<String>> {
-        Ok(self.db.query_one("SELECT key_last4 FROM setting WHERE id=1", &[])?.and_then(|r| r[0].opt_text()))
-    }
-
-    pub fn set_key_last4(&self, last4: Option<&str>) -> R<()> {
-        self.db.execute("UPDATE setting SET key_last4=? WHERE id=1", p![last4])?;
-        Ok(())
-    }
 
     pub fn youtube_gate_seen(&self) -> R<bool> {
         Ok(self.db.query_one("SELECT youtube_gate_seen FROM setting WHERE id=1", &[])?.is_some_and(|r| r[0].int() != 0))

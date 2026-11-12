@@ -48,13 +48,34 @@ struct Ctx<'a> {
     page_url: String,
 }
 
+/// One stage's progress. The job row keeps the stage's own 0-100 (E2); the
+/// ongoing notice shows the whole job's, this stage taking `from..to` of it.
+struct Stage {
+    last: i64,
+    from: i64,
+    to: i64,
+}
+
+impl Stage {
+    // ponytail: fixed shares, writing dominates on the device; measure per stage if the bar feels uneven.
+    const DOWNLOADING: (i64, i64) = (0, 10);
+    const WRITING: (i64, i64) = (10, 90);
+    const TRANSLATING: (i64, i64) = (90, 100);
+    fn new((from, to): (i64, i64)) -> Self {
+        Stage { last: -1, from, to }
+    }
+}
+
 impl Ctx<'_> {
-    fn percent(&self, job: &str, p: i64, last: &mut i64) {
-        if p > *last {
-            *last = p;
+    fn percent(&self, job: &str, p: i64, at: &mut Stage) {
+        if p > at.last {
+            // Every 10% step that is passed, not only exact multiples: progress often jumps over them.
+            let step = p / 10 > at.last / 10;
+            at.last = p;
             let _ = self.store.raise_percent(job, p);
-            if p % 10 == 0 {
-                self.core.svc.notifier.ongoing(job, "updated", &self.title, p);
+            if step {
+                let whole = at.from + p.min(100) * (at.to - at.from) / 100;
+                self.core.svc.notifier.ongoing(job, "updated", &self.title, whole);
             }
         }
     }
@@ -134,7 +155,7 @@ fn download(cx: &Ctx, job: &Job) -> Result<(), Stop> {
         };
         // The on-device model is fetched here the first time (A4); its share of
         // the stage is the first half when it has to come down.
-        let mut last = -1;
+        let mut last = Stage::new(Stage::DOWNLOADING);
         let fetched = cx
             .core
             .svc
@@ -173,7 +194,7 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
     let regions = audio::speech_regions(&pcm);
     let total: usize = regions.iter().map(|r| r.end - r.start).sum::<usize>().max(1);
     let mut done: usize = regions.iter().take(job.written_regions as usize).map(|r| r.end - r.start).sum();
-    let mut last = -1;
+    let mut last = Stage::new(Stage::WRITING);
     let mut prev_end = cx.store.last_cue_end(&job.video_key).map_err(|e| e.to_string())?;
     for (i, r) in regions.iter().enumerate().skip(job.written_regions as usize) {
         let len = r.end - r.start;
@@ -270,7 +291,7 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
     };
 
     let total = cues.len() as i64;
-    let mut last = -1;
+    let mut last = Stage::new(Stage::TRANSLATING);
     let mut stalls = 0;
     loop {
         let todo: Vec<(i64, String)> = store.cues(&video_key)?.into_iter().filter(|c| c.text_ko.is_none()).map(|c| (c.seq, c.source_text)).collect();
@@ -293,6 +314,10 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "pipeline_progress_tests.rs"]
+mod progress_tests;
 
 #[cfg(test)]
 mod tests {

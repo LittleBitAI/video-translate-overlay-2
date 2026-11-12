@@ -122,12 +122,17 @@ fn masked(last4: &str) -> String {
     format!("••••{last4}")
 }
 
+/// The last four characters (by character, so a key from elsewhere cannot split one).
+fn last4(key: &str) -> &str {
+    key.char_indices().rev().nth(3).map_or(key, |(i, _)| &key[i..])
+}
+
 pub fn get_settings(core: &Core) -> ApiResult {
-    let key_set = core.svc.keystore.get()?.is_some();
-    let last4 = if key_set { core.store.key_last4()? } else { None };
+    // The tail comes from the key itself, so it cannot disagree with what is stored.
+    let key = core.svc.keystore.get()?;
     Ok(json!({
-        "key_set": key_set,
-        "key_masked": last4.as_deref().map(masked),
+        "key_set": key.is_some(),
+        "key_masked": key.as_deref().map(|k| masked(last4(k))),
         "translation_model": MODEL,
         "favorite_voice_available": false,
     }))
@@ -151,15 +156,12 @@ pub fn put_api_key(core: &Core, api_key: &str) -> ApiResult {
         }
     }
     core.svc.keystore.set(key)?;
-    let last4 = &key[key.len() - 4..];
-    core.store.set_key_last4(Some(last4))?;
-    log(format!("api key stored (…{last4})"));
-    Ok(json!({"key_set": true, "key_masked": masked(last4)}))
+    log(format!("api key stored (…{})", last4(key)));
+    Ok(json!({"key_set": true, "key_masked": masked(last4(key))}))
 }
 
 pub fn delete_api_key(core: &Core) -> ApiResult {
     core.svc.keystore.delete()?;
-    core.store.set_key_last4(None)?;
     log("api key deleted");
     Ok(json!({"key_set": false}))
 }
@@ -257,6 +259,10 @@ pub fn get_subtitles(core: &Core, video_key: &str) -> ApiResult {
         "cues": cues,
     }))
 }
+
+#[cfg(test)]
+#[path = "api_key_tests.rs"]
+mod key_tests;
 
 #[cfg(test)]
 mod tests {

@@ -25,6 +25,15 @@ fn app() {
         .expect("run node (npm ci first)");
     assert!(status.success(), "bundling the overlay failed");
 
+    // whisper-rs-sys tests the host OS, not the target, and asks for advapi32 even
+    // on Android when built on Windows. Nothing uses it there: give the linker an empty one.
+    if std::env::var("TARGET").unwrap().contains("android") {
+        let stub = PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("stub");
+        std::fs::create_dir_all(&stub).unwrap();
+        std::fs::write(stub.join("libadvapi32.a"), b"!<arch>\n").unwrap();
+        println!("cargo:rustc-link-search=native={}", stub.display());
+    }
+
     // The same eight commands commands::COMMANDS registers, as `allow-<command>` permissions.
     const COMMANDS: &[&str] = &["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles"];
     tauri_build::try_build(tauri_build::Attributes::new().app_manifest(tauri_build::AppManifest::new().commands(COMMANDS))).expect("tauri-build");

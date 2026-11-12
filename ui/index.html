@@ -2,11 +2,12 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>영상 번역 오버레이</title>
 <style>
   :root { color-scheme: light dark; font-family: system-ui, "Noto Sans KR", sans-serif; }
-  body { margin: 0 auto; padding: 16px; max-width: 560px; }
+  /* Phones that draw the app under the status bar (Android 15 and later) report how much. */
+  body { margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); max-width: 560px; }
   h1 { font-size: 20px; margin: 0 0 16px; }
   h2 { font-size: 16px; margin: 24px 0 8px; }
   form { display: flex; gap: 8px; }

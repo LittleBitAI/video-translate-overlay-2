@@ -22,9 +22,23 @@ pub const OVERLAY_COMMANDS: [&str; 3] = ["create_job", "get_job", "get_subtitles
 
 pub const MAIN_CAPABILITY: &str = include_str!("../capabilities/main.json");
 pub const OVERLAY_CAPABILITY: &str = include_str!("../capabilities/overlay.json");
+/// Android shows site pages in the one `main` window; resolved only on Android.
+pub const OVERLAY_ANDROID_CAPABILITY: &str = include_str!("../capabilities/overlay-android.json");
 
 /// The app's ACL: one `allow-<command>` permission per command, and the two capability files.
 pub fn authority() -> RuntimeAuthority {
+    let acl = authority_acl();
+    let caps: BTreeMap<String, Capability> = [MAIN_CAPABILITY, OVERLAY_CAPABILITY, OVERLAY_ANDROID_CAPABILITY]
+        .iter()
+        .map(|s| serde_json::from_str::<Capability>(s).expect("capability file"))
+        .map(|c| (c.identifier.clone(), c))
+        .collect();
+    let resolved = Resolved::resolve(&acl, caps, tauri::utils::platform::Target::current()).expect("resolve capabilities");
+    RuntimeAuthority::new(acl, resolved)
+}
+
+/// One `allow-<command>` permission per command, as the app's ACL manifest.
+fn authority_acl() -> BTreeMap<String, Manifest> {
     let permissions: serde_json::Map<String, Value> = COMMANDS
         .iter()
         .map(|c| {
@@ -39,14 +53,7 @@ pub fn authority() -> RuntimeAuthority {
         "global_scope_schema": null
     }))
     .expect("app ACL manifest");
-    let acl = BTreeMap::from([(APP_ACL_KEY.to_string(), manifest)]);
-    let caps: BTreeMap<String, Capability> = [MAIN_CAPABILITY, OVERLAY_CAPABILITY]
-        .iter()
-        .map(|s| serde_json::from_str::<Capability>(s).expect("capability file"))
-        .map(|c| (c.identifier.clone(), c))
-        .collect();
-    let resolved = Resolved::resolve(&acl, caps, tauri::utils::platform::Target::current()).expect("resolve capabilities");
-    RuntimeAuthority::new(acl, resolved)
+    BTreeMap::from([(APP_ACL_KEY.to_string(), manifest)])
 }
 
 async fn blocking(f: impl FnOnce() -> ApiResult + Send + 'static) -> ApiResult {
@@ -145,6 +152,10 @@ pub fn route(method: &str, path: &str, body: &Value) -> Option<(&'static str, Va
     };
     Some((cmd, args))
 }
+
+#[cfg(test)]
+#[path = "commands_android_tests.rs"]
+mod android_tests;
 
 #[cfg(test)]
 mod tests {

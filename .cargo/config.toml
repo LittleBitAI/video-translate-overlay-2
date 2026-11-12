@@ -5,3 +5,7 @@
 GGML_AVX2 = "ON"
 GGML_FMA = "ON"
 GGML_F16C = "ON"
+# Cross builds (Android, from `cargo tauri android build`): whisper.cpp through
+# the NDK with Ninja. Native desktop builds do not read the TARGET_ variables.
+TARGET_CMAKE_TOOLCHAIN_FILE = { value = "src-tauri/android/whisper.toolchain.cmake", relative = true }
+TARGET_CMAKE_GENERATOR = "Ninja"
