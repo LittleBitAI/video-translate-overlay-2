@@ -118,19 +118,20 @@
         <input
           id="api-key"
           data-feature="set-api-key"
-          class="min-h-11 min-w-0 flex-1 rounded-lg border bg-ink/5 px-4 py-2 text-base placeholder:text-ink/50 {keyError ? 'border-accent' : 'border-ink/30'}"
+          class="min-h-11 min-w-0 flex-1 rounded-lg border bg-ink/5 px-4 py-2 text-base placeholder:text-ink/50 {keyError || screen === 'error' ? 'border-accent' : 'border-ink/30'}"
           type="password"
           autocomplete="off"
           spellcheck="false"
-          placeholder="개인키를 붙여 넣으세요"
+          placeholder="개인키 붙여 넣기"
           aria-describedby="key-message"
           aria-invalid={keyError ? 'true' : undefined}
           disabled={screen === 'loading'}
+          readonly={saving}
           bind:value={key}
         />
         <button
           data-feature="set-api-key"
-          class="inline-flex min-h-11 min-w-36 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-surface disabled:opacity-60"
+          class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-surface sm:min-w-36 {saving || screen === 'loading' ? 'cursor-wait' : ''}"
           disabled={saving || screen === 'loading'}
         >
           {#if saving || screen === 'loading'}
@@ -141,7 +142,7 @@
         </button>
       </div>
       <p id="key-message" role={keyError || screen === 'error' ? 'alert' : 'status'} class="mt-1 text-sm {keyError || screen === 'error' ? 'text-accent' : 'text-ink/70'}">
-        {#if keyError}{keyError}{:else if screen === 'error'}저장된 설정을 불러오지 못했습니다. 다시 불러와 주세요.{:else if keySaved}Gemini가 확인한 개인키를 저장했습니다.{/if}
+        {#if keyError}{keyError}{:else if screen === 'error'}지금은 확인할 수 없습니다. 잠시 뒤에 다시 불러와 주세요.{:else if keySaved}Gemini가 확인한 개인키를 저장했습니다.{/if}
       </p>
       {#if screen === 'error'}
         <button type="button" class="{outline} mt-2" onclick={load}>다시 불러오기</button>

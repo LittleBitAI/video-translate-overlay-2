@@ -145,21 +145,29 @@ test('a job that stopped shows why and offers 영상감지 again', async () => {
 
 const READY = { url: FILE, job: { job_id: 'j', video_key: 'vk', stage: 'ready', percent: 100, cost_krw: 0.4, failure_reason: null } };
 
-test("a ready video's subtitles while they load: said, with 영상감지 off and no subtitle line", async () => {
+test("a ready video's subtitles while they load: a progress step, with 영상감지 off and no subtitle line", async () => {
   api((c) => (c.path === '/browser' ? [200, READY] : 'hang'));
   const s1 = open('/');
-  await vi.waitFor(() => expect(text(s1)).toContain('자막을 불러오는 중'));
+  await vi.waitFor(() => expect(text($(s1, '[data-feature="job-progress"]')!)).toMatch(/진행 상태 ?자막 받는 중 ?100% ?든 비용 0.4원/));
   expect(button(s1, '영상감지').disabled).toBe(true);
   expect($(s1, '[data-feature="watch-subtitles"]')).toBeNull();
 });
 
-test("a ready video's subtitles that fail to load: said, and loaded again", async () => {
-  let reply: [number, unknown] = [500, {}];
-  api((c) => (c.path === '/browser' ? [200, READY] : reply));
+test("a ready video's subtitles that fail to load: the reason, and 영상감지 brings them back", async () => {
+  const CUES = { video_key: 'vk', duration_ms: 60_000, source_language: 'en', cues: [{ seq: 0, start_ms: 0, end_ms: 4_000, text_ko: '어텐션만 있으면 됩니다.' }] };
+  let subtitles: [number, unknown] = [500, {}];
+  api((c) => {
+    if (c.path === '/browser') return [200, READY];
+    if (c.path === '/jobs' && c.method === 'POST') return [200, { job_id: 'j', video_key: 'vk', stage: 'ready', reused: true }];
+    if (c.path === '/jobs') return [200, READY.job];
+    return subtitles;
+  });
   const s1 = open('/');
-  await vi.waitFor(() => expect(text($(s1, '[role="alert"]')!)).toBe('자막을 불러오지 못했습니다. 다시 불러오기'));
-  reply = [200, { video_key: 'vk', duration_ms: 60_000, source_language: 'en', cues: [{ seq: 0, start_ms: 0, end_ms: 4_000, text_ko: '어텐션만 있으면 됩니다.' }] }];
-  button(s1, '다시 불러오기').click();
+  await vi.waitFor(() => expect(text($(s1, '[role="alert"]')!)).toBe('저장해 둔 자막을 읽지 못했습니다. 영상감지 버튼을 다시 눌러 주세요.'));
+  subtitles = [200, CUES];
+  Object.defineProperty($(s1, 'video')!, 'duration', { value: 60 });
+  $(s1, 'video')!.dispatchEvent(new Event('durationchange'));
+  button(s1, '영상감지').click();
   await vi.waitFor(() => expect(text($(s1, '[data-feature="watch-subtitles"]')!)).toBe('어텐션만 있으면 됩니다.'));
   expect(text(s1)).toContain('자막 준비됨 · 0.4원');
 });

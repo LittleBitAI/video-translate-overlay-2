@@ -74,7 +74,7 @@
       if (!cues.length) notice = { text: '자막으로 옮길 말이 없었습니다.' };
     } else {
       subs = 'failed';
-      subsError = r.body?.message ?? '자막을 불러오지 못했습니다.';
+      subsError = r.body?.message ?? '저장해 둔 자막을 읽지 못했습니다. 영상감지 버튼을 다시 눌러 주세요.';
     }
   }
 
@@ -122,63 +122,66 @@
 
   const box = 'rounded-lg bg-surface/90 p-2 text-sm';
   const label = 'text-sm text-ink/60';
+  const value = 'font-semibold text-ink';
   /** A button in a notice: 44 px high, so a thumb finds it. */
-  const action = 'mt-2 inline-flex min-h-11 items-center rounded-lg px-4';
+  const action = 'pointer-events-auto mt-2 inline-flex min-h-11 items-center rounded-lg px-4';
   onDestroy(() => {
     gone = true;
     if (timer) clearTimeout(timer);
   });
 </script>
 
-<div class="pointer-events-none absolute inset-0 flex flex-col justify-between gap-2 p-2">
-  <div class="flex items-start justify-between gap-2">
-    {#if look === 'checking'}
-      <div class="h-6"></div>
-    {:else if active && job}
-      <div data-feature="job-progress" role="status" class="{box} min-w-0 flex-1 sm:w-56 sm:flex-none">
-        <p class={label}>진행 상태</p>
-        <p class="flex justify-between gap-2 text-base font-semibold"><span>{STAGE[job.stage]}</span><span>{job.percent}%</span></p>
-        <div class="my-1 h-1 rounded-full bg-ink/20">
-          <div class="h-1 rounded-full bg-primary" style:width="{Math.min(100, Math.max(0, job.percent))}%"></div>
-        </div>
-        <p><span class={label}>든 비용</span> <b>{won(job.cost_krw)}</b></p>
-      </div>
-    {:else if subs === 'loading' && job}
-      <div data-feature="job-progress" role="status" class="{box} min-w-0 flex-1 sm:w-56 sm:flex-none">
-        <p class="text-base font-semibold">자막을 불러오는 중</p>
-        <div class="my-1 h-1 animate-pulse rounded-full bg-primary/60"></div>
-        <p><span class={label}>든 비용</span> <b>{won(job.cost_krw)}</b></p>
-      </div>
-    {:else if ready && job}
-      <p data-feature="job-progress" role="status" class="rounded-lg bg-surface/90 px-2 py-1 text-sm text-accent">
-        자막 준비됨 · {won(job.cost_krw)}
-      </p>
-    {:else if subs === 'failed' || notice || look === 'failed' || job?.stage === 'failed'}
-      <div data-feature="job-progress" role="alert" class="{box} pointer-events-auto min-w-0 flex-1 border border-accent sm:max-w-[70%] sm:flex-none">
-        {#if subs === 'failed' && job}
-          <p class="text-accent">{subsError}</p>
-          <button type="button" class="{action} border border-ink/40" onclick={() => loadSubtitles(job!.video_key)}>다시 불러오기</button>
-        {:else if notice}
-          <p class="text-accent">{notice.text}</p>
-          {#if notice.settings}
-            <Link href="/preferences" class="{action} bg-primary font-semibold text-surface">설정으로 가기</Link>
-          {/if}
-        {:else if look === 'failed'}
-          <p class="text-accent">진행 상태를 불러오지 못했습니다.</p>
-          <button type="button" class="{action} border border-ink/40" onclick={() => ((look = 'checking'), poll())}>다시 불러오기</button>
-        {:else if job}
-          <p class="text-accent">작업이 멈췄습니다. {STOPPED[job.failure_reason ?? ''] ?? job.failure_reason ?? ''}</p>
+{#snippet progress(stage: string, percent: number, cost: number)}
+  <div data-feature="job-progress" role="status" class="{box} w-full sm:w-56">
+    <p class={label}>진행 상태</p>
+    <p class="flex justify-between gap-2 text-base font-semibold"><span>{stage}</span><span>{percent}%</span></p>
+    <div class="my-1 h-1 rounded-full bg-ink/25">
+      <div class="h-1 rounded-full bg-primary" style:width="{Math.min(100, Math.max(0, percent))}%"></div>
+    </div>
+    <p><span class={label}>든 비용</span> <span class={value}>{won(cost)}</span></p>
+  </div>
+{/snippet}
+
+<!-- The job's state: over the video on wider screens, under it on a phone, where the frame is too small to hold it. -->
+{#snippet panel()}
+  {#if look === 'checking'}
+    <div class="h-6"></div>
+  {:else if active && job}
+    {@render progress(STAGE[job.stage], job.percent, job.cost_krw)}
+  {:else if subs === 'loading' && job}
+    {@render progress('자막 받는 중', job.percent, job.cost_krw)}
+  {:else if ready && job}
+    <p data-feature="job-progress" role="status" class="w-fit rounded-lg bg-surface/90 px-2 py-1 text-sm text-accent">
+      자막 준비됨 · {won(job.cost_krw)}
+    </p>
+  {:else if subs === 'failed' || notice || look === 'failed' || job?.stage === 'failed'}
+    <!-- The reason; trying again is 영상감지, or the settings when the key is missing. -->
+    <div data-feature="job-progress" role="alert" class="{box} pointer-events-auto w-full border border-accent sm:w-auto">
+      {#if subs === 'failed'}
+        <p class="text-accent">{subsError}</p>
+      {:else if notice}
+        <p class="text-accent">{notice.text}</p>
+        {#if notice.settings}
+          <Link href="/preferences" class="{action} bg-primary font-semibold text-surface">설정으로 가기</Link>
         {/if}
-      </div>
-    {:else if look === 'done'}
-      <!-- No job yet: where its progress and cost will show. -->
-      <div data-feature="job-progress" role="status" class="{box} w-40 max-w-[55%]">
-        <p><span class={label}>진행 상태</span> <b>작업 전</b></p>
-        <p><span class={label}>든 비용</span> <b>{won(0)}</b></p>
-      </div>
-    {:else}
-      <div></div>
-    {/if}
+      {:else if look === 'failed'}
+        <p class="text-accent">진행 상태를 불러오지 못했습니다. 영상감지 버튼을 다시 눌러 주세요.</p>
+      {:else if job}
+        <p class="text-accent">작업이 멈췄습니다. {STOPPED[job.failure_reason ?? ''] ?? job.failure_reason ?? ''}</p>
+      {/if}
+    </div>
+  {:else if look === 'done'}
+    <!-- No job yet: where its progress and cost will show. -->
+    <div data-feature="job-progress" role="status" class="{box} w-full sm:w-40">
+      <p><span class={label}>진행 상태</span> <span class={value}>작업 전</span></p>
+      <p><span class={label}>든 비용</span> <span class={value}>{won(0)}</span></p>
+    </div>
+  {/if}
+{/snippet}
+
+<div class="pointer-events-none absolute inset-x-0 top-0 flex aspect-video flex-col justify-between gap-2 p-2">
+  <div class="flex items-start justify-end gap-2 sm:justify-between">
+    <div class="hidden min-w-0 sm:block sm:max-w-[70%]">{@render panel()}</div>
 
     {#if remote}
       {#if !active && !ready && look !== 'checking'}
@@ -207,3 +210,4 @@
     </p>
   {/if}
 </div>
+<div class="mt-2 sm:hidden">{@render panel()}</div>

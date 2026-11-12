@@ -29,7 +29,7 @@ test('a failed load says so and loads again', async () => {
   api(() => (fail ? [500, {}] : [200, NONE]));
   const s2 = open('/preferences');
   // Said where a key's own errors are, under the field, which stays.
-  await vi.waitFor(() => expect(text($(s2, '#key-message')!)).toBe('저장된 설정을 불러오지 못했습니다. 다시 불러와 주세요.'));
+  await vi.waitFor(() => expect(text($(s2, '#key-message')!)).toBe('지금은 확인할 수 없습니다. 잠시 뒤에 다시 불러와 주세요.'));
   expect($(s2, '#api-key')).not.toBeNull();
   fail = false;
   button(s2, '다시 불러오기').click();

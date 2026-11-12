@@ -90,47 +90,50 @@
   });
 </script>
 
-<div class="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
-  {#if inApp()}
-    <div class="absolute inset-0 flex items-center justify-center p-6 text-center text-base text-ink/80">
-      <p>영상은 앱의 영상 창에 열렸습니다. 그 영상 위에 영상감지 버튼과 자막이 뜹니다.</p>
-    </div>
-  {:else if shown.kind === 'video'}
-    <!-- svelte-ignore a11y_media_has_caption: the Korean subtitles are drawn over it by the overlay -->
-    <video
-      bind:this={video}
-      src={url}
-      controls
-      playsinline
-      preload="metadata"
-      class="absolute inset-0 h-full w-full"
-      ontimeupdate={track}
-      onplay={track}
-      onpause={track}
-      onseeked={track}
-      onloadedmetadata={track}
-      ondurationchange={track}
-    ></video>
-  {:else if shown.kind === 'youtube'}
-    {#if embed}
-      <iframe
-        bind:this={frame}
-        title="유튜브 영상"
-        src="https://www.youtube-nocookie.com/embed/{shown.id}?enablejsapi=1&autoplay=1&playsinline=1&origin={encodeURIComponent(location.origin)}"
-        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-        class="absolute inset-0 h-full w-full border-0"
-        onload={listen}
-      ></iframe>
+<!-- The overlay lies over the frame; on a phone its status panel goes under it. -->
+<div class="relative">
+  <div class="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
+    {#if inApp()}
+      <div class="absolute inset-0 flex items-center justify-center p-6 text-center text-base text-ink/80">
+        <p>영상은 앱의 영상 창에 열렸습니다. 그 영상 위에 영상감지 버튼과 자막이 뜹니다.</p>
+      </div>
+    {:else if shown.kind === 'video'}
+      <!-- svelte-ignore a11y_media_has_caption: the Korean subtitles are drawn over it by the overlay -->
+      <video
+        bind:this={video}
+        src={url}
+        controls
+        playsinline
+        preload="metadata"
+        class="absolute inset-0 h-full w-full"
+        ontimeupdate={track}
+        onplay={track}
+        onpause={track}
+        onseeked={track}
+        onloadedmetadata={track}
+        ondurationchange={track}
+      ></video>
+    {:else if shown.kind === 'youtube'}
+      {#if embed}
+        <iframe
+          bind:this={frame}
+          title="유튜브 영상"
+          src="https://www.youtube-nocookie.com/embed/{shown.id}?enablejsapi=1&autoplay=1&playsinline=1&origin={encodeURIComponent(location.origin)}"
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+          class="absolute inset-0 h-full w-full border-0"
+          onload={listen}
+        ></iframe>
+      {:else}
+        <button type="button" class="absolute inset-0 flex items-center justify-center text-ink/90" onclick={() => (embed = true)}>
+          <span class="rounded-full bg-surface/80 px-6 py-4 text-lg">▶ 유튜브 영상 재생</span>
+        </button>
+      {/if}
     {:else}
-      <button type="button" class="absolute inset-0 flex items-center justify-center text-ink/90" onclick={() => (embed = true)}>
-        <span class="rounded-full bg-surface/80 px-6 py-4 text-lg">▶ 유튜브 영상 재생</span>
-      </button>
+      <div class="absolute inset-0 flex items-center justify-center p-6 text-center text-base text-ink/80">
+        <p>이 화면에서는 유튜브 영상과 영상 파일 주소만 재생합니다. 다른 사이트의 영상은 앱에서 열어 주세요.</p>
+      </div>
     {/if}
-  {:else}
-    <div class="absolute inset-0 flex items-center justify-center p-6 text-center text-base text-ink/80">
-      <p>이 화면에서는 유튜브 영상과 영상 파일 주소만 재생합니다. 다른 사이트의 영상은 앱에서 열어 주세요.</p>
-    </div>
-  {/if}
+  </div>
 
   <Overlay pageUrl={url} {title} mediaUrl={shown.kind === 'video' ? url : null} {timeMs} {durationMs} {prepare} remote={inApp()} initial={job} />
 </div>
