@@ -42,7 +42,7 @@ impl AudioExtractor for Fake {
 }
 
 /// Serves a one-second silent WAV on every request.
-fn serve_wav() -> String {
+pub(super) fn serve_wav() -> String {
     let mut wav = b"RIFF\x00\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00\x80\x3e\x00\x00\x00\x7d\x00\x00\x02\x00\x10\x00data".to_vec();
     wav.extend_from_slice(&32_000u32.to_le_bytes());
     wav.resize(wav.len() + 32_000, 0);

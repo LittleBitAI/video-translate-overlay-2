@@ -211,17 +211,29 @@ pub fn create_job(core: &Core, page_url: &str, media_url: Option<&str>, title: &
     if let Some(m) = media_url.filter(|m| !m.trim().is_empty()) {
         http_url(m).map_err(|_| err(400, "bad_url", "media_url은 http나 https 주소여야 합니다."))?;
     }
-    let source = resolve_source(core, &page, media_url)?;
-    // The player's length is an ad's if one was playing when the button was
-    // pressed; YouTube's stream carries the lecture's own (R18).
-    let duration_ms = match &source {
-        media::Source::File { url, .. } if youtube::is_youtube(&page) => youtube::stream_duration_ms(url).unwrap_or(duration_ms),
-        _ => duration_ms,
-    };
-
     let id = new_job_id();
     let title = clip_title(title, page_url);
-    core.store.create_job(&id, &key, page_url.trim(), site(&page), &title, duration_ms, media_url.map(str::trim).filter(|m| !m.is_empty()), MODEL)?;
+    // Now, while the press keeps the app on screen: the media check below can take
+    // tens of seconds, and by its end the user may have gone home (R6).
+    if let Err(e) = core.svc.notifier.hold(&id, &title) {
+        log(format!("background work refused: {e}"));
+        return Err(err(409, "background_refused", "휴대폰이 백그라운드 작업을 막아 시작하지 않았습니다. 앱 화면에서 다시 눌러 주세요."));
+    }
+    let created = (|| -> Result<(), ApiError> {
+        let source = resolve_source(core, &page, media_url)?;
+        // The player's length is an ad's if one was playing when the button was
+        // pressed; YouTube's stream carries the lecture's own (R18).
+        let duration_ms = match &source {
+            media::Source::File { url, .. } if youtube::is_youtube(&page) => youtube::stream_duration_ms(url).unwrap_or(duration_ms),
+            _ => duration_ms,
+        };
+        core.store.create_job(&id, &key, page_url.trim(), site(&page), &title, duration_ms, media_url.map(str::trim).filter(|m| !m.is_empty()), MODEL)?;
+        Ok(())
+    })();
+    if let Err(e) = created {
+        core.svc.notifier.ongoing(&id, "hidden", &title, 0);
+        return Err(e);
+    }
     core.svc.notifier.ongoing(&id, "shown", &title, 0);
     log(format!("job {id} created for {key}"));
     core.wake_worker();
@@ -273,6 +285,10 @@ mod key_tests;
 #[cfg(test)]
 #[path = "api_duration_tests.rs"]
 mod duration_tests;
+
+#[cfg(test)]
+#[path = "api_hold_tests.rs"]
+mod hold_tests;
 
 #[cfg(test)]
 mod tests {

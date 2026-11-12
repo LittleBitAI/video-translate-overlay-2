@@ -85,6 +85,12 @@ impl Notifier for TauriNotifier {
         }
     }
 
+    /// Android: the foreground service starts here, while the app is on screen.
+    #[cfg(target_os = "android")]
+    fn hold(&self, _job_id: &str, title: &str) -> Result<(), String> {
+        app(&self.0)?.state::<crate::android::Mobile>().start(title)
+    }
+
     fn ready(&self, job_id: &str, text: &str, url: &str) {
         // The settings screen lists it with an open button too.
         if let Ok(app) = app(&self.0) {

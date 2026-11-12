@@ -34,6 +34,11 @@ impl Mobile {
         }
     }
 
+    /// Starts the job's foreground service, or says why Android would not.
+    pub fn start(&self, title: &str) -> Result<(), String> {
+        self.call("job", json!({ "state": "shown", "title": title, "percent": 0 })).map(drop)
+    }
+
     pub fn ready(&self, job_id: &str, text: &str) -> Result<(), String> {
         self.call("ready", json!({ "jobId": job_id, "text": text })).map(drop)
     }

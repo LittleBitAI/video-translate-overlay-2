@@ -68,6 +68,13 @@ pub trait Browser: Send + Sync {
 pub trait Notifier: Send + Sync {
     /// The ongoing notice of a running job: `shown`, `updated` or `hidden`.
     fn ongoing(&self, job_id: &str, state: &str, title: &str, percent: i64);
+    /// Called when 영상감지 is pressed, before the media check, while the app is
+    /// still on screen: Android lets a foreground service start only then (R6). An
+    /// error refuses the job. The `ongoing` `shown` that follows a created job
+    /// only updates it; `hidden` lets it go when the job is refused instead.
+    fn hold(&self, _job_id: &str, _title: &str) -> Result<(), String> {
+        Ok(())
+    }
     /// The notice that subtitles are ready; tapping it opens `url`.
     fn ready(&self, job_id: &str, text: &str, url: &str);
 }

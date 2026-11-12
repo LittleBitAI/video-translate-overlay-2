@@ -4,6 +4,8 @@
     <!-- The running job's foreground service and its ongoing notification (A5), and the ready notice (R5). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Android 14 and later: on-device writing runs for hours, past dataSync's daily limit. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- The CPU stays awake while a job runs with the screen off (R6). -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -35,7 +37,11 @@
         <service
             android:name=".JobService"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="dataSync|specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="On-device speech-to-text of a downloaded lecture, then its translation; hours long for a long lecture, started by the user's press." />
+        </service>
 
         <provider
           android:name="androidx.core.content.FileProvider"

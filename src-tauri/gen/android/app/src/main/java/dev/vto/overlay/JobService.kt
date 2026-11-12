@@ -27,7 +27,11 @@ class JobService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val n = notice(this, intent?.getStringExtra("title") ?: "", intent?.getIntExtra("percent", 0) ?: 0)
-        if (Build.VERSION.SDK_INT >= 29) {
+        if (Build.VERSION.SDK_INT >= 34) {
+            // On-device writing of a long lecture runs for hours; dataSync is cut
+            // off after six hours a day from Android 15 on, specialUse is not.
+            startForeground(ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        } else if (Build.VERSION.SDK_INT >= 29) {
             startForeground(ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         } else {
             startForeground(ID, n)
@@ -40,15 +44,25 @@ class JobService : Service() {
             .also { awake = it }
         lock.acquire(WAKE_MS)
         synchronized(Companion) {
+            pending = false
             started = true
             // The job ended before this ran: stopping it then would have crashed the app.
             if (stopAsked) {
                 stopAsked = false
+                started = false
                 stopSelf()
             }
         }
         // A killed process resumes its job on the next start (pipeline.rs), not from here.
         return START_NOT_STICKY
+    }
+
+    // A backstop: a type with a time limit (dataSync on a phone that holds it to one)
+    // must stop within seconds of it, or Android ends the app. The job runs on while
+    // the process lives, and a killed one resumes from its last written part (A5).
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        synchronized(Companion) { started = false }
+        stopSelf()
     }
 
     override fun onDestroy() {
@@ -63,21 +77,32 @@ class JobService : Service() {
         const val ID = 1
         const val WAKE_MS = 12L * 60 * 60 * 1000
 
-        // Whether onStartCommand has run (startForeground called), and a stop that came before it.
+        // A start asked for and not yet run, whether onStartCommand has run (startForeground
+        // called), and a stop that came before it.
+        private var pending = false
         private var started = false
         private var stopAsked = false
 
         fun show(ctx: Context, state: String, title: String, percent: Int) = synchronized(Companion) {
             val i = Intent(ctx, JobService::class.java).putExtra("title", title).putExtra("percent", percent)
             when (state) {
+                // The service starts when 영상감지 is pressed, while the app is on screen;
+                // Android 12 and later refuse a start from the background, and that throws
+                // here, refusing the job. The `shown` once the job exists only updates it.
                 "shown" -> {
                     stopAsked = false
-                    ContextCompat.startForegroundService(ctx, i)
+                    if (pending || started) {
+                        ctx.getSystemService(NotificationManager::class.java).notify(ID, notice(ctx, title, percent))
+                    } else {
+                        ContextCompat.startForegroundService(ctx, i)
+                        pending = true
+                    }
                 }
                 "updated" -> ctx.getSystemService(NotificationManager::class.java).notify(ID, notice(ctx, title, percent))
                 // A service asked to start must call startForeground before it may stop
                 // (Android kills the app otherwise): a job that ends first leaves the stop to it.
                 else -> if (started) {
+                    started = false
                     ctx.stopService(i)
                 } else {
                     stopAsked = true
