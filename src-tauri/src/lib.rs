@@ -12,6 +12,8 @@ pub mod media;
 pub mod pipeline;
 pub mod platform;
 pub mod store;
+#[cfg(feature = "app")]
+pub mod whisper;
 pub mod youtube;
 
 use std::path::PathBuf;

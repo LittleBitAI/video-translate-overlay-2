@@ -1,0 +1,7 @@
+[env]
+# whisper.cpp (the `app` feature) under MSVC: GGML_NATIVE does not turn SIMD
+# on, so name it for x86-64 builds (the options do nothing on ARM, where NEON
+# is always used). bindgen also needs libclang there: set LIBCLANG_PATH.
+GGML_AVX2 = "ON"
+GGML_FMA = "ON"
+GGML_F16C = "ON"

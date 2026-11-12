@@ -1,6 +1,6 @@
 //! Device services of the shipped app that do not need Tauri.
 
-use crate::{KeyStore, Segment, Transcriber};
+use crate::KeyStore;
 
 /// The Gemini key in Windows Credential Manager (per user, encrypted by the OS).
 #[cfg(windows)]
@@ -65,16 +65,6 @@ impl KeyStore for CredentialStore {
     }
     fn delete(&self) -> Result<(), String> {
         Ok(())
-    }
-}
-
-/// The whisper.cpp model slot. This build does not link whisper.cpp yet, so a
-/// job that reaches writing fails with `write_failed` instead of inventing text.
-pub struct UnbundledModel;
-
-impl Transcriber for UnbundledModel {
-    fn transcribe(&self, _pcm: &[f32], _progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String> {
-        Err("the on-device model (whisper.cpp, large-v3-turbo) is not part of this build".into())
     }
 }
 

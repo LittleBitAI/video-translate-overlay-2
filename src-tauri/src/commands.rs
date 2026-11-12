@@ -105,7 +105,12 @@ pub async fn get_subtitles(core: Shared<'_>, video_key: String) -> ApiResult {
 
 /// Registers the commands and their state on a builder.
 pub fn register<R: Runtime>(builder: tauri::Builder<R>, core: Arc<Core>) -> tauri::Builder<R> {
-    builder.manage(core).invoke_handler(tauri::generate_handler![
+    handlers(builder.manage(core))
+}
+
+/// Only the handlers; the app manages its `Arc<Core>` in `setup`, once its data folder is known.
+pub fn handlers<R: Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
+    builder.invoke_handler(tauri::generate_handler![
         browser_open,
         clear_site_data,
         get_settings,

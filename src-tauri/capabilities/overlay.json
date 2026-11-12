@@ -2,7 +2,7 @@
   "identifier": "overlay",
   "description": "The overlay on visited site pages: start a job, read its progress and its subtitles. Never settings or the key.",
   "local": false,
-  "remote": { "urls": ["https://*", "http://*"] },
+  "remote": { "urls": ["https://*", "http://*", "https://*:*", "http://*:*"] },
   "windows": ["site"],
   "permissions": ["allow-create-job", "allow-get-job", "allow-get-subtitles"]
 }
