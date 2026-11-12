@@ -1,0 +1,16 @@
+{
+ "ns": "repo",
+ "repo": "video-translate-overlay-2",
+ "nodes_from": ".wiki/corpus.json",
+ "edges": [],
+ "orphans": [],
+ "counts": {
+  "docs": 1,
+  "linked": 0,
+  "read": 0,
+  "orphans": 0,
+  "pages": 0,
+  "decisions": 0,
+  "injectable_decisions": 0
+ }
+}
