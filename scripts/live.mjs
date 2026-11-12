@@ -2,6 +2,8 @@
 // It serves the screens (S1 `/`, S2 `/preferences`) and the API on 127.0.0.1:$PORT and keeps
 // all its data under $APP_DATA_DIR. With LIBCLANG_PATH set it is built with the on-device
 // model (the `whisper` feature); without it a job stops at the writing stage.
+// `--stand-ins` is passed on to vto-web: Gemini, YouTube's audio and the model are fakes, so
+// `e2e/seed.json` can fill the app (a saved key, a video with ready subtitles) with no key.
 import { spawn, spawnSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,6 +24,6 @@ const features = process.env.LIBCLANG_PATH ? ['--features', 'whisper'] : [];
 step('cargo', ['build', '-p', 'video-translate-overlay', '--bin', 'vto-web', ...features]);
 
 const exe = join(root, 'target', 'debug', process.platform === 'win32' ? 'vto-web.exe' : 'vto-web');
-const app = spawn(exe, [], { cwd: root, stdio: 'inherit', env: { ...process.env, VTO_DIST: join(root, 'dist') } });
+const app = spawn(exe, process.argv.slice(2), { cwd: root, stdio: 'inherit', env: { ...process.env, VTO_DIST: join(root, 'dist') } });
 for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => app.kill(sig));
 app.on('exit', (code, signal) => process.exit(code ?? (signal ? 1 : 0)));

@@ -27,6 +27,9 @@
   body {
     min-height: 100dvh;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    /* Korean wraps between words, never inside one. */
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
   :focus-visible {
     outline: 2px solid var(--color-accent);

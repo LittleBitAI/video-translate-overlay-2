@@ -19,7 +19,7 @@ test('loading: the overlay is sketched until P9 answers', async () => {
   api(() => 'hang');
   const s1 = open('/');
   expect($(s1, '[aria-busy="true"]')).not.toBeNull();
-  expect(features(s1)).toEqual(['detect-video', 'job-progress', 'open-site', 'watch-subtitles']);
+  expect(features(s1)).toEqual(['detect-video', 'job-progress', 'open-site']);
   expect((s1.querySelector('[data-feature="detect-video"]') as HTMLButtonElement).disabled).toBe(true);
 });
 
@@ -123,12 +123,15 @@ test('a running job shows its stage, percent and cost each second, then its subt
     return [200, { video_key: 'vk', duration_ms: 60_000, source_language: 'en', cues: [{ seq: 1, start_ms: 0, end_ms: 4_000, text_ko: '어텐션이 전부입니다' }] }];
   });
   const s1 = open('/');
-  await vi.waitFor(() => expect(text(s1)).toMatch(/진행 상태 write 중 ?40% 든 비용 0원/));
-  // Subtitles wait for the whole job (R11), and 영상감지 is not offered while it runs.
-  expect(features(s1)).toEqual(['job-progress', 'open-site', 'watch-subtitles']);
+  await vi.waitFor(() => expect(text(s1)).toMatch(/진행 상태 ?write 중 ?40% ?든 비용 0원/));
+  // Subtitles wait for the whole job (R11), and 영상감지 stays on the overlay, off, while it runs.
+  expect(features(s1)).toEqual(['detect-video', 'job-progress', 'open-site', 'watch-subtitles']);
+  expect(button(s1, '영상감지').disabled).toBe(true);
   expect(text($(s1, '[data-feature="watch-subtitles"]')!)).toBe('자막은 작업이 다 끝나면 여기에 뜹니다');
-  await vi.waitFor(() => expect(text(s1)).toMatch(/번역 중 ?70% 든 비용 8.3원/), { timeout: 3_000 });
+  await vi.waitFor(() => expect(text(s1)).toMatch(/번역 중 ?70% ?든 비용 8.3원/), { timeout: 3_000 });
   await vi.waitFor(() => expect(text(s1)).toContain('자막 준비됨 · 12.5원'), { timeout: 3_000 });
+  // On a ready video 영상감지 is on again: it shows the saved subtitles without making them again (R25).
+  expect(button(s1, '영상감지').disabled).toBe(false);
   expect(calls.filter((c) => c.path === '/jobs').every((c) => c.query.page_url === FILE)).toBe(true);
   expect(calls.at(-1)!.path).toBe('/videos/vk/subtitles');
 });
@@ -138,4 +141,25 @@ test('a job that stopped shows why and offers 영상감지 again', async () => {
   const s1 = open('/');
   await vi.waitFor(() => expect(text(s1)).toContain('작업이 멈췄습니다. 영상에서 말소리를 찾지 못했습니다.'));
   expect(features(s1)).toEqual(['detect-video', 'job-progress', 'open-site', 'watch-subtitles']);
+});
+
+const READY = { url: FILE, job: { job_id: 'j', video_key: 'vk', stage: 'ready', percent: 100, cost_krw: 0.4, failure_reason: null } };
+
+test("a ready video's subtitles while they load: said, with 영상감지 off and no subtitle line", async () => {
+  api((c) => (c.path === '/browser' ? [200, READY] : 'hang'));
+  const s1 = open('/');
+  await vi.waitFor(() => expect(text(s1)).toContain('자막을 불러오는 중'));
+  expect(button(s1, '영상감지').disabled).toBe(true);
+  expect($(s1, '[data-feature="watch-subtitles"]')).toBeNull();
+});
+
+test("a ready video's subtitles that fail to load: said, and loaded again", async () => {
+  let reply: [number, unknown] = [500, {}];
+  api((c) => (c.path === '/browser' ? [200, READY] : reply));
+  const s1 = open('/');
+  await vi.waitFor(() => expect(text($(s1, '[role="alert"]')!)).toBe('자막을 불러오지 못했습니다. 다시 불러오기'));
+  reply = [200, { video_key: 'vk', duration_ms: 60_000, source_language: 'en', cues: [{ seq: 0, start_ms: 0, end_ms: 4_000, text_ko: '어텐션만 있으면 됩니다.' }] }];
+  button(s1, '다시 불러오기').click();
+  await vi.waitFor(() => expect(text($(s1, '[data-feature="watch-subtitles"]')!)).toBe('어텐션만 있으면 됩니다.'));
+  expect(text(s1)).toContain('자막 준비됨 · 0.4원');
 });

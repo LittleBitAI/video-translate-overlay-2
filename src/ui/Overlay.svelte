@@ -51,6 +51,9 @@
   let starting = $state(false);
   let notice = $state<{ text: string; settings?: boolean } | null>(null);
   let cues = $state<Cue[]>([]);
+  /** A ready job's subtitles (P8): asked for and not answered yet, or answered with an error. */
+  let subs = $state<'none' | 'loading' | 'failed'>('none');
+  let subsError = $state('');
   let mainMs = $state(0);
   let timer: ReturnType<typeof setTimeout> | undefined;
   let gone = false;
@@ -61,14 +64,17 @@
   const cue = $derived(ready && !ad ? findCue(cues, timeMs) : undefined);
 
   async function loadSubtitles(videoKey: string) {
+    subs = 'loading';
     const r = await request('GET', `/videos/${encodeURIComponent(videoKey)}/subtitles`);
     if (gone) return;
     if (r.status === 200) {
+      subs = 'none';
       cues = [...(r.body.cues as Cue[])].sort((a, b) => a.start_ms - b.start_ms);
       mainMs = r.body.duration_ms || 0;
       if (!cues.length) notice = { text: '자막으로 옮길 말이 없었습니다.' };
     } else {
-      notice = { text: r.body?.message ?? '자막을 받지 못했습니다.' };
+      subs = 'failed';
+      subsError = r.body?.message ?? '자막을 불러오지 못했습니다.';
     }
   }
 
@@ -93,6 +99,7 @@
   async function detect() {
     starting = true;
     notice = null;
+    subs = 'none';
     const length = durationMs > 0 ? durationMs : ((await prepare?.()) ?? 0);
     if (gone) return;
     const r = await request('POST', '/jobs', { page_url: pageUrl, media_url: mediaUrl, title, duration_ms: Math.round(length) });
@@ -112,6 +119,11 @@
   }
 
   onMount(() => (initial === undefined ? poll() : follow(initial)));
+
+  const box = 'rounded-lg bg-surface/90 p-2 text-sm';
+  const label = 'text-sm text-ink/60';
+  /** A button in a notice: 44 px high, so a thumb finds it. */
+  const action = 'mt-2 inline-flex min-h-11 items-center rounded-lg px-4';
   onDestroy(() => {
     gone = true;
     if (timer) clearTimeout(timer);
@@ -123,36 +135,46 @@
     {#if look === 'checking'}
       <div class="h-6"></div>
     {:else if active && job}
-      <div data-feature="job-progress" role="status" class="w-48 max-w-[60%] rounded-lg bg-surface/90 p-2 text-sm">
-        <p class="flex justify-between gap-2"><span>진행 상태 <b>{STAGE[job.stage]}</b></span><span>{job.percent}%</span></p>
+      <div data-feature="job-progress" role="status" class="{box} min-w-0 flex-1 sm:w-56 sm:flex-none">
+        <p class={label}>진행 상태</p>
+        <p class="flex justify-between gap-2 text-base font-semibold"><span>{STAGE[job.stage]}</span><span>{job.percent}%</span></p>
         <div class="my-1 h-1 rounded-full bg-ink/20">
           <div class="h-1 rounded-full bg-primary" style:width="{Math.min(100, Math.max(0, job.percent))}%"></div>
         </div>
-        <p>든 비용 {won(job.cost_krw)}</p>
+        <p><span class={label}>든 비용</span> <b>{won(job.cost_krw)}</b></p>
+      </div>
+    {:else if subs === 'loading' && job}
+      <div data-feature="job-progress" role="status" class="{box} min-w-0 flex-1 sm:w-56 sm:flex-none">
+        <p class="text-base font-semibold">자막을 불러오는 중</p>
+        <div class="my-1 h-1 animate-pulse rounded-full bg-primary/60"></div>
+        <p><span class={label}>든 비용</span> <b>{won(job.cost_krw)}</b></p>
       </div>
     {:else if ready && job}
       <p data-feature="job-progress" role="status" class="rounded-lg bg-surface/90 px-2 py-1 text-sm text-accent">
         자막 준비됨 · {won(job.cost_krw)}
       </p>
-    {:else if notice || look === 'failed' || job?.stage === 'failed'}
-      <div data-feature="job-progress" role="status" class="pointer-events-auto max-w-[70%] rounded-lg bg-surface/90 p-2 text-sm">
-        {#if notice}
+    {:else if subs === 'failed' || notice || look === 'failed' || job?.stage === 'failed'}
+      <div data-feature="job-progress" role="alert" class="{box} pointer-events-auto min-w-0 flex-1 border border-accent sm:max-w-[70%] sm:flex-none">
+        {#if subs === 'failed' && job}
+          <p class="text-accent">{subsError}</p>
+          <button type="button" class="{action} border border-ink/40" onclick={() => loadSubtitles(job!.video_key)}>다시 불러오기</button>
+        {:else if notice}
           <p class="text-accent">{notice.text}</p>
           {#if notice.settings}
-            <Link href="/preferences" class="mt-2 inline-block rounded-md bg-primary px-2 py-1 font-semibold text-surface">설정으로 가기</Link>
+            <Link href="/preferences" class="{action} bg-primary font-semibold text-surface">설정으로 가기</Link>
           {/if}
         {:else if look === 'failed'}
           <p class="text-accent">진행 상태를 불러오지 못했습니다.</p>
-          <button type="button" class="mt-2 rounded-md border border-ink/40 px-2 py-1" onclick={() => ((look = 'checking'), poll())}>다시 불러오기</button>
+          <button type="button" class="{action} border border-ink/40" onclick={() => ((look = 'checking'), poll())}>다시 불러오기</button>
         {:else if job}
           <p class="text-accent">작업이 멈췄습니다. {STOPPED[job.failure_reason ?? ''] ?? job.failure_reason ?? ''}</p>
         {/if}
       </div>
     {:else if look === 'done'}
       <!-- No job yet: where its progress and cost will show. -->
-      <div data-feature="job-progress" role="status" class="w-40 max-w-[55%] rounded-lg bg-surface/90 p-2 text-sm">
-        <p>진행 상태 <b>작업 전</b></p>
-        <p>든 비용 {won(0)}</p>
+      <div data-feature="job-progress" role="status" class="{box} w-40 max-w-[55%]">
+        <p><span class={label}>진행 상태</span> <b>작업 전</b></p>
+        <p><span class={label}>든 비용</span> <b>{won(0)}</b></p>
       </div>
     {:else}
       <div></div>
@@ -162,24 +184,25 @@
       {#if !active && !ready && look !== 'checking'}
         <p class="max-w-[50%] rounded-lg bg-surface/90 px-2 py-1 text-sm">영상 창의 영상감지 버튼을 누르세요</p>
       {/if}
-    {:else if !active && !ready}
+    {:else}
+      <!-- Always on the overlay: off while a job runs or its subtitles load; on a ready video it shows the saved subtitles again (R25). -->
       <button
         type="button"
         data-feature="detect-video"
-        class="pointer-events-auto shrink-0 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-surface shadow disabled:opacity-60"
-        disabled={starting || look === 'checking'}
+        class="pointer-events-auto min-h-11 shrink-0 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-surface shadow disabled:opacity-60"
+        disabled={starting || look === 'checking' || active || subs === 'loading'}
         onclick={detect}>{starting ? '확인하는 중' : '영상감지'}</button
       >
     {/if}
   </div>
 
   {#if cue}
-    <p data-feature="watch-subtitles" class="mx-auto mb-[8%] max-w-full rounded bg-black/80 px-2 py-1 text-center text-base text-ink sm:text-lg lg:text-2xl">
+    <p data-feature="watch-subtitles" class="mx-auto mb-2 max-w-full rounded bg-black/80 px-2 py-1 text-center text-base text-ink sm:mb-[6%] sm:text-lg lg:text-2xl">
       {cue.text_ko}
     </p>
-  {:else if !ready && look === 'done'}
+  {:else if !ready && look === 'done' && subs === 'none'}
     <!-- Where the subtitles will be; they come only once the whole job is done (R11). -->
-    <p data-feature="watch-subtitles" class="mx-auto mb-[8%] max-w-full rounded bg-black/60 px-2 py-1 text-center text-sm text-ink/70">
+    <p data-feature="watch-subtitles" class="mx-auto mb-2 max-w-full rounded bg-black/60 px-2 py-1 text-center text-sm text-ink/70 sm:mb-[6%]">
       {active ? '자막은 작업이 다 끝나면 여기에 뜹니다' : '한국어 자막이 여기에 뜹니다'}
     </p>
   {/if}

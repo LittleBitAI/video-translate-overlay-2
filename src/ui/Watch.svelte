@@ -81,7 +81,7 @@
     <input
       id="address"
       data-feature="open-site"
-      class="min-w-0 flex-1 rounded-lg border border-ink/30 bg-ink/5 px-4 py-2 text-base placeholder:text-ink/50"
+      class="min-h-11 min-w-0 flex-1 rounded-lg border border-ink/30 bg-ink/5 px-4 py-2 text-base placeholder:text-ink/50"
       type="text"
       inputmode="url"
       autocomplete="url"
@@ -92,10 +92,10 @@
     />
     <button
       data-feature="open-site"
-      class="shrink-0 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-surface disabled:opacity-60"
+      class="min-h-11 shrink-0 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-surface disabled:opacity-60"
       disabled={opening}>{opening ? '여는 중' : '열기'}</button
     >
-    <Link href="/preferences" class="shrink-0 px-2 py-2 text-base underline underline-offset-4">설정</Link>
+    <Link href="/preferences" class="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg border border-ink/30 px-4 text-base">설정</Link>
   </form>
   {#if addressError}
     <p id="address-error" role="alert" class="mx-auto max-w-5xl px-2 pb-2 text-sm text-accent sm:px-4">{addressError}</p>
@@ -123,7 +123,6 @@
           </div>
           <button type="button" data-feature="detect-video" disabled class="rounded-lg bg-primary px-4 py-2 text-base font-semibold text-surface opacity-60">영상감지</button>
         </div>
-        <p data-feature="watch-subtitles" class="mx-auto mb-[8%] h-8 w-2/3 animate-pulse rounded bg-black/60" aria-hidden="true"></p>
       </div>
     </div>
   {:else if screen === 'error'}
@@ -153,7 +152,6 @@
     {#key opened}
       <Stage url={opened} job={openedJob} />
     {/key}
-    <p class="mt-2 break-all text-sm text-ink/60">{opened}</p>
   {:else}
     <div class="flex aspect-video w-full items-center justify-center rounded-lg border border-dashed border-ink/30 p-6 text-center">
       <p class="text-base text-ink/80">영상 주소를 넣으면 여기에서 열립니다</p>
