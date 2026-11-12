@@ -88,6 +88,7 @@ impl Client {
         match status {
             200..=299 => {}
             401 | 403 => return Err(Error::Key(format!("HTTP {status}"))),
+            400 if key_refused(&bytes) => return Err(Error::Key(format!("HTTP {status}"))),
             _ => return Err(Error::Transient(format!("HTTP {status}"))),
         }
         let v: Value = serde_json::from_slice(&bytes).map_err(|e| Error::Transient(format!("reply is not JSON: {e}")))?;
@@ -103,6 +104,15 @@ impl Client {
             None => Err(Error::Reply(format!("reply text is not a JSON object: {:.80}", text), usage)),
         }
     }
+}
+
+/// Whether a 400 answer is Google refusing the key: an invalid or expired key
+/// comes back as 400 INVALID_ARGUMENT with an `API_KEY_*` reason in its details.
+fn key_refused(body: &[u8]) -> bool {
+    let v: Value = serde_json::from_slice(body).unwrap_or_default();
+    let details = v["error"]["details"].as_array().cloned().unwrap_or_default();
+    details.iter().any(|d| d["reason"].as_str().is_some_and(|r| r.starts_with("API_KEY_")))
+        || v["error"]["message"].as_str().is_some_and(|m| m.contains("API key"))
 }
 
 /// The JSON object in a reply, tolerating a ```json fence around it.
@@ -152,6 +162,10 @@ pub fn parse_translations(reply: &Value, asked: &[(i64, String)]) -> Vec<(i64, S
         })
         .collect()
 }
+
+#[cfg(test)]
+#[path = "gemini_key_tests.rs"]
+mod key_tests;
 
 #[cfg(test)]
 mod tests {

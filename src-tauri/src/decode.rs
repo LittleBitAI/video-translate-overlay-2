@@ -49,8 +49,7 @@ pub fn decode(path: &Path) -> Result<Vec<i16>, String> {
         };
     }
     let ext = path.extension().and_then(|e| e.to_str()).map(str::to_string);
-    let file = std::fs::File::open(path).map_err(|e| format!("open audio: {e}"))?;
-    decode_stream(Box::new(file), ext.as_deref(), mp4_offset(path).unwrap_or(0.0))
+    decode_edited(path, ext.as_deref())
 }
 
 /// Symphonia's codecs, plus Opus (WebM audio) through libopus.
@@ -139,12 +138,12 @@ fn child<'a>(b: &'a [u8], kind: &[u8; 4]) -> Option<&'a [u8]> {
     boxes(b).find(|(k, _)| k == kind).map(|(_, body)| body)
 }
 
-/// Seconds to add to an MP4 audio track's own timestamps to get the movie's
-/// (the player's) time: the empty edits that open its edit list, minus the
-/// media time its first real edit starts at. Symphonia's reader does not
-/// apply edit lists, so without this a late-starting track would be pulled to
-/// 0 and a trimmed one would play its cut part.
-fn mp4_offset(path: &Path) -> Option<f64> {
+/// The edit list of an MP4's audio track (empty when it has none), which maps
+/// the track's own timeline onto the movie's (the player's). Symphonia's
+/// reader does not apply edit lists, so without it a late-starting track would
+/// be pulled to 0, a trimmed one would play its cut part, and a skipped part
+/// would push every later word late.
+fn mp4_edits(path: &Path) -> Option<Vec<Edit>> {
     use std::io::{Read, Seek, SeekFrom};
     let mut f = std::fs::File::open(path).ok()?;
     let mut off = 0u64;
@@ -179,23 +178,65 @@ fn mp4_offset(path: &Path) -> Option<f64> {
         child(t, b"mdia").and_then(|m| child(m, b"hdlr")).and_then(|h| h.get(8..12)) == Some(b"soun")
     })?;
     let media = timescale(child(child(trak, b"mdia")?, b"mdhd")?)?;
-    let Some(elst) = child(trak, b"edts").and_then(|e| child(e, b"elst")) else { return Some(0.0) };
+    let Some(elst) = child(trak, b"edts").and_then(|e| child(e, b"elst")) else { return Some(Vec::new()) };
     let (v1, count) = (elst.first()? == &1, u32::from_be_bytes(elst.get(4..8)?.try_into().ok()?));
     let size = if v1 { 20 } else { 12 };
-    let mut empty = 0u64;
+    let mut edits = Vec::new();
     for e in elst.get(8..)?.chunks_exact(size).take(count as usize) {
         let (duration, media_time) = if v1 {
             (u64::from_be_bytes(e[..8].try_into().ok()?), i64::from_be_bytes(e[8..16].try_into().ok()?))
         } else {
             (u64::from(u32::from_be_bytes(e[..4].try_into().ok()?)), i64::from(i32::from_be_bytes(e[4..8].try_into().ok()?)))
         };
-        if media_time != -1 {
-            // ponytail: only the first media edit is applied; later edits that skip or repeat parts are not.
-            return Some(empty as f64 / movie - media_time as f64 / media);
-        }
-        empty += duration;
+        // ponytail: the edit's rate is taken as 1 (a dwell or a speed change is played at normal speed).
+        edits.push(Edit { from: (media_time >= 0).then(|| media_time as f64 / media), secs: duration as f64 / movie });
     }
-    Some(empty as f64 / movie)
+    Some(edits)
+}
+
+/// One entry of an MP4 edit list: `secs` of the movie, played from media time
+/// `from` (seconds on the track's own timeline), or silence when `None`.
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct Edit {
+    from: Option<f64>,
+    secs: f64,
+}
+
+/// Decodes an MP4 (or any other file, whose edit list is empty) on the movie's
+/// timeline. With at most one media edit, the edit is an offset applied while
+/// decoding; edits that skip or repeat parts build the timeline from the
+/// track decoded on its own one.
+fn decode_edited(path: &Path, ext: Option<&str>) -> Result<Vec<i16>, String> {
+    let open = || std::fs::File::open(path).map_err(|e| format!("open audio: {e}"));
+    let edits = mp4_edits(path).unwrap_or_default();
+    if edits.iter().filter(|e| e.from.is_some()).count() <= 1 {
+        let lead: f64 = edits.iter().take_while(|e| e.from.is_none()).map(|e| e.secs).sum();
+        let from = edits.iter().find_map(|e| e.from).unwrap_or(0.0);
+        return decode_stream(Box::new(open()?), ext, lead - from);
+    }
+    // ponytail: a second copy of the PCM (about 115 MB for an hour) for files with several edits.
+    let track = decode_stream(Box::new(open()?), ext, 0.0)?;
+    Ok(apply_edits(&track, &edits))
+}
+
+/// The movie's timeline out of `track` (16 kHz, on the track's own timeline).
+fn apply_edits(track: &[i16], edits: &[Edit]) -> Vec<i16> {
+    let at = |secs: f64| (secs * RATE as f64).round() as usize;
+    let mut out = Vec::new();
+    for e in edits {
+        let n = at(e.secs);
+        match e.from {
+            None => out.resize(out.len() + n, 0),
+            Some(from) => {
+                let start = at(from).min(track.len());
+                // A length of 0 runs to the end of the track.
+                let end = if n == 0 { track.len() } else { (start + n).min(track.len()) };
+                out.extend_from_slice(&track[start..end]);
+                out.resize(out.len() + n.saturating_sub(end - start), 0);
+            }
+        }
+    }
+    out
 }
 
 fn pid(hi: u8, lo: u8) -> u16 {
@@ -386,3 +427,7 @@ fn ts_audio(data: &[u8]) -> Result<(Vec<u8>, &'static str, Vec<(usize, u64)>), S
     let runs = runs(&out, ext, &pes, lead);
     Ok((out, ext, runs))
 }
+
+#[cfg(test)]
+#[path = "decode_edit_tests.rs"]
+mod edit_tests;

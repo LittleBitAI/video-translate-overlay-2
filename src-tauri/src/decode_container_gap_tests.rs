@@ -4,7 +4,8 @@
 //! `gap.mp4`, `gap.webm` (ffmpeg): a 440 Hz tone at 0-2 s and 12-14 s, nothing
 //! between; the MP4 has 14 s of video, its gap is one 10 s sample duration.
 //! `lead.mp4`: 6 s of video, the tone at 3-5 s, placed by an empty edit.
-//! `trim.mp4` is an ffmpeg file whose `elst` media time was set to 5 s by hand.
+//! `trim.mp4` is an ffmpeg file whose `elst` media time was set to 5 s by hand;
+//! `skip.mp4` one whose `elst` was given a second edit by hand.
 
 use super::decode_gap_tests::{assert_gap_kept, fixture, rms};
 use super::RATE;
@@ -36,4 +37,19 @@ fn an_mp4_edit_that_trims_the_start_moves_the_speech_with_it() {
     let onset = pcm.iter().position(|s| s.unsigned_abs() > 3_000).unwrap() as f64 / RATE as f64;
     assert!(onset < 0.05, "the tone starts at {onset:.3} s, not where the player plays it (0 s)");
     assert!(rms(&pcm, 0.2, 2.8) > 1_500.0, "no tone at 0-3 s");
+}
+
+/// `skip.mp4`: a 10 s track with a tone at 0.5-1.5 s and 7-8 s, and an edit
+/// list that plays media 0-2 s then 7-10 s, so the player has the tones at
+/// 0.5 s and 2 s, and 5 s in all.
+#[test]
+fn an_mp4_edit_list_that_skips_a_part_is_played_through() {
+    let pcm = crate::decode::decode(&fixture("skip.mp4")).unwrap();
+    let secs = pcm.len() as f64 / RATE as f64;
+    assert!((secs - 5.0).abs() < 0.1, "{secs:.2} s long, not the 5 s the player plays");
+    assert!(rms(&pcm, 0.7, 1.3) > 1_500.0, "no tone at 0.5-1.5 s");
+    assert!(rms(&pcm, 1.6, 1.9) < 50.0, "the first edit's end is not silent");
+    let onset = 1.8 + pcm[(1.8 * RATE as f64) as usize..].iter().position(|s| s.unsigned_abs() > 3_000).unwrap() as f64 / RATE as f64;
+    assert!((onset - 2.0).abs() < 0.05, "media 7 s plays at {onset:.3} s, not 2 s");
+    assert!(rms(&pcm, 3.2, 4.8) < 50.0, "after the second tone is not silent");
 }

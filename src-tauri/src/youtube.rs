@@ -66,6 +66,14 @@ impl crate::AudioExtractor for InnertubeExtractor {
     }
 }
 
+/// A YouTube stream URL's own length, from its `dur` parameter (seconds):
+/// the lecture's, even when the player was showing an ad when 영상감지 was pressed.
+pub fn stream_duration_ms(stream_url: &str) -> Option<i64> {
+    let u = url::Url::parse(stream_url).ok()?;
+    let secs: f64 = u.query_pairs().find(|(k, _)| k == "dur")?.1.parse().ok()?;
+    (secs.is_finite() && secs > 0.0).then(|| (secs * 1000.0).round() as i64)
+}
+
 /// The best audio-only stream with a plain URL, preferring AAC (itag 140) that every decoder reads.
 fn pick_audio(player: &Value) -> Option<String> {
     let formats = player["streamingData"]["adaptiveFormats"].as_array()?;

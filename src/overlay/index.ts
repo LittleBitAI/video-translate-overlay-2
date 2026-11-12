@@ -15,7 +15,7 @@ export interface OverlayOptions {
   pageUrl: string;
   title: string;
   /** A function is read when 영상감지 is pressed: sites often set the media after the player appears. */
-  mediaUrl: string | null | (() => string | null);
+  mediaUrl: string | null | (() => string | null | Promise<string | null>);
   /** P6, P7 and P8 of docs/design/api.yaml (Tauri `invoke` in the app). */
   request: Request;
 }
@@ -86,8 +86,9 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
   let ticker: ReturnType<typeof setInterval> | undefined;
   let destroyed = false;
 
+  const adShowing = () => !!(video.closest('.ad-showing') || document.querySelector('.html5-video-player.ad-showing'));
   const isAd = () => {
-    if (video.closest('.ad-showing') || document.querySelector('.html5-video-player.ad-showing')) return true;
+    if (adShowing()) return true;
     const d = video.duration;
     return mainMs > 0 && Number.isFinite(d) && Math.abs(d * 1000 - mainMs) > AD_TOLERANCE_MS;
   };
@@ -153,9 +154,19 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
 
   button.addEventListener('click', async () => {
     button.disabled = true;
+    // While an ad plays, the player's length and media are the ad's: start once it is over.
+    if (adShowing()) {
+      say('광고가 끝나면 작업을 시작합니다.');
+      // Then up to 10 s for the lecture's length to be known (the backend refuses an unknown one).
+      let left = 10_000;
+      while (adShowing() || (!(video.duration > 0) && (left -= 250) > 0)) {
+        await new Promise((r) => setTimeout(r, 250));
+        if (destroyed) return;
+      }
+    }
     say('작업을 만드는 중…');
     const durationMs = Number.isFinite(video.duration) ? Math.round(video.duration * 1000) : 0;
-    const media = typeof mediaUrl === 'function' ? mediaUrl() : mediaUrl;
+    const media = typeof mediaUrl === 'function' ? await mediaUrl() : mediaUrl;
     const r = await request('POST', '/jobs', { page_url: pageUrl, media_url: media, title, duration_ms: durationMs });
     if (destroyed) return;
     if (r.status === 200) {
@@ -200,21 +211,67 @@ function el(tag: string, cls?: string): HTMLElement {
 
 /**
  * The video's media as of now. A blob: (MediaSource) player such as hls.js plays
- * a playlist its script fetched; Resource Timing saw that fetch, so the first
- * playlist the page loaded at or after `since` (when its URL last changed) stands
- * in for it. The backend probes master playlists and their variants itself, and
- * resolves YouTube pages on its own.
+ * a playlist its script fetched; Resource Timing saw that fetch, so a playlist
+ * the page loaded at or after `since` (when its URL last changed) stands in for
+ * it: the one as long as the video (an ad's playlist loaded first is passed
+ * over), and none when none is (an ad's audio must never become the
+ * lecture's subtitles). The backend probes master playlists and their variants
+ * itself, and resolves YouTube pages on its own.
  */
-export function videoMediaUrl(video: HTMLVideoElement, since = 0): string | null {
+export async function videoMediaUrl(video: HTMLVideoElement, since = 0): Promise<string | null> {
   const src = video.currentSrc || video.src || video.querySelector('source')?.src || '';
   if (/^https?:/.test(src)) return src;
   if (!src.startsWith('blob:')) return null;
-  // ponytail: the first playlist since the URL changed; a page that plays an HLS ad
-  // first sends the ad's. Upgrade path: hook MediaSource to see what the player attached.
-  const playlist = performance
+  const found = performance
     .getEntriesByType('resource')
-    .find((e) => e.startTime >= since && /^https?:/.test(e.name) && /\.(m3u8|mpd)$/i.test(new URL(e.name).pathname));
-  return playlist?.name ?? null;
+    .filter((e) => e.startTime >= since && /^https?:/.test(e.name) && /\.(m3u8|mpd)$/i.test(new URL(e.name).pathname))
+    .map((e) => e.name);
+  const candidates = [...new Set(found)];
+  if (!candidates.length) return null;
+  const want = video.duration * 1000;
+  // A live stream (or one not loaded yet): nothing to match; the backend refuses those itself.
+  if (!(want > 0) || !Number.isFinite(want)) return candidates[0];
+  const lengths = await Promise.all(candidates.map((u) => playlistMs(u).catch(() => null)));
+  // ponytail: playlists this page cannot read again (CORS, one-time tokens) give no length;
+  // when none gives one, the first is sent as before. Upgrade path: hook MediaSource.
+  if (lengths.every((l) => l === null)) return candidates[0];
+  const tolerance = Math.max(2_000, want * 0.02);
+  let best: string | null = null;
+  let off = Infinity;
+  for (const [i, u] of candidates.entries()) {
+    const l = lengths[i];
+    if (l !== null && Math.abs(l - want) <= tolerance && Math.abs(l - want) < off) {
+      best = u;
+      off = Math.abs(l - want);
+    }
+  }
+  return best;
+}
+
+/** How long an HLS playlist (a master's first variant) or a DASH manifest plays, in ms. */
+async function playlistMs(url: string, depth = 0): Promise<number | null> {
+  // As players fetch it (hls.js and dash.js send no cookies to another origin).
+  const r = await fetch(url);
+  if (!r.ok) return null;
+  const text = await r.text();
+  if (/\.mpd$/i.test(new URL(url).pathname) || text.includes('<MPD')) {
+    const m = /mediaPresentationDuration="P(?:(\d+(?:\.\d+)?)D)?T?(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?"/.exec(text);
+    if (!m) return null;
+    const [d, h, min, s] = m.slice(1).map((x) => Number(x ?? 0));
+    return (((d * 24 + h) * 60 + min) * 60 + s) * 1000;
+  }
+  const lines = text.split(/\r?\n/).map((l) => l.trim());
+  const variant = lines.findIndex((l) => l.startsWith('#EXT-X-STREAM-INF'));
+  if (variant >= 0) {
+    const uri = lines.slice(variant + 1).find((l) => l && !l.startsWith('#'));
+    return uri && depth === 0 ? playlistMs(new URL(uri, url).href, 1) : null;
+  }
+  let ms = 0;
+  for (const l of lines) {
+    const m = /^#EXTINF:\s*([\d.]+)/.exec(l);
+    if (m) ms += Number(m[1]) * 1000;
+  }
+  return ms > 0 ? ms : null;
 }
 
 /** The cue under `ms` (cues sorted by start, not overlapping). */

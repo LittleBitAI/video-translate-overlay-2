@@ -37,14 +37,14 @@ test('test_media_set_after_mount_is_sent', async () => {
   expect(posts[0].media_url).toBe('https://cdn.example.org/talk42.mp4');
 });
 
-test('test_blob_and_missing_sources_send_no_media', () => {
+test('test_blob_and_missing_sources_send_no_media', async () => {
   const v = video();
-  expect(videoMediaUrl(v)).toBeNull();
+  expect(await videoMediaUrl(v)).toBeNull();
   v.src = 'blob:https://www.youtube.com/0b1c';
-  expect(videoMediaUrl(v)).toBeNull();
+  expect(await videoMediaUrl(v)).toBeNull();
   const w = video();
   const s = document.createElement('source');
   s.src = 'https://cdn.example.org/a.webm';
   w.append(s);
-  expect(videoMediaUrl(w)).toBe('https://cdn.example.org/a.webm');
+  expect(await videoMediaUrl(w)).toBe('https://cdn.example.org/a.webm');
 });

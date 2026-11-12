@@ -211,7 +211,13 @@ pub fn create_job(core: &Core, page_url: &str, media_url: Option<&str>, title: &
     if let Some(m) = media_url.filter(|m| !m.trim().is_empty()) {
         http_url(m).map_err(|_| err(400, "bad_url", "media_url은 http나 https 주소여야 합니다."))?;
     }
-    resolve_source(core, &page, media_url)?;
+    let source = resolve_source(core, &page, media_url)?;
+    // The player's length is an ad's if one was playing when the button was
+    // pressed; YouTube's stream carries the lecture's own (R18).
+    let duration_ms = match &source {
+        media::Source::File { url, .. } if youtube::is_youtube(&page) => youtube::stream_duration_ms(url).unwrap_or(duration_ms),
+        _ => duration_ms,
+    };
 
     let id = new_job_id();
     let title = clip_title(title, page_url);
@@ -263,6 +269,10 @@ pub fn get_subtitles(core: &Core, video_key: &str) -> ApiResult {
 #[cfg(test)]
 #[path = "api_key_tests.rs"]
 mod key_tests;
+
+#[cfg(test)]
+#[path = "api_duration_tests.rs"]
+mod duration_tests;
 
 #[cfg(test)]
 mod tests {
