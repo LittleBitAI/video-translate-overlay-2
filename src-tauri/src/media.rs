@@ -482,6 +482,21 @@ fn byte_range(spec: &str, url: &str, ends: &mut HashMap<String, u64>) -> Result<
     Ok((off, len))
 }
 
+/// The playlist of the audio a player plays from AUDIO group `group`: its
+/// `DEFAULT=YES` rendition, else its `AUTOSELECT=YES` one, else its first, as
+/// players pick with no language set; the lecture, never a commentary track
+/// listed before it. `None` when that rendition has no `URI` of its own (its
+/// audio is in the variant) or the group lists none.
+fn group_audio<'a>(lines: &[&'a str], group: &str) -> Option<&'a str> {
+    let group: Vec<&str> = lines
+        .iter()
+        .copied()
+        .filter(|l| l.starts_with("#EXT-X-MEDIA:") && attr(l, "TYPE") == Some("AUDIO") && attr(l, "GROUP-ID") == Some(group))
+        .collect();
+    let yes = |key: &str| group.iter().find(|l| attr(l, key) == Some("YES"));
+    yes("DEFAULT").or_else(|| yes("AUTOSELECT")).or(group.first()).and_then(|l| attr(l, "URI"))
+}
+
 pub fn probe_hls(base: &Url, playlist: &str, allow_loopback: bool, depth: u8) -> Result<Source, Refusal> {
     let join = |u: &str| -> Result<Url, Refusal> {
         let abs = base.join(u).map_err(|_| refuse("bad_url", "재생 목록의 주소를 읽을 수 없습니다."))?;
@@ -499,22 +514,23 @@ pub fn probe_hls(base: &Url, playlist: &str, allow_loopback: bool, depth: u8) ->
             }
         }
     }
-    // A master playlist: prefer an audio-only rendition, else the lowest-bandwidth variant.
+    // A master playlist: the lowest-bandwidth variant with sound, and the audio
+    // a player plays with it.
     if lines.iter().any(|l| l.starts_with("#EXT-X-STREAM-INF")) {
         if depth > 0 {
             return Err(refuse("not_media", "재생 목록이 너무 깊게 이어져 있습니다."));
         }
-        let audio = lines.iter().find(|l| l.starts_with("#EXT-X-MEDIA") && l.contains("TYPE=AUDIO")).and_then(|l| attr(l, "URI"));
         let variants: Vec<&[&str]> = lines.windows(2).filter(|w| w[0].starts_with("#EXT-X-STREAM-INF") && !w[1].starts_with('#')).collect();
-        // A variant whose CODECS names no audio codec has no sound; one without CODECS may.
+        // A variant whose CODECS names no audio codec has no sound of its own, but
+        // may play an AUDIO group's; one without CODECS may have sound.
         const AUDIO: [&str; 6] = ["mp4a", "ac-3", "ec-3", "opus", "flac", "alac"];
-        let sounds = |w: &&[&str]| attr(w[0], "CODECS").is_none_or(|c| AUDIO.iter().any(|a| c.to_ascii_lowercase().contains(a)));
+        let sounds = |w: &&[&str]| {
+            attr(w[0], "AUDIO").is_some() || attr(w[0], "CODECS").is_none_or(|c| AUDIO.iter().any(|a| c.to_ascii_lowercase().contains(a)))
+        };
         let pool: Vec<&[&str]> = if variants.iter().any(sounds) { variants.iter().copied().filter(sounds).collect() } else { variants };
-        let variant = pool
-            .iter()
-            .min_by_key(|w| attr(w[0], "BANDWIDTH").and_then(|b| b.parse::<u64>().ok()).unwrap_or(u64::MAX))
-            .map(|w| w[1]);
-        let next = join(audio.or(variant).ok_or_else(|| refuse("not_media", "재생 목록에 영상이 없습니다."))?)?;
+        let variant = pool.iter().min_by_key(|w| attr(w[0], "BANDWIDTH").and_then(|b| b.parse::<u64>().ok()).unwrap_or(u64::MAX));
+        let audio = variant.and_then(|w| attr(w[0], "AUDIO")).and_then(|group| group_audio(&lines, group));
+        let next = join(audio.or(variant.map(|w| w[1])).ok_or_else(|| refuse("not_media", "재생 목록에 영상이 없습니다."))?)?;
         let (_, body, at) = fetch(next.as_str(), None, MAX_PLAYLIST, allow_loopback)?;
         return probe_hls(&at, &String::from_utf8_lossy(&body), allow_loopback, depth + 1);
     }
@@ -708,6 +724,10 @@ mod hls_start_tests;
 #[cfg(test)]
 #[path = "media_webm_drm_tests.rs"]
 mod webm_drm_tests;
+
+#[cfg(test)]
+#[path = "media_audio_group_tests.rs"]
+mod audio_group_tests;
 
 #[cfg(test)]
 mod tests {
