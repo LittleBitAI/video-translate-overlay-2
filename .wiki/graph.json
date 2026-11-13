@@ -22,13 +22,13 @@
    "cross": true
   },
   {
-   "a": ".wiki/no-gate-yet",
+   "a": ".wiki/project",
    "b": "README.md",
    "kind": "reads",
    "cross": true
   },
   {
-   "a": ".wiki/project",
+   "a": ".wiki/repository-gate",
    "b": "README.md",
    "kind": "reads",
    "cross": true
