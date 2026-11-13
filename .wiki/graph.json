@@ -10,20 +10,44 @@
    "cross": true
   },
   {
+   "a": ".wiki/cost-budget-per-hour",
+   "b": "docs/design/backend.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
    "a": ".wiki/job-survives-background",
    "b": "README.md",
    "kind": "reads",
    "cross": true
   },
   {
+   "a": ".wiki/job-survives-background",
+   "b": "docs/design/backend.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
    "a": ".wiki/mobile-first-rust-web",
-   "b": "README.md",
+   "b": "docs/design/backend.md",
    "kind": "reads",
    "cross": true
   },
   {
    "a": ".wiki/project",
    "b": "README.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
+   "a": ".wiki/project",
+   "b": "docs/design/backend.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
+   "a": ".wiki/project",
+   "b": "docs/design/frontend.md",
    "kind": "reads",
    "cross": true
   },
@@ -35,26 +59,23 @@
   },
   {
    "a": ".wiki/subtitles-must-not-drift",
-   "b": "README.md",
+   "b": "docs/design/backend.md",
    "kind": "reads",
    "cross": true
   },
   {
    "a": ".wiki/translate-text-not-audio",
-   "b": "README.md",
+   "b": "docs/design/backend.md",
    "kind": "reads",
    "cross": true
   }
  ],
- "orphans": [
-  "docs/design/backend.md",
-  "docs/design/frontend.md"
- ],
+ "orphans": [],
  "counts": {
   "docs": 3,
   "linked": 0,
-  "read": 1,
-  "orphans": 2,
+  "read": 3,
+  "orphans": 0,
   "pages": 7,
   "decisions": 5,
   "injectable_decisions": 1

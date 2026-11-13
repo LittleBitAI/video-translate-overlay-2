@@ -3,7 +3,8 @@ scope: project
 severity: preference
 triggers: []
 slots: []
-sources: []
+reads: [README.md, docs/design/backend.md, docs/design/frontend.md]
+sources: [README.md, docs/design/backend.md, docs/design/frontend.md, src-tauri/README.md]
 links: [repository-gate]
 ---
 
