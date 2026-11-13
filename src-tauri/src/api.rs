@@ -219,11 +219,21 @@ pub fn delete_api_key(core: &Core) -> ApiResult {
 
 /// Prefer YouTube's browser-session audio; otherwise use its native extractor.
 pub fn resolve_source(core: &Core, page: &url::Url, media_url: Option<&str>) -> Result<media::Source, Refusal> {
+    resolve_source_with(core, page, media_url, |raw| {
+        let url = media::check_media_url(raw, core.cfg.allow_loopback_media)?;
+        media::probe(&url, core.cfg.allow_loopback_media)
+    })
+}
+
+fn resolve_source_with(core: &Core, page: &url::Url, media_url: Option<&str>, mut probe: impl FnMut(&str) -> Result<media::Source, Refusal>) -> Result<media::Source, Refusal> {
     let raw = if youtube::is_youtube(page) {
-        match media_url.and_then(youtube::browser_audio_url) {
-            Some(url) => url.to_string(),
-            None => core.svc.extractor.audio_url(page.as_str())?,
+        if let Some(url) = media_url.and_then(youtube::browser_audio_url) {
+            match probe(url) {
+                Err(e) if e.code == "unreachable" => {},
+                result => return result,
+            }
         }
+        core.svc.extractor.audio_url(page.as_str())?
     } else {
         media_url
             .filter(|m| !m.trim().is_empty())
@@ -231,8 +241,7 @@ pub fn resolve_source(core: &Core, page: &url::Url, media_url: Option<&str>) -> 
             .trim()
             .to_string()
     };
-    let url = media::check_media_url(&raw, core.cfg.allow_loopback_media)?;
-    media::probe(&url, core.cfg.allow_loopback_media)
+    probe(&raw)
 }
 
 pub fn create_job(core: &Core, page_url: &str, media_url: Option<&str>, title: &str, duration_ms: i64) -> ApiResult {
@@ -245,13 +254,13 @@ pub fn create_job(core: &Core, page_url: &str, media_url: Option<&str>, title: &
     // jobs or let a late one wipe the cues of the first (one running job per device).
     let _creating = core.create_lock.lock().unwrap_or_else(|p| p.into_inner());
 
-    // Subtitles made before are shown again without any work (and without a key).
-    if let Some(last) = core.store.latest_job(&key)? {
-        if last.stage == "ready" {
+    let active = core.store.active_job()?;
+    if !active.as_ref().is_some_and(|j| j.video_key == key) {
+        if let Some(last) = core.store.ready_job(&key)? {
             return Ok(json!({"job_id": last.id, "video_key": key, "stage": "ready", "reused": true}));
         }
     }
-    if let Some(active) = core.store.active_job()? {
+    if let Some(active) = active {
         if active.video_key == key {
             return Ok(json!({"job_id": active.id, "video_key": key, "stage": active.stage, "reused": false}));
         }
@@ -301,7 +310,8 @@ pub fn retranslate_job(core: &Core, page_url: &str) -> ApiResult {
         }
         return Err(err(409, "busy", "다른 영상의 작업이 끝난 뒤에 다시 눌러 주세요."));
     }
-    let previous = core.store.latest_job(&key)?.filter(|j| j.stage == "ready")
+    let ready = core.store.ready_job(&key)?.is_some();
+    let previous = core.store.latest_job(&key)?.filter(|_| ready)
         .ok_or_else(|| err(409, "not_ready", "완료된 자막만 다시 번역할 수 있습니다."))?;
     if core.svc.keystore.get()?.is_none() {
         return Err(err(428, "no_key", "설정에서 Gemini API 키를 먼저 넣어 주세요."));
@@ -341,7 +351,7 @@ pub fn get_job(core: &Core, page_url: &str) -> ApiResult {
 
 pub fn get_subtitles(core: &Core, video_key: &str) -> ApiResult {
     let video = core.store.video(video_key)?.ok_or_else(|| err(404, "no_video", "이 영상의 자막이 없습니다."))?;
-    let ready = core.store.latest_job(video_key)?.is_some_and(|j| j.stage == "ready");
+    let ready = core.store.ready_job(video_key)?.is_some();
     if !ready {
         return Err(err(409, "not_ready", "자막을 만드는 중입니다. 다 되면 알림으로 알려 드립니다."));
     }
