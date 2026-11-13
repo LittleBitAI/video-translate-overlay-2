@@ -4,6 +4,16 @@
  "nodes_from": ".wiki/corpus.json",
  "edges": [
   {
+   "a": "README.md",
+   "b": "docs/design/backend.md",
+   "kind": "link"
+  },
+  {
+   "a": "README.md",
+   "b": "docs/design/frontend.md",
+   "kind": "link"
+  },
+  {
    "a": ".wiki/cost-budget-per-hour",
    "b": "README.md",
    "kind": "reads",
