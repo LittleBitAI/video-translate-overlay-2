@@ -1,8 +1,8 @@
 agents = ["claude", "codex"]
 
 [slots]
-gate_cmd = ""
+gate_cmd = "npm ci --prefer-offline --no-audit --no-fund && node scripts/contract-tests.mjs artifacts/junit.xml && npm run test:ui && npm run build"
 review_dir = "artifacts/review"
 scratch_dirs = "artifacts/"
-live_cmd = ""
+live_cmd = "node scripts/live.mjs --stand-ins"
 server_stop = ""

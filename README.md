@@ -1,30 +1,76 @@
 # video-translate-overlay-2
 
-외국어로 된 딥러닝·기술 강연/강의 영상을 한국어 자막으로 보여 주는 실시간 번역 앱을 만듭니다. 유튜브 같은 곳에 씌운 오버레이에서 영상감지 버튼을 누르면 영상을 오디오로 내려받아 자체 모델이 목소리를 write하고, gemini-3.1-flash-lite가 그 글을 번역해 밀림 현상 없이 자막을 맞춘 뒤 알림을 보냅니다. Rust 기반 웹 프레임워크로 짜서 모바일(테스트 기종 갤럭시 S21 울트라)에서도 잘 돌고, 영상감지 뒤에는 바탕화면으로 나가거나 백그라운드에 있어도 작업이 이어지며, 비용은 1시간에 1000원 내외로 맞춥니다.
+외국어로 된 딥러닝·기술 강연과 강의 영상을 한국어 자막으로 보는 앱입니다.
+영상 위 오버레이에서 영상감지 버튼을 누르면 오디오를 내려받아 기기 안의 모델(whisper.cpp)이 말을 글로 옮기고(write), gemini-3.1-flash-lite가 그 글을 번역해 말과 같은 때에 뜨는 자막을 만든 뒤 알림을 보냅니다.
+작업은 앱을 백그라운드로 보내도 이어지고, 비용은 1시간짜리 영상에 1,000원 안팎입니다.
 
-> 외국어로 된 영상을 한국어로 실시간 번역 해주는 앱을 만들고 싶어.
-(유튜브가 그런곳에 오버레이를 씌우는 형식으로.)
+화면은 둘입니다. 첫 화면 `/`에서 주소를 넣어 영상을 열고 영상감지, 진행 상태, 자막을 보고, `/preferences`에서 Gemini 개인키를 넣거나 지우고 유튜브에서 로그아웃합니다.
+설계는 [`docs/design/`](docs/design/)에, 백엔드 파일별 설명과 안드로이드 빌드는 [`src-tauri/README.md`](src-tauri/README.md)에 있습니다.
 
-이때, 모바일용으로도 잘 되어야해. 그래서 rust를 기반으로 웹 프레임 워크를 구상해줘야해.(각종 최적화 때문)
+## 준비
 
-번역 모듈은 gemini-3.1-flash-lite를 기본으로 쓰고, 비용절감을 해야해.
+필요한 것은 Node.js 24, Rust(stable, rustup), CMake(오디오 디코더 libopus를 소스에서 빌드), C/C++ 컴파일러입니다.
+도구를 깐 뒤 저장소 루트에서 npm 패키지를 받습니다.
 
-그리고 오디오에 입력되는 외국어를 토대로 자체 모델로 write시키고, 그것을 번역하는 구조야.
-이때, 밀림 현상이 있어서는 안돼.
+Windows (PowerShell):
 
-굳이 이렇게 하는 이유는, gemini에도 자막을 바로 한국어로 변환하는게 있는데, 너무 비싸.
-그래서 1시간에 1000원 내외로 싸면서도 좋은 번역을 하는것이야.
+```powershell
+winget install --id OpenJS.NodeJS --exact
+winget install --id Rustlang.Rustup --exact
+winget install --id Kitware.CMake --exact
+winget install --id Microsoft.VisualStudio.2022.BuildTools --exact --override "--quiet --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+# 새 터미널을 열고 저장소 루트에서:
+npm ci --prefer-offline --no-audit --no-fund
+```
 
-즉, 구조는 다음과 같아.
-- 사용자가 번역하고 싶은 오버레이에서 영상감지 버튼을 누름.
-- 영상을 자동으로 다운 받고(오디오 형식으로), 그 목소리를 감지하여 write를 함
-- 그걸 토대로 자막을 맞춤.
-- 사용자한테 알림
+macOS (Terminal):
 
-이때 영상 감지를 한 이후에는(영상을 다운 받고 난 다음에는) 유저는 바탕화면에 나가거나 백그라운드에서도 너가 만들어야함.
+```sh
+xcode-select --install
+brew install node cmake
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+# 새 터미널을 열고 저장소 루트에서:
+npm ci --prefer-offline --no-audit --no-fund
+```
 
-일단 구체적인 용도로는 딥러닝이나 그런 기술 강연/강의를 간편하게 자막으로 보는 기능이야.(유튜브 자막은 너무 비정확해.)
+Rust 크레이트와 테스트용 Chromium은 처음 빌드하거나 테스트할 때 저절로 받습니다.
 
-후에 확장으로는, qwen같은 걸로 화자의 목소리를 내가 원하는 목소리(내 최애의 목소리)로 강연을 들어서, 딴짓하면서 강의 듣기 좋게 하는거야.(왜 이런 아이디어가 나왔냐하면, 대부분 강의는 너무 지루해. 그래서 내가 좋아하는 최애의 목소리로 강의를 들으면 더 집중이 잘되지 않을까? 하는 아이디어에서 착안된거야.)
+## 실행
 
-참고로 테스트 핸드폰 기종은 갤럭시 s21 울트라야.
+`npm run live`가 화면을 빌드하고 서버(`vto-web`)를 빌드해 띄웁니다.
+`PORT`로 포트를, `APP_DATA_DIR`로 데이터 폴더(SQLite, 내려받은 오디오, 모델)를 정합니다.
+
+Windows (PowerShell):
+
+```powershell
+$env:PORT = "8080"; $env:APP_DATA_DIR = "$PWD\data"; npm run live
+```
+
+macOS:
+
+```sh
+PORT=8080 APP_DATA_DIR=./data npm run live
+```
+
+그러면 `http://127.0.0.1:8080/`(첫 화면)과 `http://127.0.0.1:8080/preferences`(설정)가 열립니다. 서버는 이 기기(127.0.0.1)에서 오는 요청만 받습니다.
+
+- 기기 안의 모델까지 넣으려면 `LIBCLANG_PATH`를 libclang이 있는 폴더로 정한 뒤 실행합니다(예: `pip install libclang`). 없으면 작업이 write 단계에서 멈춥니다.
+- `npm run live -- --stand-ins`는 Gemini, 유튜브 오디오, 모델을 가짜로 바꿔, 개인키 없이 모든 화면 상태를 둘러보게 합니다. 실제 번역에는 쓰지 마세요.
+- macOS에는 아직 개인키 저장소가 없어서, `--stand-ins` 없이는 개인키 저장이 거절됩니다.
+- Windows 데스크톱 앱(영상 창 위의 오버레이와 알림 포함)은 `LIBCLANG_PATH`를 정한 뒤 `cargo run --release -p video-translate-overlay --features app --bin video-translate-overlay`로 띄웁니다.
+
+## 테스트
+
+```sh
+npm ci --prefer-offline --no-audit --no-fund && node scripts/contract-tests.mjs artifacts/junit.xml && npm run test:ui && npm run build
+```
+
+이 한 줄이 CI(`.github/workflows/ci.yml`)에서도 도는 검사입니다.
+
+- `scripts/contract-tests.mjs`: 백엔드 계약 테스트(`contract-tests/`)와 Rust 단위 테스트를 cargo-nextest로 돌립니다. 계약 테스트는 실제 앱 코어(명령, SQLite, 작업 흐름)를 `vto-contract-host`로 띄우고 기기 쪽 부품만 가짜로 바꿔 확인합니다. 이어서 오버레이 테스트(`tests/overlay/`)를 Chromium에서 Vitest로 돌리고, 결과를 `artifacts/junit.xml` 하나로 모읍니다.
+- `npm run test:ui`: 두 화면(`tests/ui/`)의 상태(비었을 때, 불러오는 중, 오류, 찼을 때)와 동작을 Chromium에서 확인합니다.
+- `npm run build`: 화면을 `dist/`로 빌드합니다.
+
+## 라이선스
+
+Apache-2.0 ([`LICENSE`](LICENSE))

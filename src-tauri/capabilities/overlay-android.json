@@ -1,0 +1,9 @@
+{
+  "identifier": "overlay-android",
+  "description": "The overlay on Android, where site pages open in the app's one window: the same three commands as on the desktop.",
+  "local": false,
+  "remote": { "urls": ["https://*", "http://*", "https://*:*", "http://*:*"] },
+  "windows": ["main"],
+  "platforms": ["android"],
+  "permissions": ["allow-create-job", "allow-get-job", "allow-get-subtitles"]
+}

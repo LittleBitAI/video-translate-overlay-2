@@ -1,0 +1,78 @@
+[package]
+name = "video-translate-overlay"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+description = "Korean subtitles for foreign-language tech talks: on-device speech writing, Gemini translation, an overlay on video sites."
+
+[lib]
+name = "vto"
+# cdylib: Android loads the app as `libvto.so`.
+crate-type = ["rlib", "cdylib"]
+
+[[bin]]
+name = "vto-contract-host"
+path = "src/bin/vto-contract-host.rs"
+
+# The screens and the API over HTTP on $PORT, data under $APP_DATA_DIR (`scripts/live.mjs`).
+[[bin]]
+name = "vto-web"
+path = "src/bin/vto-web.rs"
+
+# The app itself: real webview windows, notifications and whisper.cpp.
+# `cargo build --features app --bin video-translate-overlay` (bindgen needs
+# libclang: set LIBCLANG_PATH).
+[[bin]]
+name = "video-translate-overlay"
+path = "src/main.rs"
+required-features = ["app"]
+
+[features]
+app = ["whisper", "dep:tauri-build", "dep:tauri-plugin-notification", "dep:tauri-plugin-single-instance", "tauri/custom-protocol"]
+# The on-device model alone, for `vto-web` (bindgen needs libclang: set LIBCLANG_PATH).
+whisper = ["dep:whisper-rs"]
+
+[build-dependencies]
+tauri-build = { version = "2", optional = true }
+
+[dependencies]
+# `test` gives the mock runtime the contract host runs on; `dynamic-acl` lets
+# the app build its capability authority from capabilities/*.json at start-up.
+tauri = { version = "2", default-features = false, features = ["wry", "test", "dynamic-acl"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+url = "2"
+sha2 = "0.10"
+getrandom = "0.3"
+# whisper.cpp, built from source for the target (CPU; Android through the NDK's CMake).
+whisper-rs = { version = "0.16", optional = true }
+tauri-plugin-notification = { version = "2", optional = true }
+# TLS where WinHTTP is not there (Android): ring and Mozilla's roots, no C toolchain beyond the NDK's.
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+webpki-roots = "1"
+# Decoding where Media Foundation is not there (Android); built everywhere so its tests run on Windows too.
+symphonia = { version = "0.5", default-features = false, features = ["aac", "isomp4", "mkv", "mp3", "pcm", "vorbis"] }
+# Opus (WebM audio): libopus, built from source by cmake for the target.
+symphonia-adapter-libopus = "0.2"
+# HLS segments encrypted with AES-128 (an identity key served beside them; not DRM).
+aes = "0.8"
+
+[target.'cfg(target_os = "android")'.dependencies]
+libsqlite3-sys = { version = "0.30", features = ["bundled"] }
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+# A clicked ready toast starts the app again with `vto-open:<job id>`; this hands it to the running one.
+tauri-plugin-single-instance = { version = "2", optional = true }
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.61", features = [
+  "Data_Xml_Dom",
+  "Foundation_Collections",
+  "UI_Notifications",
+  "Win32_Foundation",
+  "Win32_System_Registry",
+  "Win32_Media_MediaFoundation",
+  "Win32_Security_Credentials",
+  "Win32_System_Com",
+] }

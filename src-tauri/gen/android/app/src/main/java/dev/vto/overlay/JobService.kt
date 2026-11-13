@@ -1,0 +1,133 @@
+package dev.vto.overlay
+
+// Keeps the process in the foreground while a job runs (A5): Android stops
+// the long work of an app that has left the screen, but not of one with a
+// foreground service. Its ongoing notification shows the job's progress (R24).
+// A foreground service does not keep the CPU awake, so it also holds a
+// partial wake lock: with the screen off and the phone asleep, writing goes on (R6).
+
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.os.Build
+import android.os.IBinder
+import android.os.PowerManager
+import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
+
+class JobService : Service() {
+    private var awake: PowerManager.WakeLock? = null
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val n = notice(this, intent?.getStringExtra("title") ?: "", intent?.getIntExtra("percent", 0) ?: 0)
+        if (Build.VERSION.SDK_INT >= 34) {
+            // On-device writing of a long lecture runs for hours; dataSync is cut
+            // off after six hours a day from Android 15 on, specialUse is not.
+            startForeground(ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        } else if (Build.VERSION.SDK_INT >= 29) {
+            startForeground(ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        } else {
+            startForeground(ID, n)
+        }
+        // One lock for the service's life, released in onDestroy. The timeout is only
+        // a backstop should the process lose track of it (six hours of audio, written slowly).
+        val lock = awake ?: getSystemService(PowerManager::class.java)
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "vto:job")
+            .apply { setReferenceCounted(false) }
+            .also { awake = it }
+        lock.acquire(WAKE_MS)
+        synchronized(Companion) {
+            pending = false
+            started = true
+            // The job ended before this ran: stopping it then would have crashed the app.
+            if (stopAsked) {
+                stopAsked = false
+                started = false
+                stopSelf()
+            }
+        }
+        // A killed process resumes its job on the next start (pipeline.rs), not from here.
+        return START_NOT_STICKY
+    }
+
+    // A backstop: a type with a time limit (dataSync on a phone that holds it to one)
+    // must stop within seconds of it, or Android ends the app. The job runs on while
+    // the process lives, and a killed one resumes from its last written part (A5).
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        synchronized(Companion) { started = false }
+        stopSelf()
+    }
+
+    override fun onDestroy() {
+        awake?.takeIf { it.isHeld }?.release()
+        awake = null
+        synchronized(Companion) { started = false }
+        super.onDestroy()
+    }
+
+    companion object {
+        const val CHANNEL = "vto-job"
+        const val ID = 1
+        const val WAKE_MS = 12L * 60 * 60 * 1000
+
+        // A start asked for and not yet run, whether onStartCommand has run (startForeground
+        // called), and a stop that came before it.
+        private var pending = false
+        private var started = false
+        private var stopAsked = false
+
+        fun show(ctx: Context, state: String, title: String, percent: Int) = synchronized(Companion) {
+            val i = Intent(ctx, JobService::class.java).putExtra("title", title).putExtra("percent", percent)
+            when (state) {
+                // The service starts when 영상감지 is pressed, while the app is on screen;
+                // Android 12 and later refuse a start from the background, and that throws
+                // here, refusing the job. The `shown` once the job exists only updates it.
+                "shown" -> {
+                    stopAsked = false
+                    if (pending || started) {
+                        ctx.getSystemService(NotificationManager::class.java).notify(ID, notice(ctx, title, percent))
+                    } else {
+                        ContextCompat.startForegroundService(ctx, i)
+                        pending = true
+                    }
+                }
+                "updated" -> ctx.getSystemService(NotificationManager::class.java).notify(ID, notice(ctx, title, percent))
+                // A service asked to start must call startForeground before it may stop
+                // (Android kills the app otherwise): a job that ends first leaves the stop to it.
+                else -> if (started) {
+                    started = false
+                    ctx.stopService(i)
+                } else {
+                    stopAsked = true
+                    // Progress posted while the service never started (refused) goes too.
+                    ctx.getSystemService(NotificationManager::class.java).cancel(ID)
+                }
+            }
+        }
+
+        fun notice(ctx: Context, title: String, percent: Int): Notification {
+            val nm = ctx.getSystemService(NotificationManager::class.java)
+            if (Build.VERSION.SDK_INT >= 26) {
+                nm.createNotificationChannel(NotificationChannel(CHANNEL, "자막 만드는 중", NotificationManager.IMPORTANCE_LOW))
+            }
+            val open = Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            val tap = PendingIntent.getActivity(ctx, 0, open, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+            return NotificationCompat.Builder(ctx, CHANNEL)
+                .setSmallIcon(android.R.drawable.stat_sys_download)
+                .setContentTitle("자막 만드는 중 $percent%")
+                .setContentText(title)
+                .setProgress(100, percent.coerceIn(0, 100), false)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setContentIntent(tap)
+                .build()
+        }
+    }
+}

@@ -2,15 +2,61 @@
  "ns": "repo",
  "repo": "video-translate-overlay-2",
  "nodes_from": ".wiki/corpus.json",
- "edges": [],
- "orphans": [],
+ "edges": [
+  {
+   "a": ".wiki/cost-budget-per-hour",
+   "b": "README.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
+   "a": ".wiki/job-survives-background",
+   "b": "README.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
+   "a": ".wiki/mobile-first-rust-web",
+   "b": "README.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
+   "a": ".wiki/no-gate-yet",
+   "b": "README.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
+   "a": ".wiki/project",
+   "b": "README.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
+   "a": ".wiki/subtitles-must-not-drift",
+   "b": "README.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
+   "a": ".wiki/translate-text-not-audio",
+   "b": "README.md",
+   "kind": "reads",
+   "cross": true
+  }
+ ],
+ "orphans": [
+  "docs/design/backend.md",
+  "docs/design/frontend.md"
+ ],
  "counts": {
-  "docs": 1,
+  "docs": 3,
   "linked": 0,
-  "read": 0,
-  "orphans": 0,
-  "pages": 0,
-  "decisions": 0,
-  "injectable_decisions": 0
+  "read": 1,
+  "orphans": 2,
+  "pages": 7,
+  "decisions": 5,
+  "injectable_decisions": 1
  }
 }

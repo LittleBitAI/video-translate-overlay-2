@@ -1,0 +1,10 @@
+[package]
+name = "vto-contract-tests"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+description = "Backend contract tests: they drive the app through the `vto-contract-host` binary."
+
+[dependencies]
+serde_json = "1"
