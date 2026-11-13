@@ -140,6 +140,19 @@ function readyBackend() {
   });
 }
 
+test('ready subtitles offer translation repair without fetching or rewriting the audio', async () => {
+  const player = makePlayer(MAIN_MS / 1000);
+  const backend = readyBackend();
+  await mountOverlay({ video: player.video, pageUrl: YT, title: TITLE, mediaUrl: null, request: backend.request });
+  const detect = () => deepAll('[data-vto="detect"]')[0] as HTMLButtonElement;
+  await expect.poll(() => detect()?.textContent).toBe('다시 번역');
+  expect(detect().title).toContain('API 비용');
+  detect().click();
+  await expect.poll(() => backend.calls.filter(c => c.method === 'POST').length).toBe(1);
+  expect(backend.calls.find(c => c.method === 'POST')?.body).toEqual({ page_url: YT, retranslate: true });
+  await expect.poll(() => detect()?.disabled).toBe(false);
+});
+
 function deepAll(selector: string, root: Document | ShadowRoot = document): Element[] {
   const found = [...root.querySelectorAll(selector)];
   for (const el of root.querySelectorAll('*')) if (el.shadowRoot) found.push(...deepAll(selector, el.shadowRoot));
@@ -200,6 +213,25 @@ test('test_overlay_follows_seek_and_pause', async () => {
   p.seek(6);
   p.play(6.0);
   await expect.poll(shownSubtitle, SHOWN).toBe(CUES[1].text_ko);
+  expect(p.writes).toEqual([]);
+});
+
+test('a fifteen-minute timeline and repeated backward seeks keep the source clock', async () => {
+  const p = makePlayer(900);
+  const cues = Array.from({ length: 15 }, (_, minute) => ({
+    seq: minute, start_ms: (minute * 60 + 1) * 1000, end_ms: (minute * 60 + 5) * 1000, text_ko: `${minute}분 기준 자막`,
+  }));
+  const backend = fakeBackend((call) => route(call) === 'GET /jobs'
+    ? { status: 200, body: job('ready', 100) }
+    : { status: 200, body: { ...subtitlesBody(cues), duration_ms: 900_000 } });
+  await mountOverlay({ video: p.video, pageUrl: YT, title: TITLE, mediaUrl: null, request: backend.request });
+  await subtitlesLoaded(backend);
+  for (const minute of [...Array.from({ length: 15 }, (_, i) => i), 0, 12, 3, 14, 1]) {
+    p.seek(minute * 60 + 2);
+    p.play(minute * 60 + 2);
+    await expect.poll(shownSubtitle, SHOWN).toBe(cues[minute].text_ko);
+    p.pause();
+  }
   expect(p.writes).toEqual([]);
 });
 

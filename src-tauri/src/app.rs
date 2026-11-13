@@ -46,6 +46,8 @@ impl Browser for TauriBrowser {
 
     fn clear_site_data(&self) -> Result<(), String> {
         let app = app(&self.0)?;
+        #[cfg(target_os = "android")]
+        app.state::<crate::android::Mobile>().clear_site_data()?;
         // Every window shares the webview profile, so clearing through one clears all.
         let w = app.get_webview_window(SITE).or_else(|| app.get_webview_window("main")).ok_or("no webview")?;
         w.clear_all_browsing_data().map_err(|e| e.to_string())
@@ -263,6 +265,16 @@ pub fn run() {
     let builder = builder.plugin(crate::android::plugin());
     builder
         .plugin(tauri_plugin_notification::init())
+        .on_page_load(|webview, payload| {
+            if webview.label() != SITE || payload.event() != tauri::webview::PageLoadEvent::Finished {
+                return;
+            }
+            if let Some(core) = webview.app_handle().try_state::<Arc<Core>>() {
+                if let Err(e) = crate::api::youtube_page_loaded(&core, payload.url().as_str()) {
+                    vto::log(format!("remember YouTube page: {e}"));
+                }
+            }
+        })
         .setup(move |app| {
             let _ = setup_handle.set(app.handle().clone());
             let data_dir = app.path().app_local_data_dir()?;

@@ -104,6 +104,9 @@ export interface PageOptions {
 }
 
 export function startPage({ top, request }: PageOptions): { stop(): void } {
+  // WebView can inject the bundle twice; both instances must share one subtitle cache.
+  const owner = window as Window & { __vtoPage?: { stop(): void } };
+  if (owner.__vtoPage) return owner.__vtoPage;
   let mounted: { destroy(): void; video: HTMLVideoElement; url: string } | null = null;
   // The playlist a blob: player fetched is looked up in Resource Timing; keep more
   // than the default 250 entries so a busy page still has it.
@@ -217,12 +220,15 @@ export function startPage({ top, request }: PageOptions): { stop(): void } {
   const interval = setInterval(check, 1_000);
   check();
 
-  return {
+  const handle = {
     stop() {
       clearInterval(interval);
       window.removeEventListener('message', onMessage);
       mounted?.destroy();
       mounted = null;
+      if (owner.__vtoPage === handle) delete owner.__vtoPage;
     },
   };
+  owner.__vtoPage = handle;
+  return handle;
 }

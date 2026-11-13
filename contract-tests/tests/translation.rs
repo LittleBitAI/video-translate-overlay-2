@@ -1,6 +1,7 @@
 //! Translation with Gemini: the model used, the cost, the cost limit and the glossary.
 
 use vto_contract_tests::*;
+use serde_json::{json, Value};
 
 const TALK: &str = "https://lectures.example.org/talks/42";
 
@@ -118,8 +119,17 @@ fn test_terms_stay_consistent_across_batches() {
     };
     let first = glossary(&batches[0]);
     assert!(first.iter().any(|(s, _)| s == "attention"), "the glossary lacks `attention`: {first:?}");
+    let sources: std::collections::HashMap<i64, String> = batches.iter().map(|b| {
+        let s = &b.order.as_ref().unwrap()["segments"][0];
+        (s["id"].as_i64().unwrap(), s["text"].as_str().unwrap().to_string())
+    }).collect();
     for b in &batches {
         assert_eq!(glossary(b), first, "batches carried different glossaries");
+        assert_eq!(b.order.as_ref().unwrap()["segments"].as_array().unwrap().len(), 1,
+            "a future cue must never be supplied as another cue's translation source");
+        let order = b.order.as_ref().unwrap();
+        let id = order["segments"][0]["id"].as_i64().unwrap();
+        assert_eq!(order["context_before"].as_str(), sources.get(&(id - 1)).map(String::as_str));
     }
 
     let video_key = seen[0]["video_key"].as_str().unwrap().to_string();
@@ -130,4 +140,29 @@ fn test_terms_stay_consistent_across_batches() {
     for t in &texts {
         assert!(t.contains("GPT-4o"), "the model name was translated: {t}");
     }
+}
+
+#[test]
+fn retranslation_keeps_saved_source_times_and_the_cost_already_spent() {
+    let mut app = App::new(Options::default());
+    let url = app.media.serve("/retry.wav", "audio/wav", speech_wav(18_000, &regular_spans(4, 500, 4_000, 2_000)));
+    app.launch();
+    app.set_key(KEY);
+    let first = app.run_job(TALK, Some(&url), "Saved speech", 18_000);
+    let key = first[0]["video_key"].as_str().unwrap().to_string();
+    let before = app.subtitles(TALK, &key).body;
+    let spent = app.job(TALK).body["cost_krw"].as_f64().unwrap();
+    app.app_call("DELETE", "/settings/api-key", Value::Null);
+    let denied = app.call(TALK, "POST", "/jobs", json!({"page_url":TALK,"retranslate":true}));
+    assert_eq!(denied.status, 428);
+    assert_eq!(app.subtitles(TALK, &key).body, before, "refusing a retry must preserve the old subtitles");
+    app.set_key(KEY);
+    let retry = app.call(TALK, "POST", "/jobs", json!({"page_url":TALK,"retranslate":true}));
+    assert_eq!(retry.status, 200, "{retry:?}");
+    assert_eq!(retry.body["stage"], "translating");
+    assert_ne!(retry.body["job_id"], first[0]["job_id"]);
+    let states = app.wait_ready(TALK);
+    assert!(states.iter().all(|j| j["stage"] != "writing" && j["stage"] != "downloading"));
+    assert_eq!(app.subtitles(TALK, &key).body, before, "source timing or text changed during retranslation");
+    assert!(app.job(TALK).body["cost_krw"].as_f64().unwrap() > spent);
 }

@@ -63,13 +63,22 @@ export function signInHelp({
   host.setAttribute('data-vto', 'sign-in');
   host.style.setProperty('all', 'initial', 'important');
   const shadow = host.attachShadow({ mode: 'open' });
-  shadow.innerHTML = `<style>
+  const style = document.createElement('style');
+  style.textContent = `
 :host { all: initial; }
 .bar { position: fixed; left: 0; right: 0; bottom: 16px; z-index: 2147483647; display: flex; justify-content: center;
   padding: 0 16px; box-sizing: border-box; font-family: system-ui, "Noto Sans KR", sans-serif; pointer-events: none; }
 button { pointer-events: auto; font: inherit; font-size: 14px; padding: 8px 14px; border: 0; border-radius: 18px;
   background: #424242; color: #fff; cursor: pointer; }
-</style><div class="bar"><button type="button" data-vto="skip-sign-in">로그인 건너뛰고 영상 보기</button></div>`;
+`;
+  const bar = document.createElement('div');
+  bar.className = 'bar';
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.dataset.vto = 'skip-sign-in';
+  button.textContent = '로그인 건너뛰고 영상 보기';
+  bar.append(button);
+  shadow.append(style, bar);
   let gone = false;
   const leave = () => {
     if (gone) return;
@@ -77,7 +86,7 @@ button { pointer-events: auto; font: inherit; font-size: 14px; padding: 8px 14px
     store.removeItem(KEY);
     go(to);
   };
-  shadow.querySelector('button')!.addEventListener('click', leave);
+  button.addEventListener('click', leave);
   (document.body ?? document.documentElement).append(host);
 
   const watch = () => {

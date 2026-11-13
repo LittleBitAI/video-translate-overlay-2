@@ -361,7 +361,11 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
         }
         let mut progressed = false;
         for batch in todo.chunks(gemini::BATCH) {
-            let Some(reply) = call(&gemini::translate_order(&glossary, batch))? else { continue };
+            let mut order = gemini::translate_order(&glossary, batch);
+            if let Some(previous) = cues.iter().rev().find(|c| c.seq < batch[0].0) {
+                order["context_before"] = Value::String(previous.source_text.clone());
+            }
+            let Some(reply) = call(&order)? else { continue };
             let ko = gemini::parse_translations(&reply, batch);
             progressed |= !ko.is_empty();
             store.set_translations(&video_key, &ko)?;

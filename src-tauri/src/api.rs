@@ -95,9 +95,42 @@ fn clip_title(title: &str, fallback: &str) -> String {
 
 // ---------------------------------------------------------------- P1, P2
 
+/// Only Google's YouTube sign-in screen can keep a return address.
+fn youtube_sign_in_target(page: &url::Url) -> Option<url::Url> {
+    if page.scheme() != "https" || page.host_str() != Some("accounts.google.com") || page.path() != "/ServiceLogin" {
+        return None;
+    }
+    let target = page.query_pairs().find(|(k, _)| k == "continue")?.1;
+    let mut target = http_url(&target).ok()?;
+    if !youtube::is_youtube(&target) {
+        return None;
+    }
+    target.set_scheme("https").ok()?;
+    target.set_port(None).ok()?;
+    Some(target)
+}
+
+/// A finished sign-in must not restore its login page or replace a newer video.
+pub fn youtube_page_loaded(core: &Core, raw: &str) -> Result<(), String> {
+    let Ok(page) = http_url(raw) else { return Ok(()) };
+    let Some(gate) = core.store.opened_url()? else { return Ok(()) };
+    let Some(target) = url::Url::parse(&gate).ok().as_ref().and_then(youtube_sign_in_target) else { return Ok(()) };
+    let home = target.path() == "/" && target.query().is_none() && page.path() == "/";
+    if page.scheme() == "https" && youtube::is_youtube(&page) && (home || video_key(&page) == video_key(&target)) {
+        core.store.finish_youtube_sign_in(&gate, raw)?;
+    }
+    Ok(())
+}
+
 pub fn browser_open(core: &Core, raw: &str) -> ApiResult {
     let page = http_url(raw)?;
     let site = site(&page);
+    if youtube_sign_in_target(&page).is_some() {
+        core.svc.browser.navigate(page.as_str(), false)?;
+        core.store.set_youtube_gate_seen(true)?;
+        core.store.set_opened_url(page.as_str())?;
+        return Ok(json!({"opened_url": page.as_str(), "site": "youtube", "account_gate": true}));
+    }
     if site == "youtube" && !core.store.youtube_gate_seen()? {
         // Sign-in happens on Google's own page; the app never sees a password.
         let mut gate = url::Url::parse("https://accounts.google.com/ServiceLogin").unwrap();
@@ -184,10 +217,13 @@ pub fn delete_api_key(core: &Core) -> ApiResult {
 
 // ---------------------------------------------------------------- P6-P8
 
-/// Where a job's audio comes from: the YouTube extractor, or the overlay's media URL.
+/// Prefer YouTube's browser-session audio; otherwise use its native extractor.
 pub fn resolve_source(core: &Core, page: &url::Url, media_url: Option<&str>) -> Result<media::Source, Refusal> {
     let raw = if youtube::is_youtube(page) {
-        core.svc.extractor.audio_url(page.as_str())?
+        match media_url.and_then(youtube::browser_audio_url) {
+            Some(url) => url.to_string(),
+            None => core.svc.extractor.audio_url(page.as_str())?,
+        }
     } else {
         media_url
             .filter(|m| !m.trim().is_empty())
@@ -256,6 +292,35 @@ pub fn create_job(core: &Core, page_url: &str, media_url: Option<&str>, title: &
     Ok(json!({"job_id": id, "video_key": key, "stage": "downloading", "reused": false}))
 }
 
+pub fn retranslate_job(core: &Core, page_url: &str) -> ApiResult {
+    let key = video_key(&http_url(page_url)?);
+    let _creating = core.create_lock.lock().unwrap_or_else(|p| p.into_inner());
+    if let Some(active) = core.store.active_job()? {
+        if active.video_key == key {
+            return Ok(json!({"job_id":active.id,"video_key":key,"stage":active.stage,"reused":false}));
+        }
+        return Err(err(409, "busy", "다른 영상의 작업이 끝난 뒤에 다시 눌러 주세요."));
+    }
+    let previous = core.store.latest_job(&key)?.filter(|j| j.stage == "ready")
+        .ok_or_else(|| err(409, "not_ready", "완료된 자막만 다시 번역할 수 있습니다."))?;
+    if core.svc.keystore.get()?.is_none() {
+        return Err(err(428, "no_key", "설정에서 Gemini API 키를 먼저 넣어 주세요."));
+    }
+    let video = core.store.video(&key)?.ok_or_else(|| err(404, "no_video", "저장된 원문이 없습니다."))?;
+    if previous.cost_krw >= gemini::limit_krw(video.duration_ms) {
+        return Err(err(409, "cost_limit", "이 영상의 번역 비용 한도에 도달했습니다."));
+    }
+    let id = new_job_id();
+    core.svc.notifier.hold(&id, &video.title).map_err(|_| err(409, "background_refused", "앱 화면에서 다시 눌러 주세요."))?;
+    if let Err(e) = core.store.retranslate(&id, &previous, MODEL) {
+        core.svc.notifier.ongoing(&id, "hidden", &video.title, 0);
+        return Err(e.into());
+    }
+    core.svc.notifier.ongoing(&id, "shown", &video.title, 0);
+    core.wake_worker();
+    Ok(json!({"job_id":id,"video_key":key,"stage":"translating","reused":false}))
+}
+
 pub fn get_job(core: &Core, page_url: &str) -> ApiResult {
     let key = video_key(&http_url(page_url)?);
     let job = core.store.latest_job(&key)?.ok_or_else(|| err(404, "no_job", "이 영상의 작업이 없습니다."))?;
@@ -309,6 +374,23 @@ mod hold_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn youtube_sign_in_return_addresses_are_limited_to_youtube() {
+        let target = |s: &str| youtube_sign_in_target(&url::Url::parse(s).unwrap()).map(|u| u.to_string());
+        assert_eq!(
+            target("https://accounts.google.com/ServiceLogin?continue=http%3A%2F%2Fyoutu.be%2FabcDEF12345"),
+            Some("https://youtu.be/abcDEF12345".into())
+        );
+        for bad in [
+            "https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fevil.example%2F",
+            "https://accounts.google.com.evil.example/ServiceLogin?continue=https%3A%2F%2Fyoutube.com%2F",
+            "http://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fyoutube.com%2F",
+            "https://accounts.google.com/ServiceLogin?continue=javascript%3Aalert(1)",
+        ] {
+            assert_eq!(target(bad), None, "{bad}");
+        }
+    }
 
     #[test]
     fn video_keys_follow_the_video_not_the_url_form() {

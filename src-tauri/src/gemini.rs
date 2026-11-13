@@ -21,13 +21,16 @@ pub fn limit_krw(duration_ms: i64) -> f64 {
     duration_ms.max(0) as f64 / 3_600_000.0 * KRW_PER_HOUR
 }
 
-pub const BATCH: usize = 40;
+// One target per request; preceding context contains no future speech to pull into its slot.
+pub const BATCH: usize = 1;
 
 const SYSTEM: &str = "You translate subtitles of technical talks and lectures (deep learning, programming, \
 science) into natural Korean. Each work order is JSON. For {\"task\":\"glossary\"}, find the technical terms, \
 model names and proper nouns in the transcript and give each one fixed Korean rendering; keep product, model \
 and code names (such as GPT-4o, PyTorch, ReLU) exactly as written. For {\"task\":\"translate\"}, translate every \
-segment on its own, keep its id, never merge, split, drop or reorder segments, and always use the glossary's \
+segment on its own, keep its id, never merge, split, drop or reorder segments. Translate incomplete \
+fragments as fragments; never complete them or add content from another segment. context_before is \
+read-only preceding speech: use it to resolve grammar and negation, but never translate or repeat it. Always use the glossary's \
 target for its source term. Reply with JSON only: {\"terms\":[{\"source\":\"…\",\"target\":\"…\"}]} for a glossary, \
 {\"segments\":[{\"id\":1,\"ko\":\"…\"}]} for a translation.";
 
@@ -150,17 +153,17 @@ pub fn translate_order(glossary: &[Value], segments: &[(i64, String)]) -> Value 
 
 /// The `(id, ko)` pairs of a reply that answer ids that were asked for.
 pub fn parse_translations(reply: &Value, asked: &[(i64, String)]) -> Vec<(i64, String)> {
-    reply["segments"]
-        .as_array()
-        .cloned()
-        .unwrap_or_default()
+    let Some(segments) = reply["segments"].as_array().filter(|s| s.len() == asked.len()) else { return Vec::new() };
+    let parsed: Vec<_> = segments
         .iter()
         .filter_map(|s| {
             let id = s["id"].as_i64().or_else(|| s["id"].as_str()?.parse().ok())?;
             let ko = s["ko"].as_str()?.trim();
             (asked.iter().any(|(a, _)| *a == id) && !ko.is_empty()).then(|| (id, ko.to_string()))
         })
-        .collect()
+        .collect();
+    let ids: std::collections::HashSet<_> = parsed.iter().map(|(id, _)| *id).collect();
+    if parsed.len() == asked.len() && ids.len() == asked.len() { parsed } else { Vec::new() }
 }
 
 #[cfg(test)]
@@ -181,10 +184,24 @@ mod tests {
     #[test]
     fn replies_are_matched_by_id_only() {
         let asked = vec![(3, "a".to_string()), (4, "b".to_string())];
-        let reply = parse_json_object("```json\n{\"segments\":[{\"id\":4,\"ko\":\"나\"},{\"id\":\"3\",\"ko\":\"가\"},{\"id\":9,\"ko\":\"x\"}]}\n```").unwrap();
+        let reply = parse_json_object("```json\n{\"segments\":[{\"id\":4,\"ko\":\"나\"},{\"id\":\"3\",\"ko\":\"가\"}]}\n```").unwrap();
         let mut got = parse_translations(&reply, &asked);
         got.sort();
         assert_eq!(got, vec![(3, "가".to_string()), (4, "나".to_string())]);
+    }
+
+    #[test]
+    fn missing_duplicate_or_foreign_ids_never_fill_subtitle_slots() {
+        let asked = vec![(110, "tokens".into()), (112, "chat".into())];
+        for segments in [
+            json!([{"id":110,"ko":"합쳐진 번역"}]),
+            json!([{"id":110,"ko":"토큰"},{"id":110,"ko":"채팅"}]),
+            json!([{"id":110,"ko":"토큰"},{"id":111,"ko":"채팅"}]),
+            json!([{"id":110,"ko":"토큰"},{"id":112,"ko":""}]),
+        ] {
+            assert!(parse_translations(&json!({"segments":segments}), &asked).is_empty());
+        }
+        assert_eq!(BATCH, 1, "independent requests must not expose a future cue to the translator");
     }
 
     #[test]

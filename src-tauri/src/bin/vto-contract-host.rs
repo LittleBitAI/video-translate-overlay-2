@@ -241,7 +241,7 @@ fn main() {
 
     let mut ctx = mock_context(noop_assets());
     *ctx.runtime_authority_mut() = commands::authority();
-    let app = commands::register(mock_builder(), core).build(ctx).expect("build the mock app");
+    let app = commands::register(mock_builder(), core.clone()).build(ctx).expect("build the mock app");
     let main = WebviewWindowBuilder::new(&app, "main", WebviewUrl::App("index.html".into())).build().expect("main window");
     let site = WebviewWindowBuilder::new(&app, "site", WebviewUrl::External("https://example.invalid/".parse().unwrap()))
         .build()
@@ -291,6 +291,10 @@ fn main() {
                 }
             }
             "webview" => webview.snapshot(),
+            "page_loaded" => match vto::api::youtube_page_loaded(&core, req["url"].as_str().unwrap_or("")) {
+                Ok(()) => json!({"ok": true}),
+                Err(e) => json!({"ok": false, "error": e}),
+            },
             "set_cookie" => match webview.set_cookie(req["url"].as_str().unwrap_or(""), req["name"].as_str().unwrap_or(""), req["value"].as_str().unwrap_or("")) {
                 Ok(()) => json!({"ok": true}),
                 Err(e) => json!({"ok": false, "error": e}),

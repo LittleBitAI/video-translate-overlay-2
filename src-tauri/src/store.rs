@@ -203,6 +203,22 @@ impl Store {
         r
     }
 
+    /// Retranslates saved speech without downloading or changing its source clock.
+    pub fn retranslate(&self, id: &str, previous: &Job, model: &str) -> R<()> {
+        self.db.exec("BEGIN IMMEDIATE")?;
+        let result = (|| {
+            self.db.execute(
+                &format!("INSERT INTO job (id,video_key,stage,written_regions,translation_model,input_amount,output_amount,cost_krw,created_at,updated_at)
+                    VALUES (?,?,'translating',?,?,?,?,?,{NOW},{NOW})"),
+                p![id, previous.video_key.as_str(), previous.written_regions, model, previous.input_amount, previous.output_amount, previous.cost_krw],
+            )?;
+            self.db.execute("UPDATE cue SET text_ko=NULL WHERE video_key=?", p![previous.video_key.as_str()])?;
+            Ok(())
+        })();
+        self.db.exec(if result.is_ok() { "COMMIT" } else { "ROLLBACK" })?;
+        result
+    }
+
     pub fn job(&self, id: &str) -> R<Option<Job>> {
         Ok(self.db.query_one(&format!("SELECT {JOB_COLS} FROM job WHERE id=?"), p![id])?.map(|r| job(&r)))
     }
@@ -353,6 +369,11 @@ impl Store {
         self.db.execute("INSERT INTO browser (id, url) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET url=excluded.url", p![url])?;
         Ok(())
     }
+
+    pub fn finish_youtube_sign_in(&self, gate: &str, url: &str) -> R<()> {
+        self.db.execute("UPDATE browser SET url=? WHERE id=1 AND url=?", p![url, gate])?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -362,6 +383,17 @@ mod wal_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_late_sign_in_does_not_replace_the_newer_opened_url() {
+        let dir = std::env::temp_dir().join(format!("vto-sign-in-return-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let s = Store::open(&dir.join("test.sqlite3")).unwrap();
+        s.set_opened_url("old gate").unwrap();
+        s.set_opened_url("new video").unwrap();
+        s.finish_youtube_sign_in("old gate", "old video").unwrap();
+        assert_eq!(s.opened_url().unwrap().as_deref(), Some("new video"));
+    }
 
     #[test]
     fn region_save_is_atomic_and_percent_never_drops() {

@@ -11,6 +11,7 @@ pub const MAIN: &str = "main";
 /// `script`: Android's one window is also the site window and needs the overlay.
 pub fn show_main<R: Runtime, M: Manager<R>>(app: &M, script: Option<&str>) -> tauri::Result<WebviewWindow<R>> {
     if let Some(w) = app.get_webview_window(MAIN) {
+        #[cfg(desktop)]
         let _ = w.unminimize();
         let _ = w.show();
         let _ = w.set_focus();

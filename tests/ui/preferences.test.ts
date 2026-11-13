@@ -7,6 +7,57 @@ import { $, api, button, calls, features, open, text, type } from './fake';
 const NONE = { key_set: false, key_masked: null, translation_model: 'gemini-3.1-flash-lite', favorite_voice_available: false };
 const KEY = 'AIzaSyA1b2C3d4E5f6G7h8I9j0K1l2M3n4OWXYZ';
 
+test('YouTube can be connected once from settings', async () => {
+  let release: (value: unknown) => void = () => {};
+  vi.stubGlobal('__TAURI_INTERNALS__', {
+    invoke: (command: string, args: unknown) => {
+      if (command === 'get_settings') return Promise.resolve(NONE);
+      expect(command).toBe('browser_open');
+      expect(args).toEqual({ url: 'https://accounts.google.com/ServiceLogin?service=youtube&continue=https%3A%2F%2Fwww.youtube.com%2F' });
+      return new Promise((r) => (release = r));
+    },
+  });
+  const s2 = open('/preferences');
+  await vi.waitFor(() => expect(button(s2, '유튜브 계정 연결').disabled).toBe(false));
+  button(s2, '유튜브 계정 연결').click();
+  await vi.waitFor(() => expect(button(s2, '계정 화면 여는 중').disabled).toBe(true));
+  expect(button(s2, '유튜브 로그아웃').disabled).toBe(true);
+  release({ opened_url: 'https://accounts.google.com/ServiceLogin', account_gate: true });
+  await vi.waitFor(() => expect(text(s2)).toContain('유튜브 계정 화면을 열었습니다'));
+});
+
+test('a failed YouTube connection can be retried', async () => {
+  vi.stubGlobal('__TAURI_INTERNALS__', {
+    invoke: (command: string) => command === 'get_settings' ? Promise.resolve(NONE) : Promise.reject({ status: 503, message: '연결 실패' }),
+  });
+  const s2 = open('/preferences');
+  await vi.waitFor(() => expect(button(s2, '유튜브 계정 연결').disabled).toBe(false));
+  button(s2, '유튜브 계정 연결').click();
+  await vi.waitFor(() => expect(text(s2)).toContain('연결 실패'));
+  expect(button(s2, '유튜브 계정 연결').disabled).toBe(false);
+});
+
+test('a late connection result belongs only to the settings screen that started it', async () => {
+  let reject: (reason: unknown) => void = () => {};
+  vi.stubGlobal('__TAURI_INTERNALS__', {
+    invoke: (command: string) => {
+      if (command === 'get_settings') return Promise.resolve(NONE);
+      if (command === 'get_browser') return Promise.resolve({ url: null, job: null });
+      return new Promise((_, r) => (reject = r));
+    },
+  });
+  const s2 = open('/preferences');
+  await vi.waitFor(() => expect(button(s2, '유튜브 계정 연결').disabled).toBe(false));
+  button(s2, '유튜브 계정 연결').click();
+  button(s2, '← 영상으로').click();
+  await vi.waitFor(() => expect(text(s2)).toContain('영상 주소를 넣으면'));
+  button(s2, '설정').click();
+  await vi.waitFor(() => expect(button(s2, '유튜브 계정 연결').disabled).toBe(false));
+  reject({ status: 503, message: '늦게 도착한 연결 오류' });
+  await new Promise((r) => setTimeout(r, 50));
+  expect(text(s2)).not.toContain('늦게 도착한 연결 오류');
+});
+
 test('empty: no key, why it is needed, and delete is off', async () => {
   api(() => [200, NONE]);
   const s2 = open('/preferences');
