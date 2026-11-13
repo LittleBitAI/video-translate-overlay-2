@@ -37,7 +37,7 @@ fn app() {
         println!("cargo:rustc-link-search=native={}", stub.display());
     }
 
-    // The same nine commands commands::COMMANDS registers, as `allow-<command>` permissions.
-    const COMMANDS: &[&str] = &["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles", "get_browser"];
+    // The same commands commands::COMMANDS registers, as `allow-<command>` permissions.
+    const COMMANDS: &[&str] = &["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles", "get_browser", "get_library", "library_action"];
     tauri_build::try_build(tauri_build::Attributes::new().app_manifest(tauri_build::AppManifest::new().commands(COMMANDS))).expect("tauri-build");
 }

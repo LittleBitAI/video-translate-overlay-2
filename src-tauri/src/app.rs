@@ -29,6 +29,13 @@ const SITE: &str = if cfg!(mobile) { "main" } else { "site" };
 struct TauriBrowser(Handle);
 
 impl Browser for TauriBrowser {
+    fn invalidate_video(&self, key: &str) -> Result<(), String> {
+        for w in app(&self.0)?.webview_windows().values() {
+            w.eval(format!("window.dispatchEvent(new CustomEvent('vto-video-deleted',{{detail:{}}}))", serde_json::json!(key)))
+                .map_err(|e| e.to_string())?;
+        }
+        Ok(())
+    }
     fn navigate(&self, url: &str, _overlay: bool) -> Result<(), String> {
         let app = app(&self.0)?;
         let url: tauri::Url = url.parse().map_err(|e| format!("{e}"))?;
@@ -278,6 +285,9 @@ pub fn run() {
         .setup(move |app| {
             let _ = setup_handle.set(app.handle().clone());
             let data_dir = app.path().app_local_data_dir()?;
+            // Isolated desktop acceptance data never shares a user's installed library.
+            #[cfg(all(debug_assertions, desktop))]
+            let data_dir = std::env::var_os("VTO_APP_DATA_DIR").map(std::path::PathBuf::from).unwrap_or(data_dir);
             let whisper = Whisper::new(&data_dir, std::env::var_os("VTO_WHISPER_MODEL").map(Into::into));
             #[cfg(target_os = "android")]
             let keystore: Box<dyn vto::KeyStore> = Box::new(app.state::<crate::android::Mobile>().inner().clone());

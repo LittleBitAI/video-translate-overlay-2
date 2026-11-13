@@ -7,6 +7,22 @@ import Overlay from '../../src/ui/Overlay.svelte';
 import { api, calls, text } from './fake';
 
 let shown: ReturnType<typeof mount> | null = null;
+
+test('a late subtitle response after deletion cannot restore cached cues', async () => {
+  let reply: (a: any) => void=()=>{};
+  api(c => c.path === '/jobs' ? [410,{message:'Deleted',deletion_token:'new-token'}]
+    : new Promise(resolve=>{reply=resolve;}));
+  const target=document.body.appendChild(document.createElement('div'));
+  shown=mount(Overlay,{target,props:{pageUrl:'https://talks.example.org/7',timeMs:1500,durationMs:600000,
+    initial:{stage:'ready',percent:100,cost_krw:3,failure_reason:null,video_key:'vk'}}});
+  await vi.waitFor(()=>expect(calls.some(c=>c.path==='/videos/vk/subtitles')).toBe(true));
+  window.dispatchEvent(new CustomEvent('vto-video-deleted',{detail:'vk'}));
+  await vi.waitFor(()=>expect(text(target)).toContain('Deleted'));
+  reply([200,{duration_ms:600000,cues:[{seq:0,start_ms:1000,end_ms:4000,text_ko:'Deleted subtitle'}]}]);
+  await new Promise(resolve=>setTimeout(resolve,50));
+  expect(text(target)).not.toContain('Deleted subtitle');
+  expect(calls.filter(c=>c.method==='POST')).toHaveLength(0);
+});
 afterEach(() => {
   if (shown) unmount(shown);
   shown = null;

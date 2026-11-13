@@ -18,6 +18,34 @@ Android 7.0 이상, ARM64 기기가 대상입니다. 갤럭시 S21 시리즈도 
 
 APK 링크는 이 작업 폴더의 빌드 결과입니다. `artifacts/`는 Git에 포함하지 않으므로 저장소를 새로 받으면 직접 빌드해야 합니다. 이 APK는 개발용 키로 서명한 release 설치본이며, 크기는 약 24MB입니다. 스토어 배포용 서명은 별도입니다.
 
+## Saved videos and topic playlists
+
+Open `보관함` beside the address bar to find videos by title or source URL.
+`저장 자막 있음` means the existing subtitles reopen without transcription or
+translation. Completed translations from earlier versions appear automatically;
+their cue timestamps and recorded costs stay unchanged. The original video still
+needs its source site and internet access.
+
+Create a topic playlist, select it, and add a saved video or an HTTP(S) video link.
+You may enter a recognizable name for a new link. Use the arrow buttons to reorder
+playlists or entries, `이름 바꾸기` to rename a playlist, and `영상 열기` to manually
+open a chosen video. A video may belong to several playlists. Removing an entry
+or deleting a playlist keeps the video's translation. Adding or opening a link
+does not start translation. Press `영상감지` to translate explicitly; the existing
+API-key checks and cost limit apply.
+
+`영상 삭제` first names the video and asks for confirmation. Confirming permanently
+removes its transcript, translated cues, glossary, job history, per-video files,
+and memberships in every playlist. The playlists, other videos, speech models,
+and credentials remain. A running video cannot be deleted. If file cleanup fails,
+subtitles are hidden and `삭제 다시 시도` lets you finish cleanup. Translating a
+deleted video later requires a new confirmation and may incur API costs.
+
+The library and playlists use the existing local SQLite database on Android and
+Windows. They persist after restart and remain separate on each device. There
+are no accounts, cloud sync, automatic next-video playback, or original-video
+offline copies.
+
 ## 처리 방식과 지원 범위
 
 | 항목 | 현재 동작 |

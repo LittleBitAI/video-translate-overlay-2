@@ -911,6 +911,10 @@ impl App {
         self.host().request(json!({"op": "webview"}))
     }
 
+    pub fn transcription_calls(&mut self) -> u64 {
+        self.host().request(json!({"op":"transcription_calls"}))["count"].as_u64().unwrap()
+    }
+
     pub fn page_loaded(&mut self, url: &str) {
         let r = self.host().request(json!({"op": "page_loaded", "url": url}));
         assert_eq!(r["ok"], true, "page_loaded: {r}");

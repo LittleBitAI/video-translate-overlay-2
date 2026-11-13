@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 /// The screens: each opens the built `index.html`, which shows the one its path names.
-pub const SCREENS: [&str; 2] = ["/", "/preferences"];
+pub const SCREENS: [&str; 3] = ["/", "/preferences", "/library"];
 
 const MAX_HEAD: u64 = 64 << 10;
 const MAX_BODY: usize = 1 << 20;
@@ -150,12 +150,14 @@ pub fn call(core: &Core, cmd: &str, a: &Value) -> ApiResult {
     match cmd {
         "browser_open" => api::browser_open(core, &s("url")),
         "get_browser" => api::get_browser(core),
+        "get_library" => api::get_library(core),
+        "library_action" => api::library_action(core, &a["action"]),
         "clear_site_data" => api::clear_site_data(core),
         "get_settings" => api::get_settings(core),
         "put_api_key" => api::put_api_key(core, &s("api_key")),
         "delete_api_key" => api::delete_api_key(core),
         "create_job" if a["retranslate"] == true => api::retranslate_job(core, &s("page_url")),
-        "create_job" => api::create_job(core, &s("page_url"), a["media_url"].as_str(), a["title"].as_str().unwrap_or_default(), a["duration_ms"].as_i64().unwrap_or(0)),
+        "create_job" => api::create_job_with_consent(core, &s("page_url"), a["media_url"].as_str(), a["title"].as_str().unwrap_or_default(), a["duration_ms"].as_i64().unwrap_or(0), a["deletion_token"].as_str()),
         "get_job" => api::get_job(core, &s("page_url")),
         "get_subtitles" => api::get_subtitles(core, &s("video_key")),
         other => Err(err(404, "no_route", other.to_string())),

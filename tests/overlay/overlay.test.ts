@@ -153,6 +153,42 @@ test('ready subtitles offer translation repair without fetching or rewriting the
   await expect.poll(() => detect()?.disabled).toBe(false);
 });
 
+test.each(['ready', 'failed'])('deletion rejects a late saved-subtitle response and status: %s', async (stage) => {
+  const player=makePlayer(MAIN_MS/1000);
+  let deleted=false;
+  let reply: (r: Reply) => void=()=>{};
+  let requested=false;
+  const request = async (method: string,path: string): Promise<Reply> => {
+    if(path==='/jobs') return deleted ? {status:410,body:{message:'Deleted',deletion_token:'new-token'}} : {status:200,body:job(stage,100)};
+    requested=true;
+    return new Promise(resolve=>{reply=resolve;});
+  };
+  await mountOverlay({video:player.video,pageUrl:YT,title:TITLE,mediaUrl:null,request});
+  player.seek(1.5);
+  await expect.poll(()=>requested).toBe(true);
+  deleted=true;
+  window.dispatchEvent(new CustomEvent('vto-video-deleted',{detail:VIDEO_KEY}));
+  await expect.poll(()=>deepAll('[data-vto="status"]')[0]?.textContent).toBe('Deleted');
+  reply({status:200,body:subtitlesBody(CUES)});
+  await sleep(50);
+  expect(shownSubtitle()).toBe('');
+  expect(deepAll('[data-vto="status"]')[0]?.textContent).toBe('Deleted');
+  expect(deepAll('[data-vto="detect"]')[0]?.textContent).toBe('영상감지');
+});
+
+test('a visible saved overlay notices deletion from another screen without a native event', async () => {
+  const player=makePlayer(MAIN_MS/1000);
+  let deleted=false;
+  const backend=fakeBackend(c => c.path==='/jobs'
+    ? deleted ? {status:410,body:{message:'Deleted'}} : {status:200,body:job('ready',100)}
+    : {status:200,body:subtitlesBody(CUES)});
+  await mountOverlay({video:player.video,pageUrl:YT,title:TITLE,mediaUrl:null,request:backend.request});
+  player.seek(1.5);
+  await expect.poll(shownSubtitle).toBe(CUES[0].text_ko);
+  deleted=true;
+  await expect.poll(shownSubtitle,{timeout:3000}).toBe('');
+});
+
 // A failed replacement must show the completed set without another detect click,
 // both after a retry on this page and when reopening an already failed job.
 test.each(['retry', 'reopen'])('completed subtitles remain available after retranslation failure: %s', async (entry) => {

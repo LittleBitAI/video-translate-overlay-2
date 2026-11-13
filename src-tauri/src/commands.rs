@@ -1,4 +1,4 @@
-//! The Tauri side: commands P1-P9 and the capabilities that decide who may call them.
+//! The Tauri side: commands P1-P11 and the capabilities that decide who may call them.
 //!
 //! The app's own screen (local origin) may call every command. Site pages in
 //! the in-app browser, where the overlay runs, may call only P6-P8, so a site
@@ -13,9 +13,9 @@ use tauri::ipc::RuntimeAuthority;
 use tauri::utils::acl::{capability::Capability, manifest::Manifest, resolved::Resolved, APP_ACL_KEY};
 use tauri::{Runtime, State};
 
-/// Every registered command, P1 to P9.
-pub const COMMANDS: [&str; 9] =
-    ["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles", "get_browser"];
+/// Every registered command, P1 to P11.
+pub const COMMANDS: [&str; 11] =
+    ["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles", "get_browser", "get_library", "library_action"];
 
 /// The commands a site page (the overlay) may call.
 pub const OVERLAY_COMMANDS: [&str; 3] = ["create_job", "get_job", "get_subtitles"];
@@ -99,10 +99,22 @@ pub async fn delete_api_key(core: Shared<'_>) -> ApiResult {
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
-pub async fn create_job(core: Shared<'_>, page_url: String, media_url: Option<String>, title: Option<String>, duration_ms: Option<i64>, retranslate: Option<bool>) -> ApiResult {
+pub async fn create_job(core: Shared<'_>, page_url: String, media_url: Option<String>, title: Option<String>, duration_ms: Option<i64>, retranslate: Option<bool>, deletion_token: Option<String>) -> ApiResult {
     let core = core.inner().clone();
     blocking(move || if retranslate == Some(true) { api::retranslate_job(&core, &page_url) }
-        else { api::create_job(&core, &page_url, media_url.as_deref(), title.as_deref().unwrap_or(""), duration_ms.unwrap_or(0)) }).await
+        else { api::create_job_with_consent(&core, &page_url, media_url.as_deref(), title.as_deref().unwrap_or(""), duration_ms.unwrap_or(0), deletion_token.as_deref()) }).await
+}
+
+#[tauri::command(async, rename_all = "snake_case")]
+pub async fn get_library(core: Shared<'_>) -> ApiResult {
+    let core = core.inner().clone();
+    blocking(move || api::get_library(&core)).await
+}
+
+#[tauri::command(async, rename_all = "snake_case")]
+pub async fn library_action(core: Shared<'_>, action: Value) -> ApiResult {
+    let core = core.inner().clone();
+    blocking(move || api::library_action(&core, &action)).await
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
@@ -133,7 +145,9 @@ pub fn handlers<R: Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
         create_job,
         get_job,
         get_subtitles,
-        get_browser
+        get_browser,
+        get_library,
+        library_action
     ])
 }
 
@@ -143,6 +157,8 @@ pub fn route(method: &str, path: &str, body: &Value) -> Option<(&'static str, Va
     let cmd = match (method, path) {
         ("POST", "/browser/open") => "browser_open",
         ("GET", "/browser") => "get_browser",
+        ("GET", "/library/data") => "get_library",
+        ("POST", "/library/data") => { args = json!({"action":args}); "library_action" },
         ("DELETE", "/browser/site-data") => "clear_site_data",
         ("GET", "/settings") => "get_settings",
         ("PUT", "/settings/api-key") => "put_api_key",
@@ -194,6 +210,8 @@ mod tests {
             ("GET", "/jobs"),
             ("GET", "/videos/yt-abc/subtitles"),
             ("GET", "/browser"),
+            ("GET", "/library/data"),
+            ("POST", "/library/data"),
         ]
         .iter()
         .map(|(m, p)| route(m, p, &Value::Null).unwrap().0)

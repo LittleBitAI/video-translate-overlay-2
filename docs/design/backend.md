@@ -61,6 +61,39 @@
 
 ## 데이터와 API
 
+### Local library and playlists
+
+P10 (`get_library`, `GET /library/data`) reads existing video/job/cue rows without
+backfill or retranscription. P11 (`library_action`, `POST /library/data`) handles
+playlist CRUD, adjacent reorder, membership changes, and confirmed video deletion.
+Both are restricted to the app's own screens. Site overlays retain only P6–P8.
+`docs/design/api.yaml` defines the action bodies and errors.
+
+Additive SQLite tables are `playlist(id,name,position)`,
+`playlist_entry(playlist_id,video_key,position)` with one membership per pair,
+and `deleted_video(video_key,token,complete)`. Playlist entries may reference a
+video with duration zero and no job: it is a link awaiting explicit translation.
+Existing completed rows are listed in place, keeping every cue and cost intact.
+Each library mutation owns a separate SQLite connection and transaction.
+
+Deletion shares the create-job lock, rejects an active job for that video, and
+requires its exact title and `confirmed=true`. A durable deletion marker first
+hides saved data and blocks stale job/retranslation requests. All files prefixed
+by that video's job IDs in the managed `audio/` folder, including HLS section
+indexes, are removed before one transaction removes pending translation drafts,
+memberships, cues, jobs, glossary/video row, and that video's last-opened pointer.
+Cleanup failures keep the marker and metadata for an explicit retry; unrelated
+data and playlists stay. A complete marker keeps only the video key and a random
+token, so old notification job IDs can no longer resolve a video.
+
+P6, P7, and P8 return `410 video_deleted` while marked. Only a completed marker's
+response contains `deletion_token`. A fresh explicit translation confirmation
+passes it to P6; a stale request without that token is refused. Normal media,
+API-key, duration, and cost safeguards still apply. Opening a link does not clear
+the marker or start translation. Native invalidation and screen generations drop
+late subtitle responses; visible saved overlays also recheck availability every
+second. No original videos or shared models belong to playlist storage.
+
 ```mermaid
 erDiagram
     Video {

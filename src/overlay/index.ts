@@ -145,6 +145,9 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
   let timer: ReturnType<typeof setInterval> | undefined;
   let ticker: ReturnType<typeof setInterval> | undefined;
   let destroyed = false;
+  let generation = 0;
+  let loadedJob = '';
+  let deletionToken: string | null = null;
 
   const adShowing = () => !!(video.closest('.ad-showing') || document.querySelector('.html5-video-player.ad-showing'));
   const isAd = () => {
@@ -191,8 +194,9 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
   });
 
   const loadSubtitles = async (videoKey: string) => {
+    const mine = generation;
     const r = await request('GET', `/videos/${encodeURIComponent(videoKey)}/subtitles`);
-    if (destroyed) return;
+    if (destroyed || mine !== generation) return;
     if (r.status === 200) {
       cues = [...(r.body.cues as Cue[])].sort((a, b) => a.start_ms - b.start_ms);
       mainMs = r.body.duration_ms || 0;
@@ -212,26 +216,33 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
     timer = undefined;
   };
 
-  /** Whether the first look at the job was made: one skipped while hidden is made on return. */
-  let looked = false;
-
   /** One look at the job: shows its progress, or loads the subtitles once ready. */
   const poll = async () => {
     if (document.visibilityState === 'hidden') return;
-    looked = true;
+    const mine = generation;
     const r = await request('GET', '/jobs', { page_url: pageUrl });
-    if (destroyed || r.status !== 200) return;
+    if (destroyed || mine !== generation) return;
+    if (r.status === 404 || r.status === 410) {
+      generation++; cues = []; ready = false; loadedJob = ''; render();
+      deletionToken = r.body?.deletion_token ?? null;
+      button.disabled = false; button.textContent = '영상감지';
+      if (r.status === 410) say(r.body.message);
+      return;
+    }
+    if (r.status !== 200) return;
     const j = r.body;
+    const version = `${j.job_id}:${j.stage}`;
     if (j.stage === 'ready') {
-      stopPolling();
-      await loadSubtitles(j.video_key);
+      if (loadedJob !== version) { loadedJob = version; await loadSubtitles(j.video_key); }
     } else if (j.stage === 'failed') {
-      stopPolling();
-      button.disabled = false;
-      ready = false;
-      button.textContent = '영상감지';
-      await loadSubtitles(j.video_key);
-      if (destroyed) return;
+      if (loadedJob !== version) {
+        button.disabled = false;
+        ready = false;
+        button.textContent = '영상감지';
+        loadedJob = version;
+        await loadSubtitles(j.video_key);
+      }
+      if (destroyed || mine !== generation) return;
       say(`${STAGE_KO.failed}: ${FAILURE_KO[j.failure_reason] ?? j.failure_reason ?? ''}`);
     } else {
       button.disabled = true;
@@ -241,17 +252,20 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
   };
 
   button.addEventListener('click', async () => {
+    if (deletionToken && !confirm('삭제한 영상의 자막을 새로 만듭니다. 추가 API 비용이 발생할 수 있습니다. 번역을 시작할까요?')) return;
+    const mine = generation;
     button.disabled = true;
     if (ready) {
       say('저장된 원문을 다시 번역하는 중… (API 비용 발생)');
       const r = await request('POST', '/jobs', { page_url: pageUrl, retranslate: true });
-      if (destroyed) return;
+      if (destroyed || mine !== generation) return;
       if (r.status !== 200) {
         button.disabled = false;
         say(r.body?.message ?? '다시 번역을 시작하지 못했습니다.');
         return;
       }
       ready = false;
+      loadedJob = '';
       if (!timer) timer = setInterval(poll, POLL_MS);
       await poll();
       return;
@@ -263,15 +277,15 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
       let left = 10_000;
       while (adShowing() || (!(video.duration > 0) && (left -= 250) > 0)) {
         await new Promise((r) => setTimeout(r, 250));
-        if (destroyed) return;
+        if (destroyed || mine !== generation) return;
       }
     }
     say('작업을 만드는 중…');
     const durationMs = Number.isFinite(video.duration) ? Math.round(video.duration * 1000) : 0;
     const media = typeof mediaUrl === 'function' ? await mediaUrl() : mediaUrl;
-    if (destroyed) return;
-    const r = await request('POST', '/jobs', { page_url: pageUrl, media_url: media, title, duration_ms: durationMs });
-    if (destroyed) return;
+    if (destroyed || mine !== generation) return;
+    const r = await request('POST', '/jobs', { page_url: pageUrl, media_url: media, title, duration_ms: durationMs, ...(deletionToken ? {deletion_token:deletionToken} : {}) });
+    if (destroyed || mine !== generation) return;
     if (r.status === 200) {
       if (r.body.stage === 'ready') {
         await loadSubtitles(r.body.video_key);
@@ -282,21 +296,28 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
       return;
     }
     button.disabled = false;
+    if (r.status === 410) deletionToken = r.body?.deletion_token ?? null;
     if (r.status === 428) say(FAILURE_KO.no_key);
     else if (r.status === 409) say('다른 영상의 작업이 돌고 있습니다. 끝난 뒤에 다시 눌러 주세요.');
     else say(r.body?.message ?? `작업을 시작하지 못했습니다 (${r.status}).`);
   });
 
   const onVisible = () => {
-    if (document.visibilityState === 'visible' && (timer || !looked)) poll();
+    if (document.visibilityState === 'visible') poll();
   };
   document.addEventListener('visibilitychange', onVisible);
 
   poll(); // a job may already exist for this page (made earlier, or still running)
+  if (!timer) timer = setInterval(poll, POLL_MS);
+  const invalidate = () => {
+    generation++; cues = []; ready = false; loadedJob = ''; render(); poll();
+  };
+  window.addEventListener('vto-video-deleted', invalidate);
 
   return {
     destroy() {
       destroyed = true;
+      generation++;
       stopPolling();
       if (ticker) clearInterval(ticker);
       clearInterval(placer);
@@ -304,6 +325,7 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
       moves.forEach(([t, e]) => t.removeEventListener(e, place, { capture: true }));
       events.forEach((e) => video.removeEventListener(e, render));
       document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('vto-video-deleted', invalidate);
       host.remove();
     },
   };

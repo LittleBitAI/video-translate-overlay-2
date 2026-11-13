@@ -23,6 +23,27 @@
 
 ## 다른 화면
 
+### S3 `/library` — find saved translations and manually select topic videos
+
+The address bar links to `보관함`. The screen uses the approved C1 palette and
+existing type/spacing tokens in `DESIGN.md`. It has a title/source search, saved
+subtitle availability, ordered topic playlists, and explicit open/delete actions.
+Playlist selection reveals rename/delete, saved-video selection, and link entry.
+Arrow buttons reorder playlists and entries without requiring drag gestures.
+
+Loading has a status announcement; failed reads show the error and a retry;
+an empty library explains translation and playlist links; empty playlists and
+empty searches give distinct guidance. Errors never masquerade as an empty list.
+Permanent video deletion uses a focused inline confirmation naming the video,
+the data removed, and possible future API costs. Playlist deletion explains that
+saved translations remain. Processing videos disable deletion; failed file
+cleanup keeps a retryable row and hides subtitles.
+
+Requests use screen generations to drop late results after navigation or refresh.
+Native deletion invalidates open views; browser tabs use BroadcastChannel. Saved
+playback views also poll availability and clear stale cues on deletion. Source
+links open through P1, so selecting an untranslated entry never starts P6.
+
 ### S2 `/preferences` — 개인키를 넣거나 지우고 유튜브 로그아웃을 하는 설정 화면
 
 ![S2 desktop](shots/S2-desktop.png)

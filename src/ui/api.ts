@@ -9,6 +9,8 @@ type Invoke = (cmd: string, args?: unknown) => Promise<unknown>;
 const COMMANDS: Record<string, string> = {
   'POST /browser/open': 'browser_open',
   'GET /browser': 'get_browser',
+  'GET /library/data': 'get_library',
+  'POST /library/data': 'library_action',
   'DELETE /browser/site-data': 'clear_site_data',
   'GET /settings': 'get_settings',
   'PUT /settings/api-key': 'put_api_key',
@@ -56,7 +58,7 @@ async function viaIpc(call: Invoke, method: string, path: string, body?: Record<
   const subs = /^\/videos\/([^/]+)\/subtitles$/.exec(path);
   const cmd = subs && method === 'GET' ? 'get_subtitles' : COMMANDS[`${method} ${path}`];
   if (!cmd) return { status: 404, body: { error: 'no_route', message: `${method} ${path}` } };
-  const args = subs ? { video_key: decodeURIComponent(subs[1]) } : (body ?? {});
+  const args = subs ? { video_key: decodeURIComponent(subs[1]) } : path === '/library/data' && method === 'POST' ? { action: body } : (body ?? {});
   try {
     return { status: 200, body: await call(cmd, args) };
   } catch (e: any) {
