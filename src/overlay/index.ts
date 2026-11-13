@@ -230,6 +230,8 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
       button.disabled = false;
       ready = false;
       button.textContent = '영상감지';
+      await loadSubtitles(j.video_key);
+      if (destroyed) return;
       say(`${STAGE_KO.failed}: ${FAILURE_KO[j.failure_reason] ?? j.failure_reason ?? ''}`);
     } else {
       button.disabled = true;
@@ -250,8 +252,6 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
         return;
       }
       ready = false;
-      cues = [];
-      render();
       if (!timer) timer = setInterval(poll, POLL_MS);
       await poll();
       return;

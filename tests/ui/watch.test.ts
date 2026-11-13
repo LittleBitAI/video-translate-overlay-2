@@ -137,7 +137,9 @@ test('a running job shows its stage, percent and cost each second, then its subt
 });
 
 test('a job that stopped shows why and offers 영상감지 again', async () => {
-  api(() => [200, { url: FILE, job: { job_id: 'j', video_key: 'vk', stage: 'failed', percent: 30, cost_krw: 1, failure_reason: 'no_speech' } }]);
+  api(c => c.path === '/browser'
+    ? [200, { url: FILE, job: { job_id: 'j', video_key: 'vk', stage: 'failed', percent: 30, cost_krw: 1, failure_reason: 'no_speech' } }]
+    : [409, { error: 'not_ready' }]);
   const s1 = open('/');
   await vi.waitFor(() => expect(text(s1)).toContain('작업이 멈췄습니다. 영상에서 말소리를 찾지 못했습니다.'));
   expect(features(s1)).toEqual(['detect-video', 'job-progress', 'open-site', 'watch-subtitles']);
