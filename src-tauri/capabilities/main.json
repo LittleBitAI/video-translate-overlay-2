@@ -1,0 +1,17 @@
+{
+  "identifier": "main",
+  "description": "The app's own screen: settings, the address bar, and every command.",
+  "local": true,
+  "windows": ["main"],
+  "permissions": [
+    "allow-browser-open",
+    "allow-get-browser",
+    "allow-clear-site-data",
+    "allow-get-settings",
+    "allow-put-api-key",
+    "allow-delete-api-key",
+    "allow-create-job",
+    "allow-get-job",
+    "allow-get-subtitles"
+  ]
+}
