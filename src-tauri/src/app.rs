@@ -261,12 +261,16 @@ pub fn run() {
     let mut ctx = tauri::generate_context!();
     *ctx.runtime_authority_mut() = commands::authority();
     let builder = commands::handlers(tauri::Builder::default());
+    #[cfg(desktop)]
+    let isolated_profile = cfg!(debug_assertions) && std::env::var_os("VTO_APP_DATA_DIR").is_some();
     // Registered first: a second launch (a clicked toast) hands its arguments over and exits
     // before it opens the store the running app's worker uses.
     #[cfg(desktop)]
     let builder = {
         let h = handle.clone();
-        builder.plugin(tauri_plugin_single_instance::init(move |_, args, _| relaunched(&h, &args)))
+        if isolated_profile { builder } else {
+            builder.plugin(tauri_plugin_single_instance::init(move |_, args, _| relaunched(&h, &args)))
+        }
     };
     #[cfg(target_os = "android")]
     let builder = builder.plugin(crate::android::plugin());
@@ -324,8 +328,10 @@ pub fn run() {
             }
             // On every start, so the handler follows the executable if it moves.
             #[cfg(windows)]
-            if let Err(e) = std::env::current_exe().map_err(|e| e.to_string()).and_then(|exe| register_scheme(&exe)) {
-                vto::log(e);
+            if !isolated_profile {
+                if let Err(e) = std::env::current_exe().map_err(|e| e.to_string()).and_then(|exe| register_scheme(&exe)) {
+                    vto::log(e);
+                }
             }
             // Started by a clicked toast while the app was not running.
             let _ = open_from_args(&setup_handle, &std::env::args().collect::<Vec<_>>());
