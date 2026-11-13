@@ -54,7 +54,7 @@
     "/browser": {
       "get": {
         "operationId": "P9",
-        "summary": "The page P1 last opened in the in-app browser (Google's account screen while it is shown) and that page's latest job as P7 gives it, or null when it has none. The first screen shows them again after a restart, and asks nothing that answers 404 for a page with no job.",
+        "summary": "마지막으로 연 주소와 해당 영상의 작업. Google 로그인 후 원래 영상으로 돌아오면 영상 주소로 갱신하며, 늦은 로그인 결과는 새 주소를 덮지 않는다. 작업이 없으면 null.",
         "responses": {
           "200": {
             "description": "OK",
@@ -205,7 +205,7 @@
     "/jobs": {
       "post": {
         "operationId": "P6",
-        "summary": "영상감지 버튼이 부른다. 이미 자막이 있는 영상이면 다시 처리하지 않고 끝난 작업을 돌려준다. 아니면 개인키가 있는지, 오디오를 내려받을 수 있는지 확인한 뒤 작업을 만들고, 내려받기와 write, 번역, 알림을 화면과 상관없이 차례로 돌린다. 주소는 http나 https여야 하고 media_url은 기기 자신이나 사설망을 가리키면 받지 않는다.",
+        "summary": "기본 동작은 완료된 자막을 재사용하거나 내려받기·받아쓰기·번역 작업을 만든다. retranslate=true이면 완료된 원문과 시각을 유지해 번역만 다시 만든다. 추가 API 비용이 발생하며 이전 사용량과 비용을 이어 받아 한도를 유지한다. 주소는 http나 https여야 하고 media_url은 기기 자신이나 사설망을 가리키면 받지 않는다.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -216,13 +216,16 @@
                     "description": "string"
                   },
                   "media_url": {
-                    "description": "string | null"
+                    "description": "string | null. 유튜브는 앱 브라우저 세션에서 받은 녹화 영상의 서명된 googlevideo 오디오 주소를 우선 사용한다. 주소 정책·DRM·실제 오디오 검사는 Rust에서 수행한다."
                   },
                   "title": {
                     "description": "string"
                   },
                   "duration_ms": {
                     "description": "integer"
+                  },
+                  "retranslate": {
+                    "description": "boolean, 기본 false. true이면 완료된 원문과 시각을 유지해 번역만 다시 만든다. 기존 사용량과 비용을 새 작업에 이어 받아 비용 한도를 유지한다. API 키가 없거나 다른 영상이 처리 중이면 기존 자막을 보존한다."
                   }
                 }
               }

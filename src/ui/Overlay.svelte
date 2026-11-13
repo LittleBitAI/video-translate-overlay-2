@@ -59,7 +59,7 @@
   let gone = false;
 
   const active = $derived(!!job && job.stage in STAGE);
-  const ready = $derived(job?.stage === 'ready' && cues.length > 0);
+  const ready = $derived((job?.stage === 'ready' || job?.stage === 'failed') && cues.length > 0);
   const ad = $derived(mainMs > 0 && durationMs > 0 && Math.abs(durationMs - mainMs) > AD_TOLERANCE_MS);
   const cue = $derived(ready && !ad ? findCue(cues, timeMs) : undefined);
 
@@ -72,6 +72,8 @@
       cues = [...(r.body.cues as Cue[])].sort((a, b) => a.start_ms - b.start_ms);
       mainMs = r.body.duration_ms || 0;
       if (!cues.length) notice = { text: '자막으로 옮길 말이 없었습니다.' };
+    } else if (job?.stage === 'failed') {
+      subs = 'none';
     } else {
       subs = 'failed';
       subsError = r.body?.message ?? '저장해 둔 자막을 읽지 못했습니다. 영상감지 버튼을 다시 눌러 주세요.';
@@ -82,7 +84,7 @@
   async function follow(j: Job | null) {
     look = 'done';
     job = j;
-    if (j?.stage === 'ready') await loadSubtitles(j.video_key);
+    if (j?.stage === 'ready' || j?.stage === 'failed') await loadSubtitles(j.video_key);
     else if (j && j.stage in STAGE) timer = setTimeout(poll, POLL_MS);
   }
 
@@ -156,7 +158,7 @@
       <p><span class={value}>자막 불러오는 중</span> <span class={label}>· {won(job.cost_krw)}</span></p>
       <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-ink/25"><div class="vto-indeterminate h-1.5 w-1/3 rounded-full bg-primary"></div></div>
     </div>
-  {:else if ready && job}
+  {:else if ready && job?.stage === 'ready'}
     <p data-feature="job-progress" role="status" class="w-fit rounded-lg bg-surface/90 px-2 py-1 text-sm text-ink/80">
       자막 준비됨 · {won(job.cost_krw)}
     </p>

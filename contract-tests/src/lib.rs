@@ -68,6 +68,7 @@
 //!   "cookies": [{"domain":"…","name":"…","value":"…"}]}`.
 //! * `{"op":"set_cookie","url":"…","name":"…","value":"…"}` → `{"ok":true}`:
 //!   what Google's sign-in page leaves in the webview when the user signs in.
+//! * `{"op":"page_loaded","url":"…"}` → `{"ok":true}`: a native page-load callback.
 //! * `{"op":"commands"}` → `{"commands":["…"]}`: every registered command.
 //! * `{"op":"network","blocked":true}` → `{"ok":true}`: from now on every
 //!   outbound connection the app tries fails.
@@ -908,6 +909,11 @@ impl App {
 
     pub fn webview(&mut self) -> Value {
         self.host().request(json!({"op": "webview"}))
+    }
+
+    pub fn page_loaded(&mut self, url: &str) {
+        let r = self.host().request(json!({"op": "page_loaded", "url": url}));
+        assert_eq!(r["ok"], true, "page_loaded: {r}");
     }
 
     pub fn set_cookie(&mut self, url: &str, name: &str, value: &str) {

@@ -88,3 +88,72 @@ fn a_youtube_job_keeps_the_streams_length_not_the_players() {
     assert_eq!(youtube::stream_duration_ms("https://r1.googlevideo.com/videoplayback?itag=140"), None);
     assert_eq!(youtube::stream_duration_ms("https://r1.googlevideo.com/videoplayback?dur=0.000"), None);
 }
+
+#[test]
+fn resumed_youtube_source_refreshes_unavailable_hints_but_preserves_refusals() {
+    use std::sync::{Arc, atomic::{AtomicUsize, Ordering}};
+    struct Fresh {
+        url: String,
+        calls: Arc<AtomicUsize>,
+    }
+    impl AudioExtractor for Fresh {
+        fn audio_url(&self, _: &str) -> Result<String, media::Refusal> {
+            self.calls.fetch_add(1, Ordering::SeqCst);
+            Ok(self.url.clone())
+        }
+    }
+    let hint = "https://rr1.googlevideo.com/videoplayback?source=youtube&mime=audio%2Fmp4&dur=60&expire=1";
+    let page = url::Url::parse("https://www.youtube.com/watch?v=dQw4w9WgXcQ").unwrap();
+    let fresh = format!("{}/audio.wav", serve_wav());
+    // Only availability failures refresh a saved hint; policy and content refusals stay refusals.
+    for (case, failure, expected_calls) in [
+        ("working", None, 0),
+        ("expired", Some("unreachable"), 1),
+        ("drm", Some("drm"), 0),
+        ("private", Some("private_address"), 0),
+        ("unsupported", Some("not_audio"), 0),
+    ] {
+        let dir = std::env::temp_dir().join(format!("vto-source-{case}-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("app.sqlite3");
+        {
+            let s = crate::store::Store::open(&path).unwrap();
+            s.create_job("j", "v", page.as_str(), "youtube", "Lecture", 60_000, Some(hint), "m").unwrap();
+        }
+        let calls = Arc::new(AtomicUsize::new(0));
+        let core = Core {
+            cfg: Config { data_dir: dir, gemini_base_url: String::new(), allow_loopback_media: true },
+            store: crate::store::Store::open(&path).unwrap(),
+            svc: Services {
+                keystore: Box::new(Fake(String::new())),
+                browser: Box::new(Fake(String::new())),
+                notifier: Box::new(Fake(String::new())),
+                transcriber: Box::new(Fake(String::new())),
+                extractor: Box::new(Fresh { url: fresh.clone(), calls: calls.clone() }),
+            },
+            wake: Default::default(),
+            create_lock: Default::default(),
+        };
+        let resumed = core.store.job("j").unwrap().unwrap();
+        assert!(youtube::browser_audio_url(resumed.media_url.as_deref().unwrap()).is_some());
+        let mut probed = Vec::new();
+        let result = resolve_source_with(&core, &page, resumed.media_url.as_deref(), |raw| {
+            probed.push(raw.to_string());
+            if raw == hint {
+                if let Some(code) = failure { return Err(media::refuse(code, "fixture refusal")); }
+                return Ok(media::Source::File { url: raw.into(), ext: "m4a" });
+            }
+            assert_eq!(raw, fresh);
+            let url = media::check_media_url(raw, true)?;
+            media::probe(&url, true)
+        });
+        assert_eq!(calls.load(Ordering::SeqCst), expected_calls, "{case}");
+        if failure.is_none() || failure == Some("unreachable") {
+            let media::Source::File { url, .. } = result.unwrap() else { panic!("expected a file") };
+            assert_eq!(url, if expected_calls == 1 { fresh.as_str() } else { hint }, "{case}");
+        } else {
+            assert_eq!(result.unwrap_err().code, failure.unwrap(), "{case}");
+        }
+        assert_eq!(probed.len(), expected_calls + 1, "{case}");
+    }
+}

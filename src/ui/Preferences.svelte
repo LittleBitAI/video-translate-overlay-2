@@ -1,7 +1,7 @@
 <!-- S2 `/preferences`: put in or delete the Gemini key, and sign out of YouTube. -->
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { request } from './api';
+  import { onDestroy, onMount } from 'svelte';
+  import { inApp, request } from './api';
   import Link from './Link.svelte';
 
   type Settings = { key_set: boolean; key_masked: string | null; translation_model: string };
@@ -18,6 +18,23 @@
   let busy = $state(false);
   let done = $state('');
   let failed = $state('');
+  let connecting = $state(false);
+  let connectionGeneration = 0;
+  const youtubeSignIn = 'https://accounts.google.com/ServiceLogin?service=youtube&continue=https%3A%2F%2Fwww.youtube.com%2F';
+
+  async function connectYoutube() {
+    const generation = ++connectionGeneration;
+    connecting = true;
+    done = '';
+    failed = '';
+    const r = await request('POST', '/browser/open', { url: youtubeSignIn });
+    if (generation !== connectionGeneration) return;
+    connecting = false;
+    if (r.status === 200) done = '유튜브 계정 화면을 열었습니다. 로그인하면 유튜브로 돌아갑니다.';
+    else failed = r.body?.message ?? '유튜브 계정 화면을 열지 못했습니다. 다시 시도해 주세요.';
+  }
+
+  onDestroy(() => connectionGeneration++);
 
   async function load() {
     screen = 'loading';
@@ -192,12 +209,20 @@
   <section class={card}>
     <h2 class="text-lg font-semibold">유튜브 로그인</h2>
     <p class="mt-1 text-sm text-ink/70">
-      유튜브 로그인은 구글의 화면에서 하고, 앱은 비밀번호를 받거나 저장하지 않습니다. 로그아웃하면 다음에 유튜브를 열 때 구글의 계정 화면이 다시 뜹니다.
+      한 번 로그인하면 앱에 저장한 세션으로 다음 영상을 엽니다. 로그인은 구글 화면에서 진행하며, 앱은 비밀번호를 받거나 저장하지 않습니다.
     </p>
+    <p class="mt-1 text-sm text-ink/70">휴대폰의 유튜브 앱과는 별도 로그인입니다. 구글이 앱 내 로그인을 차단하면 계정을 연결할 수 없습니다.</p>
+    {#if inApp()}
+      <button type="button" class="{outline} mt-4" disabled={connecting || busy || screen !== 'ready'} onclick={connectYoutube}>
+        {connecting ? '계정 화면 여는 중' : '유튜브 계정 연결'}
+      </button>
+    {:else}
+      <a class="{outline} mt-4 inline-flex items-center" href={youtubeSignIn} target="_blank" rel="noopener noreferrer">유튜브 계정 연결</a>
+    {/if}
     {#if asking === 'logout'}
       {@render confirmRow('logout', '유튜브에서 로그아웃할까요?', '로그아웃', 'youtube-logout')}
     {:else}
-      <button type="button" data-feature="youtube-logout" class="{outline} mt-4" disabled={screen !== 'ready'} onclick={() => ask('logout')}>
+      <button type="button" data-feature="youtube-logout" class="{outline} mt-4" disabled={connecting || busy || screen !== 'ready'} onclick={() => ask('logout')}>
         유튜브 로그아웃
       </button>
     {/if}

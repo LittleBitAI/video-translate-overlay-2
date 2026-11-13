@@ -160,7 +160,8 @@ fn download(cx: &Ctx, job: &Job) -> Result<(), Stop> {
     let page = url::Url::parse(&cx.page_url).map_err(|_| "bad_url".to_string())?;
     let mut tries = 0;
     loop {
-        let src = api::resolve_source(cx.core, &page, job.media_url.as_deref()).map_err(|r| r.code.to_string());
+        let hint = if tries > 0 && crate::youtube::is_youtube(&page) { None } else { job.media_url.as_deref() };
+        let src = api::resolve_source(cx.core, &page, hint).map_err(|r| r.code.to_string());
         let src = match src {
             Ok(s) => s,
             Err(code) if code == "unreachable" && tries < 3 => {
@@ -275,8 +276,9 @@ const GLOSSARY_TRIES: usize = 3;
 
 fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
     let store = cx.store;
-    let video_key = store.job(job_id)?.ok_or("job vanished")?.video_key;
-    let cues = store.cues(&video_key)?;
+    let job = store.job(job_id)?.ok_or("job vanished")?;
+    let video_key = &job.video_key;
+    let cues = store.translation_cues(&job)?;
     if cues.is_empty() {
         return Err("no_speech".into());
     }
@@ -288,8 +290,8 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
     // Every call is billed, so usage is added and the limit checked after each
     // one, and before each one too: a job resumed after a kill may already be
     // over the limit with its failure not yet recorded (A6: no call past it).
-    let mut attempts = 0u32;
-    let mut call = |order: &Value| -> Result<Option<Value>, Stop> {
+    let call = |order: &Value| -> Result<Option<Value>, Stop> {
+        let mut attempts = 0u32;
         loop {
             let spent = store.job(job_id)?.ok_or("job vanished")?.cost_krw;
             if spent >= limit {
@@ -354,18 +356,22 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
     let mut last = Stage::new(Stage::TRANSLATING);
     let mut stalls = 0;
     loop {
-        let todo: Vec<(i64, String)> = store.cues(&video_key)?.into_iter().filter(|c| c.text_ko.is_none()).map(|c| (c.seq, c.source_text)).collect();
+        let todo: Vec<(i64, String)> = store.translation_cues(&job)?.into_iter().filter(|c| c.text_ko.is_none()).map(|c| (c.seq, c.source_text)).collect();
         cx.percent(job_id, (total - todo.len() as i64) * 100 / total, &mut last);
         if todo.is_empty() {
             return Ok(());
         }
         let mut progressed = false;
         for batch in todo.chunks(gemini::BATCH) {
-            let Some(reply) = call(&gemini::translate_order(&glossary, batch))? else { continue };
+            let mut order = gemini::translate_order(&glossary, batch);
+            if let Some(previous) = cues.iter().rev().find(|c| c.seq < batch[0].0) {
+                order["context_before"] = Value::String(previous.source_text.clone());
+            }
+            let Some(reply) = call(&order)? else { continue };
             let ko = gemini::parse_translations(&reply, batch);
             progressed |= !ko.is_empty();
-            store.set_translations(&video_key, &ko)?;
-            let left = store.cues(&video_key)?.iter().filter(|c| c.text_ko.is_none()).count() as i64;
+            store.set_translations(job_id, &ko)?;
+            let left = store.translation_cues(&job)?.iter().filter(|c| c.text_ko.is_none()).count() as i64;
             cx.percent(job_id, (total - left) * 100 / total, &mut last);
         }
         stalls = if progressed { 0 } else { stalls + 1 };

@@ -1,6 +1,5 @@
-//! The on-device speech model (A4): whisper.cpp running Whisper
-//! large-v3-turbo (q5_0, about 0.6 GB), fetched on the first job into the
-//! app's data folder and checked against a pinned SHA-256.
+//! On-device speech: quantized multilingual base on Android, large-v3-turbo
+//! on desktop. Model downloads are checked against a pinned SHA-256.
 
 use crate::http::{self, Request};
 use crate::{Segment, Transcriber};
@@ -10,12 +9,20 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
+use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperState};
 
-pub const MODEL_FILE: &str = "ggml-large-v3-turbo-q5_0.bin";
-pub const MODEL_URL: &str = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin";
-pub const MODEL_SHA256: &str = "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2";
-pub const MODEL_BYTES: u64 = 574_041_195;
+pub const MODEL_FILE: &str = if cfg!(target_os = "android") { "ggml-base-q5_1.bin" } else { "ggml-large-v3-turbo-q5_0.bin" };
+pub const MODEL_URL: &str = if cfg!(target_os = "android") {
+    "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base-q5_1.bin"
+} else {
+    "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin"
+};
+pub const MODEL_SHA256: &str = if cfg!(target_os = "android") {
+    "422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898"
+} else {
+    "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2"
+};
+pub const MODEL_BYTES: u64 = if cfg!(target_os = "android") { 59_707_625 } else { 574_041_195 };
 
 pub struct Whisper {
     /// The model file. It is known from the start, so a process restarted in
@@ -23,8 +30,10 @@ pub struct Whisper {
     path: PathBuf,
     /// Whether `prepare` may fetch the file (false for `VTO_WHISPER_MODEL`).
     fetch: bool,
-    ctx: Mutex<Option<WhisperContext>>,
+    // A state owns its model context and reusable compute buffers.
+    state: Mutex<Option<WhisperState>>,
     language: Mutex<Option<String>>,
+    mobile: bool,
 }
 
 impl Whisper {
@@ -33,17 +42,17 @@ impl Whisper {
         whisper_rs::install_logging_hooks(); // whisper.cpp's own logging off: it prints per call
         let fetch = model_override.is_none();
         let path = model_override.unwrap_or_else(|| data_dir.join("models").join(MODEL_FILE));
-        Whisper { path, fetch, ctx: Mutex::new(None), language: Mutex::new(None) }
+        Whisper { path, fetch, state: Mutex::new(None), language: Mutex::new(None), mobile: cfg!(target_os = "android") }
     }
 
-    fn context(&self) -> Result<std::sync::MutexGuard<'_, Option<WhisperContext>>, String> {
-        let mut ctx = self.ctx.lock().unwrap();
-        if ctx.is_none() {
+    fn state(&self) -> Result<std::sync::MutexGuard<'_, Option<WhisperState>>, String> {
+        let mut state = self.state.lock().unwrap();
+        if state.is_none() {
             let c = WhisperContext::new_with_params(&self.path, WhisperContextParameters::default())
                 .map_err(|e| format!("cannot load {}: {e}", self.path.display()))?;
-            *ctx = Some(c);
+            *state = Some(c.create_state().map_err(|e| e.to_string())?);
         }
-        Ok(ctx)
+        Ok(state)
     }
 }
 
@@ -104,15 +113,13 @@ impl Transcriber for Whisper {
     }
 
     fn transcribe(&self, pcm: &[f32], progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String> {
-        let ctx = self.context()?;
-        let mut state = ctx.as_ref().unwrap().create_state().map_err(|e| e.to_string())?;
-        // Accuracy first (R24): beam search. The language is detected on the job's
-        // first window and kept: per-window detection flips on short or accented
-        // windows and then writes English speech out in another script.
+        let mut state_guard = self.state()?;
+        let state = state_guard.as_mut().unwrap();
+        // Keep the detected language across windows, without carrying text into another job.
         let known = self.language.lock().unwrap().clone();
-        let mut params = FullParams::new(SamplingStrategy::BeamSearch { beam_size: 5, patience: -1.0 });
+        let mut params = inference_params(self.mobile);
         params.set_language(Some(known.as_deref().unwrap_or("auto")));
-        params.set_n_threads(std::thread::available_parallelism().map(|n| n.get().min(8)).unwrap_or(4) as i32);
+        params.set_no_context(true);
         params.set_suppress_blank(true);
         params.set_suppress_nst(true);
         params.set_print_progress(false);
@@ -134,13 +141,15 @@ impl Transcriber for Whisper {
         if known.is_none() {
             *self.language.lock().unwrap() = whisper_rs::get_lang_str(state.full_lang_id_from_state()).map(String::from);
         }
+        let duration_ms = (pcm.len() * 1000 / crate::audio::RATE) as i64;
         let segs = state
             .as_iter()
             .map(|s| Segment {
-                start_ms: s.start_timestamp() * 10,
-                end_ms: s.end_timestamp() * 10,
+                start_ms: (s.start_timestamp() * 10).clamp(0, duration_ms),
+                end_ms: (s.end_timestamp() * 10).clamp(0, duration_ms),
                 text: s.to_str_lossy().map(|t| t.into_owned()).unwrap_or_default(),
             })
+            .filter(|s| s.end_ms > s.start_ms && !s.text.trim().is_empty())
             .collect();
         progress(1.0);
         Ok(segs)
@@ -150,3 +159,18 @@ impl Transcriber for Whisper {
         self.language.lock().unwrap().clone()
     }
 }
+
+fn inference_params(mobile: bool) -> FullParams<'static, 'static> {
+    let strategy = if mobile { SamplingStrategy::Greedy { best_of: 1 } } else { SamplingStrategy::BeamSearch { beam_size: 5, patience: -1.0 } };
+    let mut params = FullParams::new(strategy);
+    params.set_n_threads(std::thread::available_parallelism().map(|n| n.get().min(if mobile { 4 } else { 8 })).unwrap_or(4) as i32);
+    if mobile {
+        // Six temperature passes and five decoder candidates make difficult speech stall a phone.
+        params.set_temperature_inc(0.0);
+    }
+    params
+}
+
+#[cfg(test)]
+#[path = "whisper_tests.rs"]
+mod tests;

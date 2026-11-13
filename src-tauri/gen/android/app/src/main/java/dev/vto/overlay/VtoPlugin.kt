@@ -17,6 +17,7 @@ import android.net.Uri
 import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.webkit.CookieManager
 import android.util.Base64
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
@@ -121,6 +122,17 @@ class VtoPlugin(private val activity: Activity) : Plugin(activity) {
     fun deleteKey(invoke: Invoke) = guard(invoke) {
         check(prefs.edit().remove(SEALED).commit()) { "could not delete the sealed key" }
         invoke.resolve()
+    }
+
+    @Command
+    fun clearSiteData(invoke: Invoke) = guard(invoke) {
+        val cookies = CookieManager.getInstance()
+        cookies.removeAllCookies {
+            guard(invoke) {
+                cookies.flush()
+                invoke.resolve()
+            }
+        }
     }
 
     /** `shown` starts the foreground service, `updated` moves its progress, `hidden` stops it. */

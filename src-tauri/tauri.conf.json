@@ -1,6 +1,6 @@
 {
   "productName": "video-translate-overlay",
-  "version": "0.1.0",
+  "version": "0.1.6",
   "identifier": "dev.vto.overlay",
   "build": {
     "frontendDist": "../dist"

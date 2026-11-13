@@ -43,6 +43,10 @@ impl Mobile {
         self.call("ready", json!({ "jobId": job_id, "text": text })).map(drop)
     }
 
+    pub fn clear_site_data(&self) -> Result<(), String> {
+        self.call("clearSiteData", json!({})).map(drop)
+    }
+
     /// `open(job id)` for every tapped ready notice, the one that started the app included.
     pub fn watch_open(&self, open: impl Fn(&str) + Send + Sync + 'static) -> Result<(), String> {
         let channel: Channel<Value> = Channel::new(move |body| {

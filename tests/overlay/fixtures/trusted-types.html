@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+  <meta http-equiv="Content-Security-Policy" content="require-trusted-types-for 'script'; trusted-types 'none'">
+  <title>Strict video page</title>
+  <style>body { margin: 0; } video { display: block; width: 640px; height: 360px; }</style>
+</head>
+<body>
+  <video controls></video>
+  <script type="module">
+    import { mountOverlay } from '/src/overlay/index.ts';
+    import { signInHelp } from '/src/overlay/signin.ts';
+    window.probe = { errors: [], calls: [], opened: [] };
+    const video = document.querySelector('video');
+    Object.defineProperty(video, 'duration', { get: () => 60 });
+    try {
+      mountOverlay({
+        video,
+        pageUrl: location.href,
+        title: document.title,
+        mediaUrl: null,
+        request: async (method, path, body) => {
+          window.probe.calls.push({ method, path, body });
+          return method === 'POST' ? { status: 428, body: {} } : { status: 404, body: {} };
+        },
+      });
+    } catch (e) { window.probe.errors.push(String(e)); }
+    try {
+      signInHelp({
+        store: sessionStorage,
+        href: () => 'https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DabcDEF12345',
+        text: () => '',
+        go: (url) => window.probe.opened.push(url),
+      });
+    } catch (e) { window.probe.errors.push(String(e)); }
+    window.probe.ready = true;
+  </script>
+</body>
+</html>

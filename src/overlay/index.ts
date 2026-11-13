@@ -56,7 +56,7 @@ const CSS = `
   background: rgba(0, 0, 0, 0.78); color: #fff; font-size: clamp(14px, calc(var(--w, 100vw) * 0.03), 26px); line-height: 1.4;
   text-align: center; overflow-wrap: anywhere; word-break: keep-all; white-space: pre-wrap; }
 .loose .sub { order: -1; margin-bottom: 0; }
-.bar { pointer-events: auto; align-self: flex-start; display: flex; align-items: center; gap: 8px; max-width: 100%; }
+.bar { pointer-events: auto; align-self: flex-start; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; max-width: 100%; }
 .loose .bar { align-self: center; }
 button { font: inherit; font-size: 14px; padding: 6px 12px; border: 0; border-radius: 16px; background: #e53935;
   color: #fff; cursor: pointer; flex: none; }
@@ -72,7 +72,9 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
   // Inside a site's player (in full screen) its rules must not reach the host either.
   host.style.setProperty('all', 'initial', 'important');
   const shadow = host.attachShadow({ mode: 'open' });
-  shadow.innerHTML = `<style>${CSS}</style>`;
+  const style = el('style');
+  style.textContent = CSS;
+  shadow.append(style);
   const root = el('div', 'root');
   const sub = el('div', 'sub');
   sub.dataset.vto = 'subtitle';
@@ -84,11 +86,16 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
   button.dataset.feature = 'detect-video';
   button.type = 'button';
   button.textContent = '영상감지';
+  const fullscreen = el('button') as HTMLButtonElement;
+  fullscreen.dataset.vto = 'fullscreen';
+  fullscreen.type = 'button';
+  fullscreen.textContent = '전체화면';
+  fullscreen.setAttribute('aria-label', '영상과 자막 전체화면');
   const status = el('div', 'status');
   status.dataset.vto = 'status';
   status.dataset.feature = 'job-progress';
   status.setAttribute('role', 'status');
-  bar.append(button, status);
+  bar.append(button, fullscreen, status);
   root.append(bar, sub);
   shadow.append(root);
 
@@ -97,7 +104,8 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
   const place = () => {
     const d = document as Document & { webkitFullscreenElement?: Element | null };
     const full = d.fullscreenElement ?? d.webkitFullscreenElement ?? null;
-    // ponytail: a <video> itself in full screen shows no children; the overlay waits for it to leave.
+    fullscreen.textContent = full ? '화면복귀' : '전체화면';
+    // Request the player container from our button: video-only fullscreen cannot paint sibling subtitles.
     const parent = full && full !== video && full.contains(video) ? full : document.body ?? document.documentElement;
     if (host.parentNode !== parent) parent.append(host);
     const r = video.getBoundingClientRect();
@@ -132,6 +140,7 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
   moves.forEach(([t, e]) => t.addEventListener(e, place, { capture: true, passive: true }));
 
   let cues: Cue[] = [];
+  let ready = false;
   let mainMs = 0;
   let timer: ReturnType<typeof setInterval> | undefined;
   let ticker: ReturnType<typeof setInterval> | undefined;
@@ -165,12 +174,31 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
     status.textContent = text;
   };
 
+  fullscreen.addEventListener('click', async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        const player = video.closest<HTMLElement>('.html5-video-player') ?? video.parentElement;
+        if (!player?.requestFullscreen) throw new Error('Fullscreen unavailable');
+        // Put both video and subtitles in the same fullscreen element.
+        if (!player.contains(host)) player.append(host);
+        await player.requestFullscreen();
+      }
+    } catch {
+      say('전체화면을 열지 못했습니다. 다시 눌러 주세요.');
+    }
+  });
+
   const loadSubtitles = async (videoKey: string) => {
     const r = await request('GET', `/videos/${encodeURIComponent(videoKey)}/subtitles`);
     if (destroyed) return;
     if (r.status === 200) {
       cues = [...(r.body.cues as Cue[])].sort((a, b) => a.start_ms - b.start_ms);
       mainMs = r.body.duration_ms || 0;
+      ready = true;
+      button.textContent = '다시 번역';
+      button.title = '저장된 원문과 시각을 유지해 다시 번역합니다. 추가 API 비용이 발생합니다.';
       say('');
       button.disabled = false;
       render();
@@ -200,6 +228,10 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
     } else if (j.stage === 'failed') {
       stopPolling();
       button.disabled = false;
+      ready = false;
+      button.textContent = '영상감지';
+      await loadSubtitles(j.video_key);
+      if (destroyed) return;
       say(`${STAGE_KO.failed}: ${FAILURE_KO[j.failure_reason] ?? j.failure_reason ?? ''}`);
     } else {
       button.disabled = true;
@@ -210,6 +242,20 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
 
   button.addEventListener('click', async () => {
     button.disabled = true;
+    if (ready) {
+      say('저장된 원문을 다시 번역하는 중… (API 비용 발생)');
+      const r = await request('POST', '/jobs', { page_url: pageUrl, retranslate: true });
+      if (destroyed) return;
+      if (r.status !== 200) {
+        button.disabled = false;
+        say(r.body?.message ?? '다시 번역을 시작하지 못했습니다.');
+        return;
+      }
+      ready = false;
+      if (!timer) timer = setInterval(poll, POLL_MS);
+      await poll();
+      return;
+    }
     // While an ad plays, the player's length and media are the ad's: start once it is over.
     if (adShowing()) {
       say('광고가 끝나면 작업을 시작합니다.');
@@ -223,6 +269,7 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
     say('작업을 만드는 중…');
     const durationMs = Number.isFinite(video.duration) ? Math.round(video.duration * 1000) : 0;
     const media = typeof mediaUrl === 'function' ? await mediaUrl() : mediaUrl;
+    if (destroyed) return;
     const r = await request('POST', '/jobs', { page_url: pageUrl, media_url: media, title, duration_ms: durationMs });
     if (destroyed) return;
     if (r.status === 200) {
@@ -275,9 +322,14 @@ function el(tag: string, cls?: string): HTMLElement {
  * it: the one as long as the video (an ad's playlist loaded first is passed
  * over), and none when none is (an ad's audio must never become the
  * lecture's subtitles). The backend probes master playlists and their variants
- * itself, and resolves YouTube pages on its own.
+ * itself. YouTube's player API is requested in the page's session; the native
+ * worker downloads the resulting signed audio URL without needing the page.
  */
-export async function videoMediaUrl(video: HTMLVideoElement, since = 0): Promise<string | null> {
+export async function videoMediaUrl(video: HTMLVideoElement, since = 0, pageUrl = location.href): Promise<string | null> {
+  const page = new URL(pageUrl);
+  if (page.hostname === 'youtube.com' || page.hostname.endsWith('.youtube.com')) {
+    return youtubeAudioUrl(page, video.duration);
+  }
   const src = video.currentSrc || video.src || video.querySelector('source')?.src || '';
   if (/^https?:/.test(src)) return src;
   if (!src.startsWith('blob:')) return null;
@@ -305,6 +357,42 @@ export async function videoMediaUrl(video: HTMLVideoElement, since = 0): Promise
     }
   }
   return best;
+}
+
+/** Reuse the WebView session instead of making an anonymous native player request. */
+async function youtubeAudioUrl(page: URL, duration: number): Promise<string | null> {
+  const id = page.searchParams.get('v') ?? /^\/(?:shorts|embed|live)\/([\w-]{11})(?:\/|$)/.exec(page.pathname)?.[1];
+  if (!id || !/^[\w-]{11}$/.test(id) || !Number.isFinite(duration) || duration <= 0) return null;
+  try {
+    // shortcut: this undocumented client can change; update it when YouTube stops serving audio.
+    const client = {
+      clientName: 'VISIONOS', clientVersion: '1.02', deviceMake: 'Apple', deviceModel: 'RealityDevice17,1',
+      osName: 'visionOS', osVersion: '26.5.23O471', hl: 'en',
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15',
+      visitorData: (window as any).ytcfg?.get?.('VISITOR_DATA'),
+    };
+    const response = await fetch('/youtubei/v1/player?prettyPrint=false', {
+      method: 'POST', credentials: 'same-origin', signal: AbortSignal.timeout(15_000),
+      headers: { 'Content-Type': 'application/json', 'X-YouTube-Client-Name': '101', 'X-YouTube-Client-Version': '1.02' },
+      body: JSON.stringify({ videoId: id, context: { client }, contentCheckOk: true, racyCheckOk: true }),
+    });
+    if (!response.ok) return null;
+    const player = await response.json();
+    if (player.playabilityStatus?.status !== 'OK' || player.videoDetails?.videoId !== id
+      || player.videoDetails?.isLive || player.videoDetails?.isUpcoming || player.playabilityStatus?.liveStreamability) return null;
+    const formats = (player.streamingData?.adaptiveFormats ?? []).filter((f: any) =>
+      typeof f.url === 'string' && f.mimeType?.startsWith('audio/') && f.audioTrack?.audioIsDefault !== false);
+    formats.sort((a: any, b: any) => Number(b.mimeType.includes('mp4a')) - Number(a.mimeType.includes('mp4a'))
+      || (b.bitrate ?? 0) - (a.bitrate ?? 0));
+    for (const format of formats) {
+      const u = new URL(format.url);
+      const seconds = Number(u.searchParams.get('dur'));
+      if (u.protocol === 'https:' && u.hostname.endsWith('.googlevideo.com') && u.pathname === '/videoplayback'
+        && u.searchParams.get('source') === 'youtube' && u.searchParams.get('mime')?.startsWith('audio/')
+        && Number.isFinite(seconds) && seconds > 0 && Math.abs(seconds - duration) <= Math.max(2, duration * 0.02)) return u.href;
+    }
+  } catch { /* A network/player failure falls back to the native extractor. */ }
+  return null;
 }
 
 /** How long an HLS playlist (a master's first variant) or a DASH manifest plays, in ms. */

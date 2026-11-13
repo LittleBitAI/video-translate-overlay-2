@@ -78,3 +78,46 @@ test('test_a_video_too_small_to_hold_it_puts_the_overlay_at_the_bottom', async (
   expect(b.bottom).toBeGreaterThan(innerHeight - 80);
   expect(b.right <= innerWidth && b.left >= 0).toBe(true);
 });
+
+test('ready subtitles stay inside a landscape fullscreen player and survive returning to portrait', async () => {
+  await page.viewport(384, 854);
+  const o = setup('100%', '216px');
+  await expect.poll(() => o.sub.textContent).toBe(CUE.text_ko);
+  Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => o.player });
+  onTestFinished(() => void delete (document as any).fullscreenElement);
+  o.player.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;background:#000';
+  await page.viewport(854, 384);
+  document.dispatchEvent(new Event('fullscreenchange'));
+  await expect.poll(() => inside(o.sub.getBoundingClientRect(), o.video.getBoundingClientRect())).toBe(true);
+  expect(o.host.parentElement).toBe(o.player);
+  expect(o.sub.hidden).toBe(false);
+  expect(o.sub.textContent).toBe(CUE.text_ko);
+  delete (document as any).fullscreenElement;
+  o.player.style.cssText = 'position:relative;margin-top:40px;width:100%;height:216px;background:#000';
+  await page.viewport(384, 854);
+  document.dispatchEvent(new Event('fullscreenchange'));
+  await expect.poll(() => inside(o.sub.getBoundingClientRect(), o.video.getBoundingClientRect())).toBe(true);
+  expect(o.host.parentElement).toBe(document.body);
+  expect(o.sub.textContent).toBe(CUE.text_ko);
+});
+
+test('the fullscreen button requests the player with its saved subtitles, then exits', async () => {
+  const o = setup('100%', '216px');
+  await expect.poll(() => o.sub.textContent).toBe(CUE.text_ko);
+  let requested = false;
+  let exited = false;
+  o.player.requestFullscreen = async () => { requested = true; };
+  const exit = document.exitFullscreen;
+  document.exitFullscreen = async () => { exited = true; };
+  onTestFinished(() => { document.exitFullscreen = exit; delete (document as any).fullscreenElement; });
+  const button = o.host.shadowRoot!.querySelector('[data-vto=fullscreen]') as HTMLButtonElement;
+  button.click();
+  await expect.poll(() => requested).toBe(true);
+  expect(o.player.contains(o.host)).toBe(true);
+  expect(o.sub.textContent).toBe(CUE.text_ko);
+  Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => o.player });
+  document.dispatchEvent(new Event('fullscreenchange'));
+  expect(button.textContent).toBe('화면복귀');
+  button.click();
+  await expect.poll(() => exited).toBe(true);
+});

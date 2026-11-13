@@ -154,6 +154,7 @@ pub fn call(core: &Core, cmd: &str, a: &Value) -> ApiResult {
         "get_settings" => api::get_settings(core),
         "put_api_key" => api::put_api_key(core, &s("api_key")),
         "delete_api_key" => api::delete_api_key(core),
+        "create_job" if a["retranslate"] == true => api::retranslate_job(core, &s("page_url")),
         "create_job" => api::create_job(core, &s("page_url"), a["media_url"].as_str(), a["title"].as_str().unwrap_or_default(), a["duration_ms"].as_i64().unwrap_or(0)),
         "get_job" => api::get_job(core, &s("page_url")),
         "get_subtitles" => api::get_subtitles(core, &s("video_key")),

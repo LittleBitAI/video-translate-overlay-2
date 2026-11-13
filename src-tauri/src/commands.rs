@@ -99,9 +99,10 @@ pub async fn delete_api_key(core: Shared<'_>) -> ApiResult {
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
-pub async fn create_job(core: Shared<'_>, page_url: String, media_url: Option<String>, title: Option<String>, duration_ms: Option<i64>) -> ApiResult {
+pub async fn create_job(core: Shared<'_>, page_url: String, media_url: Option<String>, title: Option<String>, duration_ms: Option<i64>, retranslate: Option<bool>) -> ApiResult {
     let core = core.inner().clone();
-    blocking(move || api::create_job(&core, &page_url, media_url.as_deref(), title.as_deref().unwrap_or(""), duration_ms.unwrap_or(0))).await
+    blocking(move || if retranslate == Some(true) { api::retranslate_job(&core, &page_url) }
+        else { api::create_job(&core, &page_url, media_url.as_deref(), title.as_deref().unwrap_or(""), duration_ms.unwrap_or(0)) }).await
 }
 
 #[tauri::command(async, rename_all = "snake_case")]

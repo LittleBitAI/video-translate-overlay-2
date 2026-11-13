@@ -8,6 +8,44 @@ const YT: &str = "https://www.youtube.com/watch?v=contract0001";
 const TALK: &str = "https://lectures.example.org/talks/42";
 const SID: &str = "contract-sid-7f3a9c";
 
+#[test]
+fn youtube_sign_in_returns_to_the_video_without_restoring_the_login_screen() {
+    let yt = "https://www.youtube.com/watch?v=abcDEF12345";
+    let mut app = App::new(Options::default());
+    app.launch();
+    let gate = app.open(yt).body["opened_url"].as_str().unwrap().to_string();
+    app.page_loaded("https://www.youtube.com/watch?v=another0001");
+    assert_eq!(app.app_call("GET", "/browser", json!({})).body["url"], gate);
+    app.page_loaded("https://m.youtube.com/watch?v=abcDEF12345&feature=shared");
+    let restored = app.app_call("GET", "/browser", json!({})).body["url"].clone();
+    assert_eq!(restored, "https://m.youtube.com/watch?v=abcDEF12345&feature=shared");
+    app.restart();
+    assert_eq!(app.app_call("GET", "/browser", json!({})).body["url"], restored);
+    assert_eq!(app.open(yt).body["account_gate"], false);
+
+    app.open(TALK);
+    app.page_loaded(yt);
+    assert_eq!(app.app_call("GET", "/browser", json!({})).body["url"], TALK, "a late sign-in result replaced the newer page");
+}
+
+#[test]
+fn connecting_youtube_from_settings_does_not_ask_again_for_each_video() {
+    let mut app = App::new(Options::default());
+    app.launch();
+    let gate = "https://accounts.google.com/ServiceLogin?service=youtube&continue=https%3A%2F%2Fwww.youtube.com%2F";
+    assert_eq!(app.open(gate).body["account_gate"], true);
+    app.set_cookie("https://www.youtube.com", "SID", SID);
+    app.page_loaded("https://m.youtube.com/");
+    assert_eq!(app.app_call("GET", "/browser", json!({})).body["url"], "https://m.youtube.com/");
+    for url in [YT, "https://www.youtube.com/watch?v=another0001"] {
+        assert_eq!(app.open(url).body["account_gate"], false);
+        assert_eq!(youtube_cookie(&app.webview()).as_deref(), Some(SID));
+    }
+    app.restart();
+    assert_eq!(app.open(YT).body["account_gate"], false);
+    assert_eq!(youtube_cookie(&app.webview()).as_deref(), Some(SID));
+}
+
 fn youtube_cookie(webview: &Value) -> Option<String> {
     webview["cookies"].as_array().cloned().unwrap_or_default().iter().find_map(|c| {
         let domain = c["domain"].as_str().unwrap_or("");

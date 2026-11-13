@@ -140,6 +140,81 @@ function readyBackend() {
   });
 }
 
+test('ready subtitles offer translation repair without fetching or rewriting the audio', async () => {
+  const player = makePlayer(MAIN_MS / 1000);
+  const backend = readyBackend();
+  await mountOverlay({ video: player.video, pageUrl: YT, title: TITLE, mediaUrl: null, request: backend.request });
+  const detect = () => deepAll('[data-vto="detect"]')[0] as HTMLButtonElement;
+  await expect.poll(() => detect()?.textContent).toBe('다시 번역');
+  expect(detect().title).toContain('API 비용');
+  detect().click();
+  await expect.poll(() => backend.calls.filter(c => c.method === 'POST').length).toBe(1);
+  expect(backend.calls.find(c => c.method === 'POST')?.body).toEqual({ page_url: YT, retranslate: true });
+  await expect.poll(() => detect()?.disabled).toBe(false);
+});
+
+// A failed replacement must show the completed set without another detect click,
+// both after a retry on this page and when reopening an already failed job.
+test.each(['retry', 'reopen'])('completed subtitles remain available after retranslation failure: %s', async (entry) => {
+  for (const [reason, message] of [
+    ['translate_failed', '번역하지 못했습니다.'],
+    ['key_rejected', 'Gemini가 API 키를 받아 주지 않았습니다.'],
+    ['cost_limit', '번역을 멈췄습니다.'],
+  ]) {
+    const p = makePlayer(MAIN_MS / 1000);
+    let stage = entry === 'retry' ? 'ready' : 'failed';
+    const backend = fakeBackend((c) => {
+      switch (route(c)) {
+        case 'POST /jobs':
+          stage = 'translating';
+          return { status: 200, body: job(stage, 0) };
+        case 'GET /jobs':
+          return { status: 200, body: { ...job(stage, 0), failure_reason: stage === 'failed' ? reason : null } };
+        case `GET /videos/${VIDEO_KEY}/subtitles`:
+          return { status: 200, body: subtitlesBody(CUES) };
+        default: return { status: 404, body: {} };
+      }
+    });
+    const handle = await mountOverlay({ video: p.video, pageUrl: YT, title: TITLE, mediaUrl: null, request: backend.request });
+    p.seek(1.5);
+    const detect = () => deepAll('[data-vto="detect"]')[0] as HTMLButtonElement;
+    await expect.poll(shownSubtitle, SHOWN).toBe(CUES[0].text_ko);
+    if (entry === 'retry') {
+      detect().click();
+      await expect.poll(() => deepAll('[data-vto="status"]')[0]?.textContent).toContain('한국어로 번역하는 중');
+      expect(detect().disabled).toBe(true);
+      expect(shownSubtitle()).toBe(CUES[0].text_ko);
+      stage = 'failed';
+    }
+    await expect.poll(() => deepAll('[data-vto="status"]')[0]?.textContent, SHOWN).toContain(message);
+    await expect.poll(shownSubtitle, SHOWN).toBe(CUES[0].text_ko);
+    expect(detect().textContent).toBe('다시 번역');
+    expect(detect().disabled).toBe(false);
+    expect(backend.calls.filter(c => c.method === 'POST')).toHaveLength(entry === 'retry' ? 1 : 0);
+    p.seek(61);
+    await expect.poll(shownSubtitle, SHOWN).toBe(CUES[2].text_ko);
+    detect().click();
+    await expect.poll(() => backend.calls.filter(c => c.method === 'POST').length).toBe(entry === 'retry' ? 2 : 1);
+    expect(backend.calls.filter(c => c.method === 'POST').at(-1)?.body).toEqual({ page_url: YT, retranslate: true });
+    handle.destroy();
+  }
+});
+
+test.each([409, 404, 500])('a failed job without readable saved subtitles still offers detection: %i', async (status) => {
+  const p = makePlayer(MAIN_MS / 1000);
+  const backend = fakeBackend((c) => route(c) === 'GET /jobs'
+    ? { status: 200, body: { ...job('failed', 0), failure_reason: 'no_speech' } }
+    : { status, body: { message: 'Subtitles unavailable' } });
+  await mountOverlay({ video: p.video, pageUrl: YT, title: TITLE, mediaUrl: null, request: backend.request });
+  await subtitlesLoaded(backend);
+  await expect.poll(() => deepAll('[data-vto="status"]')[0]?.textContent).toContain('영상에서 말소리를 찾지 못했습니다.');
+  expect(shownSubtitle()).toBe('');
+  const detect = deepAll('[data-vto="detect"]')[0] as HTMLButtonElement;
+  expect(detect.textContent).toBe('영상감지');
+  expect(detect.disabled).toBe(false);
+  expect(backend.calls.filter(c => c.method === 'POST')).toHaveLength(0);
+});
+
 function deepAll(selector: string, root: Document | ShadowRoot = document): Element[] {
   const found = [...root.querySelectorAll(selector)];
   for (const el of root.querySelectorAll('*')) if (el.shadowRoot) found.push(...deepAll(selector, el.shadowRoot));
@@ -200,6 +275,25 @@ test('test_overlay_follows_seek_and_pause', async () => {
   p.seek(6);
   p.play(6.0);
   await expect.poll(shownSubtitle, SHOWN).toBe(CUES[1].text_ko);
+  expect(p.writes).toEqual([]);
+});
+
+test('a fifteen-minute timeline and repeated backward seeks keep the source clock', async () => {
+  const p = makePlayer(900);
+  const cues = Array.from({ length: 15 }, (_, minute) => ({
+    seq: minute, start_ms: (minute * 60 + 1) * 1000, end_ms: (minute * 60 + 5) * 1000, text_ko: `${minute}분 기준 자막`,
+  }));
+  const backend = fakeBackend((call) => route(call) === 'GET /jobs'
+    ? { status: 200, body: job('ready', 100) }
+    : { status: 200, body: { ...subtitlesBody(cues), duration_ms: 900_000 } });
+  await mountOverlay({ video: p.video, pageUrl: YT, title: TITLE, mediaUrl: null, request: backend.request });
+  await subtitlesLoaded(backend);
+  for (const minute of [...Array.from({ length: 15 }, (_, i) => i), 0, 12, 3, 14, 1]) {
+    p.seek(minute * 60 + 2);
+    p.play(minute * 60 + 2);
+    await expect.poll(shownSubtitle, SHOWN).toBe(cues[minute].text_ko);
+    p.pause();
+  }
   expect(p.writes).toEqual([]);
 });
 

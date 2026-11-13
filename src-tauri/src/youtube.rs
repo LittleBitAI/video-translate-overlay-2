@@ -28,10 +28,24 @@ pub fn video_id(u: &url::Url) -> Option<String> {
     }
 }
 
-/// Asks YouTube's player API for the stream list, as the Android VR client
-/// does (its stream URLs need no signature deciphering), and picks AAC audio.
+/// A recorded audio URL issued to the browser's YouTube session. The media
+/// policy and probe still check its address, redirects, content and DRM.
+pub fn browser_audio_url(raw: &str) -> Option<&str> {
+    let u = url::Url::parse(raw).ok()?;
+    let param = |name: &str| u.query_pairs().find(|(k, _)| k == name).map(|(_, v)| v.into_owned());
+    (u.scheme() == "https"
+        && u.host_str()?.ends_with(".googlevideo.com")
+        && u.path() == "/videoplayback"
+        && param("source").as_deref() == Some("youtube")
+        && param("mime").is_some_and(|m| m.starts_with("audio/"))
+        && !u.query_pairs().any(|(k, _)| k == "live" || k == "sq")
+        && stream_duration_ms(raw).is_some())
+    .then_some(raw)
+}
+
+/// Fallback for pages that did not supply their session's signed audio URL.
 ///
-/// ponytail: YouTube changes this API without notice; when it breaks, jobs
+/// shortcut: YouTube changes this API without notice; when it breaks, jobs
 /// get the `youtube_unavailable` reason (R20) until the client is updated.
 pub struct InnertubeExtractor;
 
@@ -44,7 +58,7 @@ impl crate::AudioExtractor for InnertubeExtractor {
         let id = url::Url::parse(page_url).ok().as_ref().and_then(video_id).ok_or_else(|| unavailable("no video id".into()))?;
         let body = json!({
             "videoId": id,
-            "context": {"client": {"clientName": "ANDROID_VR", "clientVersion": "1.62.27", "androidSdkVersion": 32, "hl": "en"}},
+            "context": {"client": {"clientName": "VISIONOS", "clientVersion": "1.02", "deviceMake": "Apple", "deviceModel": "RealityDevice17,1", "osName": "visionOS", "osVersion": "26.5.23O471", "hl": "en"}},
             "contentCheckOk": true,
             "racyCheckOk": true
         })
@@ -52,7 +66,7 @@ impl crate::AudioExtractor for InnertubeExtractor {
         let r = http::send(
             Request::post("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", body.as_bytes())
                 .header("Content-Type", "application/json")
-                .header("User-Agent", "com.google.android.apps.youtube.vr.oculus/1.62.27 (Linux; U; Android 12L) gzip"),
+                .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15"),
         )
         .map_err(|e| unavailable(e.0))?;
         let v: Value = serde_json::from_slice(&r.bytes(8 << 20).map_err(|e| unavailable(e.0))?).map_err(|e| unavailable(e.to_string()))?;
@@ -99,6 +113,18 @@ mod live_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn browser_hint_requires_recorded_youtube_audio() {
+        let good = "https://rr1.googlevideo.com/videoplayback?source=youtube&mime=audio%2Fmp4&dur=19.021&sig=kept";
+        assert_eq!(browser_audio_url(good), Some(good));
+        for bad in [good.replace("https:", "http:"), good.replace("rr1.googlevideo.com", "googlevideo.com.evil.test"),
+            good.replace("source=youtube", "source=yt_live_broadcast"), good.replace("audio%2Fmp4", "video%2Fmp4"),
+            good.replace("dur=19.021", "dur=NaN"), good.replace("dur=19.021", "dur=0"),
+            format!("{good}&live=1"), format!("{good}&sq=42")] {
+            assert!(browser_audio_url(&bad).is_none(), "{bad}");
+        }
+    }
 
     #[test]
     fn aac_audio_is_preferred() {
