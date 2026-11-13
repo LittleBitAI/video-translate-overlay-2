@@ -101,6 +101,9 @@ fn handle(mut s: TcpStream, core: &Core, dist: &Path, port: u16) -> std::io::Res
     if !trusted(&req, port) {
         return send(&mut s, 403, "text/plain; charset=utf-8", b"forbidden");
     }
+    if req.method == "GET" && req.path == "/build" {
+        return json_reply(&mut s, Ok(json!({"head": env!("VTO_BUILD_HEAD")})));
+    }
     let mut args = match serde_json::from_slice::<Value>(&req.body) {
         Ok(Value::Object(m)) => m,
         _ if req.body.iter().all(u8::is_ascii_whitespace) => Map::new(),

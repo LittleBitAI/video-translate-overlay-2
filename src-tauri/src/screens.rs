@@ -17,7 +17,8 @@ pub fn show_main<R: Runtime, M: Manager<R>>(app: &M, script: Option<&str>) -> ta
         let _ = w.set_focus();
         return Ok(w);
     }
-    let b = WebviewWindowBuilder::new(app, MAIN, WebviewUrl::App("index.html".into()));
+    let b = WebviewWindowBuilder::new(app, MAIN, WebviewUrl::App("index.html".into()))
+        .initialization_script(format!("Object.defineProperty(window,'__WIKI_NATIVE_BUILD_HEAD__',{{value:'{}'}})", env!("VTO_BUILD_HEAD")));
     #[cfg(desktop)]
     let b = b.title("영상 번역 오버레이").inner_size(1024.0, 760.0);
     let b = match script {

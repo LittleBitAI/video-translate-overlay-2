@@ -4,8 +4,14 @@
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
+import { execFileSync } from 'node:child_process';
 
 export default defineConfig({
-  plugins: [svelte(), tailwindcss()],
+  plugins: [svelte(), tailwindcss(), {
+    name: 'build-revision',
+    transformIndexHtml: () => [{ tag: 'meta', attrs: {
+      name: 'wiki-build-head', content: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+    }, injectTo: 'head' }],
+  }],
   build: { outDir: 'dist', emptyOutDir: true },
 });
