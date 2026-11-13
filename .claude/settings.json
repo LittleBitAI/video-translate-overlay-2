@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "deny": [
+      "request_user_input_async",
+      "functions.request_user_input_async",
+      "Bash(perl -pi*)",
+      "Bash(perl -i*)",
+      "Bash(perl -0pi*)",
+      "Bash(dos2unix*)",
+      "Bash(unix2dos*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean -fdx*)"
+    ]
+  }
+}

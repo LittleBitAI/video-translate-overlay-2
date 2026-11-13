@@ -2,18 +2,82 @@
  "ns": "repo",
  "repo": "video-translate-overlay-2",
  "nodes_from": ".wiki/corpus.json",
- "edges": [],
- "orphans": [
-  "docs/design/backend.md",
-  "docs/design/frontend.md"
+ "edges": [
+  {
+   "a": ".wiki/cost-budget-per-hour",
+   "b": "README.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
+   "a": ".wiki/cost-budget-per-hour",
+   "b": "docs/design/backend.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
+   "a": ".wiki/job-survives-background",
+   "b": "README.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
+   "a": ".wiki/job-survives-background",
+   "b": "docs/design/backend.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
+   "a": ".wiki/mobile-first-rust-web",
+   "b": "docs/design/backend.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
+   "a": ".wiki/project",
+   "b": "README.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
+   "a": ".wiki/project",
+   "b": "docs/design/backend.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
+   "a": ".wiki/project",
+   "b": "docs/design/frontend.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
+   "a": ".wiki/repository-gate",
+   "b": "README.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
+   "a": ".wiki/subtitles-must-not-drift",
+   "b": "docs/design/backend.md",
+   "kind": "reads",
+   "cross": true
+  },
+  {
+   "a": ".wiki/translate-text-not-audio",
+   "b": "docs/design/backend.md",
+   "kind": "reads",
+   "cross": true
+  }
  ],
+ "orphans": [],
  "counts": {
   "docs": 3,
   "linked": 0,
-  "read": 0,
-  "orphans": 2,
-  "pages": 0,
-  "decisions": 0,
-  "injectable_decisions": 0
+  "read": 3,
+  "orphans": 0,
+  "pages": 7,
+  "decisions": 5,
+  "injectable_decisions": 1
  }
 }
