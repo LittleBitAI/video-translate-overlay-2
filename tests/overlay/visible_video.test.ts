@@ -140,6 +140,10 @@ const FRAMED: { layout: string; src: string; css: string; nested: boolean; want:
   { layout: 'a nested player in a frame below the viewport', src: 'outer.html', css: 'top:1000px;width:800px;height:500px', nested: true, want: 'page' },
   { layout: 'a nested player out of view inside a frame in view', src: 'outer.html?at=600', css: 'top:300px;width:800px;height:400px', nested: true, want: 'page' },
   { layout: 'a nested player in view', src: 'outer.html', css: 'top:200px;width:800px;height:500px', nested: true, want: 'player' },
+  // Frames partly in view: what counts is where the player is, not how much of its frame is seen.
+  { layout: 'a nested player below the part in view of a frame partly in view', src: 'outer.html?at=250', css: 'top:600px;width:800px;height:400px', nested: true, want: 'page' },
+  { layout: 'a nested player beside the part in view of a frame partly off the side', src: 'outer.html?x=400', css: 'left:900px;top:200px;width:800px;height:400px', nested: true, want: 'page' },
+  { layout: 'a nested player in the part in view of a frame partly in view', src: 'outer.html', css: 'top:600px;width:800px;height:400px', nested: true, want: 'player' },
 ];
 
 test.each(FRAMED)('test_a_frame_video_counts_only_by_its_part_in_view_through_every_frame_above_it: $layout', async ({ src, css, nested, want }) => {

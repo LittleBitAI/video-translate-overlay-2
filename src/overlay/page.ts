@@ -14,18 +14,33 @@ const STALE_MS = 3_000;
 /** A job is made before POST /jobs answers; the media probe can take a while. */
 const REQUEST_MS = 120_000;
 
+/** A rectangle in a window's viewport coordinates, in px. */
+export type Rect = { left: number; top: number; right: number; bottom: number };
+const EVERYWHERE: Rect = { left: -Infinity, top: -Infinity, right: Infinity, bottom: Infinity };
+const NOWHERE: Rect = { left: 0, top: 0, right: 0, bottom: 0 };
+
+const cut = (a: Rect, b: Rect): Rect => ({
+  left: Math.max(a.left, b.left),
+  top: Math.max(a.top, b.top),
+  right: Math.min(a.right, b.right),
+  bottom: Math.min(a.bottom, b.bottom),
+});
+const areaOf = (r: Rect) => (r.right > r.left && r.bottom > r.top ? (r.right - r.left) * (r.bottom - r.top) : 0);
+const viewportOf = (w: Window): Rect => ({ left: 0, top: 0, right: w.innerWidth, bottom: w.innerHeight });
+
 /**
- * The document's main video: the one with the most of it on screen. When none
- * is on screen (the page is scrolled past its player), the largest shown one,
- * so the overlay stays at the bottom of the screen for it.
+ * The document's main video: the one with the most of it on screen (inside
+ * `clip`, the part of this frame the page shows). When none is on screen (the
+ * page is scrolled past its player), the largest shown one, so the overlay
+ * stays at the bottom of the screen for it.
  */
-export function mainVideo(doc: Document = document): HTMLVideoElement | null {
+export function mainVideo(doc: Document = document, clip: Rect = EVERYWHERE): HTMLVideoElement | null {
   let best: HTMLVideoElement | null = null;
   let most = [0, 0];
   doc.querySelectorAll('video').forEach((v) => {
     if (!shown(v)) return;
     const r = v.getBoundingClientRect();
-    const a = [visibleArea(v), r.width * r.height];
+    const a = [visibleArea(v, clip), r.width * r.height];
     if (a[0] > most[0] || (a[0] === most[0] && a[1] > most[1])) [most, best] = [a, v];
   });
   return best;
@@ -36,14 +51,35 @@ function shown(e: Element): boolean {
   return e.checkVisibility?.({ opacityProperty: true, visibilityProperty: true }) ?? true;
 }
 
-/** How much of an element is inside its window's viewport, in px² (0 when hidden). */
-export function visibleArea(e: Element): number {
-  if (!shown(e)) return 0;
-  const r = e.getBoundingClientRect();
-  const view = e.ownerDocument.defaultView ?? window;
-  const w = Math.min(view.innerWidth, r.right) - Math.max(0, r.left);
-  const h = Math.min(view.innerHeight, r.bottom) - Math.max(0, r.top);
-  return w > 0 && h > 0 ? w * h : 0;
+/** How much of an element is inside its window's viewport and `clip`, in px² (0 when hidden). */
+export function visibleArea(e: Element, clip: Rect = EVERYWHERE): number {
+  return shown(e) ? areaOf(cut(cut(e.getBoundingClientRect(), viewportOf(e.ownerDocument.defaultView ?? window)), clip)) : 0;
+}
+
+/**
+ * The part of an iframe's page the page around it shows, in that page's own
+ * coordinates: its content box, cut by this window's viewport and by `clip`.
+ * ponytail: CSS transforms (scale, rotate) on frames are not followed.
+ */
+function frameClip(f: HTMLIFrameElement, clip: Rect): Rect {
+  if (!shown(f)) return NOWHERE;
+  const r = f.getBoundingClientRect();
+  const cs = getComputedStyle(f);
+  const [pl, pt, pr, pb] = [cs.paddingLeft, cs.paddingTop, cs.paddingRight, cs.paddingBottom].map(parseFloat);
+  // Where the frame's page starts: past the border (clientLeft/Top) and the padding.
+  const x = r.left + f.clientLeft + pl;
+  const y = r.top + f.clientTop + pt;
+  const content = { left: x, top: y, right: x + f.clientWidth - pl - pr, bottom: y + f.clientHeight - pt - pb };
+  const seen = cut(cut(content, viewportOf(window)), clip);
+  if (!areaOf(seen)) return NOWHERE;
+  return { left: seen.left - x, top: seen.top - y, right: seen.right - x, bottom: seen.bottom - y };
+}
+
+/** A rectangle from a message, or nothing seen when it is not one. */
+function rectFrom(raw: any): Rect {
+  const n = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : NaN);
+  const r = { left: n(raw?.left), top: n(raw?.top), right: n(raw?.right), bottom: n(raw?.bottom) };
+  return Object.values(r).some(Number.isNaN) ? NOWHERE : r;
 }
 
 export function pageTitle(): string {
@@ -82,11 +118,11 @@ export function startPage({ top, request }: PageOptions): { stop(): void } {
   let granted: Window | null = null;
   // An iframe: whether the top chose its video, and its requests awaiting a reply.
   let chosen = false;
-  // How much of this frame is on screen, through every frame above it, as its
-  // parent last said (px²). A frame reports to the top directly, and the top sees
-  // only its own iframes, so each frame tells its own iframes theirs.
-  // ponytail: a minimum of areas, not an intersection of rectangles; it bounds what is in view.
-  let view = top ? 0 : Infinity;
+  // The part of this frame the page shows, through every frame above it, in this
+  // frame's coordinates, as its parent last said. A frame reports to the top
+  // directly, and the top sees only its own iframes, so each frame tells its own
+  // iframes theirs. Nothing until the parent has said.
+  let clip: Rect = top ? NOWHERE : EVERYWHERE;
   const pending = new Map<number, (r: Reply) => void>();
   let nextId = 1;
 
@@ -109,7 +145,7 @@ export function startPage({ top, request }: PageOptions): { stop(): void } {
     if (!m || m[TAG] !== true || !e.source) return;
     const from = e.source as Window;
     if (m.kind === 'view') {
-      if (top && from === window.parent) view = Number(m.area) || 0;
+      if (top && from === window.parent) clip = rectFrom(m.rect);
     } else if (!top) {
       if (m.kind === 'video') frames.set(from, { area: Number(m.area) || 0, at: performance.now() });
       else if (m.kind === 'request' && from === granted) {
@@ -137,10 +173,10 @@ export function startPage({ top, request }: PageOptions): { stop(): void } {
       // Seen up to one check (a second) after it happened.
       since = Math.max(0, performance.now() - 1_000);
     }
-    const video = mainVideo();
-    const own = video ? Math.min(visibleArea(video), view) : 0;
+    const video = mainVideo(document, clip);
+    const own = video ? visibleArea(video, clip) : 0;
     document.querySelectorAll('iframe').forEach((f) => {
-      if (f.contentWindow) send(f.contentWindow, { kind: 'view', area: Math.min(view, visibleArea(f)) });
+      if (f.contentWindow) send(f.contentWindow, { kind: 'view', rect: frameClip(f, clip) });
     });
     let want = video;
     if (!top) {

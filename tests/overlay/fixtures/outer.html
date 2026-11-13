@@ -5,12 +5,15 @@
     <title>A frame holding the embedded player</title>
   </head>
   <body style="margin: 0">
-    <!-- No video of its own: the player is one frame further in. `?at=<px>` sets how far down this frame it sits.
+    <!-- No video of its own: the player is one frame further in. `?at=<px>` and `?x=<px>` set where in this frame it sits.
          The test's page stands in for the top frame (Vitest runs it in a frame of its own), so frames report to it. -->
-    <iframe id="player" src="/tests/overlay/fixtures/frame.html?up=2" style="position: absolute; left: 0; width: 640px; height: 360px; border: 0"></iframe>
+    <iframe id="player" src="/tests/overlay/fixtures/frame.html?up=2" style="position: absolute; width: 640px; height: 360px; border: 0"></iframe>
     <script type="module">
       import { startPage } from '/src/overlay/page.ts';
-      document.getElementById('player').style.top = `${Number(new URLSearchParams(location.search).get('at')) || 0}px`;
+      const q = new URLSearchParams(location.search);
+      const player = document.getElementById('player');
+      player.style.top = `${Number(q.get('at')) || 0}px`;
+      player.style.left = `${Number(q.get('x')) || 0}px`;
       startPage({ top: window.parent, request: async () => ({ status: 500, body: {} }) });
     </script>
   </body>
