@@ -46,13 +46,6 @@ export function visibleArea(e: Element): number {
   return w > 0 && h > 0 ? w * h : 0;
 }
 
-/** A frame's video can be on screen in the frame and still not on the page: the top clips it by the iframe. */
-function frameArea(from: Window, reported: number): number {
-  const el = [...document.querySelectorAll('iframe')].find((f) => f.contentWindow === from);
-  // ponytail: a frame nested in another frame has no element here; its own report stands.
-  return el ? Math.min(reported, visibleArea(el)) : reported;
-}
-
 export function pageTitle(): string {
   const og = document.querySelector<HTMLMetaElement>('meta[property="og:title"]')?.content;
   return (og || document.title).replace(/\s+-\s+YouTube$/, '').trim();
@@ -89,6 +82,11 @@ export function startPage({ top, request }: PageOptions): { stop(): void } {
   let granted: Window | null = null;
   // An iframe: whether the top chose its video, and its requests awaiting a reply.
   let chosen = false;
+  // How much of this frame is on screen, through every frame above it, as its
+  // parent last said (px²). A frame reports to the top directly, and the top sees
+  // only its own iframes, so each frame tells its own iframes theirs.
+  // ponytail: a minimum of areas, not an intersection of rectangles; it bounds what is in view.
+  let view = top ? 0 : Infinity;
   const pending = new Map<number, (r: Reply) => void>();
   let nextId = 1;
 
@@ -110,7 +108,9 @@ export function startPage({ top, request }: PageOptions): { stop(): void } {
     const m = e.data;
     if (!m || m[TAG] !== true || !e.source) return;
     const from = e.source as Window;
-    if (!top) {
+    if (m.kind === 'view') {
+      if (top && from === window.parent) view = Number(m.area) || 0;
+    } else if (!top) {
       if (m.kind === 'video') frames.set(from, { area: Number(m.area) || 0, at: performance.now() });
       else if (m.kind === 'request' && from === granted) {
         let body = m.body;
@@ -138,7 +138,10 @@ export function startPage({ top, request }: PageOptions): { stop(): void } {
       since = Math.max(0, performance.now() - 1_000);
     }
     const video = mainVideo();
-    const own = video ? visibleArea(video) : 0;
+    const own = video ? Math.min(visibleArea(video), view) : 0;
+    document.querySelectorAll('iframe').forEach((f) => {
+      if (f.contentWindow) send(f.contentWindow, { kind: 'view', area: Math.min(view, visibleArea(f)) });
+    });
     let want = video;
     if (!top) {
       // The largest video wins, here or in a frame (ties stay here).
@@ -147,10 +150,7 @@ export function startPage({ top, request }: PageOptions): { stop(): void } {
       let most = own;
       for (const [w, f] of frames) {
         if (now - f.at > STALE_MS || w.closed) frames.delete(w);
-        else {
-          const a = frameArea(w, f.area);
-          if (a > most) [best, most] = [w, a];
-        }
+        else if (f.area > most) [best, most] = [w, f.area];
       }
       if (granted && granted !== best) send(granted, { kind: 'grant', yes: false });
       granted = best;

@@ -132,21 +132,40 @@ test('test_detect_on_a_page_with_an_offscreen_larger_video_sends_the_visible_lec
   expect(posts[0].duration_ms).toBe(3_600_000);
 });
 
-test('test_a_frame_off_the_page_does_not_take_the_overlay_from_a_video_in_view', async () => {
+// A frame's video counts only by the part of it in view through every frame
+// above it. In each row a 160×90 lecture is in view on the page, and the
+// larger player (300×150, wholly in view inside its own frame) is somewhere in a frame.
+const FRAMED: { layout: string; src: string; css: string; nested: boolean; want: 'page' | 'player' }[] = [
+  { layout: 'a direct frame below the viewport', src: 'frame.html', css: 'top:1000px;width:1280px;height:720px', nested: false, want: 'page' },
+  { layout: 'a nested player in a frame below the viewport', src: 'outer.html', css: 'top:1000px;width:800px;height:500px', nested: true, want: 'page' },
+  { layout: 'a nested player out of view inside a frame in view', src: 'outer.html?at=600', css: 'top:300px;width:800px;height:400px', nested: true, want: 'page' },
+  { layout: 'a nested player in view', src: 'outer.html', css: 'top:200px;width:800px;height:500px', nested: true, want: 'player' },
+];
+
+test.each(FRAMED)('test_a_frame_video_counts_only_by_its_part_in_view_through_every_frame_above_it: $layout', async ({ src, css, nested, want }) => {
   await page.viewport(1280, 800);
-  lay([{ name: 'inside', css: 'left:0;top:0;width:320px;height:180px' }]);
-  // The embedded player is larger, and wholly in view inside its own frame, but the frame is below the viewport.
+  lay([{ name: 'lecture', css: 'left:0;top:0;width:160px;height:90px' }]);
   const frame = document.createElement('iframe');
-  frame.style.cssText = 'position:absolute;left:0;top:1000px;width:1280px;height:720px;border:0';
-  frame.src = '/tests/overlay/fixtures/frame.html';
+  frame.style.cssText = `position:absolute;left:0;border:0;${css}`;
+  frame.src = `/tests/overlay/fixtures/${src}`;
   document.body.append(frame);
   const p = startPage({ top: null, request: async () => ({ status: 404, body: { error: 'no_job' } }) });
   onTestFinished(() => p.stop());
 
-  await expect.poll(() => frame.contentDocument?.querySelector('video') !== null && frame.contentDocument?.readyState, { timeout: 10_000 }).toBe('complete');
-  // Give the frame time to report its video (it does so every second).
-  await new Promise((r) => setTimeout(r, 2_500));
-  const ownHost = document.querySelector('[data-vto="overlay"]');
-  expect(ownHost, 'the video in view keeps the overlay').not.toBeNull();
-  expect(frame.contentDocument!.querySelector('[data-vto="overlay"]'), 'the frame off the page gets none').toBeNull();
+  const player = (): Document | null => {
+    const d = frame.contentDocument;
+    return (nested ? (d?.getElementById('player') as HTMLIFrameElement | null)?.contentDocument : d) ?? null;
+  };
+  const overlayIn = (d: Document | null) => !!d?.querySelector('[data-vto="overlay"]');
+  await expect.poll(() => player()?.readyState === 'complete' && !!player()?.querySelector('video'), { timeout: 10_000 }).toBe(true);
+
+  if (want === 'player') {
+    await expect.poll(() => overlayIn(player()), { timeout: 10_000 }).toBe(true);
+    expect(overlayIn(document), 'the lecture gives the overlay up to the larger player in view').toBe(false);
+  } else {
+    // Each frame tells its own frames how much of them is in view once a second; give the chain time to settle.
+    await new Promise((r) => setTimeout(r, 5_000));
+    expect(overlayIn(document), 'the lecture in view keeps the overlay').toBe(true);
+    expect(overlayIn(player()), 'the player out of view gets none').toBe(false);
+  }
 });
