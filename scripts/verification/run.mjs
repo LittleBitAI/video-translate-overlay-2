@@ -3,6 +3,7 @@ import {spawn, execFileSync} from 'node:child_process';
 import {mkdirSync, existsSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {isDeepStrictEqual} from 'node:util';
 import {chromium} from 'playwright';
 import scenario, {assertions} from './library-scenario.mjs';
 
@@ -54,7 +55,8 @@ async function request(method, route, body) {
 }
 const change = async body => {const result = await request('POST', '/library/data', body); assert.equal(result.status, 200); return result.body;};
 const list = async () => (await request('GET', '/library/data')).body;
-const observe = (id, expected) => observations.push({id, expected, actual: expected, pass: true});
+const observe = (id, expected, facts) => observations.push({id, expected, actual: JSON.stringify(facts), pass: true});
+const timeline = subtitles => subtitles.body.cues.map(cue => [cue.start_ms, cue.end_ms]);
 const apiAssertions = [
   {id: 'reuse', expected: 'An upgraded saved translation keeps its cues and cost when reopened'},
   {id: 'persistence-delete', expected: 'Restart preserves playlists; confirmed deletion removes all memberships and preserves the other video'},
@@ -91,35 +93,52 @@ try {
     const before = await list(); assert.equal(before.videos.length, 2);
     const saved = before.videos.find(video => video.title === 'Saved attention');
     const cues = await request('GET', `/videos/${saved.video_key}/subtitles`);
+    const jobBefore = await request('GET', '/jobs?page_url=' + encodeURIComponent(saved.page_url));
     await request('POST', '/browser/open', {url: saved.page_url});
     const reuse = await request('POST', '/jobs', {page_url: saved.page_url, title: 'Ignored', duration_ms: 5000});
     assert.equal(reuse.body.reused, true); assert.equal(reuse.status, 200);
-    assert.deepEqual(await request('GET', `/videos/${saved.video_key}/subtitles`), cues);
-    assert.equal((await request('GET', '/jobs?page_url=' + encodeURIComponent(saved.page_url))).body.cost_krw, 12.5);
-    observe(apiAssertions[0].id, apiAssertions[0].expected);
+    const reopenedCues = await request('GET', `/videos/${saved.video_key}/subtitles`);
+    assert.deepEqual(reopenedCues, cues);
+    const jobAfter = await request('GET', '/jobs?page_url=' + encodeURIComponent(saved.page_url));
+    assert.equal(jobAfter.body.cost_krw, 12.5);
+    observe(apiAssertions[0].id, apiAssertions[0].expected, {
+      reused: reuse.body.reused, cost_before: jobBefore.body.cost_krw, cost_after: jobAfter.body.cost_krw,
+      cue_times_before: timeline(cues), cue_times_after: timeline(reopenedCues),
+      entire_subtitle_response_equal: isDeepStrictEqual(cues, reopenedCues)});
     for (const name of ['One', 'Two']) await change({action: 'create_playlist', name});
     const playlists = (await list()).playlists;
     for (const playlist of playlists) await change({action: 'add_entry', playlist_id: playlist.id, page_url: saved.page_url});
-    const organized = await list(); await stopServer(); await startServer(data); assert.deepEqual(await list(), organized);
+    const organized = await list(); await stopServer(); await startServer(data);
+    const restarted = await list(); assert.deepEqual(restarted, organized);
     const cancellation = await request('POST', '/library/data', {action: 'delete_video', video_key: saved.video_key, title: saved.title, confirmed: false});
-    assert.equal(cancellation.status, 400); assert.ok((await list()).videos.some(video => video.video_key === saved.video_key));
+    const cancelled = await list();
+    assert.equal(cancellation.status, 400); assert.ok(cancelled.videos.some(video => video.video_key === saved.video_key));
     await change({action: 'delete_video', video_key: saved.video_key, title: saved.title, confirmed: true});
     const after = await list(); assert.equal(after.playlists.length, 2); assert.ok(after.playlists.every(playlist => playlist.entries.length === 0));
     assert.equal(after.videos.length, 1); assert.equal(after.videos[0].title, 'Unrelated systems'); assert.ok(after.videos[0].saved);
-    observe(apiAssertions[1].id, apiAssertions[1].expected);
+    observe(apiAssertions[1].id, apiAssertions[1].expected, {
+      before_restart: organized.playlists, after_restart: restarted.playlists,
+      cancellation_status: cancellation.status, saved_video_present_after_cancel: cancelled.videos.some(video => video.video_key === saved.video_key),
+      after_delete: {playlists: after.playlists, videos: after.videos}});
     const link = 'https://lectures.example.org/untranslated';
     await change({action: 'add_entry', playlist_id: playlists[0].id, page_url: link, title: 'Manual'});
-    assert.equal((await request('POST', '/browser/open', {url: link})).status, 200);
-    assert.equal((await request('GET', '/jobs?page_url=' + encodeURIComponent(link))).status, 404);
-    observe(apiAssertions[2].id, apiAssertions[2].expected);
+    const openedLink = await request('POST', '/browser/open', {url: link});
+    const linkJob = await request('GET', '/jobs?page_url=' + encodeURIComponent(link));
+    assert.equal(openedLink.status, 200); assert.equal(linkJob.status, 404);
+    observe(apiAssertions[2].id, apiAssertions[2].expected, {
+      page_url: link, open_status: openedLink.status, job_lookup_status: linkJob.status, job_lookup_response: linkJob.body});
     const other = after.videos[0];
     const otherCues = await request('GET', `/videos/${other.video_key}/subtitles`);
     await change({action: 'add_entry', playlist_id: playlists[1].id, page_url: other.page_url});
     await change({action: 'delete_playlist', playlist_id: playlists[1].id});
     const retained = await list(); assert.equal(retained.playlists.length, 1);
     assert.ok(retained.videos.find(video => video.video_key === other.video_key).saved);
-    assert.deepEqual(await request('GET', `/videos/${other.video_key}/subtitles`), otherCues);
-    observe(apiAssertions[3].id, apiAssertions[3].expected);
+    const retainedCues = await request('GET', `/videos/${other.video_key}/subtitles`);
+    assert.deepEqual(retainedCues, otherCues);
+    observe(apiAssertions[3].id, apiAssertions[3].expected, {
+      remaining_playlists: retained.playlists, remaining_videos: retained.videos,
+      cue_times_before: timeline(otherCues), cue_times_after: timeline(retainedCues),
+      entire_subtitle_response_equal: isDeepStrictEqual(otherCues, retainedCues)});
   }
   console.log('```local-evidence\n' + JSON.stringify({head, flow: `library-${kind}`,
     environment_id: process.env.WIKI_VERIFICATION_ENVIRONMENT, test_scope: process.env.WIKI_VERIFICATION_SCOPE,
