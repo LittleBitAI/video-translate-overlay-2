@@ -273,12 +273,14 @@ test('deletion after consent still rejects a late creation response', async () =
   expect(backend.calls.filter(c => c.method === 'POST')).toHaveLength(1);
 });
 
-test('a pre-consent job read cannot erase the confirmed replacement', async () => {
+test.each(['recreation', 'retranslation'].flatMap(operation => ['before consent', 'during creation'].map(phase => ({operation, phase}))))(
+  'an older job read cannot erase the replacement: $operation $phase', async ({operation, phase}) => {
   const player = makePlayer(MAIN_MS / 1000);
   let state = 'ready';
   let oldRead: ((answer: Reply) => void) | undefined;
+  let resolveCreation: ((answer: Reply) => void) | undefined;
   const backend = fakeBackend(c => {
-    if (c.method === 'POST') { state = 'recreated'; return {status: 200, body: job('ready', 100)}; }
+    if (c.method === 'POST') return new Promise(resolve => { resolveCreation = resolve; });
     if (c.path === '/jobs') {
       if (state === 'hold') return new Promise(resolve => { oldRead = resolve; });
       if (state === 'deleted') return {status: 410, body: {message: 'Deleted', deletion_token: 'new-token'}};
@@ -291,15 +293,29 @@ test('a pre-consent job read cannot erase the confirmed replacement', async () =
   await mountOverlay({video: player.video, pageUrl: YT, title: TITLE, mediaUrl: null, request: backend.request});
   player.seek(1.5);
   await expect.poll(shownSubtitle).toBe(CUES[0].text_ko);
-  state = 'deleted'; window.dispatchEvent(new CustomEvent('vto-video-deleted', {detail: VIDEO_KEY}));
-  await expect.poll(() => deepAll('[data-vto="status"]')[0]?.textContent).toBe('Deleted');
+  if (operation === 'recreation') {
+    state = 'deleted'; window.dispatchEvent(new CustomEvent('vto-video-deleted', {detail: VIDEO_KEY}));
+    await expect.poll(() => deepAll('[data-vto="status"]')[0]?.textContent).toBe('Deleted');
+  }
+  const detect = deepAll('[data-vto="detect"]')[0] as HTMLButtonElement;
+  if (phase === 'during creation') {
+    detect.click();
+    await expect.poll(() => !!resolveCreation).toBe(true);
+  }
   state = 'hold'; document.dispatchEvent(new Event('visibilitychange'));
   await expect.poll(() => !!oldRead).toBe(true);
-  (deepAll('[data-vto="detect"]')[0] as HTMLButtonElement).click();
+  if (phase === 'before consent') {
+    detect.click();
+    await expect.poll(() => !!resolveCreation).toBe(true);
+  }
+  state = 'recreated'; resolveCreation!({status: 200, body: job('ready', 100)});
   await expect.poll(shownSubtitle).toBe(CUES[0].text_ko);
   oldRead!({status: 410, body: {message: 'Old deletion', deletion_token: 'old-token'}});
   await sleep(50);
   expect(shownSubtitle()).toBe(CUES[0].text_ko);
+  const posts = backend.calls.filter(c => c.method === 'POST');
+  expect(posts).toHaveLength(1);
+  if (operation === 'retranslation') expect(posts[0].body.retranslate).toBe(true);
 });
 
 test('a visible saved overlay notices deletion from another screen without a native event', async () => {

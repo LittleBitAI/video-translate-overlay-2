@@ -271,6 +271,7 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
         say(r.body?.message ?? '다시 번역을 시작하지 못했습니다.');
         return;
       }
+      generation++;
       ready = false;
       loadedJob = '';
       if (!timer) timer = setInterval(poll, POLL_MS);
@@ -296,6 +297,7 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
     if (r.status === 200) {
       videoKey = r.body.video_key;
       if (deletedKeys.has(r.body.video_key)) return;
+      generation++;
       if (r.body.stage === 'ready') {
         await loadSubtitles(r.body.video_key);
       } else {

@@ -140,6 +140,7 @@
     if (r.status === 200) {
       videoKey = r.body.video_key;
       if (deletedKeys.has(r.body.video_key)) return poll();
+      generation++;
       job = { stage: r.body.stage, percent: 0, cost_krw: 0, failure_reason: null, video_key: r.body.video_key };
       if (r.body.stage === 'ready') await poll();
       else timer = setTimeout(poll, POLL_MS);
