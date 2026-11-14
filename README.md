@@ -18,6 +18,17 @@ Android 7.0 이상, ARM64 기기가 대상입니다. 갤럭시 S21 시리즈도 
 
 APK 링크는 이 작업 폴더의 빌드 결과입니다. `artifacts/`는 Git에 포함하지 않으므로 저장소를 새로 받으면 직접 빌드해야 합니다. 이 APK는 개발용 키로 서명한 release 설치본이며, 크기는 약 24MB입니다. 스토어 배포용 서명은 별도입니다.
 
+## Approved release updates
+
+Android and Windows builds from 0.1.7 check approved GitHub Releases on launch
+and return to the foreground. Read the version and brief feature notes, then
+open your device's download or dismiss that version. `설정 → 업데이트 확인` checks
+again and can reveal a dismissed version. Downloads and installation are manual;
+automatic failures do not interrupt video use. Installations through 0.1.6 need
+one manual upgrade, keeping the existing app installed to retain local data.
+The [release procedure](docs/releases/procedure.md) defines approval, packaging,
+signing continuity, and first-publication acceptance.
+
 ## Saved videos and topic playlists
 
 Open `보관함` beside the address bar to find videos by title or source URL.

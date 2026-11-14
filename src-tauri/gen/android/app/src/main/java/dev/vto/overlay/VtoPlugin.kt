@@ -41,6 +41,15 @@ class KeyArgs {
 }
 
 @InvokeArg
+class DownloadArgs { var url: String = "" }
+
+@InvokeArg
+class UpdateArgs {
+    var version: String = ""
+    var summary: String = ""
+}
+
+@InvokeArg
 class JobArgs {
     var state: String = ""
     var title: String = ""
@@ -60,6 +69,26 @@ class WatchArgs {
 
 @TauriPlugin
 class VtoPlugin(private val activity: Activity) : Plugin(activity) {
+    @Command
+    fun updateNotice(invoke: Invoke) {
+        val args = invoke.parseArgs(UpdateArgs::class.java)
+        activity.runOnUiThread {
+            androidx.appcompat.app.AlertDialog.Builder(activity)
+                .setTitle("새 버전 ${args.version}")
+                .setMessage(args.summary)
+                .setPositiveButton("업데이트 내려받기") { _, _ -> invoke.resolve(JSObject().put("download", true)) }
+                .setNegativeButton("이 버전 알림 닫기") { _, _ -> invoke.resolve(JSObject().put("download", false)) }
+                .setOnCancelListener { invoke.resolve(JSObject().put("download", false)) }
+                .show()
+        }
+    }
+    @Command
+    fun openDownload(invoke: Invoke) = guard(invoke) {
+        val url = invoke.parseArgs(DownloadArgs::class.java).url
+        require(Regex("https://github\\.com/LittleBitAI/video-translate-overlay-2/releases/download/v[0-9]+\\.[0-9]+\\.[0-9]+/video-translate-overlay-[0-9]+\\.[0-9]+\\.[0-9]+-arm64\\.apk").matches(url))
+        activity.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+        invoke.resolve()
+    }
     private val prefs get() = activity.getSharedPreferences("vto-key", Context.MODE_PRIVATE)
     private var opener: Channel? = null
 

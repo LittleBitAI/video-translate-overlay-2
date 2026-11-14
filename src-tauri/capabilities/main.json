@@ -4,6 +4,9 @@
   "local": true,
   "windows": ["main"],
   "permissions": [
+    "allow-check-updates",
+    "allow-dismiss-update",
+    "allow-open-update",
     "allow-browser-open",
     "allow-get-browser",
     "allow-clear-site-data",

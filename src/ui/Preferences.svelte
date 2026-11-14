@@ -125,6 +125,11 @@
 </header>
 
 <main class="mx-auto flex max-w-2xl flex-col gap-4 p-2 sm:p-4">
+  <section class={card}>
+    <h2 class="text-lg font-semibold">앱 업데이트</h2>
+    <p class="mt-1 text-sm text-ink/70">승인된 새 버전과 추가 기능을 확인합니다. 닫은 버전도 다시 볼 수 있습니다.</p>
+    <button type="button" class="{outline} mt-4" onclick={() => window.dispatchEvent(new Event('vto-check-updates'))}>업데이트 확인</button>
+  </section>
   <section class={card} aria-busy={screen === 'loading'}>
     <h2 class="text-lg font-semibold">개인키</h2>
     {#if screen === 'error'}

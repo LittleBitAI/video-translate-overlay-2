@@ -29,6 +29,14 @@ const SITE: &str = if cfg!(mobile) { "main" } else { "site" };
 struct TauriBrowser(Handle);
 
 impl Browser for TauriBrowser {
+    fn open_download(&self, url: &str) -> Result<(), String> {
+        #[cfg(target_os = "android")]
+        return app(&self.0)?.state::<crate::android::Mobile>().open_download(url);
+        #[cfg(windows)]
+        return std::process::Command::new("rundll32.exe").args(["url.dll,FileProtocolHandler", url]).spawn().map(|_| ()).map_err(|e| e.to_string());
+        #[cfg(not(any(windows, target_os = "android")))]
+        Err("unsupported platform".into())
+    }
     fn invalidate_video(&self, key: &str) -> Result<(), String> {
         for w in app(&self.0)?.webview_windows().values() {
             w.eval(format!("window.dispatchEvent(new CustomEvent('vto-video-deleted',{{detail:{}}}))", serde_json::json!(key)))
@@ -297,7 +305,12 @@ pub fn run() {
             #[cfg(target_os = "android")]
             let keystore: Box<dyn vto::KeyStore> = Box::new(app.state::<crate::android::Mobile>().inner().clone());
             #[cfg(not(target_os = "android"))]
-            let keystore: Box<dyn vto::KeyStore> = Box::new(crate::platform::CredentialStore::default());
+            let keystore: Box<dyn vto::KeyStore> = {
+                let store = crate::platform::CredentialStore::default();
+                #[cfg(all(debug_assertions, desktop))]
+                let store = if isolated_profile { crate::platform::CredentialStore::for_folder(&data_dir) } else { store };
+                Box::new(store)
+            };
             // Debug builds only: device tests name a stand-in Gemini in the app's private data folder.
             #[cfg(debug_assertions)]
             let gemini = std::fs::read_to_string(data_dir.join("gemini_base_url.txt")).ok().map(|s| s.trim().to_string());
@@ -339,6 +352,9 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            if matches!(event, WindowEvent::Focused(true)) {
+                foreground(window.app_handle());
+            }
             // Closing the screen while a job runs only hides it: the job goes on (R6).
             if let WindowEvent::CloseRequested { api, .. } = event {
                 let core = window.app_handle().state::<Arc<Core>>();
@@ -350,5 +366,63 @@ pub fn run() {
         })
         .build(ctx)
         .expect("start the app")
-        .run(|_, _| {});
+        .run(|app, event| {
+            if matches!(event, tauri::RunEvent::Resumed) { foreground(app); }
+        });
+}
+
+fn foreground(app: &AppHandle<Wry>) {
+    let Some(core) = app.try_state::<Arc<Core>>() else { return };
+    let core = core.inner().clone();
+    let app = app.clone();
+    std::thread::spawn(move || {
+        let result = core.updates.check(&core.cfg.data_dir, false);
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.eval("window.dispatchEvent(new Event('vto-foreground'))");
+        }
+        let Ok(result) = result else { return };
+        let Ok(update) = serde_json::from_value::<crate::updates::Update>(result["update"].clone()) else { return };
+        #[cfg(desktop)]
+        let window = app.webview_windows().into_values().find(|w| w.is_focused().unwrap_or(false));
+        #[cfg(mobile)]
+        let window = app.get_webview_window("main");
+        let Some(window) = window else { return };
+        let Ok(url) = window.url() else { return };
+        if url.scheme() == "tauri" || url.host_str() == Some("tauri.localhost") { return; }
+        // Site pages never receive update IPC permissions or release-note HTML.
+        static NOTICE_OPEN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+        use std::sync::atomic::Ordering;
+        if NOTICE_OPEN.swap(true, Ordering::SeqCst) { return; }
+        if crate::updates::dismissed(&core.cfg.data_dir, &update.version) {
+            NOTICE_OPEN.store(false, Ordering::SeqCst);
+            return;
+        }
+        let action = site_update_notice(&app, &window, &update);
+        match action {
+            Ok(true) => {
+                if crate::updates::open(&core, &update.version).is_ok() { let _ = core.updates.dismiss(&core.cfg.data_dir, &update.version); }
+            }
+            Ok(false) => { let _ = core.updates.dismiss(&core.cfg.data_dir, &update.version); }
+            Err(e) => vto::log(format!("release notice: {e}")),
+        }
+        NOTICE_OPEN.store(false, Ordering::SeqCst);
+    });
+}
+
+fn site_update_notice(_app: &AppHandle<Wry>, _window: &tauri::WebviewWindow<Wry>, update: &crate::updates::Update) -> Result<bool, String> {
+    #[cfg(target_os = "android")]
+    return _app.state::<crate::android::Mobile>().update_notice(update);
+    #[cfg(windows)]
+    {
+        #[link(name = "user32")]
+        extern "system" { fn MessageBoxW(parent: *mut std::ffi::c_void, text: *const u16, title: *const u16, flags: u32) -> i32; }
+        let wide = |s: &str| s.encode_utf16().chain([0]).collect::<Vec<_>>();
+        let title = wide(&format!("새 버전 {}", update.version));
+        let text = wide(&format!("{}\n\n{}\n\n확인: 브라우저에서 내려받기\n취소: 이 버전 알림 닫기", update.summary, update.download_url));
+        let parent = _window.hwnd().map_err(|e| e.to_string())?;
+        let result = unsafe { MessageBoxW(parent.0, text.as_ptr(), title.as_ptr(), 0x41) };
+        return match result { 1 => Ok(true), 2 => Ok(false), _ => Err("could not show release notice".into()) };
+    }
+    #[cfg(not(any(windows, target_os = "android")))]
+    Err("unsupported platform".into())
 }

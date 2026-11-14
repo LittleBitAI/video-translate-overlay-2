@@ -7,6 +7,9 @@ export type Reply = { status: number; body: any };
 type Invoke = (cmd: string, args?: unknown) => Promise<unknown>;
 
 const COMMANDS: Record<string, string> = {
+  'POST /updates/check': 'check_updates',
+  'POST /updates/dismiss': 'dismiss_update',
+  'POST /updates/open': 'open_update',
   'POST /browser/open': 'browser_open',
   'GET /browser': 'get_browser',
   'GET /library/data': 'get_library',
