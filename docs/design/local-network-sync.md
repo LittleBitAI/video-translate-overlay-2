@@ -186,3 +186,31 @@ The test audit kept all current assertions. The native settings screen used
 dirty working sources based on `840ca0c`; its embedded revision identifies that
 base, not a committed acceptance candidate. Screenshots and disposable profiles
 stay under ignored `artifacts/`. The full task remains incomplete.
+
+Native preparation then rebuilt Windows at `6840c7d`. Its running core marker,
+screen meta revision and actual disposable-profile digest all matched. The
+settings screen reported `signed_out`, generation 1, with no email or error.
+This verifies startup and the native status command, not Google authentication.
+The executable SHA-256 is
+`5cdef68d52691778b0eb1a5ab93fd4464a974a1e446801f2fa6301e864155e7c`.
+
+Both Android Rust targets compiled with `cargo tauri android build --debug --apk
+--target <x86_64|aarch64> --features app`. The CLI's subsequent JNI symlink step
+failed because Windows disallowed symlinks. Following the README fallback,
+the fresh target libraries were copied into their respective `jniLibs/` folders.
+`gradlew.bat -p src-tauri/gen/android assembleX86_64Debug -x
+rustBuildX86_64Debug --console=plain` and its `assembleArm64Debug -x
+rustBuildArm64Debug` counterpart both completed successfully. No compiler or
+signing checks were disabled.
+
+| Debug APK | SHA-256 |
+| --- | --- |
+| `app-x86_64-debug.apk` | `5a0ad3f8a628e37c12f61b52b3faeeeeaee64263eee694658308cf7c7d3125780` |
+| `app-arm64-debug.apk` | `eca0cdf5a158095afc5ce41ec1d55c8dc3bdf9620fb080c4acb830212b04dce9` |
+
+`apksigner verify --print-certs` accepted both files. Both retain certificate
+SHA-256 `fa6da2233c2062b48baf20b3562eacacce774da80f2e4bb3d20ec3a6a527ec28`,
+matching the registered Android client's SHA-1 and the existing release key.
+These are local debug builds, not approved distribution artifacts. No Android
+device was connected, no APK was installed on a user's phone, and no real
+Google sign-in or paid translation was performed in these preparation checks.
