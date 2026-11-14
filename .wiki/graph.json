@@ -14,8 +14,28 @@
    "kind": "link"
   },
   {
+   "a": "README.md",
+   "b": "docs/releases/procedure.md",
+   "kind": "link"
+  },
+  {
    "a": "docs/design/frontend.md",
    "b": "DESIGN.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/releases/acceptance.md",
+   "b": "docs/releases/0.1.7.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/releases/procedure.md",
+   "b": "docs/design/backend.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/releases/procedure.md",
+   "b": "docs/releases/0.1.7.md",
    "kind": "link"
   },
   {
@@ -87,13 +107,14 @@
  ],
  "orphans": [
   "docs/design/library-acceptance.md",
-  "docs/design/library-verification.md"
+  "docs/design/library-verification.md",
+  "docs/releases/acceptance.md"
  ],
  "counts": {
-  "docs": 6,
-  "linked": 1,
+  "docs": 9,
+  "linked": 3,
   "read": 3,
-  "orphans": 2,
+  "orphans": 3,
   "pages": 7,
   "decisions": 8,
   "injectable_decisions": 1
