@@ -59,6 +59,9 @@
   let gone = false;
   let generation = 0;
   let loadedJob = '';
+  let videoKey: string | undefined;
+  // A deletion can arrive before the first job response identifies this video.
+  const deletedKeys = new Set<string>();
   let deletionToken = $state<string | null>(null);
 
   const active = $derived(!!job && job.stage in STAGE);
@@ -88,6 +91,7 @@
   async function follow(j: Job | null) {
     look = 'done';
     job = j;
+    if (j) videoKey = j.video_key;
     const id = j ? `${(j as any).job_id ?? j.video_key}:${j.stage}` : '';
     if ((j?.stage === 'ready' || j?.stage === 'failed') && loadedJob !== id) {
       loadedJob = id;
@@ -102,6 +106,11 @@
     timer = undefined;
     const r = await request('GET', '/jobs', { page_url: pageUrl });
     if (gone || mine !== generation) return;
+    if (r.status === 200 && deletedKeys.has(r.body.video_key)) {
+      videoKey = r.body.video_key;
+      timer = setTimeout(poll, POLL_MS);
+      return;
+    }
     if (r.status === 404 || r.status === 410) {
       generation++; cues = []; loadedJob = ''; subs = 'none';
       deletionToken = r.body?.deletion_token ?? null;
@@ -116,6 +125,7 @@
   async function detect() {
     if (deletionToken && !confirm('삭제한 영상의 자막을 새로 만듭니다. 추가 API 비용이 발생할 수 있습니다. 번역을 시작할까요?')) return;
     const mine = ++generation;
+    if (videoKey) deletedKeys.delete(videoKey);
     if (timer) clearTimeout(timer);
     loadedJob = '';
     starting = true;
@@ -127,6 +137,8 @@
     if (gone || mine !== generation) return;
     starting = false;
     if (r.status === 200) {
+      videoKey = r.body.video_key;
+      if (deletedKeys.has(r.body.video_key)) return poll();
       job = { stage: r.body.stage, percent: 0, cost_krw: 0, failure_reason: null, video_key: r.body.video_key };
       if (r.body.stage === 'ready') await poll();
       else timer = setTimeout(poll, POLL_MS);
@@ -143,7 +155,11 @@
   }
 
   onMount(() => {
-    const invalidate = () => {
+    const invalidate = (event: Event) => {
+      const key = event instanceof MessageEvent ? event.data : (event as CustomEvent).detail;
+      if (typeof key !== 'string' || !key || (videoKey && key !== videoKey)) return;
+      deletedKeys.add(key);
+      if (!videoKey) return;
       generation++; job = null; cues = []; loadedJob = ''; starting = false;
       if (timer) clearTimeout(timer);
       poll();

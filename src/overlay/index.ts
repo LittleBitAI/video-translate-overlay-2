@@ -147,6 +147,9 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
   let destroyed = false;
   let generation = 0;
   let loadedJob = '';
+  let videoKey: string | undefined;
+  // A deletion can arrive before the first job response identifies this video.
+  const deletedKeys = new Set<string>();
   let deletionToken: string | null = null;
 
   const adShowing = () => !!(video.closest('.ad-showing') || document.querySelector('.html5-video-player.ad-showing'));
@@ -231,6 +234,8 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
     }
     if (r.status !== 200) return;
     const j = r.body;
+    videoKey = j.video_key;
+    if (deletedKeys.has(j.video_key)) return;
     const version = `${j.job_id}:${j.stage}`;
     if (j.stage === 'ready') {
       if (loadedJob !== version) { loadedJob = version; await loadSubtitles(j.video_key); }
@@ -254,6 +259,7 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
   button.addEventListener('click', async () => {
     if (deletionToken && !confirm('삭제한 영상의 자막을 새로 만듭니다. 추가 API 비용이 발생할 수 있습니다. 번역을 시작할까요?')) return;
     const mine = generation;
+    if (videoKey) deletedKeys.delete(videoKey);
     button.disabled = true;
     if (ready) {
       say('저장된 원문을 다시 번역하는 중… (API 비용 발생)');
@@ -287,6 +293,8 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
     const r = await request('POST', '/jobs', { page_url: pageUrl, media_url: media, title, duration_ms: durationMs, ...(deletionToken ? {deletion_token:deletionToken} : {}) });
     if (destroyed || mine !== generation) return;
     if (r.status === 200) {
+      videoKey = r.body.video_key;
+      if (deletedKeys.has(r.body.video_key)) return;
       if (r.body.stage === 'ready') {
         await loadSubtitles(r.body.video_key);
       } else {
@@ -309,7 +317,11 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
 
   poll(); // a job may already exist for this page (made earlier, or still running)
   if (!timer) timer = setInterval(poll, POLL_MS);
-  const invalidate = () => {
+  const invalidate = (event: Event) => {
+    const key = (event as CustomEvent).detail;
+    if (typeof key !== 'string' || !key || (videoKey && key !== videoKey)) return;
+    deletedKeys.add(key);
+    if (!videoKey) return;
     generation++; cues = []; ready = false; loadedJob = ''; render(); poll();
   };
   window.addEventListener('vto-video-deleted', invalidate);
