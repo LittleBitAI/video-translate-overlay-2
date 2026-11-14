@@ -51,6 +51,8 @@ serde_json = { version = "1", features = ["float_roundtrip"] }
 url = "2"
 sha2 = "0.10"
 getrandom = "0.3"
+# OIDC signature, issuer, audience, expiry and nonce verification; HTTP uses the existing client.
+openidconnect = { version = "4.0.1", default-features = false }
 # whisper.cpp, built from source for the target (CPU; Android through the NDK's CMake).
 whisper-rs = { version = "0.16", optional = true }
 tauri-plugin-notification = { version = "2", optional = true }
@@ -80,5 +82,6 @@ windows = { version = "0.61", features = [
   "Win32_System_Registry",
   "Win32_Media_MediaFoundation",
   "Win32_Security_Credentials",
+  "Win32_Security_Cryptography",
   "Win32_System_Com",
 ] }

@@ -338,7 +338,8 @@ pub struct Journal {
 }
 
 impl Journal {
-    pub fn open(root: &Path, google_subject: &str) -> Result<Self> {
+    pub fn open(root: &Path, identity: &crate::google_auth::VerifiedIdentity) -> Result<Self> {
+        let google_subject = identity.subject();
         if !text(google_subject, 255) || !google_subject.is_ascii() {
             return Err("invalid Google subject".into());
         }
@@ -348,6 +349,7 @@ impl Journal {
         let path = dir.join("sync.sqlite3");
         let db = Db::open(&path)?;
         db.exec("PRAGMA journal_mode=WAL")?;
+        db.exec("BEGIN IMMEDIATE")?;
         db.exec(SCHEMA)?;
         let mut random = [0u8; 16];
         getrandom::fill(&mut random).map_err(|e| e.to_string())?;
@@ -360,6 +362,7 @@ impl Journal {
             .query_one("SELECT replica FROM sync_meta WHERE id=1", &[])?
             .ok_or("missing sync metadata")?[0]
             .text();
+        db.exec("COMMIT")?;
         Ok(Self {
             path,
             account,

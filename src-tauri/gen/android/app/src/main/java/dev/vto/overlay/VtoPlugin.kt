@@ -69,6 +69,12 @@ class WatchArgs {
 
 @TauriPlugin
 class VtoPlugin(private val activity: Activity) : Plugin(activity) {
+    private val google by lazy { GoogleAccount(activity) }
+    @Command fun googleSignIn(invoke: Invoke) = google.signIn(invoke)
+    @Command fun googleCancel(invoke: Invoke) = google.cancel(invoke)
+    @Command fun getGoogleSession(invoke: Invoke) = google.get(invoke)
+    @Command fun setGoogleSession(invoke: Invoke) = google.set(invoke)
+    @Command fun deleteGoogleSession(invoke: Invoke) = google.delete(invoke)
     @Command
     fun updateNotice(invoke: Invoke) {
         val args = invoke.parseArgs(UpdateArgs::class.java)

@@ -327,6 +327,14 @@ pub fn run() {
                     extractor: Box::new(youtube::InnertubeExtractor),
                 },
             )?;
+            #[cfg(windows)]
+            core.account.configure(Arc::new(crate::account::WindowsAccount::new(&core.cfg.data_dir)))?;
+            #[cfg(target_os = "android")]
+            core.account.configure(Arc::new(app.state::<crate::android::Mobile>().inner().clone()))?;
+            let restore_core = core.clone();
+            tauri::async_runtime::spawn_blocking(move || {
+                if let Err(error) = restore_core.account.restore() { vto::log(error.to_string()); }
+            });
             app.manage(core);
             // The one window is also the site window on Android.
             crate::screens::show_main(&*app, cfg!(mobile).then_some(OVERLAY_JS))?;
@@ -367,6 +375,9 @@ pub fn run() {
         .build(ctx)
         .expect("start the app")
         .run(|app, event| {
+            if matches!(event, tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit) {
+                if let Some(core) = app.try_state::<Arc<Core>>() { core.account.shutdown(); }
+            }
             if matches!(event, tauri::RunEvent::Resumed) { foreground(app, None); }
         });
 }

@@ -4,6 +4,7 @@ The Rust side of the app, as designed in `docs/design/backend.md` and `docs/desi
 
 | File | What it does |
 | --- | --- |
+| `src/account.rs`, `src/google_auth.rs`, `src/google_desktop.rs`, `src/account_secrets.rs` | Native Google sign-in independent of YouTube: OIDC verification, Windows browser/PKCE loopback login, account generation/cancellation and DPAPI session storage. Android uses Credential Manager and its own Keystore key through `GoogleAccount.kt`. Local screens receive status only; HTTP tools and site overlays cannot start sign-in. Peer sync and library import are not connected yet. |
 | `src/sync.rs` | Account-scoped replication journal and validated transfer records, with durable deletion context and retry cursors. This storage component is not yet connected to authentication, the library, or networking. See `../docs/design/local-network-sync.md`. |
 | `src/updates.rs` | Anonymous approved GitHub release selection, bounded/coalesced checks, atomic dismissal high-water mark, and exact platform download validation. Native lifecycle hooks and video-site prompts are in `app.rs`; local screens use `src/ui/Updates.svelte`. See `../docs/releases/procedure.md`. |
 | `src/library_store.rs`, `src/library_api.rs` | Device-local library and manual playlists (P10/P11), additive SQLite tables, ordered memberships, and confirmed deletion with durable retry markers. Existing completed translations are read in place. Only local app screens may mutate the library. |

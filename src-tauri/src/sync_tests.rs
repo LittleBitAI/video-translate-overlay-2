@@ -8,7 +8,11 @@ impl Profile {
         Self(std::env::temp_dir().join(format!("vto-sync-{}", digest(&random))))
     }
     fn journal(&self, subject: &str) -> Journal {
-        Journal::open(&self.0, subject).unwrap()
+        Journal::open(
+            &self.0,
+            &crate::google_auth::VerifiedIdentity::fixture(subject),
+        )
+        .unwrap()
     }
 }
 impl Drop for Profile {

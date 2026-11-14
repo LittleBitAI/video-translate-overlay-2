@@ -26,7 +26,7 @@ real-account and physical-device checks during implementation.
 
 ## Create the registration
 
-The owner selected the following project and supplied the Windows client ID on
+The owner selected the following project and supplied all three client IDs on
 2026-11-15. These are public registration identifiers, recorded from the owner;
 they have not yet been validated by an actual app sign-in.
 
@@ -35,8 +35,8 @@ they have not yet been validated by an actual app sign-in.
 | Project name | `1234` |
 | Project ID | `gen-lang-client-0430697481` |
 | Windows Desktop client ID | `1072382283165-lar1422vmd8fnouh4dlpr771gcc7lq4f.apps.googleusercontent.com` |
-| Android client ID | Pending |
-| Android Web audience client ID | Pending |
+| Android client ID | `1072382283165-1fifmmjgf3k0ff15h1fe7aie4jdb1h5i.apps.googleusercontent.com` |
+| Android Web audience client ID | `1072382283165-3e4i7184unnrqunbr212i42hbg8fpics.apps.googleusercontent.com` |
 
 The CLI required reauthentication when inspecting this project. No cloud
 settings were changed; billing, audience, and published branding remain

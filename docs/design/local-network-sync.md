@@ -14,9 +14,25 @@ integration, and physical-device acceptance must all be completed before the
 task can be reported complete. See [Google registration](google-auth-setup.md).
 
 `src-tauri/src/sync.rs` implements the account-scoped journal and typed transfer
-format. It is not wired into the current app and opens no listener. Its focused
-tests are in `src-tauri/src/sync_tests.rs`. No existing user library is migrated
-or changed by this component.
+format. The native account manager opens it after verified sign-in. Production
+library projection, discovery and encrypted peer transfers are not implemented
+yet; no sync listener opens. No existing user library is imported or changed.
+
+The settings screen now starts a separate native Google sign-in: Windows uses
+the system browser with a temporary loopback callback, authorization code,
+PKCE S256, state and nonce; Android uses Credential Manager with a nonce and
+the registered Web audience. The core verifies Google's signature, issuer,
+audience, authorized party, expiry, nonce and verified email. The stable Google
+subject identifies the journal; email is only a display value. Windows builds
+and its isolated native settings screen have been observed; Android's Kotlin
+sign-in code compiles. Actual Google sign-in and device transfers still need
+native evidence.
+
+Windows seals the private session blob with user-scoped DPAPI. Android seals
+it with its own Keystore AES-GCM key, separate from Gemini credentials. Tokens
+never enter screen status or discovery. At this implementation stage an expired
+ID token requires explicit sign-in; token renewal is not implemented. The UI
+does not claim that identity setup enables synchronization.
 
 The user selected explicit confirmation before importing the legacy local
 library, with its original data preserved. Account registration is authorized
@@ -91,6 +107,21 @@ cannot share a transaction. Dropping the journal closes its WAL connection.
 
 ## Native ownership and screen integration
 
+The core owns one account manager and shared public-key verifier. Native setup
+supplies one OS credential provider and starts restoration on a blocking worker.
+Each login owns its cancellation ticket; the Windows worker owns and drops its
+loopback listener. The Android activity owns its Credential Manager request,
+cancelling it on destruction. Sign-out or replacement invalidates old tickets
+before deleting this app's saved Google session. Late completion cannot save
+credentials or open a journal for the replacement account.
+
+App exit marks all live tickets cancelled without waiting for a native callback
+on the UI thread. Session operations recheck cancellation and expiry. Screen
+requests capture both screen and account generations; only the action that
+started a new generation may adopt its result automatically. Other changes
+require an explicit status reload. Local HTTP development screens cannot start
+or stop a native account; site overlays retain only P6–P8.
+
 The signed-in native session must own discovery, the restricted listener or
 client connection, cancellation, and Android background work. Listener and
 discovery startup follow verified sign-in; sign-out, account replacement, and
@@ -133,3 +164,25 @@ versions, video deletion, and playlist deletion guard separate behaviors; no
 checks were deleted or skipped. The compiler still reports the existing
 `cfg(desktop)` warnings in `screens.rs`. The repository gate and final
 verification remain server-owned and pending.
+
+## Focused authentication evidence
+
+These checks cover the identity component and its local boundaries. They do not
+establish LAN transfers, public OAuth configuration, real Google account
+acceptance or physical Android behavior.
+
+| Command | Observed result |
+| --- | --- |
+| `cargo test -p video-translate-overlay --lib account:: -- --nocapture` | 7 passed. Includes account replacement, unsent-data isolation, cancellation before native launch, late sign-in and storage-write rejection, expiry, failed-worker recovery and shutdown without a UI-thread wait. |
+| `cargo test -p video-translate-overlay --lib google_ -- --nocapture` | 13 passed, including 12 signed-token/callback cases and the matching local HTTP restriction case. |
+| `cargo test -p video-translate-overlay --lib commands:: -- --nocapture` | 3 passed. Local account routes are covered; Windows and Android site pages retain only P6–P8. |
+| `cargo test -p video-translate-overlay --lib web:: -- --nocapture` | 5 passed, including HTTP refusal to start or end native sign-in and cross-origin rejection. |
+| `cargo test -p vto-contract-tests --test settings -- --nocapture` with `VTO_CONTRACT_HOST` naming the rebuilt host | 3 passed, including actual IPC refusal of all three account commands from site pages. |
+| `npx vitest run -c vitest.ui.config.ts tests/ui/google-account.test.ts tests/ui/preferences.test.ts tests/ui/updates.test.ts` | 26 passed in Chromium. Includes generations, cancellation, retired views, explicit sign-out and layouts at 384, 400 and 1280 px with production CSS. |
+| `cargo build -p video-translate-overlay --features app --bin video-translate-overlay` | Passed on Windows with the existing local libclang. The isolated WebView2 screen displayed the account controls and no existing saved key. |
+| `gradlew.bat -p src-tauri/gen/android :app:compileX86_64DebugKotlin -x rustBuildX86_64Debug --console=plain` | Passed with the existing local SDK and JDK 17 archive. Google ID 1.1.1 retains Kotlin 2.2 compatibility; 1.2.1 failed its metadata-version check and no compiler check was suppressed. This is Kotlin compilation, not APK acceptance. |
+
+The test audit kept all current assertions. The native settings screen used
+dirty working sources based on `840ca0c`; its embedded revision identifies that
+base, not a committed acceptance candidate. Screenshots and disposable profiles
+stay under ignored `artifacts/`. The full task remains incomplete.

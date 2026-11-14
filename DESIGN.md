@@ -27,8 +27,9 @@ controls and titles, and 14 px for source links and availability. Controls have
 at least 44 px touch targets. Rows and controls wrap at phone widths; links wrap
 without hiding their destination.
 
-All requests belong to this device's SQLite database, with no accounts or cloud
-scope. Each screen captures its generation when a request begins and ignores a
+Library requests currently belong to this device's existing SQLite database.
+Google sign-in has its own account scope; it does not yet import or replace
+that library. Each screen captures its generation when a request begins and ignores a
 response from an older generation or retired screen. Mutation authorization is
 separate from rendering: a retired screen may finish an authorized backend
 mutation, but cannot publish its result into the replacement screen. A mutation
@@ -39,3 +40,11 @@ data removal and future translation costs. Failed cleanup hides subtitles and
 keeps a retry action. Playback views recheck saved availability, discard older
 subtitle responses, and clear cues after deletion. Untranslated links can be
 organized and opened without creating a translation job.
+
+People use the Google account section in `/preferences` to choose the identity
+for the pending local-network connection, separately from YouTube and Gemini.
+It uses the same approved palette, card spacing, type hierarchy and 44 px
+controls. Show the verified email, progress, cancellation and recovery inline;
+confirm sign-out and preserve existing saved data. A signed-in identity alone
+must not appear as an established sync connection. Account responses must match
+the captured account generation as well as the screen generation.

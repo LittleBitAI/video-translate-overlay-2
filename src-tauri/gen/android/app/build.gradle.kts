@@ -71,6 +71,10 @@ rust {
 }
 
 dependencies {
+    implementation("androidx.credentials:credentials:1.6.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.6.0")
+    // 1.2.1 requires Kotlin 2.4 metadata; keep the project's Kotlin 2.2 toolchain.
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
     implementation("androidx.webkit:webkit:1.14.0")
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.activity:activity-ktx:1.10.1")

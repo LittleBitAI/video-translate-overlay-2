@@ -5,6 +5,40 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/account": {
+      "get": {
+        "operationId": "P15",
+        "summary": "Native app Google account status, separate from YouTube. App screens only. Never return tokens, subject, nonce, paths or credentials.",
+        "responses": {
+          "200": {"description": "generation, state (unsupported/loading/signed_out/signing_in/signed_in/expired/unavailable), email or null, fixed error or null, and sync_ready. Identity alone does not imply an established sync connection."},
+          "503": {"description": "Account status unavailable"}
+        }
+      }
+    },
+    "/account/sign-in": {
+      "post": {
+        "operationId": "P16",
+        "summary": "Start native Google sign-in for the captured account generation. Return that operation's pending generation before waiting for the browser/account picker. Local native screens only; HTTP returns 403 native_required.",
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["generation"], "properties": {"generation": {"type": "integer", "minimum": 0}}}}}},
+        "responses": {
+          "200": {"description": "Whitelisted account status. Poll P15 for completion; P17 cancels using this operation's generation."},
+          "409": {"description": "Captured generation is stale or the operation was cancelled"},
+          "503": {"description": "Native sign-in or credential storage unavailable"}
+        }
+      }
+    },
+    "/account/sign-out": {
+      "post": {
+        "operationId": "P17",
+        "summary": "Cancel the captured native Google session or pending sign-in and clear only its sealed Google credentials. Preserve saved data, Gemini key and YouTube cookies. Native app screen only; HTTP returns 403 native_required.",
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["generation"], "properties": {"generation": {"type": "integer", "minimum": 0}}}}}},
+        "responses": {
+          "200": {"description": "Whitelisted status at the new generation"},
+          "409": {"description": "Captured generation is stale"},
+          "503": {"description": "Native credential deletion unavailable; old in-memory tickets remain cancelled"}
+        }
+      }
+    },
     "/updates/check": {
       "post": {
         "operationId": "P12",

@@ -3,6 +3,9 @@
 //! and the device services those need.
 
 pub mod api;
+pub mod account;
+#[cfg(windows)]
+pub mod account_secrets;
 #[cfg(all(feature = "app", target_os = "android"))]
 pub mod android;
 #[cfg(feature = "app")]
@@ -13,6 +16,8 @@ pub mod db;
 // MPEG-TS everywhere; every other format off Windows.
 mod decode;
 pub mod gemini;
+pub mod google_auth;
+pub mod google_desktop;
 pub mod http;
 pub mod media;
 pub mod pipeline;
@@ -111,6 +116,7 @@ pub const GEMINI_BASE_URL: &str = "https://generativelanguage.googleapis.com";
 
 /// Everything the commands and the worker share.
 pub struct Core {
+    pub account: account::Manager,
     pub updates: updates::Checker,
     pub cfg: Config,
     pub store: store::Store,
@@ -125,7 +131,8 @@ impl Core {
     pub fn start(cfg: Config, svc: Services) -> Result<Arc<Core>, String> {
         std::fs::create_dir_all(cfg.data_dir.join("audio")).map_err(|e| format!("data folder: {e}"))?;
         let store = store::Store::open(&cfg.data_dir.join("app.sqlite3"))?;
-        let core = Arc::new(Core { cfg, store, svc, updates: updates::Checker::default(), wake: (Mutex::new(false), Condvar::new()), create_lock: Mutex::new(()) });
+        let account = account::Manager::new(cfg.data_dir.clone());
+        let core = Arc::new(Core { cfg, store, svc, account, updates: updates::Checker::default(), wake: (Mutex::new(false), Condvar::new()), create_lock: Mutex::new(()) });
         let worker = core.clone();
         std::thread::Builder::new().name("jobs".into()).spawn(move || pipeline::run_worker(worker)).map_err(|e| e.to_string())?;
         Ok(core)

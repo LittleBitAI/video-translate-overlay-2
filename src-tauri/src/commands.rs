@@ -14,8 +14,8 @@ use tauri::utils::acl::{capability::Capability, manifest::Manifest, resolved::Re
 use tauri::{Runtime, State};
 
 /// Every registered command, P1 to P11.
-pub const COMMANDS: [&str; 14] =
-    ["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles", "get_browser", "get_library", "library_action", "check_updates", "dismiss_update", "open_update"];
+pub const COMMANDS: [&str; 17] =
+    ["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles", "get_browser", "get_library", "library_action", "check_updates", "dismiss_update", "open_update", "get_google_account", "google_sign_in", "google_sign_out"];
 
 /// The commands a site page (the overlay) may call.
 pub const OVERLAY_COMMANDS: [&str; 3] = ["create_job", "get_job", "get_subtitles"];
@@ -61,6 +61,50 @@ async fn blocking(f: impl FnOnce() -> ApiResult + Send + 'static) -> ApiResult {
 }
 
 type Shared<'a> = State<'a, Arc<Core>>;
+
+fn account_error(error: crate::google_auth::AuthError) -> ApiError {
+    use crate::google_auth::AuthError;
+    let (status, code, message) = match error {
+        AuthError::Expired => (401, "auth_expired", "Google 로그인이 만료됐습니다. 다시 로그인해 주세요."),
+        AuthError::Unavailable => (503, "auth_unavailable", "Google 로그인을 확인하지 못했습니다. 앱과 네트워크를 확인한 뒤 다시 시도해 주세요."),
+        AuthError::AccountMismatch => (403, "account_mismatch", "같은 Google 계정으로 로그인한 기기끼리만 연결할 수 있습니다."),
+        AuthError::Cancelled => (409, "auth_cancelled", "로그인이 취소됐거나 계정 상태가 바뀌었습니다."),
+        AuthError::Denied => (403, "auth_denied", "Google 로그인에 동의하지 않았습니다."),
+        AuthError::TimedOut => (408, "auth_timeout", "Google 로그인 시간이 지났습니다. 다시 시도해 주세요."),
+        _ => (401, "auth_invalid", "Google 로그인을 완료하지 못했습니다. 다시 시도해 주세요."),
+    };
+    api::err(status, code, message)
+}
+
+#[tauri::command(async, rename_all = "snake_case")]
+pub async fn get_google_account(core: Shared<'_>) -> ApiResult {
+    serde_json::to_value(core.account.status().map_err(account_error)?).map_err(|_| api::err(500, "internal", "계정 상태를 불러오지 못했습니다."))
+}
+
+#[tauri::command(async, rename_all = "snake_case")]
+pub async fn google_sign_in(core: Shared<'_>, generation: u64) -> ApiResult {
+    let core = core.inner().clone();
+    blocking(move || {
+        let attempt = core.account.begin_sign_in(generation).map_err(account_error)?;
+        let pending = core.account.pending_status(&attempt).map_err(account_error)?;
+        let worker = core.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            let generation = attempt.generation;
+            if std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| worker.account.finish_sign_in(attempt))).is_err() {
+                worker.account.fail_attempt(generation);
+            }
+        });
+        serde_json::to_value(pending).map_err(|_| api::err(500, "internal", "계정 상태를 불러오지 못했습니다."))
+    }).await
+}
+
+#[tauri::command(async, rename_all = "snake_case")]
+pub async fn google_sign_out(core: Shared<'_>, generation: u64) -> ApiResult {
+    let core = core.inner().clone();
+    blocking(move || {
+        serde_json::to_value(core.account.sign_out(generation).map_err(account_error)?).map_err(|_| api::err(500, "internal", "계정 상태를 불러오지 못했습니다."))
+    }).await
+}
 
 #[tauri::command(async, rename_all = "snake_case")]
 pub async fn check_updates(core: Shared<'_>, manual: Option<bool>) -> ApiResult {
@@ -154,6 +198,9 @@ pub fn register<R: Runtime>(builder: tauri::Builder<R>, core: Arc<Core>) -> taur
 /// Only the handlers; the app manages its `Arc<Core>` in `setup`, once its data folder is known.
 pub fn handlers<R: Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
     builder.invoke_handler(tauri::generate_handler![
+        get_google_account,
+        google_sign_in,
+        google_sign_out,
         browser_open,
         clear_site_data,
         get_settings,
@@ -175,6 +222,9 @@ pub fn handlers<R: Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
 pub fn route(method: &str, path: &str, body: &Value) -> Option<(&'static str, Value)> {
     let mut args = if body.is_object() { body.clone() } else { json!({}) };
     let cmd = match (method, path) {
+        ("GET", "/account") => "get_google_account",
+        ("POST", "/account/sign-in") => "google_sign_in",
+        ("POST", "/account/sign-out") => "google_sign_out",
         ("POST", "/updates/check") => "check_updates",
         ("POST", "/updates/dismiss") => "dismiss_update",
         ("POST", "/updates/open") => "open_update",
@@ -224,6 +274,9 @@ mod tests {
     #[test]
     fn routes_cover_every_command() {
         let mut seen: Vec<&str> = [
+            ("GET", "/account"),
+            ("POST", "/account/sign-in"),
+            ("POST", "/account/sign-out"),
             ("POST", "/updates/check"),
             ("POST", "/updates/dismiss"),
             ("POST", "/updates/open"),
