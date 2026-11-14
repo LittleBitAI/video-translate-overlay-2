@@ -146,6 +146,7 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
   let ticker: ReturnType<typeof setInterval> | undefined;
   let destroyed = false;
   let generation = 0;
+  let creating: number | undefined;
   let loadedJob = '';
   let videoKey: string | undefined;
   // A deletion can arrive before the first job response identifies this video.
@@ -221,7 +222,8 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
 
   /** One look at the job: shows its progress, or loads the subtitles once ready. */
   const poll = async () => {
-    if (document.visibilityState === 'hidden') return;
+    // Explicit creation owns progress until preparation and its request finish.
+    if (creating === generation || document.visibilityState === 'hidden') return;
     const mine = generation;
     const r = await request('GET', '/jobs', { page_url: pageUrl });
     if (destroyed || mine !== generation) return;
@@ -261,56 +263,66 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
     const mine = ++generation;
     // Consent starts a new attempt even when the earlier video's key is unknown.
     deletedKeys.clear();
-    button.disabled = true;
-    if (ready) {
-      say('저장된 원문을 다시 번역하는 중… (API 비용 발생)');
-      const r = await request('POST', '/jobs', { page_url: pageUrl, retranslate: true });
-      if (destroyed || mine !== generation) return;
-      if (r.status !== 200) {
-        button.disabled = false;
-        say(r.body?.message ?? '다시 번역을 시작하지 못했습니다.');
+    creating = mine;
+    try {
+      button.disabled = true;
+      if (ready) {
+        say('저장된 원문을 다시 번역하는 중… (API 비용 발생)');
+        const r = await request('POST', '/jobs', { page_url: pageUrl, retranslate: true });
+        if (destroyed || mine !== generation) return;
+        if (r.status !== 200) {
+          button.disabled = false;
+          say(r.body?.message ?? '다시 번역을 시작하지 못했습니다.');
+          return;
+        }
+        generation++;
+        ready = false;
+        loadedJob = '';
+        if (!timer) timer = setInterval(poll, POLL_MS);
+        await poll();
         return;
       }
-      generation++;
-      ready = false;
-      loadedJob = '';
-      if (!timer) timer = setInterval(poll, POLL_MS);
-      await poll();
-      return;
-    }
-    // While an ad plays, the player's length and media are the ad's: start once it is over.
-    if (adShowing()) {
-      say('광고가 끝나면 작업을 시작합니다.');
-      // Then up to 10 s for the lecture's length to be known (the backend refuses an unknown one).
-      let left = 10_000;
-      while (adShowing() || (!(video.duration > 0) && (left -= 250) > 0)) {
-        await new Promise((r) => setTimeout(r, 250));
-        if (destroyed || mine !== generation) return;
+      // While an ad plays, the player's length and media are the ad's: start once it is over.
+      if (adShowing()) {
+        say('광고가 끝나면 작업을 시작합니다.');
+        // Then up to 10 s for the lecture's length to be known (the backend refuses an unknown one).
+        let left = 10_000;
+        while (adShowing() || (!(video.duration > 0) && (left -= 250) > 0)) {
+          await new Promise((r) => setTimeout(r, 250));
+          if (destroyed || mine !== generation) return;
+        }
       }
-    }
-    say('작업을 만드는 중…');
-    const durationMs = Number.isFinite(video.duration) ? Math.round(video.duration * 1000) : 0;
-    const media = typeof mediaUrl === 'function' ? await mediaUrl() : mediaUrl;
-    if (destroyed || mine !== generation) return;
-    const r = await request('POST', '/jobs', { page_url: pageUrl, media_url: media, title, duration_ms: durationMs, ...(deletionToken ? {deletion_token:deletionToken} : {}) });
-    if (destroyed || mine !== generation) return;
-    if (r.status === 200) {
-      videoKey = r.body.video_key;
-      if (deletedKeys.has(r.body.video_key)) return;
-      generation++;
-      if (r.body.stage === 'ready') {
-        await loadSubtitles(r.body.video_key);
-      } else {
-        say(`${STAGE_KO[r.body.stage] ?? r.body.stage} 0%`);
-        if (!timer) timer = setInterval(poll, POLL_MS);
+      say('작업을 만드는 중…');
+      const durationMs = Number.isFinite(video.duration) ? Math.round(video.duration * 1000) : 0;
+      const media = typeof mediaUrl === 'function' ? await mediaUrl() : mediaUrl;
+      if (destroyed || mine !== generation) return;
+      const r = await request('POST', '/jobs', { page_url: pageUrl, media_url: media, title, duration_ms: durationMs, ...(deletionToken ? {deletion_token:deletionToken} : {}) });
+      if (destroyed || mine !== generation) return;
+      if (r.status === 200) {
+        videoKey = r.body.video_key;
+        if (deletedKeys.has(r.body.video_key)) return;
+        generation++;
+        if (r.body.stage === 'ready') {
+          await loadSubtitles(r.body.video_key);
+        } else {
+          say(`${STAGE_KO[r.body.stage] ?? r.body.stage} 0%`);
+          if (!timer) timer = setInterval(poll, POLL_MS);
+        }
+        return;
       }
-      return;
+      button.disabled = false;
+      if (r.status === 410) deletionToken = r.body?.deletion_token ?? null;
+      if (r.status === 428) say(FAILURE_KO.no_key);
+      else if (r.status === 409) say('다른 영상의 작업이 돌고 있습니다. 끝난 뒤에 다시 눌러 주세요.');
+      else say(r.body?.message ?? `작업을 시작하지 못했습니다 (${r.status}).`);
+    } catch {
+      if (!destroyed && mine === generation) {
+        button.disabled = false;
+        say('작업을 시작하지 못했습니다. 다시 눌러 주세요.');
+      }
+    } finally {
+      if (creating === mine) creating = undefined;
     }
-    button.disabled = false;
-    if (r.status === 410) deletionToken = r.body?.deletion_token ?? null;
-    if (r.status === 428) say(FAILURE_KO.no_key);
-    else if (r.status === 409) say('다른 영상의 작업이 돌고 있습니다. 끝난 뒤에 다시 눌러 주세요.');
-    else say(r.body?.message ?? `작업을 시작하지 못했습니다 (${r.status}).`);
   });
 
   const onVisible = () => {
