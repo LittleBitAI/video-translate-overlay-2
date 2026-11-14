@@ -99,6 +99,8 @@ show an accessible dismissible banner. If a video site occupies the foreground,
 a native in-app prompt shows the version and feature summary, with download and
 dismiss actions; remote sites receive no new IPC permissions. There is no
 background schedule, OS update notification, automatic download, or installer.
+Native prompts run on the window's UI thread; only the update-check worker waits
+for the user's choice.
 
 Only one network request runs at a time per core. Automatic checks reuse results
 for 60 seconds. HTTP operations time out after 5 seconds; callers wait at most

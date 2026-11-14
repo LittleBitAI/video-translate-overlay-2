@@ -423,8 +423,14 @@ fn site_update_notice(_app: &AppHandle<Wry>, _window: &tauri::WebviewWindow<Wry>
         let wide = |s: &str| s.encode_utf16().chain([0]).collect::<Vec<_>>();
         let title = wide(&format!("새 버전 {}", update.version));
         let text = wide(&format!("{}\n\n{}\n\n확인: 브라우저에서 내려받기\n취소: 이 버전 알림 닫기", update.summary, update.download_url));
-        let parent = _window.hwnd().map_err(|e| e.to_string())?;
-        let result = unsafe { MessageBoxW(parent.0, text.as_ptr(), title.as_ptr(), 0x41) };
+        let parent = _window.hwnd().map_err(|e| e.to_string())?.0 as isize;
+        let (reply, action) = std::sync::mpsc::channel();
+        // The modal belongs to the window's UI thread; only this worker waits for the user's choice.
+        _app.run_on_main_thread(move || {
+            let result = unsafe { MessageBoxW(parent as *mut _, text.as_ptr(), title.as_ptr(), 0x41) };
+            let _ = reply.send(result);
+        }).map_err(|e| e.to_string())?;
+        let result = action.recv().map_err(|e| e.to_string())?;
         return match result { 1 => Ok(true), 2 => Ok(false), _ => Err("could not show release notice".into()) };
     }
     #[cfg(not(any(windows, target_os = "android")))]
