@@ -30,6 +30,11 @@
   },
   {
    "a": "docs/releases/procedure.md",
+   "b": "docs/releases/acceptance.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/releases/procedure.md",
    "b": "docs/design/backend.md",
    "kind": "link"
   },
@@ -107,16 +112,15 @@
  ],
  "orphans": [
   "docs/design/library-acceptance.md",
-  "docs/design/library-verification.md",
-  "docs/releases/acceptance.md"
+  "docs/design/library-verification.md"
  ],
  "counts": {
   "docs": 9,
-  "linked": 3,
+  "linked": 4,
   "read": 3,
-  "orphans": 3,
+  "orphans": 2,
   "pages": 7,
-  "decisions": 8,
+  "decisions": 9,
   "injectable_decisions": 1
  }
 }
