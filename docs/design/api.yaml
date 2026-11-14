@@ -23,7 +23,7 @@
         "responses": {
           "200": {"description": "Whitelisted account status. Poll P15 for completion; P17 cancels using this operation's generation."},
           "409": {"description": "Captured generation is stale or the operation was cancelled"},
-          "503": {"description": "Native sign-in or credential storage unavailable"}
+          "503": {"description": "Native sign-in or credential storage unavailable, or auth_registration when the publisher's Desktop client registration is missing or rejected. Never include provider response bodies or credentials."}
         }
       }
     },

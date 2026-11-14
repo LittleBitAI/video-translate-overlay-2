@@ -214,3 +214,35 @@ matching the registered Android client's SHA-1 and the existing release key.
 These are local debug builds, not approved distribution artifacts. No Android
 device was connected, no APK was installed on a user's phone, and no real
 Google sign-in or paid translation was performed in these preparation checks.
+
+## Desktop registration correction
+
+The subsequent user-assisted Windows attempt failed. The running `6840c7d`
+core reported `Google identity verification unavailable`; its token exchange
+mapped every provider rejection to that generic error. No Google identity was
+accepted. A bounded diagnostic POST to Google's real token endpoint, using the
+selected public Desktop client ID and an intentionally invalid code, returned
+HTTP 400 `invalid_request` and `client_secret is missing`. No real grant or token
+was sent in that diagnostic, and no response credentials were logged.
+
+The exchange now includes the publisher's Desktop client secret through the
+OIDC client library. Registration errors map to a fixed app-configuration
+message; transport failures remain separate. Provider bodies are never returned
+to screens. The secret never enters the authorization URL. The publisher's
+Windows build reads the bounded, validated local JSON described in
+[Google registration](google-auth-setup.md); Android and contract/HTTP builds
+do not read or embed it. PKCE and signed identity checks remain required.
+
+`cargo test -p video-translate-overlay --lib google_ -- --nocapture` passed 15
+tests after this correction. `cargo test -p video-translate-overlay --lib
+commands:: -- --nocapture` passed 3, and `npx vitest run -c vitest.ui.config.ts
+tests/ui/google-account.test.ts` passed 10 in Chromium. The cleanup audit
+retained current callback, signature, transport, registration and UI checks;
+none were removed or skipped.
+
+The corrected Windows build was attempted and intentionally failed its new
+missing-registration check: the selected Desktop JSON is not present locally.
+The earlier executable and APK receipts do not validate this correction. A new
+native build and successful user-assisted sign-in remain blocked on that local
+publisher file. Public OAuth availability, LAN implementation, physical-device
+acceptance and the server-owned gate remain unfinished.

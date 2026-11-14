@@ -1,6 +1,11 @@
 use super::*;
 
 const NONCE: &str = "9d53c2d19d3b82ed94901d58a24dab623191dad252a7eb36730dcfb75915b515";
+const SECRET: &str = "offline-publisher-fixture";
+
+fn bind(nonce: &str) -> Result<DesktopLogin, AuthError> {
+    DesktopLogin::bind_with_secret(nonce, SECRET)
+}
 
 fn request(login: &DesktopLogin, query: &str) -> String {
     format!(
@@ -11,8 +16,8 @@ fn request(login: &DesktopLogin, query: &str) -> String {
 
 #[test]
 fn callback_is_armed_before_the_browser_url_and_uses_fresh_state_and_pkce() {
-    let login = DesktopLogin::bind(NONCE).unwrap();
-    let other = DesktopLogin::bind(NONCE).unwrap();
+    let login = bind(NONCE).unwrap();
+    let other = bind(NONCE).unwrap();
     let url = url::Url::parse(login.authorization_url()).unwrap();
     assert_eq!(url.scheme(), "https");
     assert_eq!(url.host_str(), Some("accounts.google.com"));
@@ -22,6 +27,8 @@ fn callback_is_armed_before_the_browser_url_and_uses_fresh_state_and_pkce() {
     assert_eq!(params["response_type"], "code");
     assert_eq!(params["code_challenge_method"], "S256");
     assert_eq!(params["nonce"], NONCE);
+    assert!(!params.contains_key("client_secret"));
+    assert!(!login.authorization_url().contains(SECRET));
     let scopes: std::collections::BTreeSet<_> = params["scope"].split_whitespace().collect();
     assert_eq!(
         scopes,
@@ -48,7 +55,7 @@ fn callback_is_armed_before_the_browser_url_and_uses_fresh_state_and_pkce() {
 
 #[test]
 fn invalid_callbacks_leave_the_pending_attempt_usable_and_valid_codes_are_consumed_once() {
-    let mut login = DesktopLogin::bind(NONCE).unwrap();
+    let mut login = bind(NONCE).unwrap();
     let query = format!("code=fixture-code&state={}", login.state.secret());
     let valid = request(&login, &query);
     let host = login.listener.local_addr().unwrap().to_string();
@@ -82,7 +89,7 @@ fn denial_and_provider_errors_consume_only_the_matching_attempt() {
         ("access_denied", AuthError::Denied),
         ("server_error", AuthError::ProviderRejected),
     ] {
-        let mut login = DesktopLogin::bind(NONCE).unwrap();
+        let mut login = bind(NONCE).unwrap();
         let callback = request(
             &login,
             &format!("error={error}&state={}", login.state.secret()),
@@ -95,7 +102,7 @@ fn denial_and_provider_errors_consume_only_the_matching_attempt() {
 
 #[test]
 fn actual_loopback_callback_returns_no_code_state_or_credentials_to_the_browser() {
-    let mut login = DesktopLogin::bind(NONCE).unwrap();
+    let mut login = bind(NONCE).unwrap();
     let address = login.listener.local_addr().unwrap();
     let callback = request(
         &login,
@@ -125,7 +132,7 @@ fn actual_loopback_callback_returns_no_code_state_or_credentials_to_the_browser(
 
 #[test]
 fn cancellation_timeouts_and_oversized_callbacks_release_the_attempt() {
-    let mut login = DesktopLogin::bind(NONCE).unwrap();
+    let mut login = bind(NONCE).unwrap();
     assert!(matches!(
         login.wait(&AtomicBool::new(true), Duration::from_secs(3)),
         Err(AuthError::Cancelled)
@@ -151,10 +158,66 @@ fn cancellation_timeouts_and_oversized_callbacks_release_the_attempt() {
     drop(socket);
     drop(login);
     assert!(TcpListener::bind(address).is_ok());
-    assert!(matches!(
-        DesktopLogin::bind("short"),
-        Err(AuthError::Invalid)
-    ));
+    assert!(matches!(bind("short"), Err(AuthError::Invalid)));
+}
+
+#[test]
+fn exchange_sends_publisher_registration_only_to_token_endpoint_and_classifies_safe_errors() {
+    for (body, expected) in [
+        (
+            r#"{"error":"invalid_request","error_description":"client_secret is missing. private-value"}"#,
+            AuthError::Registration,
+        ),
+        (
+            r#"{"error":"invalid_client","error_description":"private-value"}"#,
+            AuthError::Registration,
+        ),
+        (
+            r#"{"error":"invalid_grant","error_description":"private-value"}"#,
+            AuthError::ProviderRejected,
+        ),
+        (
+            r#"{"error":"invalid_request","error_description":"other private-value"}"#,
+            AuthError::ProviderRejected,
+        ),
+        ("private-value-not-json", AuthError::ProviderRejected),
+    ] {
+        let login = bind(NONCE).unwrap();
+        let result = client(&login.redirect, &login.client_secret)
+            .exchange_code(AuthorizationCode::new("fixture-code".into()))
+            .set_pkce_verifier(PkceCodeVerifier::new("fixture-verifier".into()))
+            .request(&|request: HttpRequest| -> Result<HttpResponse, AuthError> {
+                assert_eq!(request.uri().to_string(), TOKEN_URL);
+                assert_eq!(request.method(), "POST");
+                let fields: BTreeMap<_, _> = url::form_urlencoded::parse(request.body()).collect();
+                assert_eq!(fields["client_id"], DESKTOP_CLIENT_ID);
+                assert_eq!(fields["client_secret"], SECRET);
+                assert_eq!(fields["code_verifier"], "fixture-verifier");
+                assert_eq!(fields["redirect_uri"], login.redirect.as_str());
+                Ok(openidconnect::http::Response::builder()
+                    .status(400)
+                    .header("Content-Type", "application/json")
+                    .body(body.as_bytes().to_vec())
+                    .unwrap())
+            })
+            .map_err(exchange_error);
+        assert_eq!(result.err().unwrap(), expected);
+        assert!(!expected.to_string().contains("private-value"));
+    }
+    let login = bind(NONCE).unwrap();
+    let result = client(&login.redirect, &login.client_secret)
+        .exchange_code(AuthorizationCode::new("fixture-code".into()))
+        .request(&|_: HttpRequest| -> Result<HttpResponse, AuthError> {
+            Err(AuthError::Unavailable)
+        })
+        .map_err(exchange_error);
+    assert_eq!(result.err().unwrap(), AuthError::Unavailable);
+    if DESKTOP_CLIENT_SECRET.is_none() {
+        assert!(matches!(
+            DesktopLogin::bind(NONCE),
+            Err(AuthError::Registration)
+        ));
+    }
 }
 
 #[test]

@@ -135,6 +135,12 @@ npm ci --prefer-offline --no-audit --no-fund
 
 ### Windows 데스크톱 앱
 
+The publisher's Windows app build needs the existing Desktop OAuth credential
+JSON at `artifacts/google-oauth/desktop-client.json`, or its local path in
+`VTO_GOOGLE_DESKTOP_CLIENT_JSON`. Follow the [Google registration guide](docs/design/google-auth-setup.md).
+Installed-app users sign in directly; they do not supply credentials or client
+IDs. Android builds do not need the Desktop credential file.
+
 PowerShell에서 `LIBCLANG_PATH`를 `libclang.dll`이 있는 폴더로 지정한 뒤 실행합니다.
 
 ```powershell

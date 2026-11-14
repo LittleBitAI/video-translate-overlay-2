@@ -68,6 +68,7 @@ fn account_error(error: crate::google_auth::AuthError) -> ApiError {
         AuthError::Expired => (401, "auth_expired", "Google 로그인이 만료됐습니다. 다시 로그인해 주세요."),
         AuthError::Unavailable => (503, "auth_unavailable", "Google 로그인을 확인하지 못했습니다. 앱과 네트워크를 확인한 뒤 다시 시도해 주세요."),
         AuthError::AccountMismatch => (403, "account_mismatch", "같은 Google 계정으로 로그인한 기기끼리만 연결할 수 있습니다."),
+        AuthError::Registration => (503, "auth_registration", "앱의 Google 로그인 등록 정보를 확인하지 못했습니다. 앱 제공자에게 문의해 주세요."),
         AuthError::Cancelled => (409, "auth_cancelled", "로그인이 취소됐거나 계정 상태가 바뀌었습니다."),
         AuthError::Denied => (403, "auth_denied", "Google 로그인에 동의하지 않았습니다."),
         AuthError::TimedOut => (408, "auth_timeout", "Google 로그인 시간이 지났습니다. 다시 시도해 주세요."),

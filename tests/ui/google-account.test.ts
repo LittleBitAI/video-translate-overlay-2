@@ -140,6 +140,15 @@ test('an initial account response cannot publish into a replacement settings scr
   expect(text(root)).not.toContain('retired@example.org');
 });
 
+test('publisher registration failure names the app configuration and keeps account credentials private', async () => {
+  native(() => ({ ...signedOut(), error: 'Google Desktop registration is missing or invalid' }));
+  const root = open('/preferences');
+  await vi.waitFor(() => expect(text(root)).toContain('앱 제공자가 Google 로그인 등록 정보를 수정해야 합니다'));
+  expect(text(root)).not.toContain('계정과 네트워크를 확인');
+  expect(text(root)).not.toContain('client_secret');
+  expect(text(root)).not.toContain('Google Desktop registration');
+});
+
 test.each([384, 400, 1280])('Google account controls and long addresses fit a %s pixel screen', async width => {
   await page.viewport(width, 854);
   native(() => ({ ...signedOut(), state: 'signed_in', email: `${'account'.repeat(25)}@example.org` }));

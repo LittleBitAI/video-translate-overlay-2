@@ -18,6 +18,7 @@ mod decode;
 pub mod gemini;
 pub mod google_auth;
 pub mod google_desktop;
+mod google_registration;
 pub mod http;
 pub mod media;
 pub mod pipeline;

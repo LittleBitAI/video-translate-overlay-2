@@ -102,10 +102,36 @@ review is not an accepted public configuration.
 
 ## Implementation handoff and acceptance
 
-The implementation needs the project ID and the three public client IDs. The
-Windows credential download stays local for any installed-client configuration
-the implementation requires. These registrations belong to the app publisher;
-ordinary app users must not create their own projects or supply client IDs.
+The project and all three public client IDs are recorded above. The Windows
+publisher build also needs the selected Desktop client's credential JSON.
+Although Google's desktop guide labels `client_secret` optional, a diagnostic
+request against this registration on 2026-11-15 returned HTTP 400,
+`invalid_request`, with `client_secret is missing`. The original implementation
+omitted this field and incorrectly classified the exchange failure as a
+verification outage. The repaired exchange includes it and reports registration
+rejection separately from network failure.
+
+Download the existing Desktop client's JSON from the selected project's Clients
+page and save it locally as `artifacts/google-oauth/desktop-client.json`. An
+existing download elsewhere may instead be named by the build environment
+variable `VTO_GOOGLE_DESKTOP_CLIENT_JSON`. Do not paste the file or its contents
+into chat. If Google no longer supplies the original secret, report that state;
+do not rotate or recreate a client automatically.
+
+The build validates the `installed` client type, exact project and Desktop
+client ID, a bounded secret, and UTF-8 without BOM. Missing or mismatched
+configuration stops a Windows app build before opening another broken login.
+The file is read only by the publisher's Windows app build. Android builds and
+default contract/HTTP tools do not read or embed it. Generated native source
+stays under ignored `target/`; values are never emitted as Cargo environment
+directives or diagnostic messages. Do not commit the input or generated files.
+
+Google treats installed desktop apps as public clients: embedded registration
+values cannot be kept confidential. PKCE, state, nonce and signed-token checks
+remain the account-security boundary; the shared Desktop client secret does not
+authenticate a user or a LAN peer. These registrations belong to the app
+publisher. Ordinary installed-app users sign in directly and must not create
+projects or supply credential files or client IDs.
 
 Windows sign-in must follow Google's
 [desktop OAuth guide](https://developers.google.com/identity/protocols/oauth2/native-app).

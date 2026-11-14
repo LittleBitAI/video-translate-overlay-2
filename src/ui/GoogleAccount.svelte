@@ -118,6 +118,8 @@
       <p class="mt-2 text-sm text-ink/70" role="status">저장한 Google 계정을 확인하는 중입니다.</p>
     {:else if account?.state === 'expired'}
       <p class="mt-2 text-sm text-accent" role="status">Google 로그인이 만료됐습니다. 다시 로그인해 주세요.</p>
+    {:else if account?.error === 'Google Desktop registration is missing or invalid'}
+      <p class="mt-2 text-sm text-accent" role="status">앱 제공자가 Google 로그인 등록 정보를 수정해야 합니다. 수정된 앱에서 다시 시도해 주세요.</p>
     {:else if account?.state === 'unavailable' || account?.error}
       <p class="mt-2 text-sm text-accent" role="status">Google 로그인을 완료하지 못했습니다. 계정과 네트워크를 확인한 뒤 다시 시도해 주세요.</p>
     {:else if account}

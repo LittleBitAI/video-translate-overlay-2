@@ -2,10 +2,14 @@
 
 use crate::google_auth::{AuthError, Platform, VerifiedIdentity, Verifier, DESKTOP_CLIENT_ID};
 use openidconnect::{
-    core::{CoreAuthenticationFlow, CoreClient, CoreJsonWebKeySet},
-    AuthType, AuthUrl, AuthorizationCode, ClientId, CsrfToken, EndpointNotSet, EndpointSet,
-    HttpRequest, HttpResponse, IssuerUrl, Nonce, OAuth2TokenResponse, PkceCodeChallenge,
-    PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, TokenUrl,
+    core::{
+        CoreAuthenticationFlow, CoreClient, CoreErrorResponseType, CoreJsonWebKeySet,
+        CoreRequestTokenError,
+    },
+    AuthType, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointNotSet,
+    EndpointSet, HttpRequest, HttpResponse, IssuerUrl, Nonce, OAuth2TokenResponse,
+    PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, RequestTokenError, Scope, TokenResponse,
+    TokenUrl,
 };
 use std::{
     collections::BTreeMap,
@@ -20,6 +24,7 @@ const AUTH_URL: &str = "https://accounts.google.com/o/oauth2/v2/auth";
 const SIGN_IN_TIMEOUT: Duration = Duration::from_secs(180);
 const MAX_HEADER_BYTES: usize = 8192;
 const MAX_TOKEN_RESPONSE: usize = 32 * 1024;
+include!(concat!(env!("OUT_DIR"), "/google-registration.rs"));
 type Client = CoreClient<
     EndpointSet,
     EndpointNotSet,
@@ -51,6 +56,7 @@ pub struct DesktopLogin {
     state: CsrfToken,
     nonce: String,
     pkce: Option<PkceCodeVerifier>,
+    client_secret: ClientSecret,
 }
 
 struct Grant {
@@ -58,7 +64,7 @@ struct Grant {
     pkce: PkceCodeVerifier,
 }
 
-fn client(redirect: &RedirectUrl) -> Client {
+fn client(redirect: &RedirectUrl, secret: &ClientSecret) -> Client {
     // Signature verification runs through Verifier after exchange, never through this client.
     CoreClient::new(
         ClientId::new(DESKTOP_CLIENT_ID.into()),
@@ -68,12 +74,17 @@ fn client(redirect: &RedirectUrl) -> Client {
     .set_auth_uri(AuthUrl::new(AUTH_URL.into()).expect("constant Google authorization URL"))
     .set_token_uri(TokenUrl::new(TOKEN_URL.into()).expect("constant Google token URL"))
     .set_auth_type(AuthType::RequestBody)
+    .set_client_secret(secret.clone())
     .set_redirect_uri(redirect.clone())
 }
 
 impl DesktopLogin {
     /// `nonce` is captured by the native attempt, never supplied by a page or remote peer.
     pub fn bind(nonce: &str) -> Result<Self, AuthError> {
+        Self::bind_with_secret(nonce, DESKTOP_CLIENT_SECRET.ok_or(AuthError::Registration)?)
+    }
+
+    fn bind_with_secret(nonce: &str, secret: &str) -> Result<Self, AuthError> {
         if !(32..=128).contains(&nonce.len())
             || !nonce
                 .bytes()
@@ -90,8 +101,9 @@ impl DesktopLogin {
         let redirect =
             RedirectUrl::new(format!("http://{address}/")).map_err(|_| AuthError::Invalid)?;
         let (challenge, pkce) = PkceCodeChallenge::new_random_sha256();
+        let client_secret = ClientSecret::new(secret.into());
         let login_nonce = Nonce::new(nonce.into());
-        let (url, state, _) = client(&redirect)
+        let (url, state, _) = client(&redirect, &client_secret)
             .authorize_url(
                 CoreAuthenticationFlow::AuthorizationCode,
                 CsrfToken::new_random,
@@ -109,6 +121,7 @@ impl DesktopLogin {
             state,
             nonce: nonce.into(),
             pkce: Some(pkce),
+            client_secret,
         })
     }
 
@@ -125,11 +138,11 @@ impl DesktopLogin {
         if cancelled.load(Ordering::Acquire) {
             return Err(AuthError::Cancelled);
         }
-        let response = client(&self.redirect)
+        let response = client(&self.redirect, &self.client_secret)
             .exchange_code(grant.code)
             .set_pkce_verifier(grant.pkce)
             .request(&oauth_http)
-            .map_err(|_| AuthError::Unavailable)?;
+            .map_err(exchange_error)?;
         let id_token = response.id_token().ok_or(AuthError::Invalid)?.to_string();
         let identity = verifier.verify(&id_token, &self.nonce, Platform::Desktop)?;
         if cancelled.load(Ordering::Acquire) {
@@ -257,6 +270,25 @@ impl DesktopLogin {
             code: AuthorizationCode::new(code.clone()),
             pkce: self.pkce.take().ok_or(AuthError::Invalid)?,
         })
+    }
+}
+
+fn exchange_error(error: CoreRequestTokenError<AuthError>) -> AuthError {
+    match error {
+        RequestTokenError::Request(error) => error,
+        RequestTokenError::ServerResponse(error) => {
+            if error.error() == &CoreErrorResponseType::InvalidClient
+                || (error.error() == &CoreErrorResponseType::InvalidRequest
+                    && error
+                        .error_description()
+                        .is_some_and(|d| d.contains("client_secret")))
+            {
+                AuthError::Registration
+            } else {
+                AuthError::ProviderRejected
+            }
+        }
+        _ => AuthError::ProviderRejected,
     }
 }
 

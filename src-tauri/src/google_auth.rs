@@ -10,8 +10,7 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
-pub const DESKTOP_CLIENT_ID: &str =
-    "1072382283165-lar1422vmd8fnouh4dlpr771gcc7lq4f.apps.googleusercontent.com";
+pub use crate::google_registration::DESKTOP_CLIENT_ID;
 pub const ANDROID_CLIENT_ID: &str =
     "1072382283165-1fifmmjgf3k0ff15h1fe7aie4jdb1h5i.apps.googleusercontent.com";
 pub const ANDROID_AUDIENCE: &str =
@@ -39,6 +38,7 @@ pub enum AuthError {
     Denied,
     TimedOut,
     ProviderRejected,
+    Registration,
 }
 
 impl std::fmt::Display for AuthError {
@@ -52,6 +52,7 @@ impl std::fmt::Display for AuthError {
             Self::Denied => "Google sign-in was declined",
             Self::TimedOut => "Google sign-in timed out",
             Self::ProviderRejected => "Google sign-in failed",
+            Self::Registration => "Google Desktop registration is missing or invalid",
         })
     }
 }
