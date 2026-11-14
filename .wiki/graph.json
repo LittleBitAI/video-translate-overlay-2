@@ -86,13 +86,14 @@
   }
  ],
  "orphans": [
-  "docs/design/library-acceptance.md"
+  "docs/design/library-acceptance.md",
+  "docs/design/library-verification.md"
  ],
  "counts": {
-  "docs": 5,
+  "docs": 6,
   "linked": 1,
   "read": 3,
-  "orphans": 1,
+  "orphans": 2,
   "pages": 7,
   "decisions": 8,
   "injectable_decisions": 1
