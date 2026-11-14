@@ -6,11 +6,16 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 import { execFileSync } from 'node:child_process';
 
+function revision() {
+  try { return execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); }
+  catch { return 'unknown'; }
+}
+
 export default defineConfig({
   plugins: [svelte(), tailwindcss(), {
     name: 'build-revision',
     transformIndexHtml: () => [{ tag: 'meta', attrs: {
-      name: 'wiki-build-head', content: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+      name: 'wiki-build-head', content: revision(),
     }, injectTo: 'head' }],
   }],
   build: { outDir: 'dist', emptyOutDir: true },

@@ -13,6 +13,12 @@ The API and Chromium flows start their own `vto-web --stand-ins` at
 existing server. Android reaches the fixture through `10.0.2.2:8137`.
 The fixture is a three-second generated black video, without lecture content.
 
+The local server's origin-protected `GET /build` reports its compiled revision
+and process ID. The runner checks that it owns the answering process before
+sending library mutations. Native receipts also require the running core and
+screen revisions to match the reviewed commit. Source archives can still
+build without Git; their revision is `unknown` and cannot pass this acceptance.
+
 Each run creates a separate database from the pre-library schema at
 `dc6fec7fd4a6`. It seeds two completed translations with original-timeline
 cues, glossaries and a recorded cost of 12.5 KRW each. No real key is needed.

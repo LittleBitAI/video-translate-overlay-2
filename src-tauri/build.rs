@@ -1,22 +1,23 @@
-//! Only the `app` feature (the real app binary) needs a build step: the
-//! screens (`dist/`, tauri.conf.json's frontendDist), the overlay bundle it
-//! injects into site pages, and tauri-build's context. The contract-test
-//! build skips them all.
+//! Every build records its source revision. Only the real app also bundles
+//! the screens and overlay and prepares tauri-build's context.
+
+fn git(args: &[&str]) -> Option<String> {
+    let output = std::process::Command::new("git").args(args).output().ok()?;
+    if !output.status.success() { return None; }
+    Some(String::from_utf8(output.stdout).ok()?.trim().to_string())
+}
 
 fn main() {
-    let output = std::process::Command::new("git").args(["rev-parse", "HEAD"]).output().expect("read build revision");
-    assert!(output.status.success(), "read build revision");
-    let head = String::from_utf8(output.stdout).unwrap();
-    println!("cargo:rustc-env=VTO_BUILD_HEAD={}", head.trim());
+    println!("cargo:rustc-env=VTO_BUILD_HEAD={}", git(&["rev-parse", "HEAD"]).unwrap_or_else(|| "unknown".into()));
     for name in ["HEAD", "packed-refs"] {
-        let path = std::process::Command::new("git").args(["rev-parse", "--git-path", name]).output().unwrap();
-        println!("cargo:rerun-if-changed={}", String::from_utf8(path.stdout).unwrap().trim());
+        if let Some(path) = git(&["rev-parse", "--git-path", name]) {
+            println!("cargo:rerun-if-changed={path}");
+        }
     }
-    let reference = std::process::Command::new("git").args(["symbolic-ref", "-q", "HEAD"]).output().unwrap();
-    if reference.status.success() {
-        let name = String::from_utf8(reference.stdout).unwrap();
-        let path = std::process::Command::new("git").args(["rev-parse", "--git-path", name.trim()]).output().unwrap();
-        println!("cargo:rerun-if-changed={}", String::from_utf8(path.stdout).unwrap().trim());
+    if let Some(name) = git(&["symbolic-ref", "-q", "HEAD"]) {
+        if let Some(path) = git(&["rev-parse", "--git-path", &name]) {
+            println!("cargo:rerun-if-changed={path}");
+        }
     }
     #[cfg(feature = "app")]
     app();
