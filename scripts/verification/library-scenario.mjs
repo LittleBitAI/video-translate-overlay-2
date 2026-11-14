@@ -8,6 +8,7 @@ export const assertions = [
   {id: 'restart', expected: 'Playlist names, order and memberships survive a process restart'},
   {id: 'cancel-delete', expected: 'Cancelling named permanent deletion preserves the saved translation'},
   {id: 'delete', expected: 'Confirmed deletion removes the video from every playlist and preserves unrelated data'},
+  {id: 'playlist-retention', expected: 'Removing a playlist preserves its saved translations and other playlists'},
   {id: 'manual-link', expected: 'Opening an untranslated playlist entry leaves translation unstarted'},
 ];
 
@@ -65,9 +66,12 @@ export default async function scenario(session) {
     await click('Systems topic 재생목록 위로');
     await session.until(async () => (await list()).playlists[0].name === 'Systems topic');
     await click('Untranslated lecture 영상 위로');
+    await click('Untranslated lecture 영상 위로');
     await click('목록에서 빼기', row('Unrelated systems'));
     await session.until(async () => (await list()).playlists[0].entries.length === 2);
     const organized = await list();
+    const untranslated = organized.videos.find(video => video.title === 'Untranslated lecture');
+    assert.ok(organized.playlists[0].entries.indexOf(untranslated.video_key) < organized.playlists[0].entries.indexOf(saved.video_key));
     session.record('organized.json', organized);
     await click('영상 열기', row('Saved attention'));
     const videoPage = session.platform === 'browser' ? page : await session.pageFor(saved.page_url);
@@ -93,11 +97,25 @@ export default async function scenario(session) {
     assert.ok(after.videos.find(video => video.title === 'Unrelated systems').saved);
     session.record('deleted.json', after);
     await session.observe('delete', assertions[3].expected);
+    await click('Deep learning (0)');
+    await page.getByLabel('저장된 영상', {exact: true}).selectOption({label: 'Unrelated systems'}); await click('저장 영상 추가');
+    await session.until(async () => (await list()).playlists.find(playlist => playlist.name === 'Deep learning')?.entries.length === 1);
+    const other = (await list()).videos.find(video => video.title === 'Unrelated systems');
+    const otherCues = await call(page, 'GET', `/videos/${other.video_key}/subtitles`);
+    await click('재생목록 삭제');
+    assert.ok((await page.getByRole('alertdialog').textContent()).includes('Deep learning'));
+    await click('영구 삭제 확인');
+    await session.until(async () => (await list()).playlists.length === 1);
+    const retained = await list(); assert.equal(retained.playlists[0].name, 'Systems topic');
+    assert.ok(retained.videos.find(video => video.video_key === other.video_key).saved);
+    assert.deepEqual(await call(page, 'GET', `/videos/${other.video_key}/subtitles`), otherCues);
+    session.record('playlist-removed.json', retained);
+    await session.observe('playlist-retention', assertions[4].expected);
     await click('Systems topic (1)'); await click('영상 열기', row('Untranslated lecture'));
     const manualPage = session.platform === 'browser' ? page : await session.pageFor(saved.page_url.replace('saved.mp4', 'untranslated.mp4'));
     await manualPage.locator('video').waitFor();
     await manualPage.getByRole('button', {name: '영상감지', exact: true}).waitFor();
     assert.equal((await call(manualPage, 'GET', '/jobs', {page_url: saved.page_url.replace('saved.mp4', 'untranslated.mp4')})).status, 404);
-    media.assertNoTranslation(); await session.observe('manual-link', assertions[4].expected, manualPage);
+    media.assertNoTranslation(); await session.observe('manual-link', assertions[5].expected, manualPage);
   } finally {await media.close();}
 }

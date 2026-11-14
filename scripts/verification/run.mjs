@@ -59,6 +59,7 @@ const apiAssertions = [
   {id: 'reuse', expected: 'An upgraded saved translation keeps its cues and cost when reopened'},
   {id: 'persistence-delete', expected: 'Restart preserves playlists; confirmed deletion removes all memberships and preserves the other video'},
   {id: 'no-automatic-translation', expected: 'Adding and opening an untranslated entry creates no processing job'},
+  {id: 'playlist-retention', expected: 'Removing a playlist preserves its saved translations and other playlists'},
 ];
 try {
   if (kind === 'browser') {
@@ -111,6 +112,14 @@ try {
     assert.equal((await request('POST', '/browser/open', {url: link})).status, 200);
     assert.equal((await request('GET', '/jobs?page_url=' + encodeURIComponent(link))).status, 404);
     observe(apiAssertions[2].id, apiAssertions[2].expected);
+    const other = after.videos[0];
+    const otherCues = await request('GET', `/videos/${other.video_key}/subtitles`);
+    await change({action: 'add_entry', playlist_id: playlists[1].id, page_url: other.page_url});
+    await change({action: 'delete_playlist', playlist_id: playlists[1].id});
+    const retained = await list(); assert.equal(retained.playlists.length, 1);
+    assert.ok(retained.videos.find(video => video.video_key === other.video_key).saved);
+    assert.deepEqual(await request('GET', `/videos/${other.video_key}/subtitles`), otherCues);
+    observe(apiAssertions[3].id, apiAssertions[3].expected);
   }
   console.log('```local-evidence\n' + JSON.stringify({head, flow: `library-${kind}`,
     environment_id: process.env.WIKI_VERIFICATION_ENVIRONMENT, test_scope: process.env.WIKI_VERIFICATION_SCOPE,
