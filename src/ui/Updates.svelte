@@ -11,6 +11,7 @@
   let alive = true;
   let queuedManual = false;
   let dismissedVersion = '';
+  let dismissalRevision = 0;
 
   function valid(value: any, platform: string): value is Update {
     if (!value || !/^\d+\.\d+\.\d+$/.test(value.version) || typeof value.summary !== 'string' || value.summary.length > 1200) return false;
@@ -21,17 +22,18 @@
   async function check(manual = false) {
     if (checking) { queuedManual ||= manual; return; }
     checking = true;
+    const revision = dismissalRevision;
     if (manual) { message = '업데이트 확인 중'; failed = false; }
     const r = await request('POST', '/updates/check', { manual });
     if (!alive) return;
     checking = false;
-    if (r.status === 200 && typeof r.body?.installed_version === 'string') {
+    if (revision === dismissalRevision && r.status === 200 && typeof r.body?.installed_version === 'string') {
       update = valid(r.body.update, r.body.platform) && (manual || r.body.update.version !== dismissedVersion) ? r.body.update : null;
       if (manual) {
         failed = false;
         message = r.body.platform === 'unsupported' ? '이 기기에서는 업데이트를 지원하지 않습니다.' : update ? '' : `현재 버전 ${r.body.installed_version}입니다. 사용할 수 있는 새 업데이트가 없습니다.`;
       }
-    } else if (manual) {
+    } else if (revision === dismissalRevision && manual) {
       failed = true;
       message = '업데이트를 확인하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.';
     }
@@ -46,6 +48,8 @@
     if (!alive) return;
     acting = false;
     if (r.status === 200) {
+      dismissalRevision++;
+      queuedManual = false;
       dismissedVersion = version;
       if (update?.version === version) { update = null; message = ''; }
     }

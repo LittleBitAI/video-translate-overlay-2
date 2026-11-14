@@ -3,7 +3,8 @@
 The user approved publication of the exact 0.1.7 artifacts and notes, and
 [the release is public](https://github.com/LittleBitAI/video-translate-overlay-2/releases/tag/v0.1.7).
 Anonymous metadata/download checks and native selection against the actual
-release passed. The full repository gate remains server-owned and pending.
+release passed. The original candidate passed the server-owned repository gate
+before review. The repaired candidate awaits the server's next checks.
 
 ## Approved published artifacts
 
@@ -163,14 +164,52 @@ and manual-notice screenshots. The final verification limitations remain those
 stated above: Android hardware was an emulator, and Windows retention used a
 separate native debug profile rather than the production user's data.
 
-The full repository gate and final verification are server-owned and remain
+The repository gate and final verification are server-owned. The original
+candidate passed the gate before review; the repaired candidate's checks remain
 pending. They are not replaced by the focused checks above.
+
+## Review round 1 repairs
+
+A successful dismissal now invalidates earlier automatic/manual check results
+and cancels manual checks queued before it. A check explicitly requested after
+the dismissal can still reveal the release. The former automatic-only race
+test was folded into `a later dismissal wins over a pending %s check`, covering
+automatic, manual, queued-manual, and failed-manual responses, each repeated
+after revealing and dismissing the same version again.
+
+Packaging now refuses any nonempty candidate output directory before building
+or writing evidence. Both platform builders and their shared notes, checksums,
+and manifest use this one guard. The native PowerShell regression test proves
+rejection without modifying existing files across 18 platform/content cases,
+including hidden partial output, and verifies that empty/absent directories
+reach the stubbed build boundary. CI runs this test after its existing gate.
+
+Focused checks after the final code changes:
+
+- `npx vitest run -c vitest.ui.config.ts tests/ui/updates.test.ts tests/ui/preferences.test.ts`:
+  17 passed.
+- `pwsh -NoProfile -File tests/package-release.test.ps1`:
+  `nonempty_candidate_is_denied` and `fresh_candidate_reaches_build` passed.
+- `node scripts/live.mjs --stand-ins`, with isolated local data, and
+  `node artifacts/review-round1-live.mjs`: `live_manual_dismissal_wins` passed
+  against the built screen and real local API in Chromium. A delayed manual
+  response stayed hidden after dismissal; a fresh manual check revealed it.
+
+The separate backend result filter and native foreground prompt already check
+the saved dismissal record; neither needed modification for this UI race.
+These repairs do not replace the published 0.1.7 binaries or tag. No native
+installer rebuild or physical-device rerun was performed for this repair.
 
 ## Test cleanup audit
 
-Retained all current checks in `updates_tests.rs`, the command/Android ACL tests,
+The initial audit retained all current checks in `updates_tests.rs`, the command/Android ACL tests,
 the two affected Rust fixture test files, `contract-tests/tests/settings.rs`,
 and the four affected UI test files. Parser, transport, native lifecycle, and
-UI race checks guard distinct boundaries. No test was removed; no obsolete
+UI race checks guard distinct boundaries. No test was removed in that audit; no obsolete
 skip or xfail was introduced or retained for a removed update path. Changed
 tracked text files were decoded as UTF-8 and checked for the absence of a BOM.
+
+The repair audit covered `tests/ui/updates.test.ts`,
+`tests/ui/preferences.test.ts`, and `tests/package-release.test.ps1`. The
+automatic-only race test was folded into the broader table above. The remaining
+tests protect current behavior; there are no obsolete skips or expected failures.

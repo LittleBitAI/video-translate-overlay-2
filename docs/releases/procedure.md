@@ -50,8 +50,12 @@ malformed responses fail the check rather than claim the app is up to date.
    and the installed Tauri CLI to `PATH`. Build on Windows with the C++ toolchain.
 2. Back up the existing Android signing keystore securely outside Git. Do not
    generate a new key. `npm run package:release` builds the ARM64 release APK
-   and the Windows x64 NSIS installer. To repeat one platform, append
-   `-- -Platform android` or `-- -Platform windows`. The script handles Windows
+   and the Windows x64 NSIS installer. Every invocation requires an empty
+   `artifacts/releases/VERSION/`; archive an earlier candidate, including failed
+   build output, before rebuilding. To prepare only one platform, append
+   `-- -Platform android` or `-- -Platform windows`. Its candidate contains only
+   that invocation's artifact; a complete two-platform candidate requires one
+   `both` run. The script handles Windows
    JNI symlink restrictions by copying the freshly compiled libraries and
    running Gradle without rebuilding Rust.
 3. Review `artifacts/releases/VERSION/`: the two installable files,

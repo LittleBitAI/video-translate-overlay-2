@@ -18,6 +18,9 @@ if (!(Test-Path -LiteralPath $notes)) { throw "Missing feature notes: $notes" }
 $notesText = Get-Content -LiteralPath $notes -Raw
 if (!$notesText.Contains('<!-- vto-approved:v1 -->') -or !$notesText.Contains('## Features')) { throw 'Missing approval convention in prepared notes' }
 $output = Join-Path $PWD "artifacts/releases/$version"
+if ((Test-Path -LiteralPath $output) -and (Get-ChildItem -LiteralPath $output -Force | Select-Object -First 1)) {
+    throw "Release output must be empty: $output. Archive the previous candidate before rebuilding; platform-only runs never reuse its artifacts."
+}
 New-Item -ItemType Directory -Force -Path $output | Out-Null
 
 if ($Platform -in @('both', 'android')) {

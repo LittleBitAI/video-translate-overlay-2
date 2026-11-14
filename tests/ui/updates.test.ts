@@ -82,23 +82,28 @@ test('automatic failure and unsafe destination never become a usable notice', as
   expect($(root, 'aside')).toBeNull();
 });
 
-test('an automatic response started before dismissal cannot redisplay that version', async () => {
+test.each(['automatic', 'manual', 'queued manual', 'manual failure'])('a later dismissal wins over a pending %s check', async mode => {
   let count = 0;
   let release: (v: any) => void = () => {};
   vi.stubGlobal('__TAURI_INTERNALS__', {invoke: async (command: string) => {
-    if (command === 'check_updates' && ++count === 2) return new Promise(r => release = r);
+    if (command === 'check_updates' && ++count % 2 === 0) return new Promise(r => release = r);
     if (command === 'check_updates') return answer();
     return settings;
   }});
   const root = open('/preferences');
   await vi.waitFor(() => expect(text(root)).toContain('새 버전 0.1.7'));
-  window.dispatchEvent(new Event('vto-foreground'));
-  await vi.waitFor(() => expect(count).toBe(2));
-  button(root, '이 버전 알림 닫기').click();
-  await vi.waitFor(() => expect($(root, 'aside')).toBeNull());
-  release(answer());
-  await new Promise(r => setTimeout(r, 40));
-  expect($(root, 'aside')).toBeNull();
-  button(root, '업데이트 확인').click();
-  await vi.waitFor(() => expect(text(root)).toContain('새 버전 0.1.7'));
+  for (let round = 1; round <= 2; round++) {
+    if (mode.startsWith('manual')) button(root, '업데이트 확인').click();
+    else window.dispatchEvent(new Event('vto-foreground'));
+    await vi.waitFor(() => expect(count).toBe(round * 2));
+    if (mode === 'queued manual') button(root, '업데이트 확인').click();
+    button(root, '이 버전 알림 닫기').click();
+    await vi.waitFor(() => expect($(root, 'aside')).toBeNull());
+    release(mode === 'manual failure' ? null : answer());
+    await new Promise(r => setTimeout(r, 40));
+    expect($(root, 'aside')).toBeNull();
+    expect(count).toBe(round * 2);
+    button(root, '업데이트 확인').click();
+    await vi.waitFor(() => expect(text(root)).toContain('새 버전 0.1.7'));
+  }
 });
