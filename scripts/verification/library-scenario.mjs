@@ -70,8 +70,7 @@ export default async function scenario(session) {
     const organized = await list();
     session.record('organized.json', organized);
     await click('영상 열기', row('Saved attention'));
-    const videoPage = session.platform === 'windows'
-      ? await session.until(() => session.context.pages().find(p => p.url().includes('/saved.mp4'))) : page;
+    const videoPage = session.platform === 'browser' ? page : await session.pageFor(saved.page_url);
     await videoPage.locator('video').waitFor();
     await videoPage.evaluate(() => {const video = document.querySelector('video'); video.currentTime = 1; video.dispatchEvent(new Event('timeupdate'));});
     const cue = videoPage.locator(session.platform === 'browser' ? '[data-feature="watch-subtitles"]' : '[data-vto="subtitle"]');
@@ -95,8 +94,7 @@ export default async function scenario(session) {
     session.record('deleted.json', after);
     await session.observe('delete', assertions[3].expected);
     await click('Systems topic (1)'); await click('영상 열기', row('Untranslated lecture'));
-    const manualPage = session.platform === 'windows'
-      ? await session.until(() => session.context.pages().find(p => p.url().includes('/untranslated.mp4'))) : page;
+    const manualPage = session.platform === 'browser' ? page : await session.pageFor(saved.page_url.replace('saved.mp4', 'untranslated.mp4'));
     await manualPage.locator('video').waitFor();
     await manualPage.getByRole('button', {name: '영상감지', exact: true}).waitFor();
     assert.equal((await call(manualPage, 'GET', '/jobs', {page_url: saved.page_url.replace('saved.mp4', 'untranslated.mp4')})).status, 404);
