@@ -125,7 +125,8 @@
   async function detect() {
     if (deletionToken && !confirm('삭제한 영상의 자막을 새로 만듭니다. 추가 API 비용이 발생할 수 있습니다. 번역을 시작할까요?')) return;
     const mine = ++generation;
-    if (videoKey) deletedKeys.delete(videoKey);
+    // Consent starts a new attempt even when the earlier video's key is unknown.
+    deletedKeys.clear();
     if (timer) clearTimeout(timer);
     loadedJob = '';
     starting = true;

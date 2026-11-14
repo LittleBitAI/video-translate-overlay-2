@@ -69,26 +69,61 @@ test.each(['native', 'broadcast'])('deletion before the first job response canno
   expect(calls.filter(c => c.path.endsWith('/subtitles'))).toHaveLength(0);
 });
 
-test('explicit detection after deletion can display newly created subtitles', async () => {
-  let state = 'ready';
+test.each(['native', 'broadcast'].flatMap(source => ['known', 'unknown'].map(identity => ({source, identity}))))(
+  'confirmed recreation replaces earlier deletion markers: $source $identity identity', async ({source, identity}) => {
+  let state = identity === 'known' ? 'ready' : 'pending';
+  let resolveJob: ((answer: any) => void) | undefined;
+  let consent = false;
   const ready = {stage: 'ready', percent: 100, cost_krw: 3, failure_reason: null, video_key: 'vk'};
   api(c => {
     if (c.method === 'POST') { state = 'recreated'; return [200, ready]; }
-    if (c.path === '/jobs') return state === 'deleted' ? [410, {message: 'Deleted', deletion_token: 'new-token'}] : [200, ready];
+    if (c.path === '/jobs') {
+      if (state === 'pending') return new Promise(resolve => { resolveJob = resolve; });
+      return state === 'deleted' ? [410, {message: 'Deleted', deletion_token: 'new-token'}] : [200, ready];
+    }
     return [200, {duration_ms: 600000, cues: [{seq: 0, start_ms: 1000, end_ms: 4000,
       text_ko: state === 'recreated' ? 'New saved cue' : 'Old saved cue'}]}];
   });
-  vi.stubGlobal('confirm', () => true);
+  vi.stubGlobal('confirm', () => consent);
   const target = document.body.appendChild(document.createElement('div'));
-  shown = mount(Overlay, {target, props: {pageUrl: 'https://talks.example.org/7', timeMs: 1500, durationMs: 600000, initial: ready}});
-  await vi.waitFor(() => expect(text(target)).toContain('Old saved cue'));
-  state = 'deleted'; deletedVideo('native', 'vk');
+  shown = mount(Overlay, {target, props: {pageUrl: 'https://talks.example.org/7', timeMs: 1500, durationMs: 600000,
+    initial: identity === 'known' ? ready : undefined}});
+  if (identity === 'known') await vi.waitFor(() => expect(text(target)).toContain('Old saved cue'));
+  else await vi.waitFor(() => expect(resolveJob).toBeDefined());
+  state = 'deleted'; deletedVideo(source, 'vk');
+  await new Promise(resolve => setTimeout(resolve, 50));
+  resolveJob?.([410, {message: 'Deleted', deletion_token: 'new-token'}]);
   await vi.waitFor(() => expect(text(target)).toContain('Deleted'));
-  target.querySelector<HTMLButtonElement>('[data-feature="detect-video"]')!.click();
+  const detect = target.querySelector<HTMLButtonElement>('[data-feature="detect-video"]')!;
+  detect.click();
+  expect(calls.filter(c => c.method === 'POST')).toHaveLength(0);
+  expect(text(target)).not.toContain('New saved cue');
+  consent = true; detect.click();
   await vi.waitFor(() => expect(text(target)).toContain('New saved cue'));
   const posts = calls.filter(c => c.method === 'POST');
   expect(posts).toHaveLength(1);
   expect(posts[0].body.deletion_token).toBe('new-token');
+});
+
+test.each(['native', 'broadcast'])('deletion after consent still rejects a late creation response: %s', async source => {
+  let resolveCreation: ((answer: any) => void) | undefined;
+  let latest = false;
+  api(c => c.method === 'POST' ? new Promise(resolve => { resolveCreation = resolve; })
+    : c.path === '/jobs' ? [410, {message: latest ? 'Deleted again' : 'Deleted', deletion_token: 'new-token'}]
+    : [200, {duration_ms: 600000, cues: [{seq: 0, start_ms: 1000, end_ms: 4000, text_ko: 'New saved cue'}]}]);
+  vi.stubGlobal('confirm', () => true);
+  const target = document.body.appendChild(document.createElement('div'));
+  shown = mount(Overlay, {target, props: {pageUrl: 'https://talks.example.org/7', timeMs: 1500, durationMs: 600000}});
+  await vi.waitFor(() => expect(text(target)).toContain('Deleted'));
+  target.querySelector<HTMLButtonElement>('[data-feature="detect-video"]')!.click();
+  await vi.waitFor(() => expect(resolveCreation).toBeDefined());
+  latest = true; deletedVideo(source, 'vk');
+  await new Promise(resolve => setTimeout(resolve, 50));
+  resolveCreation!([200, {stage: 'ready', video_key: 'vk'}]);
+  await vi.waitFor(() => expect(text(target)).toContain('Deleted again'), {timeout: 2500});
+  expect(text(target)).not.toContain('New saved cue');
+  expect(calls.filter(c => c.path.endsWith('/subtitles'))).toHaveLength(0);
+  expect(calls.filter(c => c.method === 'POST')).toHaveLength(1);
 });
 afterEach(() => {
   if (shown) unmount(shown);
