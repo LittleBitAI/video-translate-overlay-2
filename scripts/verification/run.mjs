@@ -13,9 +13,16 @@ const head = process.env.WIKI_VERIFICATION_HEAD;
 assert.match(head ?? '', /^[a-f0-9]{40}$/);
 const artifact = process.env.WIKI_VERIFICATION_ARTIFACTS;
 assert.ok(artifact); mkdirSync(artifact, {recursive: true});
+assert.equal(execFileSync('git', ['rev-parse', 'HEAD'], {cwd: root, encoding: 'utf8', windowsHide: true}).trim(),
+  head, 'Verification must build the requested checkout');
+// A test-only commit still changes the revision embedded in the server and screens.
+const buildOptions = {cwd: root, stdio: 'inherit', windowsHide: true};
+execFileSync(process.execPath, [path.join(root, 'node_modules/vite/bin/vite.js'), 'build', '--logLevel', 'warn'], buildOptions);
+execFileSync('cargo', ['build', '--locked', '-p', 'video-translate-overlay', '--bin', 'vto-web',
+  '--target-dir', path.join(root, 'target')], buildOptions);
 const base = 'http://127.0.0.1:8136';
 const binary = path.join(root, 'target/debug/vto-web' + (process.platform === 'win32' ? '.exe' : ''));
-assert.ok(existsSync(binary), 'Build the verification binaries before configuring local verification');
+assert.ok(existsSync(binary), 'Verification server build produced no executable');
 let server, browser, page, directory, buildHead;
 const requests = [], actions = [], observations = [];
 const until = async fn => {

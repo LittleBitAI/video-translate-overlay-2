@@ -8,7 +8,11 @@ executing these flows.
 ## What runs
 
 The API and Chromium flows start their own `vto-web --stand-ins` at
-`http://127.0.0.1:8136`. A shared media fixture binds
+`http://127.0.0.1:8136`. Before launch, each runner checks that the requested
+revision is the checked-out commit, builds the screens, and incrementally
+builds the verification server into the repository's `target` directory.
+This preparation also runs after a test-only commit; an older executable
+cannot supply evidence for a new commit. A shared media fixture binds
 `http://127.0.0.1:8137`; an occupied port fails instead of attaching to an
 existing server. Android reaches the fixture through `10.0.2.2:8137`.
 The fixture is a three-second generated black video, without lecture content.
@@ -47,12 +51,12 @@ stale replies and old notification links.
 ## Prepare and approve a candidate
 
 Use the root README's prerequisites and Android build instructions. Install
-the locked Node dependencies and Chromium once. Build after committing the
-candidate, so the embedded backend and screen revisions name that commit:
+the locked Node dependencies and Chromium once. API and browser flows build
+their own current-commit assets. Build both native apps after the last commit,
+including a test-only repair, so their embedded backend and screen revisions
+name the candidate:
 
 ```powershell
-npm run build
-cargo build -p video-translate-overlay --bin vto-web
 cargo build -p video-translate-overlay --features app --bin video-translate-overlay
 cargo tauri android build --debug --apk --target x86_64 --features app
 ```
