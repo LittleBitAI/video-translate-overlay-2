@@ -262,7 +262,7 @@ pub fn run() {
     *ctx.runtime_authority_mut() = commands::authority();
     let builder = commands::handlers(tauri::Builder::default());
     #[cfg(desktop)]
-    let isolated_profile = cfg!(debug_assertions) && std::env::var_os("VTO_APP_DATA_DIR").is_some();
+    let isolated_profile = cfg!(debug_assertions) && (std::env::var_os("WIKI_NATIVE_PROFILE").is_some() || std::env::var_os("VTO_APP_DATA_DIR").is_some());
     // Registered first: a second launch (a clicked toast) hands its arguments over and exits
     // before it opens the store the running app's worker uses.
     #[cfg(desktop)]
@@ -291,7 +291,8 @@ pub fn run() {
             let data_dir = app.path().app_local_data_dir()?;
             // Isolated desktop acceptance data never shares a user's installed library.
             #[cfg(all(debug_assertions, desktop))]
-            let data_dir = std::env::var_os("VTO_APP_DATA_DIR").map(std::path::PathBuf::from).unwrap_or(data_dir);
+            let data_dir = std::env::var_os("WIKI_NATIVE_PROFILE").or_else(|| std::env::var_os("VTO_APP_DATA_DIR"))
+                .map(std::path::PathBuf::from).unwrap_or(data_dir);
             let whisper = Whisper::new(&data_dir, std::env::var_os("VTO_WHISPER_MODEL").map(Into::into));
             #[cfg(target_os = "android")]
             let keystore: Box<dyn vto::KeyStore> = Box::new(app.state::<crate::android::Mobile>().inner().clone());

@@ -33,6 +33,11 @@ installs the approved debug APK, and seeds that installation. It does not
 attach to an existing emulator, physical phone or user's app process. The
 approved AVD supplies a template, not the test's writable data.
 
+The debug Windows app honors the host's `WIKI_NATIVE_PROFILE` contract; the
+earlier manual `VTO_APP_DATA_DIR` override remains available. Before mutations,
+the host checks a digest of the app's actual data directory as well as its
+revision. The app exposes no plaintext data-directory path to site pages.
+
 The shared UI scenario creates and renames playlists, changes order and
 membership, reopens saved subtitles, restarts the process, cancels deletion,
 confirms deletion from multiple playlists, and manually opens an untranslated
