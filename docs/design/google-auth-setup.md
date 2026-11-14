@@ -26,14 +26,32 @@ real-account and physical-device checks during implementation.
 
 ## Create the registration
 
+The owner selected the following project and supplied the Windows client ID on
+2026-11-15. These are public registration identifiers, recorded from the owner;
+they have not yet been validated by an actual app sign-in.
+
+| Registration | Owner-supplied value |
+| --- | --- |
+| Project name | `1234` |
+| Project ID | `gen-lang-client-0430697481` |
+| Windows Desktop client ID | `1072382283165-lar1422vmd8fnouh4dlpr771gcc7lq4f.apps.googleusercontent.com` |
+| Android client ID | Pending |
+| Android Web audience client ID | Pending |
+
+The CLI required reauthentication when inspecting this project. No cloud
+settings were changed; billing, audience, and published branding remain
+unverified. Do not enable or link billing for registration, or disable an
+existing billing configuration without first establishing what depends on it.
+
 The project owner performs these steps in the
-[Google Auth Platform console](https://console.cloud.google.com/auth/overview).
+[selected project's Google Auth Platform console](https://console.cloud.google.com/auth/overview?project=gen-lang-client-0430697481).
 Use a dedicated project for this app unless the owner explicitly selects an
 existing project. The locally configured `sprint-ai-01` project has not been
 selected for this task and must not be repurposed automatically.
 
-1. Create a project named `Video Translate Overlay`. Leave billing unlinked and
-   record the generated project ID.
+1. Select `gen-lang-client-0430697481`. The project name `1234` can stay; it is
+   separate from the app name shown during sign-in. Do not create another
+   project for the remaining clients.
 2. Open Branding. Set the application name to `Video Translate Overlay`, and
    select the owner's actual support and developer contact email addresses.
 3. Select an External audience. An Internal audience would exclude ordinary
