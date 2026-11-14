@@ -4,6 +4,7 @@ The Rust side of the app, as designed in `docs/design/backend.md` and `docs/desi
 
 | File | What it does |
 | --- | --- |
+| `src/updates.rs` | Anonymous approved GitHub release selection, bounded/coalesced checks, atomic dismissal high-water mark, and exact platform download validation. Native lifecycle hooks and video-site prompts are in `app.rs`; local screens use `src/ui/Updates.svelte`. See `../docs/releases/procedure.md`. |
 | `src/library_store.rs`, `src/library_api.rs` | Device-local library and manual playlists (P10/P11), additive SQLite tables, ordered memberships, and confirmed deletion with durable retry markers. Existing completed translations are read in place. Only local app screens may mutate the library. |
 | `src/commands.rs` | Tauri commands P1-P11 and the ACL. `capabilities/main.json` gives the app's own screen every command. `capabilities/overlay.json` gives site pages only P6-P8. |
 | `src/api.rs` | What each command does: the YouTube sign-in gate, key masking, job creation rules (reuse, 409, 422, 428), progress and subtitles, and P9 (what P1 last opened, with that page's job, kept in SQLite). |

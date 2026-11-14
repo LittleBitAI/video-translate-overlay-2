@@ -1,6 +1,6 @@
 [package]
 name = "video-translate-overlay"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 license = "Apache-2.0"
 publish = false
@@ -14,11 +14,13 @@ crate-type = ["rlib", "cdylib"]
 [[bin]]
 name = "vto-contract-host"
 path = "src/bin/vto-contract-host.rs"
+required-features = ["tools"]
 
 # The screens and the API over HTTP on $PORT, data under $APP_DATA_DIR (`scripts/live.mjs`).
 [[bin]]
 name = "vto-web"
 path = "src/bin/vto-web.rs"
+required-features = ["tools"]
 
 # The app itself: real webview windows, notifications and whisper.cpp.
 # `cargo build --features app --bin video-translate-overlay` (bindgen needs
@@ -29,6 +31,9 @@ path = "src/main.rs"
 required-features = ["app"]
 
 [features]
+default = ["tools"]
+# Local API and contract hosts remain available to existing development commands.
+tools = []
 app = ["whisper", "dep:tauri-build", "dep:tauri-plugin-notification", "dep:tauri-plugin-single-instance", "tauri/custom-protocol"]
 # The on-device model alone, for `vto-web` (bindgen needs libclang: set LIBCLANG_PATH).
 whisper = ["dep:whisper-rs"]

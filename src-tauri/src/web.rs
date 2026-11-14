@@ -151,6 +151,9 @@ fn content_type(f: &Path) -> &'static str {
 pub fn call(core: &Core, cmd: &str, a: &Value) -> ApiResult {
     let s = |k: &str| a[k].as_str().unwrap_or_default().to_string();
     match cmd {
+        "check_updates" => core.updates.check(&core.cfg.data_dir, a["manual"].as_bool().unwrap_or(false)),
+        "dismiss_update" => core.updates.dismiss(&core.cfg.data_dir, &s("version")),
+        "open_update" => crate::updates::open(core, &s("version")),
         "browser_open" => api::browser_open(core, &s("url")),
         "get_browser" => api::get_browser(core),
         "get_library" => api::get_library(core),

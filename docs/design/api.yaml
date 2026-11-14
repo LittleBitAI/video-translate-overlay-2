@@ -5,6 +5,33 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/updates/check": {
+      "post": {
+        "operationId": "P12",
+        "summary": "Check approved GitHub releases for this build's platform. Local app screen only. Coalesce in-flight checks; automatic checks cache for 60 seconds; each caller waits at most 15 seconds.",
+        "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": {"manual": {"type": "boolean", "default": false}}}}}},
+        "responses": {
+          "200": {"description": "installed_version, platform, update (null or version/summary/download_url), and dismissed. Manual checks can reveal the dismissed version. No update means no applicable approved release in the bounded release list."},
+          "503": {"description": "update_check_failed: unreachable, timeout, malformed metadata, or unsuccessful GitHub response. Never report this as up to date."}
+        }
+      }
+    },
+    "/updates/dismiss": {
+      "post": {
+        "operationId": "P13",
+        "summary": "Persist the dismissed stable version in the app data directory; do not modify credentials or video/library tables. Local app screen only.",
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["version"], "properties": {"version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}}}}}},
+        "responses": {"200": {"description": "Dismissed version"}, "400": {"description": "Invalid stable version"}, "500": {"description": "Could not persist dismissal"}}
+      }
+    },
+    "/updates/open": {
+      "post": {
+        "operationId": "P14",
+        "summary": "Recheck the selected release, then open only its validated HTTPS GitHub platform asset in the external browser. The caller supplies a version, never an arbitrary URL. Local app screen only; HTTP browser screens follow the validated link directly.",
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["version"], "properties": {"version": {"type": "string"}}}}}},
+        "responses": {"200": {"description": "External browser opened"}, "409": {"description": "The version is no longer selected or its applicable artifact is unavailable"}, "503": {"description": "Check or browser launch failed"}}
+      }
+    },
     "/library/data": {
       "get": {
         "operationId": "P10",

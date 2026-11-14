@@ -122,6 +122,7 @@ fn resumed_youtube_source_refreshes_unavailable_hints_but_preserves_refusals() {
         }
         let calls = Arc::new(AtomicUsize::new(0));
         let core = Core {
+            updates: Default::default(),
             cfg: Config { data_dir: dir, gemini_base_url: String::new(), allow_loopback_media: true },
             store: crate::store::Store::open(&path).unwrap(),
             svc: Services {

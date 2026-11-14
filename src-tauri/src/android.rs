@@ -24,6 +24,12 @@ pub fn plugin() -> TauriPlugin<Wry> {
 }
 
 impl Mobile {
+    pub fn update_notice(&self, update: &crate::updates::Update) -> Result<bool, String> {
+        Ok(self.call("updateNotice", serde_json::to_value(update).map_err(|e| e.to_string())?)?["download"].as_bool().unwrap_or(false))
+    }
+    pub fn open_download(&self, url: &str) -> Result<(), String> {
+        self.call("openDownload", json!({"url":url})).map(drop)
+    }
     fn call(&self, method: &str, args: Value) -> Result<Value, String> {
         self.0.run_mobile_plugin::<Value>(method, args).map_err(|e| format!("{method}: {e}"))
     }

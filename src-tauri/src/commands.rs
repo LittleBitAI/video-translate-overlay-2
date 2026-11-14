@@ -14,8 +14,8 @@ use tauri::utils::acl::{capability::Capability, manifest::Manifest, resolved::Re
 use tauri::{Runtime, State};
 
 /// Every registered command, P1 to P11.
-pub const COMMANDS: [&str; 11] =
-    ["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles", "get_browser", "get_library", "library_action"];
+pub const COMMANDS: [&str; 14] =
+    ["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles", "get_browser", "get_library", "library_action", "check_updates", "dismiss_update", "open_update"];
 
 /// The commands a site page (the overlay) may call.
 pub const OVERLAY_COMMANDS: [&str; 3] = ["create_job", "get_job", "get_subtitles"];
@@ -61,6 +61,23 @@ async fn blocking(f: impl FnOnce() -> ApiResult + Send + 'static) -> ApiResult {
 }
 
 type Shared<'a> = State<'a, Arc<Core>>;
+
+#[tauri::command(async, rename_all = "snake_case")]
+pub async fn check_updates(core: Shared<'_>, manual: Option<bool>) -> ApiResult {
+    let core = core.inner().clone();
+    blocking(move || core.updates.check(&core.cfg.data_dir, manual.unwrap_or(false))).await
+}
+
+#[tauri::command(async, rename_all = "snake_case")]
+pub async fn dismiss_update(core: Shared<'_>, version: String) -> ApiResult {
+    core.updates.dismiss(&core.cfg.data_dir, &version)
+}
+
+#[tauri::command(async, rename_all = "snake_case")]
+pub async fn open_update(core: Shared<'_>, version: String) -> ApiResult {
+    let core = core.inner().clone();
+    blocking(move || crate::updates::open(&core, &version)).await
+}
 
 #[tauri::command(async, rename_all = "snake_case")]
 pub async fn browser_open(core: Shared<'_>, url: String) -> ApiResult {
@@ -147,7 +164,10 @@ pub fn handlers<R: Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
         get_subtitles,
         get_browser,
         get_library,
-        library_action
+        library_action,
+        check_updates,
+        dismiss_update,
+        open_update
     ])
 }
 
@@ -155,6 +175,9 @@ pub fn handlers<R: Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
 pub fn route(method: &str, path: &str, body: &Value) -> Option<(&'static str, Value)> {
     let mut args = if body.is_object() { body.clone() } else { json!({}) };
     let cmd = match (method, path) {
+        ("POST", "/updates/check") => "check_updates",
+        ("POST", "/updates/dismiss") => "dismiss_update",
+        ("POST", "/updates/open") => "open_update",
         ("POST", "/browser/open") => "browser_open",
         ("GET", "/browser") => "get_browser",
         ("GET", "/library/data") => "get_library",
@@ -201,6 +224,9 @@ mod tests {
     #[test]
     fn routes_cover_every_command() {
         let mut seen: Vec<&str> = [
+            ("POST", "/updates/check"),
+            ("POST", "/updates/dismiss"),
+            ("POST", "/updates/open"),
             ("POST", "/browser/open"),
             ("DELETE", "/browser/site-data"),
             ("GET", "/settings"),

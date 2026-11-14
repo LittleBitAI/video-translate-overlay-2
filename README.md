@@ -8,7 +8,7 @@ Android 앱은 PC 없이 실행합니다. 화면, 처리 코어, 음성 인식 �
 
 Android 7.0 이상, ARM64 기기가 대상입니다. 갤럭시 S21 시리즈도 이 규격에 해당합니다.
 
-1. [ARM64 APK 0.1.6](artifacts/video-translate-overlay-0.1.6-arm64.apk)를 휴대폰에 옮겨 설치합니다. 기존 앱은 지우지 않고 업데이트합니다. 설치 화면에서 요청하면 해당 출처의 앱 설치를 허용합니다.
+1. Download the approved [ARM64 APK 0.1.7](https://github.com/LittleBitAI/video-translate-overlay-2/releases/download/v0.1.7/video-translate-overlay-0.1.7-arm64.apk) from GitHub Releases. Install it over the existing app without uninstalling. Allow installation from that source if Android requests it.
 2. 앱을 열고 `설정`에서 본인 Gemini API 키를 저장합니다. 번역 비용은 키 소유자에게 청구됩니다.
 3. 유튜브 계정을 사용할 경우 `설정 → 유튜브 계정 연결`에서 한 번 로그인합니다. 이후 영상은 같은 앱 브라우저의 세션을 사용합니다. 로그인 없이도 영상을 열 수 있습니다.
 4. 첫 화면에서 영상 주소를 열고, 영상 위 `영상감지`를 누릅니다. 처음에는 약 60MB 음성 인식 모델을 내려받습니다. 0.1.4로 업데이트한 뒤에도 새 모델을 한 번 받습니다. 모델 외에 오디오와 작업 자료를 저장할 공간도 필요합니다.
@@ -16,7 +16,24 @@ Android 7.0 이상, ARM64 기기가 대상입니다. 갤럭시 S21 시리즈도 
 
 0.1.5까지의 버전에서 만든 자막의 내용이 앞뒤로 밀리면 해당 영상에서 `다시 번역`을 누릅니다. 받아쓰기와 시각은 유지하고 번역만 새로 만듭니다. 추가 API 비용이 발생하며, 이전 번역 비용까지 합쳐 영상별 한도를 확인합니다. 앱 업데이트만으로 기존 자막을 자동 변경하지 않습니다.
 
-APK 링크는 이 작업 폴더의 빌드 결과입니다. `artifacts/`는 Git에 포함하지 않으므로 저장소를 새로 받으면 직접 빌드해야 합니다. 이 APK는 개발용 키로 서명한 release 설치본이며, 크기는 약 24MB입니다. 스토어 배포용 서명은 별도입니다.
+Approved installers are distributed through GitHub Releases. Local build outputs
+in `artifacts/` are not committed. The Android release APK retains the development
+signing key used by existing installations; store signing is separate. The
+[approved 0.1.7 release](https://github.com/LittleBitAI/video-translate-overlay-2/releases/tag/v0.1.7)
+contains anonymously downloadable Android and Windows installers.
+
+## Approved release updates
+
+Android and Windows builds from 0.1.7 check approved GitHub Releases on launch
+and return to the foreground. Read the version and brief feature notes, then
+open your device's download or dismiss that version. `설정 → 업데이트 확인` checks
+again and can reveal a dismissed version. Downloads and installation are manual;
+automatic failures do not interrupt video use. Installations through 0.1.6 need
+one manual upgrade, keeping the existing app installed to retain local data.
+Windows users can download the [0.1.7 x64 installer](https://github.com/LittleBitAI/video-translate-overlay-2/releases/download/v0.1.7/video-translate-overlay-0.1.7-windows-x64-setup.exe)
+and install it for the same Windows user, keeping the existing app data.
+The [release procedure](docs/releases/procedure.md) defines approval, packaging,
+signing continuity, and first-publication acceptance.
 
 ## Saved videos and topic playlists
 

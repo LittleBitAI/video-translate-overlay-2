@@ -19,6 +19,7 @@ pub mod pipeline;
 pub mod platform;
 pub mod screens;
 pub mod store;
+pub mod updates;
 pub mod web;
 #[cfg(feature = "whisper")]
 pub mod whisper;
@@ -60,6 +61,7 @@ pub trait KeyStore: Send + Sync {
 
 /// The in-app webview that shows video sites.
 pub trait Browser: Send + Sync {
+    fn open_download(&self, _url: &str) -> Result<(), String> { Err("external downloads are unavailable".into()) }
     /// Drops cached subtitles in open views before permanent cleanup starts.
     fn invalidate_video(&self, _key: &str) -> Result<(), String> { Ok(()) }
     /// Shows `url`; `overlay` attaches the overlay script (never on Google's sign-in pages).
@@ -108,6 +110,7 @@ pub const GEMINI_BASE_URL: &str = "https://generativelanguage.googleapis.com";
 
 /// Everything the commands and the worker share.
 pub struct Core {
+    pub updates: updates::Checker,
     pub cfg: Config,
     pub store: store::Store,
     pub svc: Services,
@@ -121,7 +124,7 @@ impl Core {
     pub fn start(cfg: Config, svc: Services) -> Result<Arc<Core>, String> {
         std::fs::create_dir_all(cfg.data_dir.join("audio")).map_err(|e| format!("data folder: {e}"))?;
         let store = store::Store::open(&cfg.data_dir.join("app.sqlite3"))?;
-        let core = Arc::new(Core { cfg, store, svc, wake: (Mutex::new(false), Condvar::new()), create_lock: Mutex::new(()) });
+        let core = Arc::new(Core { cfg, store, svc, updates: updates::Checker::default(), wake: (Mutex::new(false), Condvar::new()), create_lock: Mutex::new(()) });
         let worker = core.clone();
         std::thread::Builder::new().name("jobs".into()).spawn(move || pipeline::run_worker(worker)).map_err(|e| e.to_string())?;
         Ok(core)
