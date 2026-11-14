@@ -19,6 +19,7 @@ pub mod pipeline;
 pub mod platform;
 pub mod screens;
 pub mod store;
+pub mod sync;
 pub mod updates;
 pub mod web;
 #[cfg(feature = "whisper")]
