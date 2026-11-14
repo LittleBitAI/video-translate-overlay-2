@@ -353,7 +353,7 @@ pub fn run() {
         })
         .on_window_event(|window, event| {
             if matches!(event, WindowEvent::Focused(true)) {
-                foreground(window.app_handle());
+                foreground(window.app_handle(), Some(window.label()));
             }
             // Closing the screen while a job runs only hides it: the job goes on (R6).
             if let WindowEvent::CloseRequested { api, .. } = event {
@@ -367,14 +367,15 @@ pub fn run() {
         .build(ctx)
         .expect("start the app")
         .run(|app, event| {
-            if matches!(event, tauri::RunEvent::Resumed) { foreground(app); }
+            if matches!(event, tauri::RunEvent::Resumed) { foreground(app, None); }
         });
 }
 
-fn foreground(app: &AppHandle<Wry>) {
+fn foreground(app: &AppHandle<Wry>, window_label: Option<&str>) {
     let Some(core) = app.try_state::<Arc<Core>>() else { return };
     let core = core.inner().clone();
     let app = app.clone();
+    let window_label = window_label.unwrap_or("main").to_string();
     std::thread::spawn(move || {
         let result = core.updates.check(&core.cfg.data_dir, false);
         if let Some(window) = app.get_webview_window("main") {
@@ -382,11 +383,14 @@ fn foreground(app: &AppHandle<Wry>) {
         }
         let Ok(result) = result else { return };
         let Ok(update) = serde_json::from_value::<crate::updates::Update>(result["update"].clone()) else { return };
-        #[cfg(desktop)]
-        let window = app.webview_windows().into_values().find(|w| w.is_focused().unwrap_or(false));
-        #[cfg(mobile)]
-        let window = app.get_webview_window("main");
+        let window = app.get_webview_window(&window_label);
         let Some(window) = window else { return };
+        #[cfg(windows)]
+        {
+            #[link(name = "user32")]
+            extern "system" { fn GetForegroundWindow() -> *mut std::ffi::c_void; }
+            if !window.hwnd().is_ok_and(|h| h.0 == unsafe { GetForegroundWindow() }) { return; }
+        }
         let Ok(url) = window.url() else { return };
         if url.scheme() == "tauri" || url.host_str() == Some("tauri.localhost") { return; }
         // Site pages never receive update IPC permissions or release-note HTML.
