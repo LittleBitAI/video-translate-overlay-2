@@ -72,6 +72,9 @@ credentials and data. See [Tauri's Android signing procedure](https://tauri.app/
 
 Windows uses the existing identifier and a per-user NSIS installation. The
 installer is currently unsigned and may trigger Windows publisher warnings.
+The packaging command disables default Cargo features so the local `vto-web`
+and `vto-contract-host` tools are excluded from the installer. Existing development
+commands retain those tools through the default `tools` feature.
 No signing certificate is purchased or silently introduced. See
 [Tauri's installer documentation](https://tauri.app/distribute/windows-installer/).
 
