@@ -97,7 +97,7 @@ fn json(port: u16, method: &str, target: &str, body: Option<Value>) -> (u16, Val
 #[test]
 fn each_screen_route_opens_the_built_screens_and_files_are_served_by_plain_paths() {
     let port = start("screens");
-    assert_eq!(json(port, "GET", "/build", None), (200, json!({"head": env!("VTO_BUILD_HEAD")})));
+    assert_eq!(json(port, "GET", "/build", None), (200, json!({"head": env!("VTO_BUILD_HEAD"), "pid": std::process::id()})));
     for screen in SCREENS {
         let (status, ctype, body) = ask(port, "GET", screen, None, "");
         assert_eq!((status, ctype.as_str()), (200, "text/html; charset=utf-8"), "{screen}");

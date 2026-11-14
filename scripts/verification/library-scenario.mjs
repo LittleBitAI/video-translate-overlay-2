@@ -49,6 +49,7 @@ export default async function scenario(session) {
     const subsBefore = await call(page, 'GET', `/videos/${saved.video_key}/subtitles`);
     const costBefore = await call(page, 'GET', '/jobs', {page_url: saved.page_url});
     assert.equal(costBefore.body.cost_krw, 12.5);
+    session.record('saved-before.json', {library: before, subtitles: subsBefore, job: costBefore});
     for (const name of ['Deep learning', 'Systems']) {
       await page.getByLabel('새 재생목록 이름').fill(name); await click('재생목록 만들기');
       await click(`${name} (0)`);
@@ -67,6 +68,7 @@ export default async function scenario(session) {
     await click('목록에서 빼기', row('Unrelated systems'));
     await session.until(async () => (await list()).playlists[0].entries.length === 2);
     const organized = await list();
+    session.record('organized.json', organized);
     await click('영상 열기', row('Saved attention'));
     const videoPage = session.platform === 'windows'
       ? await session.until(() => session.context.pages().find(p => p.url().includes('/saved.mp4'))) : page;
@@ -90,6 +92,7 @@ export default async function scenario(session) {
     const after = await list(); assert.equal(after.playlists.length, 2);
     assert.ok(after.playlists.every(playlist => !playlist.entries.includes(saved.video_key)));
     assert.ok(after.videos.find(video => video.title === 'Unrelated systems').saved);
+    session.record('deleted.json', after);
     await session.observe('delete', assertions[3].expected);
     await click('Systems topic (1)'); await click('영상 열기', row('Untranslated lecture'));
     const manualPage = session.platform === 'windows'

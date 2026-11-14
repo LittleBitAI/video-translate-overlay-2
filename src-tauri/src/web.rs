@@ -102,7 +102,7 @@ fn handle(mut s: TcpStream, core: &Core, dist: &Path, port: u16) -> std::io::Res
         return send(&mut s, 403, "text/plain; charset=utf-8", b"forbidden");
     }
     if req.method == "GET" && req.path == "/build" {
-        return json_reply(&mut s, Ok(json!({"head": env!("VTO_BUILD_HEAD")})));
+        return json_reply(&mut s, Ok(json!({"head": env!("VTO_BUILD_HEAD"), "pid": std::process::id()})));
     }
     let mut args = match serde_json::from_slice::<Value>(&req.body) {
         Ok(Value::Object(m)) => m,

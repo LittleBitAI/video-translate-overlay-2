@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {spawn, execFileSync} from 'node:child_process';
-import {mkdirSync, existsSync} from 'node:fs';
+import {mkdirSync, existsSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
@@ -15,7 +15,7 @@ assert.ok(artifact); mkdirSync(artifact, {recursive: true});
 const base = 'http://127.0.0.1:8136';
 const binary = path.join(root, 'target/debug/vto-web' + (process.platform === 'win32' ? '.exe' : ''));
 assert.ok(existsSync(binary), 'Build the verification binaries before configuring local verification');
-let server, browser, page, directory;
+let server, browser, page, directory, buildHead;
 const requests = [], actions = [], observations = [];
 const until = async fn => {
   const end = Date.now() + 30000; let last;
@@ -37,9 +37,14 @@ async function startServer(data) {
   await until(async () => {
     if (spawnError) throw spawnError;
     assert.equal(server.exitCode, null, 'Owned server exited before readiness');
-    return (await fetch(`${base}/build`)).ok;
+    const response = await fetch(`${base}/build`);
+    if (!response.ok) return false;
+    const identity = await response.json();
+    return identity.pid === server.pid && identity;
   });
-  assert.equal((await (await fetch(`${base}/build`)).json()).head, head, 'Running API is from another commit');
+  const identity = await (await fetch(`${base}/build`)).json();
+  assert.equal(identity.pid, server.pid, 'API belongs to another process');
+  assert.equal(identity.head, head, 'Running API is from another commit');
 }
 async function request(method, route, body) {
   const response = await fetch(base + route, {method,
@@ -66,7 +71,8 @@ try {
           if (response.url().startsWith(base + '/')) requests.push({method: response.request().method(), url: response.url(), status: response.status()});
         });
         await page.goto(base);
-        assert.equal(await page.locator('meta[name="wiki-build-head"]').getAttribute('content'), head, 'Running screen is from another commit');
+        buildHead = await page.locator('meta[name="wiki-build-head"]').getAttribute('content');
+        assert.equal(buildHead, head, 'Running screen is from another commit');
       },
       async restart() {await browser.close(); await stopServer(); await startServer(directory); browser = await chromium.launch({headless: true}); await this.open();},
       async observe(id, actual, current = page) {
@@ -74,7 +80,8 @@ try {
         await current.screenshot({path: path.join(artifact, `${id}.png`)});
         observations.push({id, expected, actual, pass: true});
         actions.push({action: id, expected, actual});
-      }};
+      },
+      record(name, data) {assert.match(name, /^[a-z0-9-]+\.json$/); writeFileSync(path.join(artifact, name), JSON.stringify(data));}};
     await scenario(session);
   } else {
     const data = path.join(artifact, 'api-data');
@@ -107,5 +114,5 @@ try {
   }
   console.log('```local-evidence\n' + JSON.stringify({head, flow: `library-${kind}`,
     environment_id: process.env.WIKI_VERIFICATION_ENVIRONMENT, test_scope: process.env.WIKI_VERIFICATION_SCOPE,
-    ...(kind === 'browser' ? {build_head: head, browser_tool: 'playwright-chromium'} : {}), observations, requests, actions}) + '\n```');
+    ...(kind === 'browser' ? {build_head: buildHead, browser_tool: 'playwright-chromium'} : {}), observations, requests, actions}) + '\n```');
 } finally {if (browser) await browser.close(); await stopServer();}
