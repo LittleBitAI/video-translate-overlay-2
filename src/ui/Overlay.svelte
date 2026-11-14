@@ -57,6 +57,12 @@
   let mainMs = $state(0);
   let timer: ReturnType<typeof setTimeout> | undefined;
   let gone = false;
+  let generation = 0;
+  let loadedJob = '';
+  let videoKey: string | undefined;
+  // A deletion can arrive before the first job response identifies this video.
+  const deletedKeys = new Set<string>();
+  let deletionToken = $state<string | null>(null);
 
   const active = $derived(!!job && job.stage in STAGE);
   const ready = $derived((job?.stage === 'ready' || job?.stage === 'failed') && cues.length > 0);
@@ -64,9 +70,10 @@
   const cue = $derived(ready && !ad ? findCue(cues, timeMs) : undefined);
 
   async function loadSubtitles(videoKey: string) {
+    const mine = generation;
     subs = 'loading';
     const r = await request('GET', `/videos/${encodeURIComponent(videoKey)}/subtitles`);
-    if (gone) return;
+    if (gone || mine !== generation) return;
     if (r.status === 200) {
       subs = 'none';
       cues = [...(r.body.cues as Cue[])].sort((a, b) => a.start_ms - b.start_ms);
@@ -84,33 +91,62 @@
   async function follow(j: Job | null) {
     look = 'done';
     job = j;
-    if (j?.stage === 'ready' || j?.stage === 'failed') await loadSubtitles(j.video_key);
-    else if (j && j.stage in STAGE) timer = setTimeout(poll, POLL_MS);
+    if (j) videoKey = j.video_key;
+    const id = j ? `${(j as any).job_id ?? j.video_key}:${j.stage}` : '';
+    if ((j?.stage === 'ready' || j?.stage === 'failed') && loadedJob !== id) {
+      loadedJob = id;
+      await loadSubtitles(j.video_key);
+    }
+    if (!gone && j) timer = setTimeout(poll, POLL_MS);
   }
 
   /** One look at the job (P7). */
   async function poll() {
+    const mine = generation;
     timer = undefined;
     const r = await request('GET', '/jobs', { page_url: pageUrl });
-    if (gone) return;
+    if (gone || mine !== generation) return;
+    if (r.status === 200 && deletedKeys.has(r.body.video_key)) {
+      videoKey = r.body.video_key;
+      timer = setTimeout(poll, POLL_MS);
+      return;
+    }
+    if (r.status === 404 || r.status === 410) {
+      generation++; cues = []; loadedJob = ''; subs = 'none';
+      deletionToken = r.body?.deletion_token ?? null;
+      if (r.status === 410) notice = { text: r.body.message };
+      return follow(null);
+    }
     if (r.status === 200 || r.status === 404) return follow(r.status === 200 ? r.body : null);
     look = job ? 'done' : 'failed';
     if (job) timer = setTimeout(poll, POLL_MS);
   }
 
   async function detect() {
+    if (deletionToken && !confirm('삭제한 영상의 자막을 새로 만듭니다. 추가 API 비용이 발생할 수 있습니다. 번역을 시작할까요?')) return;
+    const mine = ++generation;
+    // Consent starts a new attempt even when the earlier video's key is unknown.
+    deletedKeys.clear();
+    if (timer) clearTimeout(timer);
+    loadedJob = '';
     starting = true;
     notice = null;
     subs = 'none';
     const length = durationMs > 0 ? durationMs : ((await prepare?.()) ?? 0);
-    if (gone) return;
-    const r = await request('POST', '/jobs', { page_url: pageUrl, media_url: mediaUrl, title, duration_ms: Math.round(length) });
-    if (gone) return;
+    if (gone || mine !== generation) return;
+    const r = await request('POST', '/jobs', { page_url: pageUrl, media_url: mediaUrl, title, duration_ms: Math.round(length), ...(deletionToken ? {deletion_token:deletionToken} : {}) });
+    if (gone || mine !== generation) return;
     starting = false;
     if (r.status === 200) {
+      videoKey = r.body.video_key;
+      if (deletedKeys.has(r.body.video_key)) return poll();
+      generation++;
       job = { stage: r.body.stage, percent: 0, cost_krw: 0, failure_reason: null, video_key: r.body.video_key };
       if (r.body.stage === 'ready') await poll();
       else timer = setTimeout(poll, POLL_MS);
+    } else if (r.status === 410) {
+      deletionToken = r.body?.deletion_token ?? null;
+      notice = { text: r.body.message };
     } else if (r.status === 428) {
       notice = { text: '개인키가 없어 작업을 시작하지 않았습니다. 설정에서 Gemini 개인키를 넣어 주세요.', settings: true };
     } else if (r.status === 409) {
@@ -120,7 +156,22 @@
     }
   }
 
-  onMount(() => (initial === undefined ? poll() : follow(initial)));
+  onMount(() => {
+    const invalidate = (event: Event) => {
+      const key = event instanceof MessageEvent ? event.data : (event as CustomEvent).detail;
+      if (typeof key !== 'string' || !key || (videoKey && key !== videoKey)) return;
+      deletedKeys.add(key);
+      if (!videoKey) return;
+      generation++; job = null; cues = []; loadedJob = ''; starting = false;
+      if (timer) clearTimeout(timer);
+      poll();
+    };
+    const channel = new BroadcastChannel('vto-library');
+    channel.onmessage = invalidate;
+    window.addEventListener('vto-video-deleted', invalidate);
+    initial === undefined ? poll() : follow(initial);
+    return () => { channel.close(); window.removeEventListener('vto-video-deleted', invalidate); };
+  });
 
   const box = 'rounded-lg bg-surface/90 p-2 text-sm';
   const label = 'text-sm text-ink/60';
@@ -131,6 +182,7 @@
   const action = 'pointer-events-auto mt-2 inline-flex min-h-11 items-center rounded-lg px-4';
   onDestroy(() => {
     gone = true;
+    generation++;
     if (timer) clearTimeout(timer);
   });
 </script>

@@ -42,7 +42,7 @@ fn connecting_youtube_from_settings_does_not_ask_again_for_each_video() {
         assert_eq!(youtube_cookie(&app.webview()).as_deref(), Some(SID));
     }
     app.restart();
-    assert_eq!(app.open(YT).body["account_gate"], false);
+    assert_eq!(app.open(YT).body["account_gate"], false, "{}", String::from_utf8_lossy(&app.logs()));
     assert_eq!(youtube_cookie(&app.webview()).as_deref(), Some(SID));
 }
 

@@ -1,4 +1,7 @@
 .env
+.wiki/verification*.json
+.wiki/verification*.tmp
+.wiki/verification.env.sha256
 artifacts/
 .venv/
 venv/

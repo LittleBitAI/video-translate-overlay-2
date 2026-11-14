@@ -34,7 +34,8 @@ app = ["whisper", "dep:tauri-build", "dep:tauri-plugin-notification", "dep:tauri
 whisper = ["dep:whisper-rs"]
 
 [build-dependencies]
-tauri-build = { version = "2", optional = true }
+# Keep Android preparation from rewriting the reviewed manifest.
+tauri-build = { version = "2", optional = true, features = [] }
 
 [dependencies]
 # `test` gives the mock runtime the contract host runs on; `dynamic-acl` lets

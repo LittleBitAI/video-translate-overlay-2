@@ -5,6 +5,17 @@ use crate::p;
 use std::path::Path;
 
 const SCHEMA: &str = "
+CREATE TABLE IF NOT EXISTS playlist (
+  id TEXT PRIMARY KEY, name TEXT NOT NULL, position INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS playlist_entry (
+  playlist_id TEXT NOT NULL REFERENCES playlist(id),
+  video_key TEXT NOT NULL REFERENCES video(video_key), position INTEGER NOT NULL,
+  PRIMARY KEY (playlist_id, video_key)
+);
+CREATE TABLE IF NOT EXISTS deleted_video (
+  video_key TEXT PRIMARY KEY, token TEXT NOT NULL, complete INTEGER NOT NULL DEFAULT 0
+);
 CREATE TABLE IF NOT EXISTS video (
   video_key TEXT PRIMARY KEY,
   page_url TEXT NOT NULL,
@@ -203,6 +214,7 @@ impl Store {
                 ),
                 p![id, key, media_url, model],
             )?;
+            db.execute("DELETE FROM deleted_video WHERE video_key=?", p![key])?;
             Ok(())
         })();
         db.exec(if r.is_ok() { "COMMIT" } else { "ROLLBACK" })?;
@@ -426,6 +438,13 @@ impl Store {
 #[cfg(test)]
 #[path = "store_wal_tests.rs"]
 mod wal_tests;
+
+#[path = "library_store.rs"]
+mod library;
+
+#[cfg(test)]
+#[path = "library_store_tests.rs"]
+mod library_tests;
 
 #[cfg(test)]
 mod tests {

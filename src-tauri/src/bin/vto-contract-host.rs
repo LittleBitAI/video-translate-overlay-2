@@ -127,6 +127,7 @@ impl AudioExtractor for TableExtractor {
 
 /// whisper.cpp as `contract-tests/src/lib.rs` specifies it.
 struct FakeWhisper {
+    calls: Arc<AtomicUsize>,
     lines: Vec<String>,
     ms_per_audio_second: u64,
     next: AtomicUsize,
@@ -134,6 +135,7 @@ struct FakeWhisper {
 
 impl Transcriber for FakeWhisper {
     fn transcribe(&self, pcm: &[f32], progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String> {
+        self.calls.fetch_add(1, Ordering::SeqCst);
         const F: usize = 160; // 10 ms
         let voiced: Vec<bool> = pcm.chunks(F).map(|f| (f.iter().map(|x| x * x).sum::<f32>() / f.len() as f32).sqrt() >= 0.02).collect();
         let mut runs: Vec<(usize, usize)> = Vec::new();
@@ -223,6 +225,7 @@ fn main() {
         }
     }
 
+    let transcription_calls = Arc::new(AtomicUsize::new(0));
     let core = Core::start(
         Config {
             data_dir,
@@ -233,7 +236,7 @@ fn main() {
             keystore: Box::new(FileKeyStore(s("keystore_path"))),
             browser: Box::new(SharedView(webview.clone())),
             notifier: Box::new(Shade(Mutex::new(s("notifications_path")))),
-            transcriber: Box::new(FakeWhisper { lines, ms_per_audio_second: t["ms_per_audio_second"].as_u64().unwrap_or(100), next: AtomicUsize::new(0) }),
+            transcriber: Box::new(FakeWhisper { calls: transcription_calls.clone(), lines, ms_per_audio_second: t["ms_per_audio_second"].as_u64().unwrap_or(100), next: AtomicUsize::new(0) }),
             extractor: Box::new(TableExtractor(youtube)),
         },
     )
@@ -300,6 +303,7 @@ fn main() {
                 Err(e) => json!({"ok": false, "error": e}),
             },
             "commands" => json!({"commands": commands::COMMANDS}),
+            "transcription_calls" => json!({"count": transcription_calls.load(Ordering::SeqCst)}),
             "network" => {
                 http::block_network(req["blocked"].as_bool().unwrap_or(true));
                 json!({"ok": true})

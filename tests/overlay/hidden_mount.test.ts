@@ -21,6 +21,7 @@ test('test_an_overlay_mounted_while_hidden_loads_the_existing_job_when_the_page_
   document.body.append(video);
 
   const calls: string[] = [];
+  let deleted = false;
   const o = mountOverlay({
     video,
     pageUrl: 'https://lectures.example.org/attention',
@@ -28,7 +29,9 @@ test('test_an_overlay_mounted_while_hidden_loads_the_existing_job_when_the_page_
     mediaUrl: null,
     request: async (method, path) => {
       calls.push(`${method} ${path}`);
-      if (method === 'GET' && path === '/jobs') return { status: 200, body: { stage: 'ready', video_key: 'vk-1', percent: 100 } };
+      if (method === 'GET' && path === '/jobs') return deleted
+        ? { status: 410, body: { message: 'Deleted', deletion_token: 'new-token' } }
+        : { status: 200, body: { stage: 'ready', video_key: 'vk-1', percent: 100 } };
       if (path.startsWith('/videos/')) return { status: 200, body: { video_key: 'vk-1', duration_ms: 120_000, cues: [CUE] } };
       return { status: 404, body: {} };
     },
@@ -36,16 +39,34 @@ test('test_an_overlay_mounted_while_hidden_loads_the_existing_job_when_the_page_
   onTestFinished(() => o.destroy());
   const sub = document.querySelector('[data-vto="overlay"]')!.shadowRoot!.querySelector('[data-vto="subtitle"]') as HTMLElement;
 
-  await new Promise((r) => setTimeout(r, 300));
+  await new Promise((r) => setTimeout(r, 1_100));
   expect(calls, 'nothing is asked while the page is hidden').toEqual([]);
 
   state = 'visible';
   document.dispatchEvent(new Event('visibilitychange'));
   await expect.poll(() => sub.textContent, { timeout: 5_000 }).toBe(CUE.text_ko);
-  expect(calls).toEqual(['GET /jobs', 'GET /videos/vk-1/subtitles']);
+  expect(calls).toContain('GET /jobs');
+  expect(calls.filter(call => call === 'GET /videos/vk-1/subtitles')).toHaveLength(1);
 
-  // A later return asks nothing again: the ready job's subtitles are loaded.
+  // Returning rechecks availability without downloading the same subtitles again.
+  const reads = calls.filter(call => call === 'GET /jobs').length;
   document.dispatchEvent(new Event('visibilitychange'));
-  await new Promise((r) => setTimeout(r, 300));
-  expect(calls).toHaveLength(2);
+  await expect.poll(() => calls.filter(call => call === 'GET /jobs').length).toBeGreaterThan(reads);
+  expect(sub.textContent).toBe(CUE.text_ko);
+  expect(calls.filter(call => call === 'GET /videos/vk-1/subtitles')).toHaveLength(1);
+
+  state = 'hidden';
+  document.dispatchEvent(new Event('visibilitychange'));
+  const hiddenReads = calls.length;
+  deleted = true;
+  await new Promise((r) => setTimeout(r, 1_100));
+  expect(calls).toHaveLength(hiddenReads);
+
+  state = 'visible';
+  document.dispatchEvent(new Event('visibilitychange'));
+  await expect.poll(() => sub.textContent).toBe('');
+  expect(sub.hidden).toBe(true);
+  expect(calls.filter(call => call === 'GET /jobs').length).toBeGreaterThan(reads);
+  expect(calls.filter(call => call === 'GET /videos/vk-1/subtitles')).toHaveLength(1);
+  expect(calls.every(call => call === 'GET /jobs' || call === 'GET /videos/vk-1/subtitles')).toBe(true);
 });

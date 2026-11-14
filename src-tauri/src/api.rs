@@ -11,12 +11,14 @@ pub struct ApiError {
     pub status: u16,
     pub error: String,
     pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deletion_token: Option<String>,
 }
 
 pub type ApiResult = Result<Value, ApiError>;
 
 pub fn err(status: u16, error: &str, message: impl Into<String>) -> ApiError {
-    ApiError { status, error: error.into(), message: message.into() }
+    ApiError { status, error: error.into(), message: message.into(), deletion_token: None }
 }
 
 impl From<String> for ApiError {
@@ -153,7 +155,7 @@ pub fn get_browser(core: &Core) -> ApiResult {
     let url = core.store.opened_url()?;
     let job = match url.as_deref().map(|u| get_job(core, u)) {
         Some(Ok(job)) => job,
-        Some(Err(e)) if e.status != 404 => return Err(e),
+        Some(Err(e)) if e.status != 404 && e.status != 410 => return Err(e),
         _ => Value::Null,
     };
     Ok(json!({"url": url, "job": job}))
@@ -245,6 +247,10 @@ fn resolve_source_with(core: &Core, page: &url::Url, media_url: Option<&str>, mu
 }
 
 pub fn create_job(core: &Core, page_url: &str, media_url: Option<&str>, title: &str, duration_ms: i64) -> ApiResult {
+    create_job_with_consent(core, page_url, media_url, title, duration_ms, None)
+}
+
+pub fn create_job_with_consent(core: &Core, page_url: &str, media_url: Option<&str>, title: &str, duration_ms: i64, deletion_token: Option<&str>) -> ApiResult {
     let page = http_url(page_url)?;
     if duration_ms <= 0 {
         return Err(err(400, "bad_duration", "영상 길이를 알 수 없습니다. 영상이 재생 준비된 뒤에 다시 눌러 주세요."));
@@ -253,6 +259,11 @@ pub fn create_job(core: &Core, page_url: &str, media_url: Option<&str>, title: &
     // Check-then-create runs under one lock, so two presses can never make two
     // jobs or let a late one wipe the cues of the first (one running job per device).
     let _creating = core.create_lock.lock().unwrap_or_else(|p| p.into_inner());
+    if let Some((token, complete)) = core.store.deleted(&key)? {
+        if !complete || deletion_token != Some(token.as_str()) {
+            return Err(deleted_error(token, complete));
+        }
+    }
 
     let active = core.store.active_job()?;
     if !active.as_ref().is_some_and(|j| j.video_key == key) {
@@ -304,6 +315,7 @@ pub fn create_job(core: &Core, page_url: &str, media_url: Option<&str>, title: &
 pub fn retranslate_job(core: &Core, page_url: &str) -> ApiResult {
     let key = video_key(&http_url(page_url)?);
     let _creating = core.create_lock.lock().unwrap_or_else(|p| p.into_inner());
+    if let Some((token, complete)) = core.store.deleted(&key)? { return Err(deleted_error(token, complete)); }
     if let Some(active) = core.store.active_job()? {
         if active.video_key == key {
             return Ok(json!({"job_id":active.id,"video_key":key,"stage":active.stage,"reused":false}));
@@ -333,6 +345,7 @@ pub fn retranslate_job(core: &Core, page_url: &str) -> ApiResult {
 
 pub fn get_job(core: &Core, page_url: &str) -> ApiResult {
     let key = video_key(&http_url(page_url)?);
+    if let Some((token, complete)) = core.store.deleted(&key)? { return Err(deleted_error(token, complete)); }
     let job = core.store.latest_job(&key)?.ok_or_else(|| err(404, "no_job", "이 영상의 작업이 없습니다."))?;
     let title = core.store.video(&key)?.map(|v| v.title).unwrap_or_default();
     Ok(json!({
@@ -350,6 +363,7 @@ pub fn get_job(core: &Core, page_url: &str) -> ApiResult {
 }
 
 pub fn get_subtitles(core: &Core, video_key: &str) -> ApiResult {
+    if let Some((token, complete)) = core.store.deleted(video_key)? { return Err(deleted_error(token, complete)); }
     let video = core.store.video(video_key)?.ok_or_else(|| err(404, "no_video", "이 영상의 자막이 없습니다."))?;
     let ready = core.store.ready_job(video_key)?.is_some();
     if !ready {
@@ -368,6 +382,16 @@ pub fn get_subtitles(core: &Core, video_key: &str) -> ApiResult {
         "cues": cues,
     }))
 }
+
+fn deleted_error(token: String, complete: bool) -> ApiError {
+    let mut e = err(410, "video_deleted", if complete { "저장된 영상을 삭제했습니다. 다시 번역하면 API 비용이 발생합니다." } else { "삭제를 마치지 못했습니다. 보관함에서 삭제를 다시 시도해 주세요." });
+    if complete { e.deletion_token = Some(token); }
+    e
+}
+
+#[path = "library_api.rs"]
+mod library;
+pub use library::{get_library, library_action};
 
 #[cfg(test)]
 #[path = "api_key_tests.rs"]

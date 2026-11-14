@@ -5,6 +5,58 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/library/data": {
+      "get": {
+        "operationId": "P10",
+        "summary": "Read this device's library and ordered playlists in one snapshot. App screen only; no paid calls. Existing saved rows are read in place.",
+        "responses": {
+          "200": {
+            "description": "Library snapshot",
+            "content": {"application/json": {"schema": {
+              "type": "object", "required": ["videos", "playlists"],
+              "properties": {
+                "videos": {"type": "array", "items": {
+                  "type": "object",
+                  "required": ["video_key", "page_url", "title", "duration_ms", "saved", "active", "deleting"],
+                  "properties": {
+                    "video_key": {"type": "string"}, "page_url": {"type": "string"},
+                    "title": {"type": "string"}, "duration_ms": {"type": "integer"},
+                    "saved": {"type": "boolean"}, "active": {"type": "boolean"}, "deleting": {"type": "boolean"}
+                  }
+                }},
+                "playlists": {"type": "array", "items": {
+                  "type": "object", "required": ["id", "name", "entries"],
+                  "properties": {"id": {"type": "string"}, "name": {"type": "string"}, "entries": {"type": "array", "items": {"type": "string"}}}
+                }}
+              }
+            }}}
+          },
+          "500": {"description": "Storage read failed; show a retry, not an empty success"}
+        }
+      },
+      "post": {
+        "operationId": "P11",
+        "summary": "Mutate the device-local library. App screen only; never translates or chains playback.",
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {
+          "type": "object", "required": ["action"],
+          "properties": {
+            "action": {"type": "string", "enum": ["create_playlist", "rename_playlist", "delete_playlist", "move_playlist", "add_entry", "remove_entry", "move_entry", "delete_video"]},
+            "playlist_id": {"type": "string"}, "name": {"type": "string", "minLength": 1, "maxLength": 200},
+            "page_url": {"type": "string"}, "title": {"type": "string"}, "video_key": {"type": "string"},
+            "delta": {"type": "integer", "enum": [-1, 1]}, "confirmed": {"type": "boolean"}
+          },
+          "description": "create_playlist requires name; rename_playlist requires playlist_id/name; delete_playlist requires playlist_id; move_playlist requires playlist_id/delta; add_entry requires playlist_id/page_url and optional title; remove_entry and move_entry require playlist_id/video_key, with delta for move_entry. delete_video requires video_key, exact current title, confirmed=true after warning about permanent removal and future API cost. HTTP(S) links are stored without probing; YouTube must name a video. Media support is checked only on explicit translation. Membership is idempotent within a playlist, and a video may belong to multiple playlists."
+        }}}},
+        "responses": {
+          "200": {"description": "Committed change; refresh the library", "content": {"application/json": {"schema": {"type": "object", "properties": {"changed": {"const": true}}}}}},
+          "400": {"description": "Invalid action, name, link, move or named confirmation"},
+          "404": {"description": "Missing playlist or video"},
+          "409": {"description": "video_active or cleanup_pending"},
+          "503": {"description": "cleanup_failed: subtitles are hidden; deletion can be retried"},
+          "500": {"description": "Storage or view invalidation failure; refresh and retry"}
+        }
+      }
+    },
     "/browser/open": {
       "post": {
         "operationId": "P1",
@@ -226,6 +278,10 @@
                   },
                   "retranslate": {
                     "description": "boolean, 기본 false. true이면 완료된 원문과 시각을 유지해 번역만 다시 만든다. 기존 사용량과 비용을 새 작업에 이어 받아 비용 한도를 유지한다. API 키가 없거나 다른 영상이 처리 중이면 기존 자막을 보존한다."
+                  },
+                  "deletion_token": {
+                    "type": "string",
+                    "description": "Fresh token from a completed video_deleted response. Send only after explicit confirmation about possible API costs; normal key, duration, media and cost safeguards apply."
                   }
                 }
               }
@@ -268,6 +324,9 @@
           },
           "428": {
             "description": "428"
+          },
+          "410": {
+            "description": "video_deleted: no job is created. A complete deletion includes deletion_token for a later explicit confirmation; an incomplete deletion requires cleanup retry. Old tokens and retranslation requests cannot recreate records."
           }
         }
       },
@@ -336,6 +395,9 @@
           },
           "404": {
             "description": "404"
+          },
+          "410": {
+            "description": "video_deleted: saved job data is unavailable. deletion_token is present only when cleanup is complete; pending deletion must be retried in the library."
           }
         }
       }
@@ -374,6 +436,9 @@
           },
           "409": {
             "description": "409"
+          },
+          "410": {
+            "description": "video_deleted: clear displayed cues and ignore earlier subtitle responses. Never start translation from a subtitle read."
           }
         }
       }

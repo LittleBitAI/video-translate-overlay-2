@@ -2,6 +2,7 @@
 //! Outside the `app` feature so the gate's tests reach it on the mock runtime.
 
 use tauri::{Manager, Runtime, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+use sha2::{Digest, Sha256};
 
 pub const MAIN: &str = "main";
 
@@ -17,7 +18,11 @@ pub fn show_main<R: Runtime, M: Manager<R>>(app: &M, script: Option<&str>) -> ta
         let _ = w.set_focus();
         return Ok(w);
     }
-    let b = WebviewWindowBuilder::new(app, MAIN, WebviewUrl::App("index.html".into()));
+    let profile: String = app.try_state::<std::sync::Arc<crate::Core>>()
+        .map(|core| Sha256::digest(core.cfg.data_dir.to_string_lossy().as_bytes()).iter().map(|b| format!("{b:02x}")).collect())
+        .unwrap_or_default();
+    let b = WebviewWindowBuilder::new(app, MAIN, WebviewUrl::App("index.html".into()))
+        .initialization_script(format!("Object.defineProperties(window,{{__WIKI_NATIVE_BUILD_HEAD__:{{value:'{}'}},__WIKI_NATIVE_PROFILE__:{{value:'{}'}}}})", env!("VTO_BUILD_HEAD"), profile));
     #[cfg(desktop)]
     let b = b.title("영상 번역 오버레이").inner_size(1024.0, 760.0);
     let b = match script {

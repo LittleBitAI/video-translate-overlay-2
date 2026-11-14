@@ -12,6 +12,8 @@
     "allow-delete-api-key",
     "allow-create-job",
     "allow-get-job",
-    "allow-get-subtitles"
+    "allow-get-subtitles",
+    "allow-get-library",
+    "allow-library-action"
   ]
 }

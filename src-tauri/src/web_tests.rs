@@ -97,6 +97,7 @@ fn json(port: u16, method: &str, target: &str, body: Option<Value>) -> (u16, Val
 #[test]
 fn each_screen_route_opens_the_built_screens_and_files_are_served_by_plain_paths() {
     let port = start("screens");
+    assert_eq!(json(port, "GET", "/build", None), (200, json!({"head": env!("VTO_BUILD_HEAD"), "pid": std::process::id()})));
     for screen in SCREENS {
         let (status, ctype, body) = ask(port, "GET", screen, None, "");
         assert_eq!((status, ctype.as_str()), (200, "text/html; charset=utf-8"), "{screen}");
@@ -150,6 +151,7 @@ fn p9_carries_the_opened_pages_latest_job() {
 #[test]
 fn only_this_devices_own_pages_are_served() {
     let port = start("origin");
+    assert_eq!(ask(port, "GET", "/build", None, "Origin: https://outside.example\r\n").0, 403);
     let open = Some(json!({"url": "https://talks.example.org/a"}));
     let own = format!("Origin: http://127.0.0.1:{port}\r\n");
     assert_eq!(ask(port, "POST", "/browser/open", open.clone(), &own).0, 200);

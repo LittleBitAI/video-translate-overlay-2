@@ -14,6 +14,11 @@
    "kind": "link"
   },
   {
+   "a": "docs/design/frontend.md",
+   "b": "DESIGN.md",
+   "kind": "link"
+  },
+  {
    "a": ".wiki/cost-budget-per-hour",
    "b": "README.md",
    "kind": "reads",
@@ -80,14 +85,17 @@
    "cross": true
   }
  ],
- "orphans": [],
+ "orphans": [
+  "docs/design/library-acceptance.md",
+  "docs/design/library-verification.md"
+ ],
  "counts": {
-  "docs": 3,
-  "linked": 0,
+  "docs": 6,
+  "linked": 1,
   "read": 3,
-  "orphans": 0,
+  "orphans": 2,
   "pages": 7,
-  "decisions": 7,
+  "decisions": 8,
   "injectable_decisions": 1
  }
 }

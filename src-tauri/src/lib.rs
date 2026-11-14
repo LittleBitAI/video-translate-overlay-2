@@ -1,4 +1,4 @@
-//! video-translate-overlay backend: Tauri commands P1-P9 (also over HTTP, `web`), the background job
+//! video-translate-overlay backend: Tauri commands P1-P11 (also over HTTP, `web`), the background job
 //! pipeline (download → write on device → translate with Gemini → notify),
 //! and the device services those need.
 
@@ -60,6 +60,8 @@ pub trait KeyStore: Send + Sync {
 
 /// The in-app webview that shows video sites.
 pub trait Browser: Send + Sync {
+    /// Drops cached subtitles in open views before permanent cleanup starts.
+    fn invalidate_video(&self, _key: &str) -> Result<(), String> { Ok(()) }
     /// Shows `url`; `overlay` attaches the overlay script (never on Google's sign-in pages).
     fn navigate(&self, url: &str, overlay: bool) -> Result<(), String>;
     /// Deletes cookies and site storage.

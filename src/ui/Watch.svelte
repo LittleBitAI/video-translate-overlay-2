@@ -1,7 +1,7 @@
 <!-- S1 `/`: open a video by its address, then 영상감지 on the overlay over it,
      its progress and cost while the job runs, and its subtitles once it is ready. -->
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { inApp, request } from './api';
   import Link from './Link.svelte';
   import type { Job } from './Overlay.svelte';
@@ -14,6 +14,7 @@
   let address = $state('');
   let opening = $state(false);
   let addressError = $state('');
+  let generation = 0;
   /** The app's ready notice for a video, while this screen is open (the OS one is shown too). */
   let readyNotice = $state<{ text: string; url: string } | null>(null);
 
@@ -29,8 +30,10 @@
 
   /** P9; `quiet` keeps what is shown until it answers. */
   async function load(quiet = false) {
+    const mine = ++generation;
     if (!quiet) screen = 'loading';
     const r = await request('GET', '/browser');
+    if (mine !== generation) return;
     if (r.status !== 200) {
       screen = 'error';
       return;
@@ -42,9 +45,11 @@
   }
 
   async function open(url: string) {
+    const mine = ++generation;
     opening = true;
     addressError = '';
     const r = await request('POST', '/browser/open', { url });
+    if (mine !== generation) return;
     opening = false;
     if (r.status === 200) {
       // P9 again, for the new page's job along with it.
@@ -65,6 +70,8 @@
     }
     open(url);
   }
+
+  onDestroy(() => { generation++; });
 
   onMount(() => {
     document.title = '영상 번역 오버레이';
@@ -95,6 +102,7 @@
       class="min-h-11 shrink-0 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-surface disabled:opacity-60"
       disabled={opening}>{opening ? '여는 중' : '열기'}</button
     >
+    <Link href="/library" class="inline-flex min-h-11 shrink-0 items-center rounded-lg border border-ink/30 px-2 text-base">보관함</Link>
     <Link href="/preferences" class="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg border border-ink/30 px-4 text-base">설정</Link>
   </form>
   {#if addressError}

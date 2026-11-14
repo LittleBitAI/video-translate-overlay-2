@@ -31,7 +31,7 @@ export function api(handler: (c: Call) => Answer | Promise<Answer>) {
 let shown: ReturnType<typeof mount> | null = null;
 
 /** Mounts the app at `path`. */
-export function open(path: '/' | '/preferences') {
+export function open(path: '/' | '/preferences' | '/library') {
   go(path);
   const target = document.createElement('div');
   document.body.append(target);

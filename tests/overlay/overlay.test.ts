@@ -15,7 +15,7 @@
 // `data-vto="subtitle"` (light DOM or an open shadow root). A subtitle counts as
 // shown when that box is visible and its text is not empty.
 
-import { expect, onTestFinished, test } from 'vitest';
+import { expect, onTestFinished, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 
 type Reply = { status: number; body: any };
@@ -24,7 +24,7 @@ type Mount = (opts: {
   video: HTMLVideoElement;
   pageUrl: string;
   title: string;
-  mediaUrl: string | null;
+  mediaUrl: string | null | (() => string | null | Promise<string | null>);
   request: (method: string, path: string, body?: unknown) => Promise<Reply>;
 }) => { destroy(): void } | Promise<{ destroy(): void }>;
 
@@ -111,12 +111,12 @@ function makePlayer(durationS: number) {
   };
 }
 
-function fakeBackend(handle: (call: Call) => Reply) {
+function fakeBackend(handle: (call: Call) => Reply | Promise<Reply>) {
   const calls: Call[] = [];
   const request = async (method: string, path: string, body?: unknown): Promise<Reply> => {
     const call = { method: method.toUpperCase(), path, body };
     calls.push(call);
-    return structuredClone(handle(call));
+    return structuredClone(await handle(call));
   };
   return { calls, request };
 }
@@ -151,6 +151,251 @@ test('ready subtitles offer translation repair without fetching or rewriting the
   await expect.poll(() => backend.calls.filter(c => c.method === 'POST').length).toBe(1);
   expect(backend.calls.find(c => c.method === 'POST')?.body).toEqual({ page_url: YT, retranslate: true });
   await expect.poll(() => detect()?.disabled).toBe(false);
+});
+
+test.each(['ready', 'failed'])('deleting another video preserves cues through a failed refresh: %s', async stage => {
+  const player = makePlayer(MAIN_MS / 1000);
+  let failing = false;
+  const backend = fakeBackend(c => c.path === '/jobs'
+    ? failing ? {status: 500, body: {message: 'Unavailable'}} : {status: 200, body: job(stage, 100)}
+    : {status: 200, body: subtitlesBody(CUES)});
+  await mountOverlay({video: player.video, pageUrl: YT, title: TITLE, mediaUrl: null, request: backend.request});
+  player.seek(1.5);
+  await expect.poll(shownSubtitle).toBe(CUES[0].text_ko);
+  const reads = backend.calls.filter(c => c.path === '/jobs').length;
+  failing = true;
+  window.dispatchEvent(new CustomEvent('vto-video-deleted', {detail: 'other-video'}));
+  await expect.poll(() => backend.calls.filter(c => c.path === '/jobs').length, {timeout: 2500}).toBeGreaterThan(reads);
+  expect(shownSubtitle()).toBe(CUES[0].text_ko);
+  expect(backend.calls.filter(c => c.path.endsWith('/subtitles'))).toHaveLength(1);
+  expect(backend.calls.filter(c => c.method === 'POST')).toHaveLength(0);
+});
+
+test.each(['ready', 'failed'])('deletion rejects a late saved-subtitle response and status: %s', async (stage) => {
+  const player=makePlayer(MAIN_MS/1000);
+  let deleted=false;
+  let reply: (r: Reply) => void=()=>{};
+  let requested=false;
+  const request = async (method: string,path: string): Promise<Reply> => {
+    if(path==='/jobs') return deleted ? {status:410,body:{message:'Deleted',deletion_token:'new-token'}} : {status:200,body:job(stage,100)};
+    requested=true;
+    return new Promise(resolve=>{reply=resolve;});
+  };
+  await mountOverlay({video:player.video,pageUrl:YT,title:TITLE,mediaUrl:null,request});
+  player.seek(1.5);
+  await expect.poll(()=>requested).toBe(true);
+  deleted=true;
+  window.dispatchEvent(new CustomEvent('vto-video-deleted',{detail:VIDEO_KEY}));
+  await expect.poll(()=>deepAll('[data-vto="status"]')[0]?.textContent).toBe('Deleted');
+  reply({status:200,body:subtitlesBody(CUES)});
+  await sleep(50);
+  expect(shownSubtitle()).toBe('');
+  expect(deepAll('[data-vto="status"]')[0]?.textContent).toBe('Deleted');
+  expect(deepAll('[data-vto="detect"]')[0]?.textContent).toBe('영상감지');
+});
+
+test('deletion before the first job response cannot revive that video', async () => {
+  const player = makePlayer(MAIN_MS / 1000);
+  let first = true;
+  let resolveJob: (reply: Reply) => void = () => {};
+  const backend = fakeBackend(c => {
+    if (c.path === '/jobs') {
+      if (first) { first = false; return new Promise(resolve => { resolveJob = resolve; }); }
+      return {status: 410, body: {message: 'Deleted', deletion_token: 'new-token'}};
+    }
+    return {status: 200, body: subtitlesBody(CUES)};
+  });
+  await mountOverlay({video: player.video, pageUrl: YT, title: TITLE, mediaUrl: null, request: backend.request});
+  player.seek(1.5);
+  await expect.poll(() => first).toBe(false);
+  window.dispatchEvent(new CustomEvent('vto-video-deleted', {detail: VIDEO_KEY}));
+  resolveJob({status: 200, body: job('ready', 100)});
+  await expect.poll(() => deepAll('[data-vto="status"]')[0]?.textContent, {timeout: 2500}).toBe('Deleted');
+  expect(shownSubtitle()).toBe('');
+  expect(backend.calls.filter(c => c.path.endsWith('/subtitles'))).toHaveLength(0);
+});
+
+test.each(['known', 'unknown'])('confirmed recreation replaces earlier deletion markers: %s identity', async identity => {
+  const player = makePlayer(MAIN_MS / 1000);
+  let state = identity === 'known' ? 'ready' : 'pending';
+  let resolveJob: ((answer: Reply) => void) | undefined;
+  let allow = false;
+  const backend = fakeBackend(c => {
+    if (c.method === 'POST') { state = 'recreated'; return {status: 200, body: job('ready', 100)}; }
+    if (c.path === '/jobs') {
+      if (state === 'pending') return new Promise(resolve => { resolveJob = resolve; });
+      return state === 'deleted' ? {status: 410, body: {message: 'Deleted', deletion_token: 'new-token'}}
+        : {status: 200, body: job('ready', 100)};
+    }
+    return {status: 200, body: subtitlesBody(CUES)};
+  });
+  const consent = vi.spyOn(window, 'confirm').mockImplementation(() => allow);
+  onTestFinished(() => consent.mockRestore());
+  await mountOverlay({video: player.video, pageUrl: YT, title: TITLE, mediaUrl: null, request: backend.request});
+  player.seek(1.5);
+  if (identity === 'known') await expect.poll(shownSubtitle).toBe(CUES[0].text_ko);
+  else await expect.poll(() => !!resolveJob).toBe(true);
+  state = 'deleted';
+  window.dispatchEvent(new CustomEvent('vto-video-deleted', {detail: VIDEO_KEY}));
+  resolveJob?.({status: 410, body: {message: 'Deleted', deletion_token: 'new-token'}});
+  await expect.poll(() => deepAll('[data-vto="status"]')[0]?.textContent).toBe('Deleted');
+  const detect = deepAll('[data-vto="detect"]')[0] as HTMLButtonElement;
+  detect.click();
+  expect(backend.calls.filter(c => c.method === 'POST')).toHaveLength(0);
+  expect(shownSubtitle()).toBe('');
+  allow = true; detect.click();
+  await expect.poll(shownSubtitle).toBe(CUES[0].text_ko);
+  const posts = backend.calls.filter(c => c.method === 'POST');
+  expect(posts).toHaveLength(1);
+  expect(posts[0].body.deletion_token).toBe('new-token');
+});
+
+test('deletion after consent still rejects a late creation response', async () => {
+  const player = makePlayer(MAIN_MS / 1000);
+  let resolveCreation: ((answer: Reply) => void) | undefined;
+  let latest = false;
+  const backend = fakeBackend(c => c.method === 'POST' ? new Promise(resolve => { resolveCreation = resolve; })
+    : c.path === '/jobs' ? {status: 410, body: {message: latest ? 'Deleted again' : 'Deleted', deletion_token: 'new-token'}}
+    : {status: 200, body: subtitlesBody(CUES)});
+  const consent = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  onTestFinished(() => consent.mockRestore());
+  await mountOverlay({video: player.video, pageUrl: YT, title: TITLE, mediaUrl: null, request: backend.request});
+  player.seek(1.5);
+  await expect.poll(() => deepAll('[data-vto="status"]')[0]?.textContent).toBe('Deleted');
+  (deepAll('[data-vto="detect"]')[0] as HTMLButtonElement).click();
+  await expect.poll(() => !!resolveCreation).toBe(true);
+  latest = true;
+  window.dispatchEvent(new CustomEvent('vto-video-deleted', {detail: VIDEO_KEY}));
+  resolveCreation!({status: 200, body: job('ready', 100)});
+  await expect.poll(() => deepAll('[data-vto="status"]')[0]?.textContent, {timeout: 2500}).toBe('Deleted again');
+  expect(shownSubtitle()).toBe('');
+  expect(backend.calls.filter(c => c.path.endsWith('/subtitles'))).toHaveLength(0);
+  expect(backend.calls.filter(c => c.method === 'POST')).toHaveLength(1);
+});
+
+test.each(['recreation', 'retranslation'])(
+  'an older job read cannot erase the replacement: %s', async operation => {
+  const player = makePlayer(MAIN_MS / 1000);
+  let state = 'ready';
+  let oldRead: ((answer: Reply) => void) | undefined;
+  let resolveCreation: ((answer: Reply) => void) | undefined;
+  const backend = fakeBackend(c => {
+    if (c.method === 'POST') return new Promise(resolve => { resolveCreation = resolve; });
+    if (c.path === '/jobs') {
+      if (state === 'hold') return new Promise(resolve => { oldRead = resolve; });
+      if (state === 'deleted') return {status: 410, body: {message: 'Deleted', deletion_token: 'new-token'}};
+      return {status: 200, body: job('ready', 100)};
+    }
+    return {status: 200, body: subtitlesBody(CUES)};
+  });
+  const consent = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  onTestFinished(() => consent.mockRestore());
+  await mountOverlay({video: player.video, pageUrl: YT, title: TITLE, mediaUrl: null, request: backend.request});
+  player.seek(1.5);
+  await expect.poll(shownSubtitle).toBe(CUES[0].text_ko);
+  if (operation === 'recreation') {
+    state = 'deleted'; window.dispatchEvent(new CustomEvent('vto-video-deleted', {detail: VIDEO_KEY}));
+    await expect.poll(() => deepAll('[data-vto="status"]')[0]?.textContent).toBe('Deleted');
+  }
+  const detect = deepAll('[data-vto="detect"]')[0] as HTMLButtonElement;
+  state = 'hold'; document.dispatchEvent(new Event('visibilitychange'));
+  await expect.poll(() => !!oldRead).toBe(true);
+  detect.click();
+  await expect.poll(() => !!resolveCreation).toBe(true);
+  state = 'recreated'; resolveCreation!({status: 200, body: job('ready', 100)});
+  await expect.poll(shownSubtitle).toBe(CUES[0].text_ko);
+  oldRead!({status: 410, body: {message: 'Old deletion', deletion_token: 'old-token'}});
+  await sleep(50);
+  expect(shownSubtitle()).toBe(CUES[0].text_ko);
+  const posts = backend.calls.filter(c => c.method === 'POST');
+  expect(posts).toHaveLength(1);
+  if (operation === 'retranslation') expect(posts[0].body.retranslate).toBe(true);
+});
+
+test.each(['media', 'advertisement', 'creation', 'retranslation'].flatMap(phase => ['interval', 'visibility'].map(trigger => ({phase, trigger}))))(
+  'confirmed recreation owns the attempt while waiting for $phase across $trigger polling', async ({phase, trigger}) => {
+  const player = makePlayer(MAIN_MS / 1000);
+  let resolveMedia: ((url: string | null) => void) | undefined;
+  let resolveCreation: ((answer: Reply) => void) | undefined;
+  const backend = fakeBackend(c => c.method === 'POST'
+    ? new Promise(resolve => { resolveCreation = resolve; })
+    : c.path === '/jobs' ? phase === 'retranslation' ? {status: 200, body: job('ready', 100)}
+      : {status: 410, body: {message: 'Deleted', deletion_token: 'new-token'}}
+    : {status: 200, body: subtitlesBody(CUES)});
+  const consent = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  onTestFinished(() => consent.mockRestore());
+  await mountOverlay({video: player.video, pageUrl: YT, title: TITLE,
+    mediaUrl: phase === 'media' ? () => new Promise(resolve => { resolveMedia = resolve; }) : null,
+    request: backend.request});
+  player.seek(1.5);
+  if (phase === 'retranslation') await expect.poll(shownSubtitle).toBe(CUES[0].text_ko);
+  else await expect.poll(() => deepAll('[data-vto="status"]')[0]?.textContent).toBe('Deleted');
+  if (phase === 'advertisement') player.player.classList.add('ad-showing');
+  const reads = backend.calls.filter(c => c.method === 'GET' && c.path === '/jobs').length;
+  const detect = deepAll('[data-vto="detect"]')[0] as HTMLButtonElement;
+  detect.click();
+  if (phase === 'media') await expect.poll(() => !!resolveMedia).toBe(true);
+  if (phase === 'creation' || phase === 'retranslation') await expect.poll(() => !!resolveCreation).toBe(true);
+  if (trigger === 'visibility') document.dispatchEvent(new Event('visibilitychange'));
+  await sleep(trigger === 'interval' ? 1150 : 50);
+  expect(detect.disabled).toBe(true);
+  expect(backend.calls.filter(c => c.method === 'GET' && c.path === '/jobs')).toHaveLength(reads);
+  if (phase === 'advertisement') player.player.classList.remove('ad-showing');
+  resolveMedia?.('https://media.example.org/lecture.mp4');
+  await expect.poll(() => !!resolveCreation).toBe(true);
+  resolveCreation!({status: 200, body: job('ready', 100)});
+  await expect.poll(shownSubtitle).toBe(CUES[0].text_ko);
+  const posts = backend.calls.filter(c => c.method === 'POST');
+  expect(posts).toHaveLength(1);
+  if (phase === 'retranslation') expect(posts[0].body.retranslate).toBe(true);
+  else expect(posts[0].body.deletion_token).toBe('new-token');
+});
+
+test.each(['media', 'request', 'refusal'])('a failed explicit attempt releases polling and allows retry: %s', async failure => {
+  const player = makePlayer(MAIN_MS / 1000);
+  let failing = true;
+  const backend = fakeBackend(c => {
+    if (c.method === 'POST') {
+      if (failing && failure === 'request') throw new Error('Unavailable');
+      if (failing && failure === 'refusal') return {status: 428, body: {}};
+      return {status: 200, body: job('ready', 100)};
+    }
+    return c.path === '/jobs' ? {status: 410, body: {message: 'Deleted', deletion_token: 'new-token'}}
+      : {status: 200, body: subtitlesBody(CUES)};
+  });
+  const consent = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  onTestFinished(() => consent.mockRestore());
+  await mountOverlay({video: player.video, pageUrl: YT, title: TITLE, mediaUrl: () => {
+    if (failing && failure === 'media') throw new Error('Unavailable');
+    return null;
+  }, request: backend.request});
+  player.seek(1.5);
+  const status = () => deepAll('[data-vto="status"]')[0]?.textContent;
+  await expect.poll(status).toBe('Deleted');
+  const reads = backend.calls.filter(c => c.method === 'GET' && c.path === '/jobs').length;
+  const detect = deepAll('[data-vto="detect"]')[0] as HTMLButtonElement;
+  detect.click();
+  await expect.poll(status).toBe(failure === 'refusal' ? '설정에서 Gemini API 키를 넣어 주세요.' : '작업을 시작하지 못했습니다. 다시 눌러 주세요.');
+  expect(detect.disabled).toBe(false);
+  await expect.poll(() => backend.calls.filter(c => c.method === 'GET' && c.path === '/jobs').length,
+    {timeout: 2500}).toBeGreaterThan(reads);
+  failing = false;
+  detect.click();
+  await expect.poll(shownSubtitle).toBe(CUES[0].text_ko);
+  expect(backend.calls.filter(c => c.method === 'POST')).toHaveLength(failure === 'media' ? 1 : 2);
+});
+
+test('a visible saved overlay notices deletion from another screen without a native event', async () => {
+  const player=makePlayer(MAIN_MS/1000);
+  let deleted=false;
+  const backend=fakeBackend(c => c.path==='/jobs'
+    ? deleted ? {status:410,body:{message:'Deleted'}} : {status:200,body:job('ready',100)}
+    : {status:200,body:subtitlesBody(CUES)});
+  await mountOverlay({video:player.video,pageUrl:YT,title:TITLE,mediaUrl:null,request:backend.request});
+  player.seek(1.5);
+  await expect.poll(shownSubtitle).toBe(CUES[0].text_ko);
+  deleted=true;
+  await expect.poll(shownSubtitle,{timeout:3000}).toBe('');
 });
 
 // A failed replacement must show the completed set without another detect click,

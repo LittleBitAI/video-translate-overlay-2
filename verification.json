@@ -1,0 +1,95 @@
+{
+  "version": 2,
+  "contracts": ["DESIGN.md", "docs/design/api.yaml", "docs/design/library-verification.md"],
+  "flows": [
+    {
+      "id": "library-api",
+      "title": "Saved library persistence and deletion through the real local API",
+      "kind": "api",
+      "command": "node scripts/verification/run.mjs api",
+      "paths": ["*"],
+      "environments": ["api", "dataset", "settings"],
+      "assertions": [
+        {"id": "reuse", "expected": "An upgraded saved translation keeps its cues and cost when reopened"},
+        {"id": "persistence-delete", "expected": "Restart preserves playlists; confirmed deletion removes all memberships and preserves the other video"},
+        {"id": "no-automatic-translation", "expected": "Adding and opening an untranslated entry creates no processing job"},
+        {"id": "playlist-retention", "expected": "Removing a playlist preserves its saved translations and other playlists"}
+      ]
+    },
+    {
+      "id": "library-browser",
+      "title": "Library and playlist actions in Chromium with the real local API",
+      "kind": "browser",
+      "command": "node scripts/verification/run.mjs browser",
+      "paths": ["*"],
+      "environments": ["api", "dataset", "settings"],
+      "assertions": [
+        {"id": "saved-reuse", "expected": "Saved subtitles retain their times and cost without a translation request"},
+        {"id": "restart", "expected": "Playlist names, order and memberships survive a process restart"},
+        {"id": "cancel-delete", "expected": "Cancelling named permanent deletion preserves the saved translation"},
+        {"id": "delete", "expected": "Confirmed deletion removes the video from every playlist and preserves unrelated data"},
+        {"id": "playlist-retention", "expected": "Removing a playlist preserves its saved translations and other playlists"},
+        {"id": "manual-link", "expected": "Opening an untranslated playlist entry leaves translation unstarted"}
+      ]
+    },
+    {
+      "id": "library-windows",
+      "title": "Library and saved subtitles in the isolated installed Windows application",
+      "kind": "desktop",
+      "command": "wiki-agent-native",
+      "paths": ["*"],
+      "environments": ["api", "dataset", "settings", "windows"],
+      "assertions": [
+        {"id": "saved-reuse", "expected": "Saved subtitles retain their times and cost without a translation request"},
+        {"id": "restart", "expected": "Playlist names, order and memberships survive a process restart"},
+        {"id": "cancel-delete", "expected": "Cancelling named permanent deletion preserves the saved translation"},
+        {"id": "delete", "expected": "Confirmed deletion removes the video from every playlist and preserves unrelated data"},
+        {"id": "playlist-retention", "expected": "Removing a playlist preserves its saved translations and other playlists"},
+        {"id": "manual-link", "expected": "Opening an untranslated playlist entry leaves translation unstarted"}
+      ],
+      "native": {
+        "driver": "webview", "platform": "windows", "application": "vto-windows",
+        "scenario": "scripts/verification/library-scenario.mjs",
+        "build_inputs": ["Cargo.toml", "Cargo.lock", "package*.json", "index.html", "vite*.ts", "src/*", "src-tauri/*", "scripts/verification/*"],
+        "actions": [
+          {"assertion": "saved-reuse", "expected": "Saved subtitles retain their times and cost without a translation request"},
+          {"assertion": "restart", "expected": "Playlist names, order and memberships survive a process restart"},
+          {"assertion": "cancel-delete", "expected": "Cancelling named permanent deletion preserves the saved translation"},
+          {"assertion": "delete", "expected": "Confirmed deletion removes the video from every playlist and preserves unrelated data"},
+          {"assertion": "playlist-retention", "expected": "Removing a playlist preserves its saved translations and other playlists"},
+          {"assertion": "manual-link", "expected": "Opening an untranslated playlist entry leaves translation unstarted"}
+        ]
+      }
+    },
+    {
+      "id": "library-android",
+      "title": "Library and saved subtitles in an installed APK on a disposable Android emulator",
+      "kind": "desktop",
+      "command": "wiki-agent-native",
+      "paths": ["*"],
+      "environments": ["api", "dataset", "settings", "android"],
+      "assertions": [
+        {"id": "saved-reuse", "expected": "Saved subtitles retain their times and cost without a translation request"},
+        {"id": "restart", "expected": "Playlist names, order and memberships survive a process restart"},
+        {"id": "cancel-delete", "expected": "Cancelling named permanent deletion preserves the saved translation"},
+        {"id": "delete", "expected": "Confirmed deletion removes the video from every playlist and preserves unrelated data"},
+        {"id": "playlist-retention", "expected": "Removing a playlist preserves its saved translations and other playlists"},
+        {"id": "manual-link", "expected": "Opening an untranslated playlist entry leaves translation unstarted"}
+      ],
+      "native": {
+        "driver": "webview", "platform": "android", "application": "vto-android",
+        "package": "dev.vto.overlay", "activity": ".MainActivity",
+        "scenario": "scripts/verification/library-scenario.mjs",
+        "build_inputs": ["Cargo.toml", "Cargo.lock", "package*.json", "index.html", "vite*.ts", "src/*", "src-tauri/*", "scripts/verification/*"],
+        "actions": [
+          {"assertion": "saved-reuse", "expected": "Saved subtitles retain their times and cost without a translation request"},
+          {"assertion": "restart", "expected": "Playlist names, order and memberships survive a process restart"},
+          {"assertion": "cancel-delete", "expected": "Cancelling named permanent deletion preserves the saved translation"},
+          {"assertion": "delete", "expected": "Confirmed deletion removes the video from every playlist and preserves unrelated data"},
+          {"assertion": "playlist-retention", "expected": "Removing a playlist preserves its saved translations and other playlists"},
+          {"assertion": "manual-link", "expected": "Opening an untranslated playlist entry leaves translation unstarted"}
+        ]
+      }
+    }
+  ]
+}
