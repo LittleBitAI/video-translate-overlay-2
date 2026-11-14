@@ -1,11 +1,11 @@
 # Release update notice acceptance
 
-The 0.1.7 candidate is prepared locally. Publication and public artifact
-verification require the user's approval and remain pending. This record does
-not declare a fixture-only channel complete or claim that the repository gate
-passed.
+The user approved publication of the exact 0.1.7 artifacts and notes, and
+[the release is public](https://github.com/LittleBitAI/video-translate-overlay-2/releases/tag/v0.1.7).
+Anonymous metadata/download checks and native selection against the actual
+release passed. The full repository gate remains server-owned and pending.
 
-## Candidate for approval
+## Approved published artifacts
 
 The packaging script completed both platforms from clean source commit
 `f8ce38868089674d17c8a8410aaecb05d979e8fb`. Versions match at 0.1.7; Android's
@@ -16,7 +16,7 @@ version code is 1007. Outputs are in the ignored `artifacts/releases/0.1.7/`.
 | `video-translate-overlay-0.1.7-arm64.apk` | 24545528 | `c86c781d03ee6f19e38fe854ad37c1c54673bf0072b32d639f34cd11738bcc04` |
 | `video-translate-overlay-0.1.7-windows-x64-setup.exe` | 4050199 | `6776b1041198786f721e590af921a92bb7e289f9cdb4b1c0dfb52d521a99b591` |
 
-The approved-body candidate is `docs/releases/0.1.7.md`, SHA-256
+The published release body is `docs/releases/0.1.7.md`, SHA-256
 `bd2eff3ff8409e1309f4e1b0cd9966ed481d59689a70fbae051c070ae29488ba`.
 `manifest.json` records the clean source commit and notes hash. Android signature
 verification reports certificate SHA-256
@@ -109,20 +109,59 @@ navigation behavior, not artifact availability. Windows production-user data
 was not modified for acceptance; its native retention checks used the isolated
 debug profile and the unchanged production credential/data identities.
 
-## Remaining publication acceptance
+## Public channel acceptance
 
-Unauthenticated requests to the public GitHub releases endpoint returned HTTP
-200 and an empty array. Installed Windows and the production Android app also
-checked this actual source successfully. No GitHub credential is embedded in
-the application. Tag `v0.1.7` did not exist remotely at preparation time.
+Before publication the anonymous releases endpoint returned HTTP 200 and an
+empty array. The user then selected `Publish 0.1.7 (Recommended)`, approving the
+prepared files, notes, checksums, and tag at `f8ce388`. The annotated `v0.1.7` tag
+was pushed to that exact commit and the normal GitHub Release was created with
+the approved notes and artifacts. It is neither a draft nor a prerelease.
 
-The user must approve the two files, hashes, notes, and first outward
-publication. After authorization, push the tag for the candidate source commit,
-publish the normal approved release, download both assets without credentials,
-compare their hashes, and repeat native selection/navigation against that actual
-metadata using the isolated older-version comparison. No unrelated later
-production release is needed. Until those checks pass, public download
-reachability and live-channel acceptance remain pending.
+`node artifacts/update-acceptance/public-release.mjs` passed: a fresh HTTP client
+used no authorization header, received HTTP 200 for release metadata and both
+binary downloads, and matched each downloaded byte count and SHA-256 against
+the approved local files above. GitHub redirected the asset responses to
+`release-assets.githubusercontent.com`. The published body also matched the
+approved notes. `git rev-parse 'v0.1.7^{}'` confirmed the approved source commit.
+No credential is embedded in the app or required by this channel.
+
+The actual Windows Tauri app and installed Android debug APK were rebuilt at
+`6cd0d5d`, whose runtime source matches the published candidate. Both used the
+existing isolated saved-data profiles with `update-installed.txt` set to 0.1.6.
+There was no `update-fixture.json` on either platform: the only override was the
+installed-version comparison. Each native app fetched the real public metadata,
+selected 0.1.7, displayed its actual feature summary and correct platform URL,
+persisted dismissal, revealed it through the settings button, and exercised the
+download link. The secure key status, library, cues, and 12.5 KRW saved job cost
+matched the pre-upgrade snapshots. No unrelated production release was created.
+
+`node artifacts/update-acceptance/native-public.mjs windows` passed. The default
+Windows browser downloaded the 4050199-byte installer into Downloads; its actual
+file hash was `6776b1041198786f721e590af921a92bb7e289f9cdb4b1c0dfb52d521a99b591`.
+Android Chrome received the exact public APK URL and displayed its standard APK
+download confirmation. After confirming that approved file, the 24545528-byte
+APK in the isolated user's Downloads matched
+`c86c781d03ee6f19e38fe854ad37c1c54673bf0072b32d639f34cd11738bcc04`.
+The Android handoff was verified in two phases while the app WebView paused
+behind Chrome, then completed after return to the app with
+`python artifacts/update-acceptance/android-public-download.py verify-only` and
+`node artifacts/update-acceptance/native-public.mjs android resume`. Dismissal
+remained effective and no download-opening error appeared.
+
+The anonymously downloaded production ARM64 APK was then installed over the
+isolated app. Its real settings screen reported no newer release for installed
+0.1.7 against public 0.1.7, ignoring the debug-only 0.1.6 comparison file. The
+secure key remained readable, and every saved database row and sealed credential
+file still matched the pre-upgrade snapshot. Both
+`python artifacts/update-acceptance/android-ui.py` and
+`python artifacts/update-acceptance/android-production.py after` passed.
+
+Public receipts and screenshots are retained under the ignored
+`artifacts/update-acceptance/` folder: `public-release.json`, the two
+`*-public.json` native receipts, `*-browser-download.json`, and the public launch
+and manual-notice screenshots. The final verification limitations remain those
+stated above: Android hardware was an emulator, and Windows retention used a
+separate native debug profile rather than the production user's data.
 
 The full repository gate and final verification are server-owned and remain
 pending. They are not replaced by the focused checks above.

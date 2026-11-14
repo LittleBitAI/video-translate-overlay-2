@@ -4,6 +4,10 @@ Distribution uses public GitHub Releases in `LittleBitAI/video-translate-overlay
 as chosen in `docs/design/backend.md`. The source repository is public. The app
 requests the [public releases endpoint](https://docs.github.com/en/rest/releases/releases#list-releases)
 without authentication. No GitHub token is stored in the app or an APK.
+The first approved channel release is
+[0.1.7](https://github.com/LittleBitAI/video-translate-overlay-2/releases/tag/v0.1.7).
+Its [acceptance record](acceptance.md) records the approved hashes, anonymous
+downloads, and isolated native checks.
 
 ## Release contract
 

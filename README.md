@@ -18,9 +18,9 @@ Android 7.0 이상, ARM64 기기가 대상입니다. 갤럭시 S21 시리즈도 
 
 Approved installers are distributed through GitHub Releases. Local build outputs
 in `artifacts/` are not committed. The Android release APK retains the development
-signing key used by existing installations; store signing is separate. The first
-0.1.7 release is prepared locally and its public link becomes available only
-after the user's publication approval.
+signing key used by existing installations; store signing is separate. The
+[approved 0.1.7 release](https://github.com/LittleBitAI/video-translate-overlay-2/releases/tag/v0.1.7)
+contains anonymously downloadable Android and Windows installers.
 
 ## Approved release updates
 
@@ -30,6 +30,8 @@ open your device's download or dismiss that version. `설정 → 업데이트 �
 again and can reveal a dismissed version. Downloads and installation are manual;
 automatic failures do not interrupt video use. Installations through 0.1.6 need
 one manual upgrade, keeping the existing app installed to retain local data.
+Windows users can download the [0.1.7 x64 installer](https://github.com/LittleBitAI/video-translate-overlay-2/releases/download/v0.1.7/video-translate-overlay-0.1.7-windows-x64-setup.exe)
+and install it for the same Windows user, keeping the existing app data.
 The [release procedure](docs/releases/procedure.md) defines approval, packaging,
 signing continuity, and first-publication acceptance.
 
