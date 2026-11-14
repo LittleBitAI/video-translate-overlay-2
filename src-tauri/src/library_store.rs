@@ -63,15 +63,15 @@ impl Store {
         Ok(self.db.query("SELECT id,audio_path FROM job WHERE video_key=?", p![key])?.iter().map(|r| (r[0].text(), r[1].opt_text())).collect())
     }
 
-    pub fn finish_delete(&self, key: &str, clear_browser: bool) -> R<()> {
+    pub fn finish_delete(&self, key: &str, inspected_url: Option<&str>) -> R<()> {
         self.library_write(|db| {
             db.execute("DELETE FROM retranslation_cue WHERE job_id IN (SELECT id FROM job WHERE video_key=?)", p![key])?;
             db.execute("DELETE FROM playlist_entry WHERE video_key=?", p![key])?;
             db.execute("DELETE FROM cue WHERE video_key=?", p![key])?;
             db.execute("DELETE FROM job WHERE video_key=?", p![key])?;
             db.execute("DELETE FROM video WHERE video_key=?", p![key])?;
-            if clear_browser {
-                db.exec("DELETE FROM browser")?;
+            if let Some(url) = inspected_url {
+                db.execute("DELETE FROM browser WHERE id=1 AND url=?", p![url])?;
             }
             db.execute("UPDATE deleted_video SET complete=1 WHERE video_key=?", p![key])?;
             Ok(())

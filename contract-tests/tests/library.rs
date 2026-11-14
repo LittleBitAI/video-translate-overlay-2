@@ -157,6 +157,28 @@ fn deletion_confirmation_retry_and_multiple_memberships_preserve_unrelated_data(
 }
 
 #[test]
+fn deletion_clears_only_matching_open_video_urls() {
+    for (opened, expected) in [
+        (None, None),
+        (Some(A), None),
+        (Some("https://lectures.example.org/a?utm_source=share#t=30"), None),
+        (Some(B), Some(B)),
+    ] {
+        let mut app = App::new(Options::default());
+        app.launch();
+        let p = playlist(&mut app, "Topic");
+        change(&mut app, json!({"action":"add_entry","playlist_id":p,"page_url":A,"title":"Lecture"}));
+        let key = library(&mut app)["videos"][0]["video_key"].clone();
+        if let Some(url) = opened { assert_eq!(app.open(url).status, 200); }
+        change(&mut app, json!({"action":"delete_video","video_key":key,"title":"Lecture","confirmed":true}));
+        let browser = app.app_call("GET", "/browser", Value::Null);
+        assert_eq!(browser.status, 200);
+        assert_eq!(browser.body["url"], json!(expected));
+        assert!(library(&mut app)["videos"].as_array().unwrap().is_empty());
+    }
+}
+
+#[test]
 fn deletion_rejects_active_processing() {
     let mut app = App::new(Options::default());
     let url = app.media.serve("/held.wav", "audio/wav", speech_wav(5000, &[(500, 3500)]));

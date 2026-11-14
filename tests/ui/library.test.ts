@@ -1,7 +1,63 @@
-import { expect, test, vi } from 'vitest';
+import { mount, unmount } from 'svelte';
+import { expect, onTestFinished, test, vi } from 'vitest';
+import Library from '../../src/ui/Library.svelte';
 import { $, api, button, calls, open, text, type } from './fake';
 
 const video = {video_key:'saved',title:'Attention lecture',page_url:'https://lectures.example.org/a',saved:true,active:false,deleting:false};
+
+test.each(['native', 'broadcast'].flatMap(source => [
+  {operation:'rename', status:200}, {operation:'rename', status:400},
+  {operation:'rename', status:0}, {operation:'open', status:503},
+].map(result => ({source, ...result}))))(
+  'busy library applies deletion after $operation returns $status through $source', async ({source, operation, status}) => {
+  let deleted = false;
+  let finishMutation: (() => void) | undefined;
+  let finishDeletion: (() => void) | undefined;
+  api(c => {
+    if (c.method === 'GET') return [200, {videos: deleted ? [] : [video],
+      playlists: [{id:'p', name:'Topic', entries: deleted ? [] : ['saved']}]}];
+    if (c.body?.action === 'delete_video') {
+      deleted = true;
+      return new Promise(resolve => { finishDeletion = () => resolve([200, {changed:true}]); });
+    }
+    return new Promise((resolve, reject) => { finishMutation = () => status === 0
+      ? reject(new Error('Unavailable')) : resolve([status, {message:'Mutation failed', changed:status === 200}]); });
+  });
+  const root = open('/library');
+  const other = document.body.appendChild(document.createElement('div'));
+  const second = mount(Library, {target:other});
+  onTestFinished(() => { finishMutation?.(); finishDeletion?.(); unmount(second); });
+  await vi.waitFor(() => expect(text(root)).toContain(video.title));
+  await vi.waitFor(() => expect(text(other)).toContain(video.title));
+  if (operation === 'rename') {
+    button(root, 'Topic (1)').click();
+    await vi.waitFor(() => expect($(root, 'section[aria-label="선택한 재생목록"] input')).not.toBeNull());
+    type($(root, 'section[aria-label="선택한 재생목록"] input'), 'Renamed');
+    button(root, '이름 바꾸기').click();
+  } else button($(root, 'li[data-video-key="saved"]')!, '영상 열기').click();
+  await vi.waitFor(() => expect(finishMutation).toBeDefined());
+  button(other, '영상 삭제').click();
+  await vi.waitFor(() => expect($(other, '[role="alertdialog"]')).not.toBeNull());
+  button(other, '영구 삭제 확인').click();
+  await vi.waitFor(() => expect(finishDeletion).toBeDefined());
+  if (source === 'native') {
+    for (let i = 0; i < 2; i++) window.dispatchEvent(new CustomEvent('vto-video-deleted', {detail:video.video_key}));
+  } else {
+    const channel = new BroadcastChannel('vto-library');
+    onTestFinished(() => channel.close());
+    channel.postMessage(video.video_key); channel.postMessage(video.video_key);
+  }
+  await new Promise(resolve => setTimeout(resolve, 50));
+  expect(calls.filter(c => c.method === 'GET')).toHaveLength(2);
+  finishMutation!();
+  await vi.waitFor(() => expect($(root, 'li[data-video-key="saved"]')).toBeNull());
+  expect(text(root)).toContain('Topic (0)');
+  expect(text(root)).not.toContain('저장 자막 있음');
+  if (status !== 200) expect($(root, '[role="alert"]')).not.toBeNull();
+  expect(calls.filter(c => c.method === 'GET')).toHaveLength(3);
+  finishDeletion!();
+  await vi.waitFor(() => expect($(other, 'li[data-video-key="saved"]')).toBeNull());
+});
 
 test('library loading, failure, retry, and empty guidance', async () => {
   let fail=true;

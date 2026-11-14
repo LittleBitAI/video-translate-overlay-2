@@ -18,6 +18,7 @@
   let screen = $state<'loading'|'ready'|'error'>('loading');
   let error = $state('');
   let busy = $state(false);
+  let refreshPending = false;
   let confirmation = $state<{ kind: 'video'|'playlist'; id: string; title: string } | null>(null);
   let generation = 0;
   let channel: BroadcastChannel;
@@ -29,6 +30,7 @@
   const input = 'min-h-11 min-w-0 rounded-lg border border-ink/30 bg-ink/5 px-4 py-2 text-base';
 
   async function load() {
+    refreshPending = false;
     const mine = ++generation;
     screen = 'loading';
     const r = await request('GET', '/library/data');
@@ -53,7 +55,7 @@
     busy = false;
     if (r.status !== 200) {
       error = r.body?.message ?? '변경하지 못했습니다. 다시 시도해 주세요.';
-      if (action.action === 'delete_video' && r.status >= 500) await load();
+      if (refreshPending || (action.action === 'delete_video' && r.status >= 500)) await load();
       return;
     }
     confirmation = null;
@@ -68,7 +70,10 @@
     if (mine !== generation) return;
     busy = false;
     if (r.status === 200) go('/');
-    else error = r.body?.message ?? '영상을 열지 못했습니다.';
+    else {
+      error = r.body?.message ?? '영상을 열지 못했습니다.';
+      if (refreshPending) await load();
+    }
   }
 
   function choose(id: string) {
@@ -80,7 +85,7 @@
   function focusConfirmation(node: HTMLElement) { node.focus(); }
 
   onMount(() => {
-    const refresh = () => { if (!busy) load(); };
+    const refresh = () => { if (busy) refreshPending = true; else load(); };
     channel = new BroadcastChannel('vto-library');
     channel.onmessage = refresh;
     window.addEventListener('vto-video-deleted', refresh);

@@ -71,8 +71,8 @@ pub fn library_action(core: &Core, action: &Value) -> ApiResult {
                 log(format!("video cleanup: {e}"));
                 err(503, "cleanup_failed", "파일을 지우지 못했습니다. 자막은 숨겼습니다. 보관함에서 삭제를 다시 시도해 주세요.")
             })?;
-            let clear = core.store.opened_url()?.and_then(|u| http_url(&u).ok()).is_some_and(|u| video_key(&u) == key);
-            core.store.finish_delete(key, clear)?;
+            let inspected = core.store.opened_url()?.filter(|raw| http_url(raw).ok().is_some_and(|u| video_key(&u) == key));
+            core.store.finish_delete(key, inspected.as_deref())?;
             if let Err(e) = core.svc.browser.invalidate_video(key) {
                 log(format!("refresh after video deletion: {e}"));
             }
