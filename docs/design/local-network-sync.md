@@ -884,3 +884,35 @@ affected pipeline/contract checks; none covers a removed path or duplicates
 the retained-version admission boundary. No tests were removed. Native binaries
 from `fc0d072` predate this repair; their observations above remain identified
 by that source revision. The server-owned gate has not been run here.
+
+### Native readiness after the cost repair
+
+Both native builds and installed screens identify
+`5f899a2c72080208f84db666d83e119aa4fcd788`. Windows built successfully; its
+executable SHA-256 is
+`a07588146b8cca5b8ea6afcb53a479a9fbf99ef5c0ee0ccccc55f9c532abb0f5`.
+Android's Rust build succeeded, followed by the known Windows symlink refusal.
+The documented absolute-path JNI copy was hash-checked and Gradle packaging
+succeeded. Its 488,147,727-byte APK has SHA-256
+`e64fc81d8d99045e5150ce8b828f6f36a94373face41caa18eeaf5e3d1d27fd7`.
+The packaged stripped core matches the fresh output, all 962 APK entries exclude
+the publisher Desktop secret, and the signing certificate matches the existing
+installation. Local debug outputs are not published releases.
+
+The Windows readiness harness initially used backslashes for the existing
+disposable profile, producing a different path digest from the earlier
+forward-slash launch. Both paths resolved to the same directory. Restoring the
+original launch value restored the expected digest; the failed assertion was
+not removed. The owned process was closed normally before relaunching.
+
+After the in-place APK update, both native cores and screens matched the repair
+commit, restored sign-in without interaction, retained the two fixture playlists
+and two untranslated links, and reported connected. Actual UI renames reached
+the opposite device's SQLite library and visible screen in 1,864 ms from Windows
+and 1,974 ms from Android. The pre-update APK backup matched the earlier hash.
+All three original phone translations and the sealed Gemini credential remained
+unchanged, with no active job. Private receipts are `cost-*-readiness.json`,
+`cost-transfer.json` and `phone-after-cost-repair/retention.json` under the same
+ignored artifact directory. The topology, screen-off, second-account and public
+OAuth limitations above still apply. A documentation-only descendant may cite
+these results without claiming rebuilt binaries for that descendant.
