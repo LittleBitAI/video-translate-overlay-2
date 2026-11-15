@@ -4,6 +4,7 @@ use crate::{
     google_auth::{AuthError, Platform, VerifiedIdentity, Verifier},
     google_desktop::Credentials,
     sync::Journal,
+    sync_tls::DeviceKey,
 };
 use serde::{Deserialize, Serialize};
 use std::{
@@ -55,12 +56,17 @@ struct Saved {
     id_token: String,
     refresh_token: Option<String>,
     nonce: String,
+    #[serde(default)]
+    device: Option<DeviceKey>,
 }
 
 pub struct Session {
     pub identity: VerifiedIdentity,
     pub journal: Journal,
     cancelled: Arc<AtomicBool>,
+    device: Option<DeviceKey>,
+    proof: String,
+    platform: Platform,
 }
 
 pub struct LoginAttempt {
@@ -74,6 +80,16 @@ impl Session {
             return Err(AuthError::Cancelled);
         }
         self.identity.require_current()
+    }
+
+    pub(crate) fn device(&self) -> Result<&DeviceKey, AuthError> {
+        self.require_current()?;
+        self.device.as_ref().ok_or(AuthError::Invalid)
+    }
+
+    pub(crate) fn peer_proof(&self) -> Result<(&str, Platform), AuthError> {
+        self.device()?;
+        Ok((&self.proof, self.platform))
     }
 }
 
@@ -227,6 +243,7 @@ impl Manager {
             let identity =
                 self.verifier
                     .verify(&saved.id_token, &saved.nonce, provider.platform())?;
+            validate_device(&saved)?;
             if cancelled.load(Ordering::Acquire) {
                 return Err(AuthError::Cancelled);
             }
@@ -236,6 +253,9 @@ impl Manager {
                 identity,
                 journal,
                 cancelled: cancelled.clone(),
+                device: saved.device,
+                proof: saved.id_token,
+                platform: provider.platform(),
             })))
         })();
         let mut state = self.state.lock().map_err(|_| AuthError::Unavailable)?;
@@ -319,9 +339,8 @@ impl Manager {
                 .lock()
                 .map_err(|_| AuthError::Unavailable)?
                 .require(generation)?;
-            let mut random = [0u8; 32];
-            getrandom::fill(&mut random).map_err(|_| AuthError::Unavailable)?;
-            let nonce: String = random.iter().map(|b| format!("{b:02x}")).collect();
+            let device = DeviceKey::generate()?;
+            let nonce = device.nonce();
             let (identity, id_token, refresh_token) = provider
                 .sign_in(&nonce, &cancelled, &self.verifier)?
                 .into_parts();
@@ -336,22 +355,26 @@ impl Manager {
             {
                 return Err(AuthError::Invalid);
             }
-            let saved = serde_json::to_string(&Saved {
+            let saved = Saved {
                 id_token,
                 refresh_token,
                 nonce,
-            })
-            .map_err(|_| AuthError::Invalid)?;
+                device: Some(device),
+            };
+            let serialized = serde_json::to_string(&saved).map_err(|_| AuthError::Invalid)?;
             let mut state = self.state.lock().map_err(|_| AuthError::Unavailable)?;
             state.require(generation)?;
             self.require_running()?;
             let journal =
                 Journal::open(&self.root, &identity).map_err(|_| AuthError::Unavailable)?;
-            provider.write(&saved)?;
+            provider.write(&serialized)?;
             state.session = Some(Arc::new(Session {
                 identity,
                 journal,
                 cancelled: cancelled.clone(),
+                device: saved.device,
+                proof: saved.id_token,
+                platform: provider.platform(),
             }));
             state.auth = AuthState::SignedIn;
             Ok(state.status())
@@ -423,6 +446,17 @@ impl Manager {
             state.cancelled.store(true, Ordering::Release);
         }
     }
+}
+
+fn validate_device(saved: &Saved) -> Result<(), AuthError> {
+    if let Some(device) = &saved.device {
+        if device.nonce() != saved.nonce {
+            return Err(AuthError::Invalid);
+        }
+        device.client_config()?;
+        device.server_config()?;
+    }
+    Ok(())
 }
 
 #[cfg(windows)]

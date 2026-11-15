@@ -99,9 +99,48 @@ fn unsupported_hosts_fail_closed_and_status_never_contains_credentials() {
         "nonce",
         "id_token",
         "refresh_token",
+        "private_key",
+        "certificate",
     ] {
         assert!(!serialized.contains(field), "status contains {field}");
     }
+}
+
+#[test]
+fn each_login_seals_a_new_device_key_bound_to_its_google_nonce() {
+    let profile = Profile::new();
+    let (manager, native) = configured(&profile);
+    manager
+        .sign_in(manager.status().unwrap().generation)
+        .unwrap();
+    let old = manager.session().unwrap();
+    let first_nonce = old.device().unwrap().nonce();
+    let saved: Saved =
+        serde_json::from_str(native.saved.lock().unwrap().as_ref().unwrap()).unwrap();
+    assert_eq!(saved.nonce, first_nonce);
+    validate_device(&saved).unwrap();
+    let mut malformed = serde_json::to_value(&saved).unwrap();
+    malformed["nonce"] = "another-device-certificate-000000000000000000000000000000000".into();
+    assert_eq!(
+        validate_device(&serde_json::from_value(malformed).unwrap()),
+        Err(AuthError::Invalid)
+    );
+    let mut malformed = serde_json::to_value(&saved).unwrap();
+    malformed["device"]["private_key"] = serde_json::json!([0, 1, 2]);
+    assert_eq!(
+        validate_device(&serde_json::from_value(malformed).unwrap()),
+        Err(AuthError::Invalid)
+    );
+    manager
+        .sign_in(manager.status().unwrap().generation)
+        .unwrap();
+    assert!(old.peer_proof().is_err());
+    assert_ne!(
+        manager.session().unwrap().device().unwrap().nonce(),
+        first_nonce
+    );
+    let session = manager.session().unwrap();
+    assert_eq!(session.peer_proof().unwrap().1, Platform::Desktop);
 }
 
 #[test]
@@ -242,6 +281,9 @@ fn expiration_and_shutdown_revoke_existing_session_tickets() {
             identity: VerifiedIdentity::expired_fixture("account-one"),
             journal: Journal::open(&profile.0, &VerifiedIdentity::fixture("account-one")).unwrap(),
             cancelled: state.cancelled.clone(),
+            device: None,
+            proof: String::new(),
+            platform: Platform::Desktop,
         }));
     }
     assert_eq!(manager.status().unwrap().state, AuthState::Expired);

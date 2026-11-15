@@ -132,6 +132,11 @@ pub struct Verifier {
 }
 
 impl Verifier {
+    #[cfg(test)]
+    pub(crate) fn with_test_keys(keys: CoreJsonWebKeySet) -> Self {
+        Self { cache: Mutex::new(Cache { keys: Some((Instant::now(), keys)), attempted_at: None }) }
+    }
+
     pub fn verify(
         &self,
         token: &str,

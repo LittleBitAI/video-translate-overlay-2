@@ -35,6 +35,25 @@ never enter screen status or discovery. At this implementation stage an expired
 ID token requires explicit sign-in; token renewal is not implemented. The UI
 does not claim that identity setup enables synchronization.
 
+New sign-ins generate a per-login ECDSA device key and anonymous certificate.
+The Google nonce is the certificate's SHA-256 digest. The key is sealed with
+the native session and checked against that nonce on restoration; replacing an
+account creates a new key. Earlier sessions without a key can still restore
+identity status, but cannot authorize a peer connection and require a fresh
+sign-in before LAN enrollment. The native evidence at `31ced1f` predates this
+binding and does not validate it.
+
+`sync_tls.rs` prepares mutual TLS 1.3 with a dedicated `vto-sync/1` ALPN.
+WebPKI checks the bounded certificates, dates, names and key usages; ring checks
+the actual TLS handshake signatures. Possession of a self-issued key does not
+authorize a library request. After the handshake, the peer's Google-signed
+proof must contain that exact certificate digest as its nonce and the same
+verified subject as the local session. A copied proof with another private key
+fails. TLS resumption, session tickets and early data are disabled. The module
+opens no sockets and performs no discovery; the owning session releases its
+private key when retired sessions are dropped. This remains preparation for
+the network worker, not implemented LAN delivery.
+
 The user selected explicit confirmation before importing the legacy local
 library, with its original data preserved. Account registration is authorized
 only without paid services or a linked billing account. The user will assist
@@ -218,6 +237,21 @@ pipeline::worker_tests::retranslation_resumes_partial_work_and_publishes_only_a_
 vto-contract-tests --test library -- --nocapture` passed all 5 library contracts,
 including reuse without paid calls, active-job refusal and cleanup retry. These
 are focused checks; the server-owned repository gate has not run.
+
+The TLS preparation passed `cargo test -p video-translate-overlay --lib
+sync_tls:: -- --nocapture`: 4 passed. Real TLS handshakes in memory check both
+keys, matching and mismatched Google subjects, audience and expiry, a copied
+proof presented with a different key, replayed ciphertext on a fresh channel,
+missing client certificates, wrong ALPN, malformed/oversized certificates,
+mismatched private keys and expired certificates. Key serialization retains
+the nonce binding. These use the committed test-only RSA signing fixture,
+not Google-issued credentials or a native network connection.
+
+`cargo test -p video-translate-overlay --lib account:: -- --nocapture` passed
+8 after the per-login key change. `cargo test -p video-translate-overlay --lib
+google_ -- --nocapture` passed 19, including the matching TLS/account test
+names. The audit retained every current security and lifecycle check. No
+native build or real Google sign-in has yet exercised the certificate nonce.
 
 ## Focused authentication evidence
 
