@@ -28,6 +28,7 @@ pub mod store;
 pub mod sync;
 mod sync_tls;
 mod sync_channel;
+mod sync_discovery;
 pub mod updates;
 pub mod web;
 #[cfg(feature = "whisper")]

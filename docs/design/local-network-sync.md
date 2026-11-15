@@ -72,6 +72,27 @@ The worker must discard a channel after any failed exchange. Discovery, native
 listener ownership and Android lifecycle integration remain separate unfinished
 work.
 
+`sync_discovery.rs` selects operational private IPv4, IPv6 ULA and scoped
+link-local interfaces. Point-to-point and public addresses are excluded.
+Listeners bind the selected addresses rather than a wildcard, using one
+ephemeral port; accepted sources must be private unicast peers on that local
+prefix. Discovery candidates undergo the same address checks before use. At
+most 16 local addresses and 32 candidate addresses per service are accepted;
+oversized sets fail rather than silently selecting an arbitrary subset.
+
+The DNS-SD service is `_vto-sync._tcp.local.`. Its instance and hostname are
+random per advertisement, and its only TXT field is `v=1`. No Google subject,
+email, account digest, device key, token or computer name enters the
+advertisement factory. Only explicit addresses are published; automatic address
+expansion is disabled. The discovery lease owns the daemon, error monitor and
+subscription. It unregisters, stops browsing and requests acknowledged shutdown
+when released, with a bounded retry for a full command queue. An unacknowledged
+shutdown produces a fixed diagnostic without untrusted network values.
+
+These components are not yet started by the native applications. Their owner
+must still connect sign-in, network replacement, worker cancellation, connection
+limits and Android background lifecycle before enabling production discovery.
+
 The user selected explicit confirmation before importing the legacy local
 library, with its original data preserved. Account registration is authorized
 only without paid services or a linked billing account. The user will assist
@@ -280,6 +301,17 @@ bounded/strict framing, and reconnection after only one direction committed.
 These are local protocol tests, not real Google-account or Windows/Android
 device-transfer acceptance. Duplicate RSA fixture-building code was folded
 into the existing authentication fixtures; all behavior checks remain.
+
+`cargo test -p video-translate-overlay --lib sync_discovery:: -- --nocapture`
+passed 6 after the final dependency configuration, with optional async and
+discovery logging features disabled. The cases cover selected-interface
+filtering, Ethernet/Wi-Fi peers on the same prefix, public and broadcast
+refusal, private IPv6 scope checks, anonymous advertisements, bounded candidates,
+owned listener release and a real loopback DNS-SD announcement followed by an
+acknowledged daemon shutdown. The DNS-SD check uses a disposable UDP port and
+only the loopback interface; it does not establish discovery between devices.
+All six tests remain. The compiler also reports currently unused native-worker
+entry points while application integration is unfinished.
 
 ## Focused authentication evidence
 
