@@ -135,6 +135,25 @@ and report the resulting status. If Google requests more
 branding, domain or policy information, report those fields before introducing
 new public destinations or contact details.
 
+The owner subsequently reported that Google blocked production publishing
+until a valid app name, support email, homepage URL and privacy-policy URL are
+provided on Branding. Publishing approval has not bypassed this requirement.
+The source repository is public, but its GitHub metadata has no homepage and
+Pages is not enabled. Draft [homepage text](../branding/homepage.md) and
+[privacy-policy text](../branding/privacy-policy.md) are prepared for review;
+their contact and hosting placeholders must be resolved before publication.
+No public support address, hosting destination or domain purchase has been
+chosen. A static information website is not a synchronization backend.
+
+Google's [branding requirements](https://support.google.com/cloud/answer/15549049?hl=en)
+require a public homepage on an owned verified domain, a matching privacy-policy
+link on that same domain, and a monitored support address visible to users.
+GitHub Pages is [available for public repositories on GitHub Free](https://docs.github.com/en/pages/quickstart).
+It is a candidate static host, not an already authorized deployment or a claim
+that Google has verified its domain. An existing owner-controlled website can
+also serve the approved information pages. Google domain ownership verification
+and the actual resulting branding/publishing states must still be observed.
+
 If Google requests a home page, privacy policy, domain ownership, or brand
 verification, prepare the exact text and destinations before publication.
 The owner supplies contact details and any required domain ownership. Do not
