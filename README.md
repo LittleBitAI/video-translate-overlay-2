@@ -75,9 +75,9 @@ while preserving local account-library access. The development app now starts
 an automatic LAN controller with durable remote deletion cleanup and playback
 position synchronization. Opening a saved video may resume it once where the
 player permits seeking; user input takes priority over a delayed saved position.
-One-account native transfer, playback, restart, deletion and Home-background
-checks passed on Windows and a physical Android phone. Screen-off and two-account
-acceptance remain unfinished; see
+Native transfer, playback, restart, deletion, Home and screen-off delivery, and
+two-account isolation checks passed on Windows and a physical Android phone.
+Public OAuth publishing configuration and the server-owned gate remain pending; see
 [implementation status](docs/design/local-network-sync.md).
 
 Both devices need a build containing LAN synchronization. An older preview that

@@ -89,6 +89,13 @@ make registration work.
 
 ## Public availability
 
+On 2026-11-15 the owner reported `External` and `Testing` on the selected
+project's Audience page. This is an owner observation, not an independently
+authenticated console inspection. The project has not been reported as
+`In production`. Two different real accounts subsequently authenticated on both
+native platforms and passed the [account-isolation flows](local-network-sync.md#two-real-google-accounts-at-5f899a2).
+Any approved change to the project's publishing state remains required.
+
 Testing with two named test users alone does not demonstrate ordinary-account
 access. Before completion, inspect the actual External audience, requested
 scopes, publishing and branding state, and test an account outside any test-user
@@ -112,6 +119,14 @@ Audience means who may sign in. Data Access means which Google information the
 app requests permission to use. Google's [audience help](https://support.google.com/cloud/answer/15549945?hl=en)
 also documents the basic-identity exception; the project's actual state still
 needs to be observed by its owner.
+
+The prepared production change is limited to this existing project's publishing
+status, from `Testing` to `In production`, retaining its existing clients and
+basic identity scopes. It does not publish an APK, installer or GitHub Release.
+After owner approval, use `Publish app` on the same Audience page, review the
+Google confirmation, and report the resulting status. If Google requests more
+branding, domain or policy information, report those fields before introducing
+new public destinations or contact details.
 
 If Google requests a home page, privacy policy, domain ownership, or brand
 verification, prepare the exact text and destinations before publication.
@@ -167,6 +182,6 @@ screen-off background delivery, both transfer directions, offline reopening,
 deletion after reconnection, account switching, and restart recovery. The
 [native evidence](local-network-sync.md#native-one-account-flows-at-fc0d072)
 records one-account transfers, playback, deletion, Home delivery and restart
-recovery. Screen-off delivery, two-account isolation, exclusive Ethernet/Wi-Fi
-acceptance and the public OAuth configuration remain pending. The full task and
-repository gate remain required.
+recovery. Later observations at `5f899a2` cover screen-off Ethernet/Wi-Fi delivery
+and two-account isolation on both native platforms. Public OAuth publishing
+configuration remains pending. The full task and repository gate remain required.

@@ -31,8 +31,9 @@ format. The native account manager opens it after verified sign-in. Production
 library projection and account selection are connected to the library APIs.
 Discovery and encrypted peer transfers are now connected to a native controller.
 Only native app setup starts it; development HTTP and contract hosts do not open
-the sync listener. One-account native flows passed at `fc0d072`; screen-off and
-two-account acceptance remain pending. No existing user library has
+the sync listener. One-account native flows passed at `fc0d072`; screen-off
+Ethernet/Wi-Fi delivery and two-account isolation passed at `5f899a2`. Public
+OAuth publishing configuration remains pending. No existing user library has
 been imported or changed.
 
 The settings screen now starts a separate native Google sign-in: Windows uses
@@ -71,7 +72,8 @@ neither replay nor reconnection extends its fixed expiry. A copied proof with
 another private key fails. TLS resumption, session tickets and early data are disabled. The module
 opens no sockets and performs no discovery; the owning session releases its
 private key when retired sessions are dropped. The native controller owns sockets
-and invokes this transport; device delivery acceptance remains pending.
+and invokes this transport. Native delivery observations and their limits are
+recorded below with their source revisions.
 
 `sync_channel.rs` owns an already-connected TCP socket and requires mutual TLS
 before its bounded proof exchange. The Android client verifies the PC's bound
@@ -137,13 +139,14 @@ cover network interaction with an external device; the normal
 `CHANGE_WIFI_MULTICAST_STATE` permission supplies its documented prerequisite.
 See [Android foreground service types](https://developer.android.com/develop/background-work/services/fgs/service-types#connected-device).
 This service holds no permanent CPU wake lock. Android suspension may delay
-delivery, and actual screen-off latency remains an acceptance requirement.
+delivery. Measured screen-off latency and its environment limits are recorded
+below; no deep device-idle guarantee is made.
 The translation job's existing service and wake-lock policy are unchanged.
 
 Automatic cleanup of remote video-deletion markers is connected to the native
 controller. Playback persistence and one-time resume are connected to the native
-overlay. Native transfer acceptance remains unfinished. The controller's existence and
-offline protocol tests are not evidence that those flows work on devices.
+overlay. The controller's existence and offline protocol tests alone are not
+evidence that those flows work on devices.
 
 Playback uses typed get/set modes of existing P7, without additional site
 permissions. Writes accept only integer positions within a bounded player
@@ -389,7 +392,8 @@ Android background delivery must use permitted native lifecycle mechanisms and
 required notifications. Suspension can delay delivery; reopening must catch
 up. A force-stopped app receives no delivery claim. Actual Windows/Android
 transfers, screen-off latency, sign-out, reconnection, deletion, restart, and
-two-account isolation remain required acceptance observations.
+two-account isolation are required acceptance observations; the native evidence
+below records the exercised builds and environments.
 
 ## Focused storage evidence
 
@@ -916,3 +920,93 @@ unchanged, with no active job. Private receipts are `cost-*-readiness.json`,
 ignored artifact directory. The topology, screen-off, second-account and public
 OAuth limitations above still apply. A documentation-only descendant may cite
 these results without claiming rebuilt binaries for that descendant.
+
+### Screen-off delivery over Ethernet and Wi-Fi
+
+After the owner disabled USB tethering, the physical phone had only its
+`192.168.0.2/24` Wi-Fi interface for the private LAN; no `usb0` interface
+remained. The PC's `192.168.0.3` address belonged to its Ethernet adapter.
+The native apps still identified `5f899a2`. USB remained connected for charging
+and local diagnostic reads, not as a synchronization network interface.
+
+The phone went to Home and its screen was turned off. After 20,527 ms, a Windows
+UI playlist rename reached the phone's SQLite library in 2,695 ms. A second
+rename after another ten seconds arrived in 702 ms. The display stayed `OFF`
+and interactive mode stayed disabled throughout the 35,012 ms observation.
+The native `SyncService` remained foreground with ongoing notification 2002.
+The observer read SQLite through the separate local debug helper without
+WebView IPC or foregrounding the Android app.
+
+The initial harness incorrectly required wakefulness `Asleep` and stopped
+before any mutation: this Samsung device reports `Dozing` with its display
+off. The corrected check requires a noninteractive power state and separately
+requires display `OFF`; the receipt retains the actual `Dozing` value. No
+deep device-idle, unplugged battery or long-term delivery claim follows from
+this USB-charging screen-off run. The private receipt is `screen-off-flow.json`.
+Second-account observations follow below. Public OAuth publishing configuration
+remains pending.
+
+### Two real Google accounts at 5f899a2
+
+The owner completed fresh Google sign-ins on both native platforms with two
+different real accounts. Windows first changed to the second account while the
+phone retained the original account. Its second-account library began empty.
+The phone reported `account_mismatch`; during a 16,089 ms observation, a new
+second-account playlist stayed off the phone, and an original-account phone
+rename stayed out of the Windows second-account library. No owner account list
+was added to the app.
+
+After the phone selected that same second account, the Windows playlist arrived
+automatically. Its library contained only that account's playlist, without the
+first account's rows. Actual UI renames then traveled from Android to Windows
+in 581 ms and from Windows to Android in 2,356 ms over the reachable LAN. Both
+native connection states became `connected`.
+
+Windows sign-out released its native listener before the next sign-in opened
+its temporary loopback callback. Android sign-out stopped `SyncService` before
+the next account began. Reads carrying retired account generations returned
+`409 account_changed`. Restoring the original account on both devices retained
+its two fixture playlists and links, caught up with its queued phone rename,
+and kept second-account rows absent. Direct SQLite observations verified two
+distinct account stores on each device and preserved the second account's
+playlist after switching away. Retired second-account reads were also refused.
+
+The original phone library still had all three completed translations, identical
+original table rows and the same sealed Gemini credential hash, with no active
+jobs. The original library was not imported. No real transcription or paid
+translation was requested. Both devices were left signed in to the original
+Google account.
+
+Private receipts include `account-two-windows.json`, `account-mismatch.json`,
+`account-two-phone.json`, `account-two-transfer.json`, `account-restore-*.json`,
+`account-restored-flow.json`, `account-store-audit.json`, and
+`phone-after-account-switches/retention.json`. The diagnostic Android CDP forward
+was recreated after USB reconfiguration removed it; that initial connection
+failure occurred before the isolation mutations. Account addresses and tokens
+are not included in the public evidence record. The owner reported the Google
+project as `External` / `Testing`; production publishing remains a separate
+owner action. No repository gate or final verification was dispatched here.
+
+Final native state checks left both devices signed in to the original account
+and connected, with matching core/screen build identities. The phone still
+offered an explicit original-library import. The account sign-out controls
+measured 44 CSS pixels high without horizontal overflow at the observed
+384-by-853 phone and 1920-by-1017 Windows viewports. Private viewport screenshots
+hide the account address in the DOM before capture; Android full-page coordinate
+masking was unsuitable for redaction and those captures were replaced. No
+privacy style was retained in the app after capture.
+
+The final test cleanup audit covered 34 changed or affected test/harness source
+files, including inline store/command checks and the existing translation,
+library, pipeline, UI and overlay regressions. Protocol validation, convergence,
+projection, account retirement and native transport checks guard different live
+boundaries. Historical receipt compatibility is still supported. No obsolete
+skips, removed formats, superseded checks or duplicate observations warranted
+removal; all tests were retained. The final-source focused cost checks above
+remain applicable because these subsequent changes only update documentation.
+
+Both copies of the owned phone SQLite diagnostic helper were hash-checked
+against the local build and removed from the app-private and temporary paths.
+Application databases and credentials were retained. The labeled fixture rows
+remain available for inspection in their separate Google-account libraries;
+none belongs to the original three-translation device library.
