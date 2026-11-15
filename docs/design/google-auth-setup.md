@@ -89,11 +89,16 @@ make registration work.
 
 ## Public availability
 
-Testing with two named test users is useful during development, but it does not
-satisfy the requirement that ordinary Google accounts can use the app. Before
-completion, configure the External app for production and inspect the actual
-published audience and branding state. Do not report public availability from
-an owner-only or test-user-only sign-in.
+Testing with two named test users alone does not demonstrate ordinary-account
+access. Before completion, inspect the actual External audience, requested
+scopes, publishing and branding state, and test an account outside any test-user
+list. Google's current [app-state overview](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview)
+documents an exception: External apps requesting only basic identity scopes
+can admit accounts outside that list even while in Testing, with a testing
+warning. Do not infer an owner-only restriction from the Testing label alone.
+Production configuration remains the intended public channel; switching it is
+an outward configuration change requiring the owner's approval. Branding and
+Workspace administrator restrictions are separate from basic identity access.
 
 If Google requests a home page, privacy policy, domain ownership, or brand
 verification, prepare the exact text and destinations before publication.

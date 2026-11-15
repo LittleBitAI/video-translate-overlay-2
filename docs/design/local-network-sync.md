@@ -726,3 +726,49 @@ selection and rejects it after account retirement. That focused test passed.
 tests/ui/library.test.ts` passed 19 cases, including measured 44-pixel version
 controls without horizontal overflow at 384 and 1280 pixels. `npm run build`
 passed. Changed text was checked as valid UTF-8 without BOM; API JSON parsed.
+
+## Native build readiness at fc0d072
+
+Both native builds use application and test source commit
+`fc0d072f78248e120db7a7582852add873814cec`. Subsequent documentation-only changes
+can describe these results without claiming a new binary or execution.
+
+Windows `cargo build -p video-translate-overlay --features app --bin
+video-translate-overlay` completed with the existing libclang installation.
+The executable SHA-256 is
+`a4f7a5e20f28048de59b4e89757757baf0891093a1c3521c6b8f436576cb6065`.
+The owned isolated older app was identified by its running core/screen revisions
+before shutdown. Its replacement runs with the same disposable data/WebView
+profile; both core and screen report `fc0d072`. The settings screen visibly
+reports expired authentication, account-library reads succeed, `sync_ready` is
+false, and the connection state is `authentication_required`. No TCP listener
+was observed for that app process. Fresh certificate-bound sign-in is pending;
+the previous one-hour credential cannot establish a native peer session.
+
+Android's Rust build completed with `cargo tauri android build --debug --apk
+--target aarch64 --features app`, then Tauri encountered the documented Windows
+symlink restriction. The initial manual fallback used the wrong working
+directory and is not candidate evidence. After correcting absolute paths, the
+fresh library copy was hash-checked and `assembleArm64Debug -x rustBuildArm64Debug
+--console=plain` succeeded. The empty mistaken build directory was removed.
+The resulting debug APK is 488,279,623 bytes, SHA-256
+`d62207ef970f28d65e6415b1a2756b46ab54a3e7fa74c38b93d7de4b9e0bf2df`.
+Its packaged ARM64 core matches the freshly stripped output and contains the
+candidate revision. All 962 APK entries were checked for exclusion of the
+publisher Desktop secret. `apksigner verify --print-certs` retained certificate
+SHA-256 `fa6da2233c2062b48baf20b3562eacacce774da80f2e4bb3d20ec3a6a527ec28`.
+These debug artifacts are local test outputs, not a release publication.
+
+The final-source unit-test executable was also run directly with filters
+`store::` (5 passed), `sync_runtime::` (7 passed), and
+`pipeline::worker_tests::a_job` (2 passed), avoiding the occupied Cargo build
+lock. The rebuilt default-feature contract host then passed
+`cargo test -p vto-contract-tests --test library --test playback -- --nocapture`
+with `VTO_CONTRACT_HOST` naming that binary: 5 library and 1 playback tests.
+No full gate, CI or final verification was dispatched.
+
+Private preflight receipts and the expired-state screenshot are retained under
+ignored `artifacts/native-sync-20261115/`. ADB currently reports no connected
+device, so this APK has not been installed or exercised for these flows.
+Two-account sign-in, actual LAN delivery in both directions, background latency,
+offline/restart/deletion recovery and public OAuth configuration remain pending.
