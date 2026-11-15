@@ -123,8 +123,15 @@ needs to be observed by its owner.
 The prepared production change is limited to this existing project's publishing
 status, from `Testing` to `In production`, retaining its existing clients and
 basic identity scopes. It does not publish an APK, installer or GitHub Release.
-After owner approval, use `Publish app` on the same Audience page, review the
-Google confirmation, and report the resulting status. If Google requests more
+The owner approved this exact change on 2026-11-15 by selecting
+`Publish Google sign-in`. Approval does not establish that Google has applied
+the change; the resulting status has not yet been reported. No connected
+Google Cloud management tool is available in this implementation session, and
+the host blocked launching the console link. The project owner completes the
+confirmation in the existing Google console session.
+
+Use `Publish app` on the same Audience page, review the Google confirmation,
+and report the resulting status. If Google requests more
 branding, domain or policy information, report those fields before introducing
 new public destinations or contact details.
 
