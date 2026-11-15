@@ -183,7 +183,10 @@ pub(crate) fn cleanup_video(db: &Db, key: &str) -> Result<()> {
         "DELETE FROM sync_selected_translation WHERE video_key=?",
         p![key],
     )?;
-    db.execute("DELETE FROM playback WHERE video_key=?", p![key])?;
+    // Cleanup can follow a page that also carries an explicitly restored video.
+    for kind in ["video", "playback"] {
+        db.execute("INSERT OR IGNORE INTO sync_dirty VALUES (?,?)", p![kind,key])?;
+    }
     let context =
         serde_json::to_string(&deletion_marks(db, key)?).map_err(|_| "invalid cleanup context")?;
     db.execute("INSERT INTO sync_cleanup_context VALUES (?,?) ON CONFLICT(video_key) DO UPDATE SET deletions=excluded.deletions", p![key,context])?;

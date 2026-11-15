@@ -1,12 +1,13 @@
 // The overlay the in-app browser attaches to video pages: the 영상감지 button,
 // the job's progress while it runs, and the Korean subtitle of the moment.
 //
-// It only reads the player (currentTime, duration, paused); it never seeks,
-// changes speed, plays, pauses or touches ad controls. Cues are on the main
+// It reads the player and may resume once at a saved position when first opened.
+// It never changes speed, plays, pauses or touches ad controls. Cues are on the main
 // video's timeline, so while an ad plays (another duration, or YouTube's
 // `ad-showing` class) nothing is shown and the lecture's cue returns with it.
 
 export type Reply = { status: number; body: any };
+import { watchPlayback } from './playback';
 export type Request = (method: string, path: string, body?: unknown) => Promise<Reply>;
 export type Cue = { seq: number; start_ms: number; end_ms: number; text_ko: string };
 
@@ -336,6 +337,7 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
     if (document.visibilityState === 'visible') poll();
   };
   document.addEventListener('visibilitychange', onVisible);
+  const playback = watchPlayback(video, pageUrl, request, isAd);
 
   poll(); // a job may already exist for this page (made earlier, or still running)
   if (!timer) timer = setInterval(poll, POLL_MS);
@@ -352,6 +354,7 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
   return {
     destroy() {
       destroyed = true;
+      playback.stop();
       generation++;
       stopPolling();
       if (ticker) clearInterval(ticker);

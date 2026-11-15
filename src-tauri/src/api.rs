@@ -3,7 +3,7 @@
 use crate::gemini::{self, MODEL};
 use crate::media::{self, Refusal};
 use crate::{log, youtube, Core};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -18,6 +18,10 @@ pub struct ApiError {
 }
 
 pub type ApiResult = Result<Value, ApiError>;
+
+#[derive(Clone, Copy, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PlaybackAction { Get, Set }
 
 pub fn err(status: u16, error: &str, message: impl Into<String>) -> ApiError {
     ApiError { status, error: error.into(), message: message.into(), deletion_token: None, account_generation: None }
@@ -448,6 +452,28 @@ fn get_subtitles_in(library: &crate::library_scope::Library<'_>, video_key: &str
     })
 }
 
+fn playback_in(library: &crate::library_scope::Library<'_>, args: &Value) -> ApiResult {
+    let page = http_url(args["page_url"].as_str().unwrap_or_default())?;
+    let key = video_key(&page);
+    let action: PlaybackAction = serde_json::from_value(args["playback_action"].clone())
+        .map_err(|_| err(400, "bad_playback", "지원하지 않는 재생 위치 요청입니다."))?;
+    library.run(|store| {
+        if let Some((token, complete)) = store.deleted(&key)? { return Err(deleted_error(token, complete)); }
+        let video = store.video(&key)?.ok_or_else(|| err(404, "no_video", "보관함에 저장된 영상의 재생 위치만 저장합니다."))?;
+        if matches!(action, PlaybackAction::Set) {
+            let position = args["position_ms"].as_i64().ok_or_else(|| err(400, "bad_position", "재생 위치를 확인하지 못했습니다."))?;
+            let duration = args["duration_ms"].as_i64().ok_or_else(|| err(400, "bad_position", "영상 길이를 확인하지 못했습니다."))?;
+            store.save_playback(&key, position, duration).map_err(|detail| match detail.as_str() {
+                "invalid playback position" => err(400, "bad_position", "재생 위치가 영상 범위를 벗어났습니다."),
+                "playback player mismatch" => err(409, "player_mismatch", "저장된 본편과 다른 플레이어의 위치는 저장하지 않았습니다."),
+                "playback unavailable" => err(409, "playback_unavailable", "이 영상의 저장 상태가 바뀌었습니다. 보관함을 다시 불러와 주세요."),
+                _ => detail.into(),
+            })?;
+        }
+        Ok(json!({"video_key":key,"position_ms":store.playback(&key)?,"duration_ms":video.duration_ms}))
+    })
+}
+
 /// Native screen and overlay requests bind to the generation displayed when the action began.
 pub fn library_request(core: &Core, generation: Option<u64>, command: &str, args: &Value) -> ApiResult {
     if generation.is_none() && core.account.status().map_err(|_| err(503, "account_unavailable", "계정 상태를 불러오지 못했습니다."))?.state != crate::account::AuthState::Unsupported {
@@ -471,6 +497,7 @@ pub fn library_request(core: &Core, generation: Option<u64>, command: &str, args
         "library_action" => library::library_action_in(&library, &args["action"]),
         "create_job" if args["retranslate"] == true => retranslate_job_in(&library, s("page_url")),
         "create_job" => create_job_in(&library, s("page_url"), args["media_url"].as_str(), s("title"), args["duration_ms"].as_i64().unwrap_or(0), args["deletion_token"].as_str()),
+        "get_job" if !args["playback_action"].is_null() => playback_in(&library, args),
         "get_job" => get_job_in(&library, s("page_url")),
         "get_subtitles" => get_subtitles_in(&library, s("video_key")),
         _ => Err(err(404, "no_route", "지원하지 않는 보관함 요청입니다.")),

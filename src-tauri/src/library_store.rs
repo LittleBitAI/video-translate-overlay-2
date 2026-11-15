@@ -3,6 +3,29 @@ use serde_json::{json, Value};
 use crate::sync::{local, Change};
 
 impl Store {
+    pub(crate) fn playback(&self, key: &str) -> R<Option<i64>> {
+        Ok(self.db.query_one("SELECT position_ms FROM playback WHERE video_key=?", p![key])?.map(|row| row[0].int()))
+    }
+
+    pub(crate) fn save_playback(&self, key: &str, position: i64, duration: i64) -> R<()> {
+        if !(1..=crate::sync::MAX_DURATION_MS).contains(&duration) || !(0..=duration).contains(&position) {
+            return Err("invalid playback position".into());
+        }
+        self.library_write(|db| {
+            let row = db.query_one("SELECT duration_ms FROM video WHERE video_key=? AND NOT EXISTS(SELECT 1 FROM deleted_video WHERE video_key=?)", p![key,key])?
+                .ok_or("playback unavailable")?;
+            let saved_duration = row[0].int();
+            if saved_duration > 0 && ((saved_duration - duration).abs() > 1000 || position > saved_duration) {
+                return Err("playback player mismatch".into());
+            }
+            if local::owned(db)? && !local::deletions_cleaned(db, key)? { return Err("playback unavailable".into()); }
+            if db.query_one("SELECT position_ms FROM playback WHERE video_key=?", p![key])?.is_some_and(|row| row[0].int() == position) { return Ok(()); }
+            local::write(db, Change::Playback {key:key.into(),position_ms:position})?;
+            db.execute("INSERT INTO playback VALUES (?,?) ON CONFLICT(video_key) DO UPDATE SET position_ms=excluded.position_ms", p![key,position])?;
+            Ok(())
+        })
+    }
+
     // Mutations use a separate connection so concurrent IPC never joins another transaction.
     fn library_write<T>(&self, f: impl FnOnce(&Db) -> R<T>) -> R<T> {
         let db = Db::open(&self.path)?;
@@ -76,6 +99,7 @@ impl Store {
             db.execute("DELETE FROM retranslation_cue WHERE job_id IN (SELECT id FROM job WHERE video_key=?)", p![key])?;
             db.execute("DELETE FROM playlist_entry WHERE video_key=?", p![key])?;
             db.execute("DELETE FROM cue WHERE video_key=?", p![key])?;
+            db.execute("DELETE FROM playback WHERE video_key=?", p![key])?;
             db.execute("DELETE FROM job WHERE video_key=?", p![key])?;
             db.execute("DELETE FROM video WHERE video_key=?", p![key])?;
             if let Some(url) = inspected_url {

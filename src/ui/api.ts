@@ -23,6 +23,8 @@ const COMMANDS: Record<string, string> = {
   'DELETE /settings/api-key': 'delete_api_key',
   'POST /jobs': 'create_job',
   'GET /jobs': 'get_job',
+  'GET /playback': 'get_job',
+  'PUT /playback': 'get_job',
 };
 
 const invoke = (): Invoke | undefined => (globalThis as any).__TAURI_INTERNALS__?.invoke;
@@ -71,6 +73,7 @@ async function viaIpc(call: Invoke, method: string, path: string, body?: Record<
   const cmd = subs && method === 'GET' ? 'get_subtitles' : COMMANDS[`${method} ${path}`];
   if (!cmd) return { status: 404, body: { error: 'no_route', message: `${method} ${path}` } };
   let args: Record<string, unknown> = subs ? { video_key: decodeURIComponent(subs[1]) } : path === '/library/data' && method === 'POST' ? { action: body } : (body ?? {});
+  if (path === '/playback') args = {...args, playback_action:method === 'GET' ? 'get' : 'set'};
   const scoped = LIBRARY_COMMANDS.has(cmd);
   const epoch = accountEpoch;
   try {

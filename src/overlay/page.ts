@@ -153,7 +153,7 @@ export function startPage({ top, request }: PageOptions): { stop(): void } {
       if (m.kind === 'video') frames.set(from, { area: Number(m.area) || 0, at: performance.now() });
       else if (m.kind === 'request' && from === granted) {
         let body = m.body;
-        if (m.path === '/jobs' && body && !isYoutube(body.page_url)) {
+        if ((m.path === '/jobs' || m.path === '/playback') && body && !isYoutube(body.page_url)) {
           body = { ...body, page_url: location.href, ...(m.method === 'POST' ? { title: pageTitle() || body.title } : {}) };
         }
         const reply = await request(m.method, m.path, body);

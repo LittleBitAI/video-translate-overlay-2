@@ -761,6 +761,7 @@ fn deletion_and_a_fresh_link_or_translation_in_one_page_cannot_bypass_cleanup() 
         first
             .write(restored, first.deletions(&video_key()).unwrap())
             .unwrap();
+        first.write(Change::Playback { key: video_key(), position_ms: 2222 }, first.deletions(&video_key()).unwrap()).unwrap();
         send(&first, &second);
         let store = second.library().unwrap();
         assert!(
@@ -773,6 +774,7 @@ fn deletion_and_a_fresh_link_or_translation_in_one_page_cannot_bypass_cleanup() 
         assert_eq!(store.library().unwrap()["videos"][0]["saved"], false);
         store.finish_delete(&video_key(), None).unwrap();
         second.project_pending().unwrap();
+        assert_eq!(store.playback(&video_key()).unwrap(), Some(2222));
         assert_eq!(
             store.ready_job(&video_key()).unwrap().is_some(),
             restore_translation

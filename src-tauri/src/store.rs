@@ -70,6 +70,9 @@ INSERT OR IGNORE INTO setting (id) VALUES (1);
 CREATE TABLE IF NOT EXISTS browser (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   url TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS playback (
+  video_key TEXT PRIMARY KEY, position_ms INTEGER NOT NULL
 )
 ";
 

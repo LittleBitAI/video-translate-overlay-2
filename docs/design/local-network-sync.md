@@ -67,8 +67,8 @@ connections may use the account journal's private certificate trust receipt;
 neither replay nor reconnection extends its fixed expiry. A copied proof with
 another private key fails. TLS resumption, session tickets and early data are disabled. The module
 opens no sockets and performs no discovery; the owning session releases its
-private key when retired sessions are dropped. This remains preparation for
-the network worker, not implemented LAN delivery.
+private key when retired sessions are dropped. The native controller owns sockets
+and invokes this transport; device delivery acceptance remains pending.
 
 `sync_channel.rs` owns an already-connected TCP socket and requires mutual TLS
 before its bounded proof exchange. The Android client verifies the PC's bound
@@ -86,9 +86,8 @@ frame has a thirty-second absolute deadline. Socket I/O checks cancellation
 in slices of at most 250 ms. Each connection worker owns its socket and session;
 dropping the channel closes its socket, without a manager/socket ownership cycle.
 Account cancellation prevents further page reads, writes and journal commits.
-The worker must discard a channel after any failed exchange. Discovery, native
-listener ownership and Android lifecycle integration remain separate unfinished
-work.
+The worker must discard a channel after any failed exchange. The native controller
+below owns discovery, listeners and the Android lifecycle lease.
 
 `sync_runtime.rs` creates one controller in native setup and hands only a weak
 core reference to its owner thread. Each verified account/network lease owns its
@@ -139,8 +138,26 @@ delivery, and actual screen-off latency remains an acceptance requirement.
 The translation job's existing service and wake-lock policy are unchanged.
 
 Automatic cleanup of remote video-deletion markers is connected to the native
-controller. Playback integration and native transfer acceptance remain unfinished. The controller's existence and
+controller. Playback persistence and one-time resume are connected to the native
+overlay. Native transfer acceptance remains unfinished. The controller's existence and
 offline protocol tests are not evidence that those flows work on devices.
+
+Playback uses typed get/set modes of existing P7, without additional site
+permissions. Writes accept only integer positions within a bounded player
+duration, for an existing non-deleted video in the captured account. Saved
+translations additionally require the player duration to match the original
+timeline within one second. Position and journal writes commit atomically;
+they do not modify cues, costs or processing jobs. Deletion removes the local
+position, and cleanup reapplies any surviving explicitly restored position.
+
+Each mounted native player reads its resume position once. It waits through
+advertisements and missing metadata, then attempts one seek. Existing playback
+past the opening second, user input or a user seek cancels a delayed resume;
+later remote updates never move that mounted player. Actual playback writes
+are coalesced, at most once per five seconds with pause/seek/hidden flushes.
+Account retirement detaches that owner's updates. Unsupported seeking leaves
+playback under the player's normal controls. No play, pause or speed command
+is issued by synchronization.
 
 `sync_discovery.rs` selects operational private IPv4, IPv6 ULA and scoped
 link-local interfaces. Point-to-point and public addresses are excluded.
@@ -649,3 +666,31 @@ Receipts and the pre-update APK backup remain under ignored
 native authentication and restart, not synchronization or public availability.
 Public OAuth configuration, two-account isolation, LAN transfers, Android
 background delivery and the server-owned gate remain unfinished.
+
+## Playback implementation checks
+
+The playback API regression passed with `cargo test -p video-translate-overlay
+--lib playback_requests -- --nocapture`: one test. It transfers a completed
+translation and position into a second journal, reopens its store, checks exact
+cue times and 12.5 KRW cost, rejects invalid positions and an advertisement-sized
+duration, and refuses writes from a retired account. Repeated positions append
+no new journal record. Signed-out video deletion removes its stored position.
+The deletion/restoration page regression also passed: one test, covering both
+a restored link and a restored completed translation after local file cleanup.
+
+The rebuilt contract host passed `cargo test -p vto-contract-tests --test playback
+-- --nocapture` with `VTO_CONTRACT_HOST` naming that binary: one test. Remote P7
+get/set persists across restart and refuses deleted videos; settings/library
+remain forbidden to site callers, with zero model, Gemini and media calls.
+`cargo test -p video-translate-overlay --lib commands:: -- --nocapture` passed
+three tests, including unchanged Windows/Android site capabilities.
+
+Chromium playback, overlay, iframe and repeated-injection files passed 42 checks;
+the hidden-mount file separately passed one after its route assertion was updated
+to allow the single new playback read. The wider initial run failed that old
+assertion. Multi-file runs also reported a browser/Vite shutdown timeout; the
+42-check rerun exited zero but is not evidence of clean test-runner shutdown.
+`npm run build` passed. Windows app `cargo check` passed after supplying the
+existing `LIBCLANG_PATH`; the first attempt lacked that environment setting and
+failed before checking application code. These are focused implementation checks,
+not native playback acceptance or a repository-gate result.

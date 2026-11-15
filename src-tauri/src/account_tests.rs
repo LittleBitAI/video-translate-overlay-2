@@ -156,6 +156,54 @@ fn production_library_requests_select_the_account_and_copy_legacy_data_only_with
 }
 
 #[test]
+fn playback_requests_are_account_scoped_durable_and_leave_completed_subtitles_unchanged() {
+    use crate::api::{library_request, video_key};
+    use serde_json::json;
+    let profile = Profile::new();
+    let mut core = crate::pipeline::worker_tests::idle_core(&profile.0, "");
+    core.account = signed_in_manager(&profile.0, "playback-one");
+    let generation = core.account.status().unwrap().generation;
+    let session = core.account.session().unwrap();
+    let store = session.journal.library().unwrap();
+    let url = "https://lectures.example.org/playback";
+    let key = video_key(&url::Url::parse(url).unwrap());
+    store.create_job("saved", &key, url, "other", "Saved", 60000, None, "original-model").unwrap();
+    store.save_region("saved", &key, 0, &[(123, 2345, "original".into())]).unwrap();
+    store.set_translations("saved", &[(0, "translated".into())]).unwrap();
+    store.set_terms(&key, "[]").unwrap();
+    store.add_usage("saved", 12, 4, |_, _| 12.5).unwrap();
+    store.finish("saved").unwrap();
+    let set = |position, duration| library_request(&core, Some(generation), "get_job", &json!({"page_url":url,"playback_action":"set","position_ms":position,"duration_ms":duration}));
+    assert_eq!(set(12345, 60000).unwrap()["position_ms"], 12345);
+    let through = session.journal.page(0).unwrap().through;
+    set(12345, 60000).unwrap();
+    assert_eq!(session.journal.page(0).unwrap().through, through);
+    assert_eq!(set(-1, 60000).unwrap_err().status, 400);
+    assert_eq!(set(60001, 60000).unwrap_err().status, 400);
+    assert_eq!(set(100, 3000).unwrap_err().status, 409);
+    assert_eq!(library_request(&core, Some(generation), "get_job", &json!({"page_url":url,"playback_action":"set","position_ms":1.5,"duration_ms":60000})).unwrap_err().status, 400);
+    let other = Profile::new();
+    let identity = crate::google_auth::VerifiedIdentity::fixture("playback-one");
+    let received = crate::sync::Journal::open(&other.0, &identity).unwrap();
+    received.receive(session.journal.replica(), &session.journal.page(0).unwrap()).unwrap();
+    let reopened = received.library().unwrap();
+    assert_eq!(reopened.playback(&key).unwrap(), Some(12345));
+    assert_eq!(reopened.cues(&key).unwrap()[0].start_ms, 123);
+    assert_eq!(reopened.cues(&key).unwrap()[0].end_ms, 2345);
+    assert_eq!(reopened.ready_job(&key).unwrap().unwrap().cost_krw, 12.5);
+    core.account.sign_out(generation).unwrap();
+    assert_eq!(set(30000, 60000).unwrap_err().status, 409);
+    assert_eq!(store.playback(&key).unwrap(), Some(12345));
+    assert_eq!(core.store.playback(&key).unwrap(), None);
+    core.store.create_playlist("root", "Root").unwrap();
+    core.store.add_entry("root", &key, url, "other", "Root video").unwrap();
+    core.store.save_playback(&key, 333, 60000).unwrap();
+    core.store.begin_delete(&key, "root-deletion-token").unwrap();
+    core.store.finish_delete(&key, None).unwrap();
+    assert_eq!(core.store.playback(&key).unwrap(), None);
+}
+
+#[test]
 fn switching_accounts_while_a_media_check_is_pending_does_not_create_a_job_in_either_account() {
     use crate::{api, AudioExtractor};
     struct Gate {

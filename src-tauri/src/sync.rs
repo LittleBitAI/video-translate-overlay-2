@@ -11,7 +11,7 @@ use std::{
 pub const MAX_PAGE_BYTES: usize = 16 * 1024 * 1024;
 pub const MAX_PAGE_RECORDS: usize = 64;
 const MAX_RECORD_BYTES: usize = MAX_PAGE_BYTES / 2;
-const MAX_DURATION_MS: i64 = 6 * 60 * 60 * 1000;
+pub(crate) const MAX_DURATION_MS: i64 = 6 * 60 * 60 * 1000;
 type Result<T> = std::result::Result<T, String>;
 pub type Deletions = BTreeMap<String, i64>;
 

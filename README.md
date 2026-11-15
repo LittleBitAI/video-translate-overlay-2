@@ -59,9 +59,9 @@ subtitles are hidden and `삭제 다시 시도` lets you finish cleanup. Transla
 deleted video later requires a new confirmation and may incur API costs.
 
 The library and playlists use the existing local SQLite database on Android and
-Windows. They persist after restart and remain separate on each device. There
-are no accounts, cloud sync, automatic next-video playback, or original-video
-offline copies.
+Windows. They persist after restart. The published 0.1.7 release keeps separate
+device libraries. There is no cloud sync, automatic next-video playback, or
+original-video offline copy.
 
 The development branch adds a separate Google app account under Settings.
 Signing in selects that account's local library; signing out returns to the
@@ -72,8 +72,10 @@ not copy unfinished jobs, Gemini credentials or YouTube cookies. A job already
 started on this device continues in its original library after account changes.
 The selected device sign-in lasts at most thirty days; expiry stops transfers
 while preserving local account-library access. The development app now starts
-an automatic LAN controller with durable remote deletion cleanup. Native transfer
-and background acceptance and playback integration remain unfinished; see
+an automatic LAN controller with durable remote deletion cleanup and playback
+position synchronization. Opening a saved video may resume it once where the
+player permits seeking; user input takes priority over a delayed saved position.
+Native transfer and background acceptance remain unfinished; see
 [implementation status](docs/design/local-network-sync.md).
 
 ## 처리 방식과 지원 범위

@@ -166,6 +166,7 @@ pub fn call(core: &Core, cmd: &str, a: &Value) -> ApiResult {
         "delete_api_key" => api::delete_api_key(core),
         "create_job" if a["retranslate"] == true => api::retranslate_job(core, &s("page_url")),
         "create_job" => api::create_job_with_consent(core, &s("page_url"), a["media_url"].as_str(), a["title"].as_str().unwrap_or_default(), a["duration_ms"].as_i64().unwrap_or(0), a["deletion_token"].as_str()),
+        "get_job" if !a["playback_action"].is_null() => api::library_request(core, a["account_generation"].as_u64(), cmd, a),
         "get_job" => api::get_job(core, &s("page_url")),
         "get_subtitles" => api::get_subtitles(core, &s("video_key")),
         other => Err(err(404, "no_route", other.to_string())),

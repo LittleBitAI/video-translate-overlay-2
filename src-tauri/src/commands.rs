@@ -188,9 +188,9 @@ pub async fn library_action(core: Shared<'_>, action: Value, account_generation:
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
-pub async fn get_job(core: Shared<'_>, page_url: String, account_generation: Option<u64>) -> ApiResult {
+pub async fn get_job(core: Shared<'_>, page_url: String, account_generation: Option<u64>, playback_action: Option<api::PlaybackAction>, position_ms: Option<i64>, duration_ms: Option<i64>) -> ApiResult {
     let core = core.inner().clone();
-    blocking(move || api::library_request(&core, account_generation, "get_job", &json!({"page_url":page_url}))).await
+    blocking(move || api::library_request(&core, account_generation, "get_job", &json!({"page_url":page_url,"playback_action":playback_action,"position_ms":position_ms,"duration_ms":duration_ms}))).await
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
@@ -247,6 +247,8 @@ pub fn route(method: &str, path: &str, body: &Value) -> Option<(&'static str, Va
         ("DELETE", "/settings/api-key") => "delete_api_key",
         ("POST", "/jobs") => "create_job",
         ("GET", "/jobs") => "get_job",
+        ("GET", "/playback") => { args["playback_action"] = json!("get"); "get_job" },
+        ("PUT", "/playback") => { args["playback_action"] = json!("set"); "get_job" },
         ("GET", p) => {
             let key = p.strip_prefix("/videos/")?.strip_suffix("/subtitles")?;
             if key.is_empty() || key.contains('/') {
@@ -309,5 +311,11 @@ mod tests {
         all.sort();
         assert_eq!(seen, all);
         assert!(route("GET", "/videos/a/b/subtitles", &Value::Null).is_none());
+        for (method, action) in [("GET", "get"), ("PUT", "set")] {
+            let (command, args) = route(method, "/playback", &json!({"position_ms":123})).unwrap();
+            assert_eq!(command, "get_job");
+            assert_eq!(args["playback_action"], action);
+            assert_eq!(args["position_ms"], 123);
+        }
     }
 }

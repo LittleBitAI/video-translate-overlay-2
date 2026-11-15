@@ -4,7 +4,6 @@ use crate::store::Store;
 pub(super) const SCHEMA: &str = "
 CREATE TABLE IF NOT EXISTS sync_dirty (kind TEXT NOT NULL, key TEXT NOT NULL, PRIMARY KEY(kind,key));
 CREATE TABLE IF NOT EXISTS sync_selected_translation (video_key TEXT PRIMARY KEY, identity TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS playback (video_key TEXT PRIMARY KEY, position_ms INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS sync_import_seen (digest TEXT PRIMARY KEY)
 ";
 

@@ -19,10 +19,13 @@ window.addEventListener('vto-account-changed', () => { retired = true; });
 
 export const request: Request = async (method, path, body) => {
   let cmd: string;
-  let args: Record<string, unknown> = body ?? {};
+  let args: Record<string, unknown> = body && typeof body === 'object' && !Array.isArray(body) ? body as Record<string, unknown> : {};
   const subs = /^\/videos\/([^/]+)\/subtitles$/.exec(path);
   if (method === 'POST' && path === '/jobs') cmd = 'create_job';
   else if (method === 'GET' && path === '/jobs') cmd = 'get_job';
+  else if (path === '/playback' && (method === 'GET' || method === 'PUT')) {
+    cmd = 'get_job'; args = {...args, playback_action:method === 'GET' ? 'get' : 'set'};
+  }
   else if (method === 'GET' && subs) {
     cmd = 'get_subtitles';
     args = { video_key: decodeURIComponent(subs[1]) };
@@ -36,9 +39,10 @@ export const request: Request = async (method, path, body) => {
     return retired ? changed : { status: 200, body: result };
   } catch (e: any) {
     if (retired) return changed;
-    if (owner === undefined && cmd === 'get_job' && e?.error === 'account_required' && Number.isSafeInteger(e.account_generation)) {
-      owner = e.account_generation;
-      return request(method, path, body);
+    if (cmd === 'get_job' && e?.error === 'account_required' && Number.isSafeInteger(e.account_generation)) {
+      if (owner === undefined) owner = e.account_generation;
+      if (owner === e.account_generation) return request(method, path, body);
+      retired = true; window.dispatchEvent(new Event('vto-account-changed')); return changed;
     }
     if (e?.error === 'account_changed') {
       retired = true;
