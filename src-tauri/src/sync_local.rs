@@ -88,33 +88,20 @@ pub(crate) fn capture_job(db: &Db, id: &str, key: &str) -> Result<()> {
     Ok(())
 }
 
-pub(crate) fn can_start_job(db: &Db, key: &str) -> Result<bool> {
+pub(crate) fn deletions_cleaned(db: &Db, key: &str) -> Result<bool> {
     // A queued remote deletion may not yet have projected its local cleanup marker.
     let marks = deletion_marks(db, key)?;
     if marks.is_empty() {
         return Ok(true);
     }
-    if db
-        .query_one(
-            "SELECT video_key FROM deleted_video WHERE video_key=? AND complete=1",
-            p![key],
-        )?
-        .is_some()
-    {
-        let saved = db.query_one(
-            "SELECT deletions FROM sync_cleanup_context WHERE video_key=?",
-            p![key],
-        )?;
-        let context: Option<Deletions> = saved
-            .map(|r| serde_json::from_str(&r[0].text()).map_err(|_| "invalid cleanup context"))
-            .transpose()?;
-        return Ok(context.as_ref() == Some(&marks));
-    }
-    for row in db.query("SELECT body FROM sync_record WHERE video_key=? AND (identity LIKE 'v/%' OR identity LIKE 't/%')", p![key])? {
-        let record: Record = serde_json::from_str(&row[0].text()).map_err(|_| "invalid stored sync record")?;
-        if !suppressed(db, &record)? { return Ok(true); }
-    }
-    Ok(false)
+    let saved = db.query_one(
+        "SELECT deletions FROM sync_cleanup_context WHERE video_key=?",
+        p![key],
+    )?;
+    let context: Option<Deletions> = saved
+        .map(|r| serde_json::from_str(&r[0].text()).map_err(|_| "invalid cleanup context"))
+        .transpose()?;
+    Ok(context.as_ref() == Some(&marks))
 }
 
 pub(crate) fn finish_job(db: &Db, id: &str) -> Result<()> {

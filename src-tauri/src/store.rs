@@ -214,7 +214,7 @@ impl Store {
                         return Err("sync deletion confirmation required".into());
                     }
                 }
-                if !crate::sync::local::can_start_job(&db, key)? {
+                if !crate::sync::local::deletions_cleaned(&db, key)? {
                     return Err("sync deletion confirmation required".into());
                 }
             }
@@ -248,7 +248,7 @@ impl Store {
         let result = (|| {
             if crate::sync::local::owned(&self.db)? {
                 if self.db.query_one("SELECT video_key FROM deleted_video WHERE video_key=?", p![previous.video_key.as_str()])?.is_some()
-                    || !crate::sync::local::can_start_job(&self.db, &previous.video_key)? {
+                    || !crate::sync::local::deletions_cleaned(&self.db, &previous.video_key)? {
                     return Err("sync deletion confirmation required".into());
                 }
             }

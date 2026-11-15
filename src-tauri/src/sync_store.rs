@@ -207,37 +207,29 @@ fn video(db: &Db, key: &str) -> Result<bool> {
         .into_iter()
         .chain(newest.as_ref())
         .max_by_key(|r| &r.stamp);
-    if description.is_none() {
-        if !deletion_marks(db, key)?.is_empty() {
-            if db
-                .query_one(
-                    "SELECT video_key FROM deleted_video WHERE video_key=? AND complete=1",
-                    p![key],
-                )?
-                .is_some()
-                && local::can_start_job(db, key)?
-            {
-                return Ok(true);
-            }
-            let mut random = [0u8; 16];
-            getrandom::fill(&mut random).map_err(|_| "deletion token unavailable")?;
-            db.execute(
+    // Fresh metadata cannot preserve an old local response whose deletion has not been cleaned.
+    if !local::deletions_cleaned(db, key)? {
+        let mut random = [0u8; 16];
+        getrandom::fill(&mut random).map_err(|_| "deletion token unavailable")?;
+        db.execute(
                 "INSERT INTO deleted_video VALUES (?,?,0) ON CONFLICT(video_key) DO UPDATE SET token=excluded.token,complete=0 WHERE deleted_video.complete=1",
                 p![key, digest(&random)],
             )?;
-            db.execute("DELETE FROM playlist_entry WHERE video_key=?", p![key])?;
-            db.execute("DELETE FROM playback WHERE video_key=?", p![key])?;
-            db.execute(
-                "DELETE FROM sync_selected_translation WHERE video_key=?",
-                p![key],
-            )?;
-            if let Some(row) = db.query_one("SELECT url FROM browser WHERE id=1", &[])? {
-                let raw = row[0].text();
-                if url::Url::parse(&raw).is_ok_and(|u| crate::api::video_key(&u) == key) {
-                    db.execute("DELETE FROM browser WHERE id=1 AND url=?", p![raw])?;
-                }
+        db.execute("DELETE FROM playlist_entry WHERE video_key=?", p![key])?;
+        db.execute("DELETE FROM playback WHERE video_key=?", p![key])?;
+        db.execute(
+            "DELETE FROM sync_selected_translation WHERE video_key=?",
+            p![key],
+        )?;
+        if let Some(row) = db.query_one("SELECT url FROM browser WHERE id=1", &[])? {
+            let raw = row[0].text();
+            if url::Url::parse(&raw).is_ok_and(|u| crate::api::video_key(&u) == key) {
+                db.execute("DELETE FROM browser WHERE id=1 AND url=?", p![raw])?;
             }
         }
+        return Ok(description.is_none());
+    }
+    if description.is_none() {
         return Ok(true);
     }
     if db

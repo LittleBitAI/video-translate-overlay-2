@@ -732,3 +732,54 @@ fn queued_remote_deletion_invalidates_earlier_consent_before_projection() {
         )
         .unwrap();
 }
+
+#[test]
+fn deletion_and_a_fresh_link_or_translation_in_one_page_cannot_bypass_cleanup() {
+    for restore_translation in [false, true] {
+        let a = Profile::new();
+        let b = Profile::new();
+        let first = a.journal();
+        let second = b.journal();
+        first.write(translation(), Deletions::new()).unwrap();
+        send(&first, &second);
+        first
+            .write(Change::DeleteVideo { key: video_key() }, Deletions::new())
+            .unwrap();
+        first
+            .library()
+            .unwrap()
+            .finish_delete(&video_key(), None)
+            .unwrap();
+        let Change::Translation { translation: t } = translation() else {
+            unreachable!()
+        };
+        let restored = if restore_translation {
+            Change::Translation { translation: t }
+        } else {
+            Change::Video { video: t.video }
+        };
+        first
+            .write(restored, first.deletions(&video_key()).unwrap())
+            .unwrap();
+        send(&first, &second);
+        let store = second.library().unwrap();
+        assert!(
+            store
+                .deleted(&video_key())
+                .unwrap()
+                .is_some_and(|(_, complete)| !complete),
+            "incoming restoration skipped local cleanup"
+        );
+        assert_eq!(store.library().unwrap()["videos"][0]["saved"], false);
+        store.finish_delete(&video_key(), None).unwrap();
+        second.project_pending().unwrap();
+        assert_eq!(
+            store.ready_job(&video_key()).unwrap().is_some(),
+            restore_translation
+        );
+        if !restore_translation {
+            assert!(store.deleted(&video_key()).unwrap().unwrap().1);
+            assert!(store.cues(&video_key()).unwrap().is_empty());
+        }
+    }
+}

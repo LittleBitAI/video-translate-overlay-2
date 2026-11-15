@@ -313,6 +313,15 @@ only the loopback interface; it does not establish discovery between devices.
 All six tests remain. The compiler also reports currently unused native-worker
 entry points while application integration is unfinished.
 
+A subsequent projection regression reproduced a deletion and fresh link
+arriving together before local cleanup: the new metadata could keep the old
+ready response visible. Projection and job admission now require cleanup to
+cover every known deletion mark, even when the same incoming page also contains
+a fresh link or an explicitly restored translation. `cargo test -p
+video-translate-overlay --lib sync::library:: -- --nocapture` then passed all
+13 projection tests. The new table checks both link-only and translated
+restoration; existing completed-version, active-job and consent checks remain.
+
 ## Focused authentication evidence
 
 These checks cover the identity component and its local boundaries. They do not
