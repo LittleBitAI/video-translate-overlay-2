@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "contracts": ["DESIGN.md", "docs/design/api.yaml", "docs/design/library-verification.md"],
+  "contracts": ["DESIGN.md", "docs/design/api.yaml", "docs/design/library-verification.md", "docs/evidence/lan-sync/README.md", "docs/evidence/lan-sync/catalog.json"],
   "flows": [
     {
       "id": "library-api",

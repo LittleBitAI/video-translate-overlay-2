@@ -68,7 +68,7 @@ the signed-in native Windows app now owns a restricted private-interface mutual
 TLS listener and anonymous DNS-SD discovery. Android discovers it automatically
 on the same reachable network. No cloud sync service or internet-facing listener
 is introduced. Account libraries, sealed thirty-day device enrollment, bounded
-transfer operations, lifecycle ownership and pending physical-device acceptance
+transfer operations, lifecycle ownership and observed physical-device acceptance
 are specified in [local-network synchronization](local-network-sync.md).
 
 Signed-out requests select the original database; signed-in and expired sessions

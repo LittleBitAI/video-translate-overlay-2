@@ -1,8 +1,10 @@
 # Google sign-in registration for local-network sync
 
-This is setup for the pending local-network synchronization feature. Registration
-does not implement synchronization or establish acceptance. The current released
-app still keeps separate device-local libraries.
+This records registration for the implemented local-network synchronization
+feature. Registration alone does not establish acceptance; the inspectable
+[execution catalog](../evidence/lan-sync/README.md) records the tested sources
+and observations. The current released app still keeps separate device-local
+libraries.
 
 ## Cost and approved boundaries
 

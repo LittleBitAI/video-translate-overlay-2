@@ -40,7 +40,9 @@ and native settings privacy access passed on both platforms at `ff30ca8`; see
 The physical phone's three original completed translations and sealed Gemini
 credential remained unchanged after the final APK update. No existing user
 library has been imported. The server-owned repository gate and final
-verification remain pending.
+verification remain server-owned. The inspectable
+[execution catalog](../evidence/lan-sync/README.md) contains observations and
+source bindings for review.
 
 The settings screen now starts a separate native Google sign-in: Windows uses
 the system browser with a temporary loopback callback, authorization code,
@@ -188,9 +190,14 @@ subscription. It unregisters, stops browsing and requests acknowledged shutdown
 when released, with a bounded retry for a full command queue. An unacknowledged
 shutdown produces a fixed diagnostic without untrusted network values.
 
-These components are not yet started by the native applications. Their owner
-must still connect sign-in, network replacement, worker cancellation, connection
-limits and Android background lifecycle before enabling production discovery.
+Native setup starts the controller through `Runtime::start` and keeps its owner
+in application state. Verified account restoration or sign-in supplies its
+lease; account retirement cancels connections and discovery. Interface changes
+replace the network lease. Android lifecycle and notification permission govern
+the foreground-service lease. On `ExitRequested`, setup stops account work,
+cancels the controller and joins its shutdown worker before exit. The desktop
+and Android lifecycle observations are recorded in the inspectable
+[execution catalog](../evidence/lan-sync/README.md).
 
 The user selected explicit confirmation before importing the legacy local
 library, with its original data preserved. Account registration is authorized
@@ -401,7 +408,14 @@ transfers, screen-off latency, sign-out, reconnection, deletion, restart, and
 two-account isolation are required acceptance observations; the native evidence
 below records the exercised builds and environments.
 
-## Focused storage evidence
+## Historical implementation evidence — 2026-11-15
+
+The following progress notes describe the build named in each subsection.
+Statements that work was pending describe that stage, not the current native
+implementation. The current execution catalog identifies fresh checks, reused
+observations, source comparisons and owner reports separately.
+
+### Focused storage evidence
 
 These checks cover the storage component and existing Gemini parsing after
 enabling exact JSON float round trips. They do not exercise Google sign-in,
@@ -491,7 +505,7 @@ video-translate-overlay --lib sync::library:: -- --nocapture` then passed all
 13 projection tests. The new table checks both link-only and translated
 restoration; existing completed-version, active-job and consent checks remain.
 
-## Focused authentication evidence
+### Focused authentication evidence
 
 The cleanup addition passed `cargo test -p video-translate-overlay --lib
 sync_runtime:: -- --nocapture`: 7 tests, including the existing five controller
@@ -640,7 +654,7 @@ These are local debug builds, not approved distribution artifacts. No Android
 device was connected, no APK was installed on a user's phone, and no real
 Google sign-in or paid translation was performed in these preparation checks.
 
-## Desktop registration correction
+### Desktop registration correction
 
 The subsequent user-assisted Windows attempt failed. The running `6840c7d`
 core reported `Google identity verification unavailable`; its token exchange
@@ -671,7 +685,7 @@ native applications were rebuilt at `31ced1f`. A diagnostic with the configured
 registration and an intentionally invalid code returned `invalid_grant`,
 replacing the earlier missing-secret error. No diagnostic grant was redeemed.
 
-## Native authentication at 31ced1f
+### Native authentication at 31ced1f
 
 The running Windows core and screen both identified `31ced1f4433c4506cb29f78b507b64d9687ce98d`.
 An isolated app/WebView profile completed user-assisted Google sign-in and
@@ -701,7 +715,7 @@ native authentication and restart, not synchronization or public availability.
 Public OAuth configuration, two-account isolation, LAN transfers, Android
 background delivery and the server-owned gate remain unfinished.
 
-## Playback implementation checks
+### Playback implementation checks
 
 The playback API regression passed with `cargo test -p video-translate-overlay
 --lib playback_requests -- --nocapture`: one test. It transfers a completed
@@ -749,7 +763,7 @@ tests/ui/library.test.ts` passed 19 cases, including measured 44-pixel version
 controls without horizontal overflow at 384 and 1280 pixels. `npm run build`
 passed. Changed text was checked as valid UTF-8 without BOM; API JSON parsed.
 
-## Native build readiness at fc0d072
+### Native build readiness at fc0d072
 
 Both native builds use application and test source commit
 `fc0d072f78248e120db7a7582852add873814cec`. Subsequent documentation-only changes
@@ -794,7 +808,7 @@ ignored `artifacts/native-sync-20261115/`. No phone was connected during that
 preflight. The subsequent installed-device observations below supersede that
 readiness-only status.
 
-## Native one-account flows at fc0d072
+### Native one-account flows at fc0d072
 
 Windows ran the executable above in an owned disposable application and WebView
 profile. Android ran the matching debug APK on a physical Samsung SM-G996N
@@ -865,7 +879,7 @@ flows, original-data retention checks and native screenshots. They identify
 focused manual diagnostics, not registered collection receipts, a repository
 gate result or final verification.
 
-## Retained cost regression repair
+### Retained cost regression repair
 
 Reviewing version selection exposed two related cost regressions: selecting a
 cheaper older response could lower the retranslation baseline, and adding new
@@ -895,7 +909,7 @@ the retained-version admission boundary. No tests were removed. Native binaries
 from `fc0d072` predate this repair; their observations above remain identified
 by that source revision. The server-owned gate has not been run here.
 
-### Native readiness after the cost repair
+#### Native readiness after the cost repair
 
 Both native builds and installed screens identify
 `5f899a2c72080208f84db666d83e119aa4fcd788`. Windows built successfully; its
@@ -927,7 +941,7 @@ ignored artifact directory. The topology, screen-off, second-account and public
 OAuth limitations above still apply. A documentation-only descendant may cite
 these results without claiming rebuilt binaries for that descendant.
 
-### Screen-off delivery over Ethernet and Wi-Fi
+#### Screen-off delivery over Ethernet and Wi-Fi
 
 After the owner disabled USB tethering, the physical phone had only its
 `192.168.0.2/24` Wi-Fi interface for the private LAN; no `usb0` interface
@@ -952,7 +966,7 @@ this USB-charging screen-off run. The private receipt is `screen-off-flow.json`.
 Second-account observations follow below. Public OAuth publishing configuration
 remains pending.
 
-### Two real Google accounts at 5f899a2
+#### Two real Google accounts at 5f899a2
 
 The owner completed fresh Google sign-ins on both native platforms with two
 different real accounts. Windows first changed to the second account while the
