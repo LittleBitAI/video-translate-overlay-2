@@ -94,11 +94,24 @@ access. Before completion, inspect the actual External audience, requested
 scopes, publishing and branding state, and test an account outside any test-user
 list. Google's current [app-state overview](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview)
 documents an exception: External apps requesting only basic identity scopes
-can admit accounts outside that list even while in Testing, with a testing
-warning. Do not infer an owner-only restriction from the Testing label alone.
+can admit accounts outside that list even while in Testing. Do not infer an
+owner-only restriction from the Testing label alone.
 Production configuration remains the intended public channel; switching it is
 an outward configuration change requiring the owner's approval. Branding and
 Workspace administrator restrictions are separate from basic identity access.
+
+To report the current configuration without changing it:
+
+1. Open the project's [Audience page](https://console.cloud.google.com/auth/audience?project=gen-lang-client-0430697481).
+2. Confirm the selected project is `1234`, ID `gen-lang-client-0430697481`.
+3. Read `Publishing status` near the top: `Testing` or `In production`.
+4. Read `User type`: `External` or `Internal`. Leave `Publish app` and other
+   configuration actions untouched while reporting the existing values.
+
+Audience means who may sign in. Data Access means which Google information the
+app requests permission to use. Google's [audience help](https://support.google.com/cloud/answer/15549945?hl=en)
+also documents the basic-identity exception; the project's actual state still
+needs to be observed by its owner.
 
 If Google requests a home page, privacy policy, domain ownership, or brand
 verification, prepare the exact text and destinations before publication.
