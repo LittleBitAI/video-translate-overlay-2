@@ -56,6 +56,10 @@ confirm sign-out and preserve existing saved data. A signed-in identity alone
 must not appear as an established sync connection. Account responses must match
 the captured account generation as well as the screen generation.
 
+Keep a 44 px privacy-policy control in that same account section, available
+before sign-in. Its native action opens only the published policy in the
+platform browser and shows a retryable error without changing account state.
+
 Public app-information pages have two reading tasks: understand the app and
 Google identity use on the homepage, and read the complete data practices on
 the privacy page. They reuse C1 and the 14/16/20/28 px type scale. A 70ch reading

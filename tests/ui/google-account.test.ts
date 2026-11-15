@@ -7,6 +7,30 @@ type Account = { generation: number; state: string; email: string | null; error:
 const signedOut = (generation = 7): Account => ({ generation, state: 'signed_out', email: null, error: null, sync_ready: false });
 const settings = { key_set: true, key_masked: '••••WXYZ', translation_model: 'gemini-3.1-flash-lite' };
 
+test.each([384, 1280])('privacy access at %i px uses a fixed native opener and keeps failed attempts retryable without signing in', async width => {
+  await page.viewport(width, 854);
+  let fail = true;
+  const calls = native((command, args) => {
+    if (command === 'get_google_account') return signedOut();
+    expect(command).toBe('open_privacy_policy');
+    expect(args).toEqual({});
+    if (fail) throw {status:503, message:'private platform diagnostic'};
+    return {opened:true, url:'https://littlebitai.github.io/video-translate-overlay-2/privacy.html'};
+  });
+  const root = open('/preferences');
+  await vi.waitFor(() => expect(button(root, '개인정보처리방침')).toBeTruthy());
+  expect(button(root, '개인정보처리방침').getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+  button(root, '개인정보처리방침').click();
+  await vi.waitFor(() => expect(text(root)).toContain('개인정보처리방침을 열지 못했습니다'));
+  expect(text(root)).not.toContain('private platform');
+  fail = false;
+  button(root, '개인정보처리방침').click();
+  await vi.waitFor(() => expect(text(root)).not.toContain('개인정보처리방침을 열지 못했습니다'));
+  expect(calls.filter(c => c.command === 'open_privacy_policy')).toHaveLength(2);
+  expect(calls.some(c => c.command === 'google_sign_in' || c.command === 'google_sign_out')).toBe(false);
+  expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(width);
+});
+
 test('a new-peer authentication request offers native sign-in renewal without discarding the displayed account', async () => {
   let account = {...signedOut(21), state:'signed_in', email:'one@example.org', connection:{state:'authentication_required', last_success:null}};
   const calls = native((command, args) => {

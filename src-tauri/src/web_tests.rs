@@ -82,7 +82,7 @@ fn browser_http_cannot_start_or_end_a_native_google_session() {
     assert_eq!(status, 200);
     assert_eq!(account["state"], "unsupported");
     assert!(account["email"].is_null());
-    for path in ["/account/sign-in", "/account/sign-out"] {
+    for path in ["/account/sign-in", "/account/sign-out", "/privacy/open"] {
         let (status, body) = json(port, "POST", path, Some(json!({"generation":0})));
         assert_eq!(status, 403);
         assert_eq!(body["error"], "native_required");

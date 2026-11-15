@@ -14,8 +14,8 @@ use tauri::utils::acl::{capability::Capability, manifest::Manifest, resolved::Re
 use tauri::{Runtime, State};
 
 /// Every registered command, P1 to P11.
-pub const COMMANDS: [&str; 17] =
-    ["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles", "get_browser", "get_library", "library_action", "check_updates", "dismiss_update", "open_update", "get_google_account", "google_sign_in", "google_sign_out"];
+pub const COMMANDS: [&str; 18] =
+    ["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles", "get_browser", "get_library", "library_action", "check_updates", "dismiss_update", "open_update", "get_google_account", "google_sign_in", "google_sign_out", "open_privacy_policy"];
 
 /// The commands a site page (the overlay) may call.
 pub const OVERLAY_COMMANDS: [&str; 3] = ["create_job", "get_job", "get_subtitles"];
@@ -204,12 +204,19 @@ pub fn register<R: Runtime>(builder: tauri::Builder<R>, core: Arc<Core>) -> taur
     handlers(builder.manage(core))
 }
 
+#[tauri::command(async)]
+pub async fn open_privacy_policy(core: Shared<'_>) -> ApiResult {
+    let core = core.inner().clone();
+    blocking(move || api::open_privacy_policy(&core)).await
+}
+
 /// Only the handlers; the app manages its `Arc<Core>` in `setup`, once its data folder is known.
 pub fn handlers<R: Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
     builder.invoke_handler(tauri::generate_handler![
         get_google_account,
         google_sign_in,
         google_sign_out,
+        open_privacy_policy,
         browser_open,
         clear_site_data,
         get_settings,
@@ -234,6 +241,7 @@ pub fn route(method: &str, path: &str, body: &Value) -> Option<(&'static str, Va
         ("GET", "/account") => "get_google_account",
         ("POST", "/account/sign-in") => "google_sign_in",
         ("POST", "/account/sign-out") => "google_sign_out",
+        ("POST", "/privacy/open") => "open_privacy_policy",
         ("POST", "/updates/check") => "check_updates",
         ("POST", "/updates/dismiss") => "dismiss_update",
         ("POST", "/updates/open") => "open_update",
@@ -288,6 +296,7 @@ mod tests {
             ("GET", "/account"),
             ("POST", "/account/sign-in"),
             ("POST", "/account/sign-out"),
+            ("POST", "/privacy/open"),
             ("POST", "/updates/check"),
             ("POST", "/updates/dismiss"),
             ("POST", "/updates/open"),

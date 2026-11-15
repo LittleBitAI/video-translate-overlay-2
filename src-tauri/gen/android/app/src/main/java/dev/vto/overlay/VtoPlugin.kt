@@ -111,6 +111,11 @@ class VtoPlugin(private val activity: Activity) : Plugin(activity) {
         invoke.resolve()
     }
     private val prefs get() = activity.getSharedPreferences("vto-key", Context.MODE_PRIVATE)
+    @Command
+    fun openPrivacyPolicy(invoke: Invoke) = guard(invoke) {
+        activity.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://littlebitai.github.io/video-translate-overlay-2/privacy.html")))
+        invoke.resolve()
+    }
     private var opener: Channel? = null
 
     init {

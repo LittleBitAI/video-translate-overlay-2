@@ -36,6 +36,9 @@ impl Mobile {
     pub fn open_download(&self, url: &str) -> Result<(), String> {
         self.call("openDownload", json!({"url":url})).map(drop)
     }
+    pub fn open_privacy_policy(&self) -> Result<(), String> {
+        self.call("openPrivacyPolicy", json!({})).map(drop)
+    }
     fn call(&self, method: &str, args: Value) -> Result<Value, String> {
         self.0.run_mobile_plugin::<Value>(method, args).map_err(|e| format!("{method}: {e}"))
     }

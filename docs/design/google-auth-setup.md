@@ -176,6 +176,36 @@ Google domain ownership verification and the actual resulting
 branding/publishing states must still be observed. An accessible Pages URL is
 not evidence that Google has accepted or verified that domain.
 
+### Published static pages and in-app privacy access
+
+The four reviewed assets were published from a separate `gh-pages` tree at
+`989a4ebcdf1e1a5bc28c16f9e87f693dcd17cc6b`. The application branch was not pushed.
+The Pages creation request returned `409 already enabled`; a read immediately
+confirmed the intended `gh-pages` root source, matching built commit and enforced
+HTTPS, so no replacement or retry was needed. Anonymous HTTPS requests for all
+four assets returned 200 with exact local SHA-256 matches. A real Chromium
+session followed homepage-to-policy and policy-to-home links on the public site.
+No site visitor authentication was used. Receipts are ignored under
+`artifacts/branding/`; Pages deployment is not repository-gate verification.
+
+The Google account settings include a privacy control independent of sign-in.
+Native P18 opens only the fixed published policy URL through the platform
+browser. It takes no URL argument, changes no account or video state, and is
+not available to site pages or HTTP callers. Android uses its separate bounded
+native action; its release-download URL validation is unchanged. Ordinary
+browser screens use a normal HTTPS link. Open failures have a retryable fixed
+message and do not expose platform diagnostics.
+
+Focused checks passed: the policy API regression (1), Windows/Android command
+restrictions (3), native-only HTTP regression (1), rebuilt-host settings contracts
+(3), and Chromium Google-account/preferences files (22). The first UI run found
+an older YouTube fixture expecting browser-open arguments without the required
+account generation. Updating that exact expected request and response to the
+current contract made the affected file pass; the assertion was retained.
+The cleanup audit keeps the new policy boundary test and static-page check,
+extends existing denial/recovery checks, and removes no tests. Native packaging
+and policy-button observations for this repair remain to be recorded.
+
 If Google requests a home page, privacy policy, domain ownership, or brand
 verification, prepare the exact text and destinations before publication.
 The owner supplies contact details and any required domain ownership. Do not

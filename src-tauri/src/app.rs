@@ -50,6 +50,10 @@ impl Browser for TauriBrowser {
         #[cfg(not(any(windows, target_os = "android")))]
         Err("unsupported platform".into())
     }
+    #[cfg(target_os = "android")]
+    fn open_privacy_policy(&self) -> Result<(), String> {
+        app(&self.0)?.state::<crate::android::Mobile>().open_privacy_policy()
+    }
     fn invalidate_video(&self, key: &str) -> Result<(), String> {
         for w in app(&self.0)?.webview_windows().values() {
             w.eval(format!("window.dispatchEvent(new CustomEvent('vto-video-deleted',{{detail:{}}}))", serde_json::json!(key)))

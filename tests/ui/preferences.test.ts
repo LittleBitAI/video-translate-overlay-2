@@ -14,7 +14,7 @@ test('YouTube can be connected once from settings', async () => {
       if (command === 'get_settings') return Promise.resolve(NONE);
       if (command === 'get_google_account') return Promise.resolve({ generation: 0, state: 'unsupported', email: null, error: null, sync_ready: false });
       expect(command).toBe('browser_open');
-      expect(args).toEqual({ url: 'https://accounts.google.com/ServiceLogin?service=youtube&continue=https%3A%2F%2Fwww.youtube.com%2F' });
+      expect(args).toEqual({ url: 'https://accounts.google.com/ServiceLogin?service=youtube&continue=https%3A%2F%2Fwww.youtube.com%2F', account_generation: 0 });
       return new Promise((r) => (release = r));
     },
   });
@@ -23,7 +23,7 @@ test('YouTube can be connected once from settings', async () => {
   button(s2, '유튜브 계정 연결').click();
   await vi.waitFor(() => expect(button(s2, '계정 화면 여는 중').disabled).toBe(true));
   expect(button(s2, '유튜브 로그아웃').disabled).toBe(true);
-  release({ opened_url: 'https://accounts.google.com/ServiceLogin', account_gate: true });
+  release({ opened_url: 'https://accounts.google.com/ServiceLogin', account_gate: true, account_generation: 0 });
   await vi.waitFor(() => expect(text(s2)).toContain('유튜브 계정 화면을 열었습니다'));
 });
 

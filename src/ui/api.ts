@@ -10,6 +10,7 @@ const COMMANDS: Record<string, string> = {
   'GET /account': 'get_google_account',
   'POST /account/sign-in': 'google_sign_in',
   'POST /account/sign-out': 'google_sign_out',
+  'POST /privacy/open': 'open_privacy_policy',
   'POST /updates/check': 'check_updates',
   'POST /updates/dismiss': 'dismiss_update',
   'POST /updates/open': 'open_update',

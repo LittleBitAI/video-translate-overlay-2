@@ -37,6 +37,8 @@ pub mod web;
 pub mod whisper;
 pub mod youtube;
 
+pub const PRIVACY_POLICY_URL: &str = "https://littlebitai.github.io/video-translate-overlay-2/privacy.html";
+
 use std::path::PathBuf;
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::Duration;
@@ -76,6 +78,7 @@ pub trait Browser: Send + Sync {
     fn refresh_library(&self) -> Result<(), String> { Ok(()) }
     fn invalidate_account(&self, _generation: u64) -> Result<(), String> { Ok(()) }
     fn open_download(&self, _url: &str) -> Result<(), String> { Err("external downloads are unavailable".into()) }
+    fn open_privacy_policy(&self) -> Result<(), String> { self.open_download(PRIVACY_POLICY_URL) }
     /// Drops cached subtitles in open views before permanent cleanup starts.
     fn invalidate_video(&self, _key: &str) -> Result<(), String> { Ok(()) }
     /// Shows `url`; `overlay` attaches the overlay script (never on Google's sign-in pages).

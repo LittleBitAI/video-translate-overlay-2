@@ -19,6 +19,12 @@ pub struct ApiError {
 
 pub type ApiResult = Result<Value, ApiError>;
 
+pub fn open_privacy_policy(core: &Core) -> ApiResult {
+    core.svc.browser.open_privacy_policy()
+        .map_err(|_| err(503, "privacy_unavailable", "개인정보처리방침을 열지 못했습니다. 다시 시도해 주세요."))?;
+    Ok(json!({"opened":true,"url":crate::PRIVACY_POLICY_URL}))
+}
+
 #[derive(Clone, Copy, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PlaybackAction { Get, Set }
@@ -533,6 +539,37 @@ mod hold_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn privacy_opener_uses_only_the_fixed_public_page_and_preserves_account_and_video_state() {
+        use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}};
+        struct Opener(Arc<Mutex<Vec<String>>>, Arc<AtomicBool>);
+        impl crate::Browser for Opener {
+            fn open_download(&self, url: &str) -> Result<(), String> {
+                self.0.lock().unwrap().push(url.into());
+                if self.1.load(Ordering::Acquire) { Err("private platform diagnostic".into()) } else { Ok(()) }
+            }
+            fn navigate(&self, _: &str, _: bool) -> Result<(), String> { panic!("privacy must not navigate a video") }
+            fn clear_site_data(&self) -> Result<(), String> { panic!("privacy must not clear cookies") }
+        }
+        let folder = std::env::temp_dir().join(format!("vto-privacy-{}-{}", std::process::id(), new_job_id()));
+        std::fs::create_dir_all(&folder).unwrap();
+        let mut core = crate::pipeline::worker_tests::idle_core(&folder, "");
+        let opened = Arc::new(Mutex::new(Vec::new()));
+        let fail = Arc::new(AtomicBool::new(false));
+        core.svc.browser = Box::new(Opener(opened.clone(), fail.clone()));
+        let generation = core.account.status().unwrap().generation;
+        assert_eq!(open_privacy_policy(&core).unwrap(), json!({"opened":true,"url":"https://littlebitai.github.io/video-translate-overlay-2/privacy.html"}));
+        fail.store(true, Ordering::Release);
+        let error = open_privacy_policy(&core).unwrap_err();
+        assert_eq!((error.status, error.error.as_str()), (503, "privacy_unavailable"));
+        assert!(!error.message.contains("private platform"));
+        assert_eq!(*opened.lock().unwrap(), vec![crate::PRIVACY_POLICY_URL; 2]);
+        assert_eq!(core.account.status().unwrap().generation, generation);
+        assert!(core.store.opened_url().unwrap().is_none());
+        drop(core);
+        std::fs::remove_dir_all(folder).unwrap();
+    }
 
     #[test]
     fn youtube_sign_in_return_addresses_are_limited_to_youtube() {

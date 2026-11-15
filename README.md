@@ -80,6 +80,11 @@ two-account isolation checks passed on Windows and a physical Android phone.
 Public OAuth publishing configuration and the server-owned gate remain pending; see
 [implementation status](docs/design/local-network-sync.md).
 
+The [app homepage](https://littlebitai.github.io/video-translate-overlay-2/) and
+[privacy policy](https://littlebitai.github.io/video-translate-overlay-2/privacy.html)
+describe Google identity and local-network data handling. The development
+settings screen also opens the policy independently of Google sign-in.
+
 Both devices need a build containing LAN synchronization. An older preview that
 supports only Google sign-in cannot connect. Keep the PC app running and use the
 same reachable local network; Ethernet on the PC and Wi-Fi on the phone can work

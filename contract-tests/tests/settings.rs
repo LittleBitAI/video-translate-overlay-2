@@ -74,6 +74,7 @@ fn test_site_page_cannot_call_key_commands() {
         ("GET", "/account", json!(null)),
         ("POST", "/account/sign-in", json!({"generation":0})),
         ("POST", "/account/sign-out", json!({"generation":0})),
+        ("POST", "/privacy/open", json!({"url":"https://untrusted.example.org/"})),
     ] {
         let result = app.call(PAGE, method, path, body);
         assert!(result.status >= 400, "the site page reached Google account controls: {result:?}");

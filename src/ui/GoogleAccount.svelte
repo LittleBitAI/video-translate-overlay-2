@@ -21,6 +21,8 @@
   let confirming = $state(false);
   let generation = 0;
   let polling = false;
+  let privacyOpening = $state(false);
+  let privacyError = $state('');
   const connectionText: Record<string, string> = {
     listening:'PC에서 연결을 기다립니다. 휴대폰에서 같은 Google 계정으로 로그인하면 자동으로 연결합니다.',
     searching:'PC 앱을 켜고 같은 네트워크에 연결해 주세요. PC가 유선이고 휴대폰이 Wi-Fi여도 연결할 수 있습니다. 연결되지 않으면 Windows 방화벽의 비공개 네트워크 허용과 공유기의 게스트망·기기간 차단 설정을 확인해 주세요.',
@@ -104,6 +106,16 @@
     account = result.body;
   }
 
+  async function openPrivacy() {
+    if (privacyOpening) return;
+    const screen = generation;
+    privacyOpening = true;
+    privacyError = '';
+    const result = await request('POST', '/privacy/open');
+    privacyOpening = false;
+    if (screen === generation && result.status !== 200) privacyError = '개인정보처리방침을 열지 못했습니다. 다시 시도해 주세요.';
+  }
+
   onMount(() => {
     if (!native) return;
     // Arm the status watcher before any sign-in can start its native worker.
@@ -173,4 +185,12 @@
       {/if}
     {/if}
   {/if}
+  <div class="mt-4">
+    {#if native}
+      <button type="button" class={outline} disabled={privacyOpening} onclick={openPrivacy}>개인정보처리방침</button>
+    {:else}
+      <a class="inline-flex min-h-11 items-center text-primary underline" href="https://littlebitai.github.io/video-translate-overlay-2/privacy.html" target="_blank" rel="noopener noreferrer">개인정보처리방침</a>
+    {/if}
+    {#if privacyError}<p class="mt-2 text-sm text-accent" role="alert">{privacyError}</p>{/if}
+  </div>
 </section>

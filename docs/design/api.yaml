@@ -6,6 +6,17 @@
     "description": "Native library/browser/job/subtitle requests carry account_generation captured by their screen. Successful replies include it; retired requests return 409 account_changed without data. Only P7 may return the current counter in an account_required error to bootstrap a newly injected overlay; it returns no library or identity data. Site capabilities remain P6-P8. Google identity enrolls a sealed certificate-bound device credential for at most 30 days; fresh Google verification is required for unknown peer enrollment. Expiry stops transfers while retaining local account-library access. Sign-out selects the original unowned library. Credentials, cookies and unfinished jobs are never imported or synchronized."
   },
   "paths": {
+    "/privacy/open": {
+      "post": {
+        "operationId": "P18",
+        "summary": "Open only the fixed published privacy policy in the platform browser. Native local screens only; no caller-supplied URL, account mutation or video navigation. HTTP and site callers are refused.",
+        "responses": {
+          "200": {"description": "opened=true and the fixed public privacy-policy URL"},
+          "403": {"description": "native_required or denied site capability"},
+          "503": {"description": "privacy_unavailable with a fixed retryable message"}
+        }
+      }
+    },
     "/account": {
       "get": {
         "operationId": "P15",
