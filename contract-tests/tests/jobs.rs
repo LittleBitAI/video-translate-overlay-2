@@ -98,9 +98,10 @@ fn test_subtitles_refused_until_ready() {
     assert!(j.body["percent"].is_i64(), "{j:?}");
     assert!(j.body["account_generation"].is_u64(), "the public ownership counter must be an integer: {j:?}");
     let allowed = [
-        "job_id", "video_key", "title", "stage", "percent", "failure_reason",
+        "job_id", "video_key", "title", "stage", "percent", "preparing_model", "failure_reason",
         "input_amount", "output_amount", "cost_krw", "notified", "account_generation",
     ];
+    assert_eq!(j.body["preparing_model"], false, "writing is not model preparation: {j:?}");
     for k in j.body.as_object().expect("GET /jobs body is an object").keys() {
         assert!(allowed.contains(&k.as_str()), "GET /jobs leaks `{k}` while writing: {j:?}");
     }

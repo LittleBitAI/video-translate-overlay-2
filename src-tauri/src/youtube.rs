@@ -94,11 +94,13 @@ pub fn stream_duration_ms(stream_url: &str) -> Option<i64> {
 }
 
 /// The best audio-only stream with a plain URL, preferring AAC (itag 140) that every decoder reads.
+/// The same choice as the overlay's (`youtubeAudioUrl`): a dubbed, non-default track is never taken.
 fn pick_audio(player: &Value) -> Option<String> {
     let formats = player["streamingData"]["adaptiveFormats"].as_array()?;
     formats
         .iter()
         .filter(|f| f["mimeType"].as_str().is_some_and(|m| m.starts_with("audio/")) && f["url"].is_string())
+        .filter(|f| f["audioTrack"]["audioIsDefault"] != false)
         .max_by_key(|f| {
             let aac = f["mimeType"].as_str().unwrap_or("").contains("mp4a");
             (aac, f["bitrate"].as_i64().unwrap_or(0))
@@ -132,6 +134,7 @@ mod tests {
             {"mimeType": "video/mp4", "url": "v", "bitrate": 9},
             {"mimeType": "audio/webm; codecs=\"opus\"", "url": "opus", "bitrate": 160000},
             {"mimeType": "audio/mp4; codecs=\"mp4a.40.2\"", "url": "aac", "bitrate": 130000},
+            {"mimeType": "audio/mp4; codecs=\"mp4a.40.2\"", "url": "dubbed", "bitrate": 140000, "audioTrack": {"audioIsDefault": false}},
             {"mimeType": "audio/mp4; codecs=\"mp4a.40.5\"", "signatureCipher": "x", "bitrate": 999999}
         ]}});
         assert_eq!(pick_audio(&p).as_deref(), Some("aac"));

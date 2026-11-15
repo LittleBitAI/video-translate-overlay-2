@@ -156,6 +156,19 @@ test('an account change clears visible subtitles and rejects a late subtitle rep
   expect(backend.calls.filter(c => c.method === 'POST')).toHaveLength(0);
 });
 
+test('the downloading stage names the speech model while it is fetched, then the audio', async () => {
+  const player = makePlayer(MAIN_MS / 1000);
+  let preparing = true;
+  const backend = fakeBackend(c => route(c) === 'GET /jobs'
+    ? { status: 200, body: { ...job('downloading', 20), preparing_model: preparing } }
+    : { status: 404, body: { error: 'not found' } });
+  await mountOverlay({ video: player.video, pageUrl: YT, title: TITLE, mediaUrl: null, request: backend.request });
+  const status = () => deepAll('[data-vto="status"]')[0]?.textContent;
+  await expect.poll(status).toBe('음성 인식 모델 준비 중(처음 한 번) 20%');
+  preparing = false;
+  await expect.poll(status, { timeout: 2500 }).toBe('오디오 내려받는 중 20%');
+});
+
 test('ready subtitles offer translation repair without fetching or rewriting the audio', async () => {
   const player = makePlayer(MAIN_MS / 1000);
   const backend = readyBackend();

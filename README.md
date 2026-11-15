@@ -121,6 +121,17 @@ the model, unit prices and per-hour limit are unchanged.
 
 유튜브 오디오는 앱 브라우저의 세션으로 주소를 받은 뒤 Rust 코어가 내려받습니다. 실제 공개 영상의 다운로드와 기기 내 음성 인식을 확인했습니다. 사이트 변경, 로그인 제한, 다운로드 차단에 따라 작업이 거절될 수 있습니다. Google이 앱 내 로그인을 막으면 건너뛰기를 사용할 수 있습니다.
 
+## Faster audio downloads
+
+The development build receives a video's audio file in 10 MiB pieces. YouTube
+sends a single whole-file request at only about twice the playback speed. On a
+Galaxy S21+ over home Wi-Fi, a one-hour lecture's audio previously took about
+30 minutes and now usually takes seconds to about a minute. The audio file
+and subtitle timing are unchanged. While the speech model downloads for the
+first time, progress shows `음성 인식 모델 준비 중` instead of the audio
+download. Measurements and limits are in
+[download speed](docs/design/download-speed.md).
+
 ## 모바일 받아쓰기 최적화
 
 0.1.4는 Android의 받아쓰기 연산량을 줄입니다. 기존 작업의 저장된 음성 구간과 자막 시각을 유지하며, 업데이트해도 완료한 구간부터 이어갑니다. 기존 모델 파일을 자동 삭제하지는 않습니다.

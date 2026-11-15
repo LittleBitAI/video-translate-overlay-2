@@ -461,6 +461,9 @@
                     "percent": {
                       "description": "integer"
                     },
+                    "preparing_model": {
+                      "description": "boolean: true while the downloading stage is fetching the on-device speech model (first use), before the audio transfer"
+                    },
                     "failure_reason": {
                       "description": "string | null"
                     },

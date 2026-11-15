@@ -138,6 +138,16 @@ pub struct Core {
     wake: (Mutex<bool>, Condvar),
     /// Held while P6 checks for existing jobs and creates one.
     pub(crate) create_lock: Mutex<()>,
+    pub(crate) running: Running,
+}
+
+/// What only this process knows about the job being started or run; a restart forgets it.
+#[derive(Default)]
+pub(crate) struct Running {
+    /// The source P6 just probed for this job, handed to its first download attempt.
+    pub(crate) probed: Mutex<Option<(String, media::Source)>>,
+    /// The job whose download stage is fetching the speech model right now.
+    pub(crate) preparing_model: Mutex<Option<String>>,
 }
 
 impl Core {
@@ -146,7 +156,7 @@ impl Core {
         std::fs::create_dir_all(cfg.data_dir.join("audio")).map_err(|e| format!("data folder: {e}"))?;
         let store = store::Store::open(&cfg.data_dir.join("app.sqlite3"))?;
         let account = account::Manager::new(cfg.data_dir.clone());
-        let core = Arc::new(Core { cfg, store, svc, account, sync: Default::default(), updates: updates::Checker::default(), wake: (Mutex::new(false), Condvar::new()), create_lock: Mutex::new(()) });
+        let core = Arc::new(Core { cfg, store, svc, account, sync: Default::default(), updates: updates::Checker::default(), wake: (Mutex::new(false), Condvar::new()), create_lock: Mutex::new(()), running: Running::default() });
         let worker = core.clone();
         std::thread::Builder::new().name("jobs".into()).spawn(move || pipeline::run_worker(worker)).map_err(|e| e.to_string())?;
         Ok(core)
@@ -168,4 +178,16 @@ impl Core {
 
 pub fn log(msg: impl AsRef<str>) {
     eprintln!("[vto] {}", msg.as_ref());
+    // An app's stderr goes nowhere on Android; logcat (tag `vto`) is where its log is read.
+    #[cfg(target_os = "android")]
+    {
+        #[link(name = "log")]
+        extern "C" {
+            fn __android_log_write(prio: i32, tag: *const std::ffi::c_char, text: *const std::ffi::c_char) -> i32;
+        }
+        if let Ok(text) = std::ffi::CString::new(msg.as_ref().replace('\0', " ")) {
+            // 4 = ANDROID_LOG_INFO.
+            unsafe { __android_log_write(4, c"vto".as_ptr(), text.as_ptr()) };
+        }
+    }
 }

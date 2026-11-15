@@ -61,6 +61,10 @@ pub struct Response {
     pub content_type: Option<String>,
     pub content_length: Option<u64>,
     pub location: Option<String>,
+    /// `Content-Range`, `ETag` and `Last-Modified`: what a ranged download checks each piece against.
+    pub content_range: Option<String>,
+    pub etag: Option<String>,
+    pub last_modified: Option<String>,
     /// The address the connection really went to, when the stack reports it.
     pub remote_ip: Option<std::net::IpAddr>,
     body: Box<dyn Read + Send>,
@@ -158,6 +162,9 @@ mod imp {
     const QUERY_CONTENT_TYPE: u32 = 1;
     const QUERY_FLAG_NUMBER: u32 = 0x2000_0000;
     const QUERY_LOCATION: u32 = 33;
+    const QUERY_LAST_MODIFIED: u32 = 11;
+    const QUERY_CONTENT_RANGE: u32 = 53;
+    const QUERY_ETAG: u32 = 54;
     const OPTION_REDIRECT_POLICY: u32 = 88;
     const REDIRECT_POLICY_NEVER: u32 = 0;
     const OPTION_CONNECTION_INFO: u32 = 93;
@@ -300,12 +307,15 @@ mod imp {
         let content_type = query_string(h.request, QUERY_CONTENT_TYPE);
         let content_length = query_string(h.request, QUERY_CONTENT_LENGTH).and_then(|s| s.trim().parse().ok());
         let location = query_string(h.request, QUERY_LOCATION);
+        let content_range = query_string(h.request, QUERY_CONTENT_RANGE);
+        let etag = query_string(h.request, QUERY_ETAG);
+        let last_modified = query_string(h.request, QUERY_LAST_MODIFIED);
         let mut info = [0u8; INFO_LEN];
         info[..4].copy_from_slice(&(INFO_LEN as u32).to_le_bytes());
         let mut len = info.len() as u32;
         let ok = unsafe { WinHttpQueryOption(h.request, OPTION_CONNECTION_INFO, info.as_mut_ptr() as *mut c_void, &mut len) };
         let remote_ip = if ok != 0 { remote_ip(&info) } else { None };
-        Ok(Response { status: status as u16, content_type, content_length, location, remote_ip, body: Box::new(Body(h)) })
+        Ok(Response { status: status as u16, content_type, content_length, location, content_range, etag, last_modified, remote_ip, body: Box::new(Body(h)) })
     }
 }
 
@@ -410,6 +420,7 @@ pub(crate) mod portable {
         let status = line.split_whitespace().nth(1).and_then(|c| c.parse().ok()).unwrap_or(0);
         // Plain TCP never follows redirects; callers that want them get `location` back.
         let (mut content_type, mut content_length, mut chunked, mut location) = (None, None, false, None);
+        let (mut content_range, mut etag, mut last_modified) = (None, None, None);
         loop {
             let h = head_line(&mut r, &mut used).map_err(err)?;
             if h.trim().is_empty() {
@@ -422,6 +433,9 @@ pub(crate) mod portable {
                     "content-length" => content_length = v.parse().ok(),
                     "transfer-encoding" => chunked = v.to_ascii_lowercase().contains("chunked"),
                     "location" => location = Some(v),
+                    "content-range" => content_range = Some(v),
+                    "etag" => etag = Some(v),
+                    "last-modified" => last_modified = Some(v),
                     _ => {}
                 }
             }
@@ -434,7 +448,7 @@ pub(crate) mod portable {
         } else {
             Box::new(r)
         };
-        Ok(Response { status, content_type, content_length, location, remote_ip, body })
+        Ok(Response { status, content_type, content_length, location, content_range, etag, last_modified, remote_ip, body })
     }
 
     /// A response head is read within bounds, whatever the server sends: a line

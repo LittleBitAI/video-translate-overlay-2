@@ -806,6 +806,121 @@ impl Source {
     }
 }
 
+/// Bytes asked for per request when a server answers ranges. YouTube paces one
+/// whole-file GET to about twice the playback rate but answers each range of
+/// this size at full speed; elsewhere it costs one request per 10 MiB.
+pub(crate) const CHUNK: u64 = 10 << 20;
+/// Failed requests in a row a ranged download survives, resuming where it stopped.
+const CHUNK_RETRIES: u32 = 3;
+
+/// `(first, last, complete length)` of a `Content-Range: bytes a-b/n` answer.
+pub(crate) fn content_range(v: &str) -> Option<(u64, u64, u64)> {
+    let (span, size) = v.trim().strip_prefix("bytes ")?.split_once('/')?;
+    let (a, b) = span.split_once('-')?;
+    let (a, b, n): (u64, u64, u64) = (a.trim().parse().ok()?, b.trim().parse().ok()?, size.trim().parse().ok()?);
+    (a <= b && b < n).then_some((a, b, n))
+}
+
+/// A direct file, in [`CHUNK`]-sized ranges written in order. Every piece must
+/// start where the last ended and come from the same resource (complete length,
+/// `ETag` and `Last-Modified` unchanged); a dropped piece is asked for again from
+/// the byte it stopped at. A server that answers the first range with 200 sends
+/// the whole file in that one response, read as before.
+fn download_file(
+    url: &str,
+    chunk: u64,
+    out: &mut impl Write,
+    get: &dyn Fn(&str, Option<(u64, u64)>) -> Result<http::Response, String>,
+    progress: &mut dyn FnMut(i64),
+) -> Result<(), String> {
+    let mut buf = vec![0u8; 1 << 16];
+    let mut done = 0u64;
+    // The complete length and validators the first piece came with.
+    let mut first: Option<(u64, Option<String>, Option<String>)> = None;
+    let mut failures = 0;
+    let retry = |failures: &mut u32, e: String, at: u64| -> Result<(), String> {
+        *failures += 1;
+        if *failures > CHUNK_RETRIES {
+            return Err(e);
+        }
+        crate::log(format!("download: {e}; resuming at byte {at}"));
+        std::thread::sleep(std::time::Duration::from_secs(u64::from(*failures)));
+        Ok(())
+    };
+    loop {
+        let mut r = match get(url, Some((done, chunk))) {
+            Ok(r) => r,
+            Err(e) => {
+                retry(&mut failures, e, done)?;
+                continue;
+            }
+        };
+        if r.status != 206 {
+            if first.is_some() {
+                return Err(format!("{url} stopped answering ranges at byte {done}"));
+            }
+            return copy_whole(r, out, &mut buf, progress);
+        }
+        let (a, b, size) = r.content_range.as_deref().and_then(content_range).ok_or_else(|| format!("{url}: 206 without a usable Content-Range"))?;
+        let identity = (size, r.etag.clone(), r.last_modified.clone());
+        match &first {
+            None => first = Some(identity),
+            Some(was) if *was != identity => return Err(format!("{url} changed during the download")),
+            _ => {}
+        }
+        let want = b - a + 1;
+        if a != done || want > chunk || r.content_length.is_some_and(|n| n != want) {
+            return Err(format!("{url}: asked for bytes from {done}, got {a}-{b}"));
+        }
+        let mut got = 0u64;
+        let read = (|| -> std::io::Result<()> {
+            while got < want {
+                let room = (want - got).min(buf.len() as u64) as usize;
+                let n = r.read(&mut buf[..room])?;
+                if n == 0 {
+                    return Err(std::io::ErrorKind::UnexpectedEof.into());
+                }
+                out.write_all(&buf[..n])?;
+                got += n as u64;
+                progress(((done + got) * 100 / size) as i64);
+            }
+            Ok(())
+        })();
+        done += got;
+        match read {
+            Ok(()) => failures = 0,
+            Err(e) => {
+                retry(&mut failures, format!("piece at {a} of {url}: {e}"), done)?;
+                continue;
+            }
+        }
+        if done == size {
+            return Ok(());
+        }
+    }
+}
+
+/// The whole file from one response, checked against its Content-Length.
+fn copy_whole(mut r: http::Response, out: &mut impl Write, buf: &mut [u8], progress: &mut dyn FnMut(i64)) -> Result<(), String> {
+    let total = r.content_length.unwrap_or(0);
+    let mut done = 0u64;
+    loop {
+        let n = r.read(buf).map_err(|e| e.to_string())?;
+        if n == 0 {
+            break;
+        }
+        out.write_all(&buf[..n]).map_err(|e| e.to_string())?;
+        done += n as u64;
+        if total > 0 {
+            progress((done * 100 / total) as i64);
+        }
+    }
+    if total > 0 && done < total {
+        return Err(format!("download ended at {done} of {total} bytes"));
+    }
+    Ok(())
+}
+
 /// Downloads `src` into `dest`, reporting a 0..=100 percent. Every request
 /// (and redirect) is checked against the same URL policy as the probe.
 pub fn download(src: &Source, dest: &Path, allow_loopback: bool, progress: &mut dyn FnMut(i64)) -> Result<(), String> {
@@ -816,28 +931,9 @@ pub fn download(src: &Source, dest: &Path, allow_loopback: bool, progress: &mut 
         _ => {}
     }
     let mut out = std::io::BufWriter::new(std::fs::File::create(dest).map_err(|e| e.to_string())?);
-    let mut buf = vec![0u8; 1 << 16];
     let get = |url: &str, range| get(url, range, allow_loopback, 60_000).map(|(r, _)| r).map_err(|r| format!("{}: {}", r.code, r.message));
     match src {
-        Source::File { url, .. } => {
-            let mut r = get(url, None)?;
-            let total = r.content_length.unwrap_or(0);
-            let mut done = 0u64;
-            loop {
-                let n = r.read(&mut buf).map_err(|e| e.to_string())?;
-                if n == 0 {
-                    break;
-                }
-                out.write_all(&buf[..n]).map_err(|e| e.to_string())?;
-                done += n as u64;
-                if total > 0 {
-                    progress((done * 100 / total) as i64);
-                }
-            }
-            if total > 0 && done < total {
-                return Err(format!("download ended at {done} of {total} bytes"));
-            }
-        }
+        Source::File { url, .. } => download_file(url, CHUNK, &mut out, &get, progress)?,
         Source::Hls { parts, sections, .. } => {
             let io = |e: std::io::Error| e.to_string();
             // Where each part starts in the file, and where the last ends.
@@ -904,6 +1000,10 @@ mod dns_tests;
 #[cfg(test)]
 #[path = "media_norange_tests.rs"]
 mod norange_tests;
+
+#[cfg(test)]
+#[path = "media_ranged_tests.rs"]
+mod ranged_tests;
 
 #[cfg(test)]
 #[path = "media_hls_pieces_tests.rs"]
