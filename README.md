@@ -63,6 +63,17 @@ Windows. They persist after restart and remain separate on each device. There
 are no accounts, cloud sync, automatic next-video playback, or original-video
 offline copies.
 
+The development branch adds a separate Google app account under Settings.
+Signing in selects that account's local library; signing out returns to the
+original device library. `기존 보관함 가져오기` offers a confirmed copy of the
+original completed translations, links and playlists into the displayed Google
+account. The original data, cue times and recorded costs remain intact. It does
+not copy unfinished jobs, Gemini credentials or YouTube cookies. A job already
+started on this device continues in its original library after account changes.
+The selected device sign-in lasts at most thirty days; expiry stops transfers
+while preserving local account-library access. Automatic LAN delivery is still
+under implementation; see [implementation status](docs/design/local-network-sync.md).
+
 ## 처리 방식과 지원 범위
 
 | 항목 | 현재 동작 |

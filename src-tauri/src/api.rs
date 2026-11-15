@@ -13,12 +13,14 @@ pub struct ApiError {
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deletion_token: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub account_generation: Option<u64>,
 }
 
 pub type ApiResult = Result<Value, ApiError>;
 
 pub fn err(status: u16, error: &str, message: impl Into<String>) -> ApiError {
-    ApiError { status, error: error.into(), message: message.into(), deletion_token: None }
+    ApiError { status, error: error.into(), message: message.into(), deletion_token: None, account_generation: None }
 }
 
 impl From<String> for ApiError {
@@ -115,22 +117,28 @@ fn youtube_sign_in_target(page: &url::Url) -> Option<url::Url> {
 /// A finished sign-in must not restore its login page or replace a newer video.
 pub fn youtube_page_loaded(core: &Core, raw: &str) -> Result<(), String> {
     let Ok(page) = http_url(raw) else { return Ok(()) };
-    let Some(gate) = core.store.opened_url()? else { return Ok(()) };
+    let library = core.library(None).map_err(|_| "account changed")?;
+    let Some(gate) = library.run(|store| Ok(store.opened_url()?)).map_err(|_| "account changed")? else { return Ok(()) };
     let Some(target) = url::Url::parse(&gate).ok().as_ref().and_then(youtube_sign_in_target) else { return Ok(()) };
     let home = target.path() == "/" && target.query().is_none() && page.path() == "/";
     if page.scheme() == "https" && youtube::is_youtube(&page) && (home || video_key(&page) == video_key(&target)) {
-        core.store.finish_youtube_sign_in(&gate, raw)?;
+        library.run(|store| Ok(store.finish_youtube_sign_in(&gate, raw)?)).map_err(|_| "account changed")?;
     }
     Ok(())
 }
 
 pub fn browser_open(core: &Core, raw: &str) -> ApiResult {
+    browser_open_in(&core.library(None)?, raw)
+}
+
+fn browser_open_in(library: &crate::library_scope::Library<'_>, raw: &str) -> ApiResult {
+    let core = library.core;
     let page = http_url(raw)?;
     let site = site(&page);
     if youtube_sign_in_target(&page).is_some() {
         core.svc.browser.navigate(page.as_str(), false)?;
         core.store.set_youtube_gate_seen(true)?;
-        core.store.set_opened_url(page.as_str())?;
+        library.run(|store| Ok(store.set_opened_url(page.as_str())?))?;
         return Ok(json!({"opened_url": page.as_str(), "site": "youtube", "account_gate": true}));
     }
     if site == "youtube" && !core.store.youtube_gate_seen()? {
@@ -139,11 +147,11 @@ pub fn browser_open(core: &Core, raw: &str) -> ApiResult {
         gate.query_pairs_mut().append_pair("service", "youtube").append_pair("continue", raw.trim());
         core.svc.browser.navigate(gate.as_str(), false)?;
         core.store.set_youtube_gate_seen(true)?;
-        core.store.set_opened_url(gate.as_str())?;
+        library.run(|store| Ok(store.set_opened_url(gate.as_str())?))?;
         return Ok(json!({"opened_url": gate.as_str(), "site": site, "account_gate": true}));
     }
     core.svc.browser.navigate(raw.trim(), true)?;
-    core.store.set_opened_url(raw.trim())?;
+    library.run(|store| Ok(store.set_opened_url(raw.trim())?))?;
     Ok(json!({"opened_url": raw.trim(), "site": site, "account_gate": false}))
 }
 
@@ -152,8 +160,12 @@ pub fn browser_open(core: &Core, raw: &str) -> ApiResult {
 /// and that page's latest job as P7 gives it (`null` when it has none), so
 /// opening the screen asks nothing that answers "not found".
 pub fn get_browser(core: &Core) -> ApiResult {
-    let url = core.store.opened_url()?;
-    let job = match url.as_deref().map(|u| get_job(core, u)) {
+    get_browser_in(&core.library(None)?)
+}
+
+fn get_browser_in(library: &crate::library_scope::Library<'_>) -> ApiResult {
+    let url = library.run(|store| Ok(store.opened_url()?))?;
+    let job = match url.as_deref().map(|u| get_job_in(library, u)) {
         Some(Ok(job)) => job,
         Some(Err(e)) if e.status != 404 && e.status != 410 => return Err(e),
         _ => Value::Null,
@@ -251,6 +263,11 @@ pub fn create_job(core: &Core, page_url: &str, media_url: Option<&str>, title: &
 }
 
 pub fn create_job_with_consent(core: &Core, page_url: &str, media_url: Option<&str>, title: &str, duration_ms: i64, deletion_token: Option<&str>) -> ApiResult {
+    create_job_in(&core.library(None)?, page_url, media_url, title, duration_ms, deletion_token)
+}
+
+fn create_job_in(library: &crate::library_scope::Library<'_>, page_url: &str, media_url: Option<&str>, title: &str, duration_ms: i64, deletion_token: Option<&str>) -> ApiResult {
+    let core = library.core;
     let page = http_url(page_url)?;
     if duration_ms <= 0 {
         return Err(err(400, "bad_duration", "영상 길이를 알 수 없습니다. 영상이 재생 준비된 뒤에 다시 눌러 주세요."));
@@ -259,22 +276,29 @@ pub fn create_job_with_consent(core: &Core, page_url: &str, media_url: Option<&s
     // Check-then-create runs under one lock, so two presses can never make two
     // jobs or let a late one wipe the cues of the first (one running job per device).
     let _creating = core.create_lock.lock().unwrap_or_else(|p| p.into_inner());
-    if let Some((token, complete)) = core.store.deleted(&key)? {
+    let existing = library.run(|store| {
+    if let Some((token, complete)) = store.deleted(&key)? {
         if !complete || deletion_token != Some(token.as_str()) {
             return Err(deleted_error(token, complete));
         }
     }
 
-    let active = core.store.active_job()?;
+    let active = store.active_job()?;
     if !active.as_ref().is_some_and(|j| j.video_key == key) {
-        if let Some(last) = core.store.ready_job(&key)? {
-            return Ok(json!({"job_id": last.id, "video_key": key, "stage": "ready", "reused": true}));
+        if let Some(last) = store.ready_job(&key)? {
+            return Ok(Some(json!({"job_id": last.id, "video_key": key, "stage": "ready", "reused": true})));
         }
     }
     if let Some(active) = active {
         if active.video_key == key {
-            return Ok(json!({"job_id": active.id, "video_key": key, "stage": active.stage, "reused": false}));
+            return Ok(Some(json!({"job_id": active.id, "video_key": key, "stage": active.stage, "reused": false})));
         }
+        return Err(err(409, "busy", "다른 영상의 작업이 돌고 있습니다. 그 작업이 끝난 뒤에 다시 눌러 주세요."));
+    }
+    Ok(None)
+    })?;
+    if let Some(existing) = existing { return Ok(existing); }
+    if core.has_active_job()? {
         return Err(err(409, "busy", "다른 영상의 작업이 돌고 있습니다. 그 작업이 끝난 뒤에 다시 눌러 주세요."));
     }
     if core.svc.keystore.get()?.is_none() {
@@ -299,12 +323,14 @@ pub fn create_job_with_consent(core: &Core, page_url: &str, media_url: Option<&s
             media::Source::File { url, .. } if youtube::is_youtube(&page) => youtube::stream_duration_ms(url).unwrap_or(duration_ms),
             _ => duration_ms,
         };
-        core.store.create_job_with_consent(&id, &key, page_url.trim(), site(&page), &title, duration_ms, media_url.map(str::trim).filter(|m| !m.is_empty()), MODEL, deletion_token)
+        library.run(|store| {
+        store.create_job_with_consent(&id, &key, page_url.trim(), site(&page), &title, duration_ms, media_url.map(str::trim).filter(|m| !m.is_empty()), MODEL, deletion_token)
             .map_err(|detail| if detail == "sync deletion confirmation required" {
-                core.store.deleted(&key).ok().flatten().map(|(token,complete)| deleted_error(token,complete))
+                store.deleted(&key).ok().flatten().map(|(token,complete)| deleted_error(token,complete))
                     .unwrap_or_else(|| err(409,"cleanup_pending","다른 기기에서 영상을 삭제했습니다. 보관함을 다시 불러와 주세요."))
             } else { detail.into() })?;
         Ok(())
+        })
     })();
     if let Err(e) = created {
         core.svc.notifier.ongoing(&id, "hidden", &title, 0);
@@ -317,28 +343,42 @@ pub fn create_job_with_consent(core: &Core, page_url: &str, media_url: Option<&s
 }
 
 pub fn retranslate_job(core: &Core, page_url: &str) -> ApiResult {
+    retranslate_job_in(&core.library(None)?, page_url)
+}
+
+fn retranslate_job_in(library: &crate::library_scope::Library<'_>, page_url: &str) -> ApiResult {
+    let core = library.core;
     let key = video_key(&http_url(page_url)?);
     let _creating = core.create_lock.lock().unwrap_or_else(|p| p.into_inner());
-    if let Some((token, complete)) = core.store.deleted(&key)? { return Err(deleted_error(token, complete)); }
-    if let Some(active) = core.store.active_job()? {
+    let active = library.run(|store| {
+        if let Some((token, complete)) = store.deleted(&key)? { return Err(deleted_error(token, complete)); }
+        Ok(store.active_job()?)
+    })?;
+    if let Some(active) = active {
         if active.video_key == key {
             return Ok(json!({"job_id":active.id,"video_key":key,"stage":active.stage,"reused":false}));
         }
         return Err(err(409, "busy", "다른 영상의 작업이 끝난 뒤에 다시 눌러 주세요."));
     }
-    let ready = core.store.ready_job(&key)?.is_some();
-    let previous = core.store.latest_job(&key)?.filter(|_| ready)
-        .ok_or_else(|| err(409, "not_ready", "완료된 자막만 다시 번역할 수 있습니다."))?;
+    if core.has_active_job()? {
+        return Err(err(409, "busy", "다른 영상의 작업이 끝난 뒤에 다시 눌러 주세요."));
+    }
+    let (previous, video) = library.run(|store| {
+        let ready = store.ready_job(&key)?.is_some();
+        let previous = store.latest_job(&key)?.filter(|_| ready)
+            .ok_or_else(|| err(409, "not_ready", "완료된 자막만 다시 번역할 수 있습니다."))?;
+        let video = store.video(&key)?.ok_or_else(|| err(404, "no_video", "저장된 원문이 없습니다."))?;
+        Ok((previous, video))
+    })?;
     if core.svc.keystore.get()?.is_none() {
         return Err(err(428, "no_key", "설정에서 Gemini API 키를 먼저 넣어 주세요."));
     }
-    let video = core.store.video(&key)?.ok_or_else(|| err(404, "no_video", "저장된 원문이 없습니다."))?;
     if previous.cost_krw >= gemini::limit_krw(video.duration_ms) {
         return Err(err(409, "cost_limit", "이 영상의 번역 비용 한도에 도달했습니다."));
     }
     let id = new_job_id();
     core.svc.notifier.hold(&id, &video.title).map_err(|_| err(409, "background_refused", "앱 화면에서 다시 눌러 주세요."))?;
-    if let Err(e) = core.store.retranslate(&id, &previous, MODEL) {
+    if let Err(e) = library.run(|store| Ok(store.retranslate(&id, &previous, MODEL)?)) {
         core.svc.notifier.ongoing(&id, "hidden", &video.title, 0);
         return Err(e.into());
     }
@@ -348,10 +388,15 @@ pub fn retranslate_job(core: &Core, page_url: &str) -> ApiResult {
 }
 
 pub fn get_job(core: &Core, page_url: &str) -> ApiResult {
+    get_job_in(&core.library(None)?, page_url)
+}
+
+fn get_job_in(library: &crate::library_scope::Library<'_>, page_url: &str) -> ApiResult {
     let key = video_key(&http_url(page_url)?);
-    if let Some((token, complete)) = core.store.deleted(&key)? { return Err(deleted_error(token, complete)); }
-    let job = core.store.latest_job(&key)?.ok_or_else(|| err(404, "no_job", "이 영상의 작업이 없습니다."))?;
-    let title = core.store.video(&key)?.map(|v| v.title).unwrap_or_default();
+    library.run(|store| {
+    if let Some((token, complete)) = store.deleted(&key)? { return Err(deleted_error(token, complete)); }
+    let job = store.latest_job(&key)?.ok_or_else(|| err(404, "no_job", "이 영상의 작업이 없습니다."))?;
+    let title = store.video(&key)?.map(|v| v.title).unwrap_or_default();
     Ok(json!({
         "job_id": job.id,
         "video_key": key,
@@ -364,17 +409,22 @@ pub fn get_job(core: &Core, page_url: &str) -> ApiResult {
         "cost_krw": job.cost_krw,
         "notified": job.notified,
     }))
+    })
 }
 
 pub fn get_subtitles(core: &Core, video_key: &str) -> ApiResult {
-    if let Some((token, complete)) = core.store.deleted(video_key)? { return Err(deleted_error(token, complete)); }
-    let video = core.store.video(video_key)?.ok_or_else(|| err(404, "no_video", "이 영상의 자막이 없습니다."))?;
-    let ready = core.store.ready_job(video_key)?.is_some();
+    get_subtitles_in(&core.library(None)?, video_key)
+}
+
+fn get_subtitles_in(library: &crate::library_scope::Library<'_>, video_key: &str) -> ApiResult {
+    library.run(|store| {
+    if let Some((token, complete)) = store.deleted(video_key)? { return Err(deleted_error(token, complete)); }
+    let video = store.video(video_key)?.ok_or_else(|| err(404, "no_video", "이 영상의 자막이 없습니다."))?;
+    let ready = store.ready_job(video_key)?.is_some();
     if !ready {
         return Err(err(409, "not_ready", "자막을 만드는 중입니다. 다 되면 알림으로 알려 드립니다."));
     }
-    let cues: Vec<Value> = core
-        .store
+    let cues: Vec<Value> = store
         .cues(video_key)?
         .into_iter()
         .map(|c| json!({"seq": c.seq, "start_ms": c.start_ms, "end_ms": c.end_ms, "text_ko": c.text_ko.unwrap_or(c.source_text)}))
@@ -385,6 +435,39 @@ pub fn get_subtitles(core: &Core, video_key: &str) -> ApiResult {
         "source_language": video.source_language.unwrap_or_else(|| "und".into()),
         "cues": cues,
     }))
+    })
+}
+
+/// Native screen and overlay requests bind to the generation displayed when the action began.
+pub fn library_request(core: &Core, generation: Option<u64>, command: &str, args: &Value) -> ApiResult {
+    if generation.is_none() && core.account.status().map_err(|_| err(503, "account_unavailable", "계정 상태를 불러오지 못했습니다."))?.state != crate::account::AuthState::Unsupported {
+        let mut error = err(409, "account_required", "계정 상태를 확인한 뒤 화면을 다시 불러와 주세요.");
+        if command == "get_job" { error.account_generation = Some(core.account.status().map_err(|_| err(503,"account_unavailable","계정 상태를 불러오지 못했습니다."))?.generation); }
+        return Err(error);
+    }
+    let library = core.library(generation)?;
+    let s = |key: &str| args[key].as_str().unwrap_or_default();
+    let mut result = match command {
+        "browser_open" => browser_open_in(&library, s("url")),
+        "get_browser" => get_browser_in(&library),
+        "get_library" => library::get_library_in(&library),
+        "library_action" if args["action"]["action"] == "import_legacy" => {
+            if args["action"]["confirmed"] != true {
+                return Err(err(400, "confirmation_required", "이 기기의 기존 보관함을 현재 Google 계정에 복사할지 확인해 주세요."));
+            }
+            let _writing = core.create_lock.lock().unwrap_or_else(|p| p.into_inner());
+            Ok(json!({"changed": true, "imported": library.import_legacy()?}))
+        },
+        "library_action" => library::library_action_in(&library, &args["action"]),
+        "create_job" if args["retranslate"] == true => retranslate_job_in(&library, s("page_url")),
+        "create_job" => create_job_in(&library, s("page_url"), args["media_url"].as_str(), s("title"), args["duration_ms"].as_i64().unwrap_or(0), args["deletion_token"].as_str()),
+        "get_job" => get_job_in(&library, s("page_url")),
+        "get_subtitles" => get_subtitles_in(&library, s("video_key")),
+        _ => Err(err(404, "no_route", "지원하지 않는 보관함 요청입니다.")),
+    }?;
+    library.run(|_| Ok(()))?;
+    result["account_generation"] = library.generation().into();
+    Ok(result)
 }
 
 fn deleted_error(token: String, complete: bool) -> ApiError {
@@ -403,7 +486,7 @@ mod key_tests;
 
 #[cfg(test)]
 #[path = "api_duration_tests.rs"]
-mod duration_tests;
+pub(crate) mod duration_tests;
 
 #[cfg(test)]
 #[path = "api_hold_tests.rs"]

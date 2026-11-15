@@ -9,6 +9,10 @@ CREATE TABLE IF NOT EXISTS sync_import_seen (digest TEXT PRIMARY KEY)
 ";
 
 impl Journal {
+    pub(crate) fn imported_legacy(&self) -> Result<bool> {
+        Ok(Db::open(&self.path)?.query_one("SELECT digest FROM sync_import_seen LIMIT 1", &[])?.is_some())
+    }
+
     pub fn library(&self) -> Result<Store> {
         Store::open(&self.path)
     }

@@ -194,6 +194,9 @@ impl LibraryScope {
     pub fn generation(&self) -> u64 {
         self.generation
     }
+    pub(crate) fn email(&self) -> Option<&str> {
+        self.session.as_ref().map(|session| session.identity.email())
+    }
 }
 impl Session {
     pub fn require_current(&self) -> Result<(), AuthError> {

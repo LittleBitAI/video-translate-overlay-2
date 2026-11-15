@@ -25,6 +25,7 @@ pub mod pipeline;
 pub mod platform;
 pub mod screens;
 pub mod store;
+mod library_scope;
 pub mod sync;
 mod sync_tls;
 mod sync_channel;
@@ -71,6 +72,7 @@ pub trait KeyStore: Send + Sync {
 
 /// The in-app webview that shows video sites.
 pub trait Browser: Send + Sync {
+    fn invalidate_account(&self, _generation: u64) -> Result<(), String> { Ok(()) }
     fn open_download(&self, _url: &str) -> Result<(), String> { Err("external downloads are unavailable".into()) }
     /// Drops cached subtitles in open views before permanent cleanup starts.
     fn invalidate_video(&self, _key: &str) -> Result<(), String> { Ok(()) }
@@ -140,10 +142,6 @@ impl Core {
         let worker = core.clone();
         std::thread::Builder::new().name("jobs".into()).spawn(move || pipeline::run_worker(worker)).map_err(|e| e.to_string())?;
         Ok(core)
-    }
-
-    pub fn db_path(&self) -> PathBuf {
-        self.cfg.data_dir.join("app.sqlite3")
     }
 
     pub fn wake_worker(&self) {

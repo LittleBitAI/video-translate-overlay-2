@@ -2,7 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "video-translate-overlay-2",
-    "version": "0.1.0"
+    "version": "0.1.0",
+    "description": "Native library/browser/job/subtitle requests carry account_generation captured by their screen. Successful replies include it; retired requests return 409 account_changed without data. Only P7 may return the current counter in an account_required error to bootstrap a newly injected overlay; it returns no library or identity data. Site capabilities remain P6-P8. Google identity enrolls a sealed certificate-bound device credential for at most 30 days; fresh Google verification is required for unknown peer enrollment. Expiry stops transfers while retaining local account-library access. Sign-out selects the original unowned library. Credentials, cookies and unfinished jobs are never imported or synchronized."
   },
   "paths": {
     "/account": {
@@ -69,13 +70,15 @@
     "/library/data": {
       "get": {
         "operationId": "P10",
-        "summary": "Read this device's library and ordered playlists in one snapshot. App screen only; no paid calls. Existing saved rows are read in place.",
+        "summary": "Read the selected account's local library and ordered playlists in one snapshot, or the original unowned library while signed out. App screen only; no paid calls. Existing unowned data is copied to an account only after explicit import consent.",
         "responses": {
           "200": {
             "description": "Library snapshot",
             "content": {"application/json": {"schema": {
               "type": "object", "required": ["videos", "playlists"],
               "properties": {
+                "legacy_available": {"type": "boolean", "description": "An account is selected and the unowned device library offers data not previously imported. Import is optional."},
+                "account_email": {"type": ["string", "null"], "description": "Display label for the captured native account. Never used as the ownership or authentication key."},
                 "videos": {"type": "array", "items": {
                   "type": "object",
                   "required": ["video_key", "page_url", "title", "duration_ms", "saved", "active", "deleting"],
@@ -101,12 +104,13 @@
         "requestBody": {"required": true, "content": {"application/json": {"schema": {
           "type": "object", "required": ["action"],
           "properties": {
-            "action": {"type": "string", "enum": ["create_playlist", "rename_playlist", "delete_playlist", "move_playlist", "add_entry", "remove_entry", "move_entry", "delete_video"]},
+            "action": {"type": "string", "enum": ["create_playlist", "rename_playlist", "delete_playlist", "move_playlist", "add_entry", "remove_entry", "move_entry", "delete_video", "import_legacy"]},
+            "account_generation": {"type": "integer", "minimum": 0, "description": "The generation captured with the displayed library; native IPC carries it beside the action body."},
             "playlist_id": {"type": "string"}, "name": {"type": "string", "minLength": 1, "maxLength": 200},
             "page_url": {"type": "string"}, "title": {"type": "string"}, "video_key": {"type": "string"},
             "delta": {"type": "integer", "enum": [-1, 1]}, "confirmed": {"type": "boolean"}
           },
-          "description": "create_playlist requires name; rename_playlist requires playlist_id/name; delete_playlist requires playlist_id; move_playlist requires playlist_id/delta; add_entry requires playlist_id/page_url and optional title; remove_entry and move_entry require playlist_id/video_key, with delta for move_entry. delete_video requires video_key, exact current title, confirmed=true after warning about permanent removal and future API cost. HTTP(S) links are stored without probing; YouTube must name a video. Media support is checked only on explicit translation. Membership is idempotent within a playlist, and a video may belong to multiple playlists."
+          "description": "create_playlist requires name; rename_playlist requires playlist_id/name; delete_playlist requires playlist_id; move_playlist requires playlist_id/delta; add_entry requires playlist_id/page_url and optional title; remove_entry and move_entry require playlist_id/video_key, with delta for move_entry. delete_video requires video_key, exact current title, confirmed=true after warning about permanent removal and future API cost. Native import_legacy requires confirmed=true and a current selected account; copies completed translations, links and playlists idempotently, preserving original cues, cost and source library. HTTP(S) links are stored without probing; YouTube must name a video. Media support is checked only on explicit translation. Membership is idempotent within a playlist, and a video may belong to multiple playlists."
         }}}},
         "responses": {
           "200": {"description": "Committed change; refresh the library", "content": {"application/json": {"schema": {"type": "object", "properties": {"changed": {"const": true}}}}}},

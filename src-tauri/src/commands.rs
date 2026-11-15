@@ -88,11 +88,18 @@ pub async fn google_sign_in(core: Shared<'_>, generation: u64) -> ApiResult {
     blocking(move || {
         let attempt = core.account.begin_sign_in(generation).map_err(account_error)?;
         let pending = core.account.pending_status(&attempt).map_err(account_error)?;
+        if let Err(e) = core.svc.browser.invalidate_account(pending.generation) { crate::log(format!("account view invalidation: {e}")); }
         let worker = core.clone();
         tauri::async_runtime::spawn_blocking(move || {
             let generation = attempt.generation;
             if std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| worker.account.finish_sign_in(attempt))).is_err() {
                 worker.account.fail_attempt(generation);
+            }
+            if let Ok(status) = worker.account.status() {
+                if status.generation == generation {
+                    let _ = worker.svc.browser.invalidate_account(generation);
+                    worker.wake_worker();
+                }
             }
         });
         serde_json::to_value(pending).map_err(|_| api::err(500, "internal", "계정 상태를 불러오지 못했습니다."))
@@ -103,7 +110,9 @@ pub async fn google_sign_in(core: Shared<'_>, generation: u64) -> ApiResult {
 pub async fn google_sign_out(core: Shared<'_>, generation: u64) -> ApiResult {
     let core = core.inner().clone();
     blocking(move || {
-        serde_json::to_value(core.account.sign_out(generation).map_err(account_error)?).map_err(|_| api::err(500, "internal", "계정 상태를 불러오지 못했습니다."))
+        let status = core.account.sign_out(generation).map_err(account_error)?;
+        if let Err(e) = core.svc.browser.invalidate_account(status.generation) { crate::log(format!("account view invalidation: {e}")); }
+        serde_json::to_value(status).map_err(|_| api::err(500, "internal", "계정 상태를 불러오지 못했습니다."))
     }).await
 }
 
@@ -125,15 +134,15 @@ pub async fn open_update(core: Shared<'_>, version: String) -> ApiResult {
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
-pub async fn browser_open(core: Shared<'_>, url: String) -> ApiResult {
+pub async fn browser_open(core: Shared<'_>, url: String, account_generation: Option<u64>) -> ApiResult {
     let core = core.inner().clone();
-    blocking(move || api::browser_open(&core, &url)).await
+    blocking(move || api::library_request(&core, account_generation, "browser_open", &json!({"url":url}))).await
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
-pub async fn get_browser(core: Shared<'_>) -> ApiResult {
+pub async fn get_browser(core: Shared<'_>, account_generation: Option<u64>) -> ApiResult {
     let core = core.inner().clone();
-    blocking(move || api::get_browser(&core)).await
+    blocking(move || api::library_request(&core, account_generation, "get_browser", &json!({}))).await
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
@@ -161,34 +170,33 @@ pub async fn delete_api_key(core: Shared<'_>) -> ApiResult {
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
-pub async fn create_job(core: Shared<'_>, page_url: String, media_url: Option<String>, title: Option<String>, duration_ms: Option<i64>, retranslate: Option<bool>, deletion_token: Option<String>) -> ApiResult {
+pub async fn create_job(core: Shared<'_>, page_url: String, media_url: Option<String>, title: Option<String>, duration_ms: Option<i64>, retranslate: Option<bool>, deletion_token: Option<String>, account_generation: Option<u64>) -> ApiResult {
     let core = core.inner().clone();
-    blocking(move || if retranslate == Some(true) { api::retranslate_job(&core, &page_url) }
-        else { api::create_job_with_consent(&core, &page_url, media_url.as_deref(), title.as_deref().unwrap_or(""), duration_ms.unwrap_or(0), deletion_token.as_deref()) }).await
+    blocking(move || api::library_request(&core, account_generation, "create_job", &json!({"page_url":page_url,"media_url":media_url,"title":title,"duration_ms":duration_ms,"retranslate":retranslate,"deletion_token":deletion_token}))).await
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
-pub async fn get_library(core: Shared<'_>) -> ApiResult {
+pub async fn get_library(core: Shared<'_>, account_generation: Option<u64>) -> ApiResult {
     let core = core.inner().clone();
-    blocking(move || api::get_library(&core)).await
+    blocking(move || api::library_request(&core, account_generation, "get_library", &json!({}))).await
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
-pub async fn library_action(core: Shared<'_>, action: Value) -> ApiResult {
+pub async fn library_action(core: Shared<'_>, action: Value, account_generation: Option<u64>) -> ApiResult {
     let core = core.inner().clone();
-    blocking(move || api::library_action(&core, &action)).await
+    blocking(move || api::library_request(&core, account_generation, "library_action", &json!({"action":action}))).await
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
-pub async fn get_job(core: Shared<'_>, page_url: String) -> ApiResult {
+pub async fn get_job(core: Shared<'_>, page_url: String, account_generation: Option<u64>) -> ApiResult {
     let core = core.inner().clone();
-    blocking(move || api::get_job(&core, &page_url)).await
+    blocking(move || api::library_request(&core, account_generation, "get_job", &json!({"page_url":page_url}))).await
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
-pub async fn get_subtitles(core: Shared<'_>, video_key: String) -> ApiResult {
+pub async fn get_subtitles(core: Shared<'_>, video_key: String, account_generation: Option<u64>) -> ApiResult {
     let core = core.inner().clone();
-    blocking(move || api::get_subtitles(&core, &video_key)).await
+    blocking(move || api::library_request(&core, account_generation, "get_subtitles", &json!({"video_key":video_key}))).await
 }
 
 /// Registers the commands and their state on a builder.

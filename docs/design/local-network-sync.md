@@ -26,9 +26,9 @@ task can be reported complete. See [Google registration](google-auth-setup.md).
 
 `src-tauri/src/sync.rs` implements the account-scoped journal and typed transfer
 format. The native account manager opens it after verified sign-in. Production
-library projection is implemented as an offline storage component; account
-selection in the running library, discovery and encrypted peer transfers are
-not connected to a native network worker yet. No sync listener opens. No existing user library has
+library projection and account selection are connected to the library APIs.
+Discovery and encrypted peer transfers are not connected to a native network
+worker yet. No sync listener opens. No existing user library has
 been imported or changed.
 
 The settings screen now starts a separate native Google sign-in: Windows uses
@@ -232,11 +232,36 @@ shutdown cancel outstanding work and close owned resources. The network API
 must remain separate from local Tauri commands. Remote site pages keep their
 existing permissions.
 
-Before wiring settings or library screens, capture the account session ticket
+Settings and library screens capture the account session ticket
 and screen generation once. Every arriving result must still match both before
 it can change the view. Transfer authorization and permission to store a result
 are checked separately. The database opened for an old session cannot be
 reassigned to a new account.
+
+The request's library scope now holds its original account session and SQLite
+connection. Short database operations check its generation and session pointer
+under the manager lock; native navigation, notifications, media probing and file
+cleanup run outside that lock. A media check cannot create a job after its
+account scope retires. Native requests carry the generation shown by the screen,
+and account events discard cached cues, pending confirmations and late replies.
+A newly injected overlay can bootstrap only the public generation counter from
+P7, without gaining account-status permissions or receiving identity data.
+
+Signed-out requests read the existing root database. Signed-in requests read
+their account database, including after the device credential expires; expiry
+only disables networking. The library offers an explicit confirmed copy of the
+unowned completed library and playlists, preserving the source. No other account
+database is an import source. Its content receipts prevent repeat imports from
+resurrecting deleted items. This offer is implementation work, not evidence that
+any installed user's data has been imported.
+
+The single translation worker inspects only fixed app-owned database names and
+continues a captured job in its owning database after an account change. Global
+job admission and the native close guard check all these databases. Native
+notification output suppresses a retired account's title and screen URL; old
+notification activations resolve only against the currently selected library.
+The worker's operation-local connections close after each pass, while its
+captured job connection lasts through processing and recovery from a panic.
 
 Playback position is a durable field for the selected video. Resume may seek
 once when opening a supported player. A late remote position must not seek a
@@ -340,6 +365,51 @@ video-translate-overlay --lib sync::library:: -- --nocapture` then passed all
 restoration; existing completed-version, active-job and consent checks remain.
 
 ## Focused authentication evidence
+
+Account-library integration passed all 14 `account::` tests, including production
+API isolation, named import consent, retained original cue intervals and cost,
+retired confirmations and a real pending media check during account replacement.
+`cargo test -p video-translate-overlay --lib pipeline::worker_tests::a_job --
+--nocapture` passed 2: root and unselected-account jobs resume, complete and keep
+their owning data. `commands::` passed 3 existing ACL and route checks. These
+fixtures exercise no real Google authentication, transcription or paid call.
+
+The focused Chromium screen run of `tests/ui/library.test.ts`,
+`tests/ui/watch.test.ts`, `tests/ui/google-account.test.ts` and
+`tests/ui/subtitles.test.svelte.ts` passed 55 tests. The additional
+`tests/ui/account-library.test.ts` passed 4 cases, including explicit import at
+384 and 1280 CSS pixels with 44-pixel controls and no horizontal overflow,
+cleared account-switch confirmations and retired native replies. The overlay
+file passed 33 tests, including a late subtitle reply after account retirement.
+The first new import test needed an awaited Svelte update after cancellation;
+its subsequent run passed without weakening the confirmation assertion.
+
+The Windows `cargo check -p video-translate-overlay --features app --bin
+video-translate-overlay` passed. After rebuilding the contract host, the focused
+library contracts passed 5, browser contracts passed 7, and job contracts passed
+9. The job response allow-list now permits and type-checks the public generation
+counter; identity and credential fields remain forbidden. An earlier browser
+run left a cookie fixture on disk, then passed with added failure diagnostics;
+no cause is claimed. Restart runs also exposed a missing job once and a partially
+streamed fixture notification. The contract host now buffers each notice before
+appending it and reports cookie-file removal errors. The final job-file run
+passed all 9 cases; this does not establish a cause for the earlier missing job.
+
+The actual `node scripts/live.mjs --stand-ins` command built and served the
+working sources based on `64fdff9`. Its owned backend process was checked before
+mutations. A Chromium flow at 384 by 854 passed 9 API/UI assertions for creating
+a playlist and adding an untranslated link, with no job request or horizontal
+overflow. The owned server and launcher were closed afterward. The embedded
+base revision identifies an in-progress working tree, not a stamped native
+acceptance candidate. Local screenshots and its receipt remain in ignored
+`artifacts/account-library-live-20261115/`.
+
+The cleanup audit kept all affected account, storage, job, browser, screen and
+overlay checks. New checks cover distinct request ownership, consent, background
+job ownership and presentation boundaries. No tests, skips or expected failures
+were removed. The registered native scenario now passes the captured account
+counter to site-page calls; `node --check scripts/verification/library-scenario.mjs`
+passed, but its updated native scenario has not run.
 
 The thirty-day policy passed `cargo test -p video-translate-overlay --lib
 account:: -- --nocapture` (12 tests), `cargo test -p video-translate-overlay

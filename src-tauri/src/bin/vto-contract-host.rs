@@ -93,7 +93,11 @@ impl Browser for FakeWebview {
     fn clear_site_data(&self) -> Result<(), String> {
         let mut v = self.view.lock().unwrap();
         v.cookies.clear();
-        let _ = std::fs::remove_file(&self.jar);
+        match std::fs::remove_file(&self.jar) {
+            Ok(()) => {},
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {},
+            Err(e) => return Err(e.to_string()),
+        }
         Ok(())
     }
 }
@@ -104,7 +108,9 @@ impl Shade {
     fn put(&self, v: Value) {
         let path = self.0.lock().unwrap();
         let mut f = std::fs::OpenOptions::new().create(true).append(true).open(&*path).expect("notifications file");
-        let _ = writeln!(f, "{v}");
+        // A killed host must not leave serde's individually streamed JSON characters behind.
+        let line = format!("{v}\n");
+        f.write_all(line.as_bytes()).expect("write the notification record");
     }
 }
 

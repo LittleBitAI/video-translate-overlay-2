@@ -29,6 +29,13 @@ const SITE: &str = if cfg!(mobile) { "main" } else { "site" };
 struct TauriBrowser(Handle);
 
 impl Browser for TauriBrowser {
+    fn invalidate_account(&self, generation: u64) -> Result<(), String> {
+        for window in app(&self.0)?.webview_windows().values() {
+            window.eval(format!("window.dispatchEvent(new CustomEvent('vto-account-changed',{{detail:{generation}}}))"))
+                .map_err(|e| e.to_string())?;
+        }
+        Ok(())
+    }
     fn open_download(&self, url: &str) -> Result<(), String> {
         #[cfg(target_os = "android")]
         return app(&self.0)?.state::<crate::android::Mobile>().open_download(url);
@@ -72,6 +79,13 @@ impl Browser for TauriBrowser {
 struct TauriNotifier(Handle);
 
 impl TauriNotifier {
+    fn current_generation(&self, job_id: &str) -> Option<u64> {
+        let core = app(&self.0).ok()?.try_state::<Arc<Core>>()?;
+        let library = core.library(None).ok()?;
+        library.run(|store| Ok(store.job(job_id)?.is_some())).ok()?
+            .then(|| library.generation())
+    }
+
     fn show(&self, title: &str, body: &str) {
         if let Ok(app) = app(&self.0) {
             if let Err(e) = app.notification().builder().title(title).body(body).show() {
@@ -82,7 +96,8 @@ impl TauriNotifier {
 }
 
 impl Notifier for TauriNotifier {
-    fn ongoing(&self, _job_id: &str, state: &str, title: &str, percent: i64) {
+    fn ongoing(&self, job_id: &str, state: &str, title: &str, percent: i64) {
+        let title = if self.current_generation(job_id).is_some() { title } else { "진행 중인 자막 작업" };
         // Android: the foreground service's ongoing notification carries the progress.
         #[cfg(target_os = "android")]
         if let Ok(app) = app(&self.0) {
@@ -109,10 +124,12 @@ impl Notifier for TauriNotifier {
     }
 
     fn ready(&self, job_id: &str, text: &str, url: &str) {
+        let generation = self.current_generation(job_id);
+        let text = if generation.is_some() { text } else { "이 기기에서 시작한 자막 작업이 완료됐습니다. 작업을 시작한 계정의 보관함에서 확인해 주세요." };
         // The first screen shows it with an open button too.
         if let Ok(app) = app(&self.0) {
-            if let Some(w) = app.get_webview_window("main") {
-                let _ = w.eval(format!("window.vtoReady && window.vtoReady({})", serde_json::json!({ "text": text, "url": url })));
+            if let (Some(w), Some(generation)) = (app.get_webview_window("main"), generation) {
+                let _ = w.eval(format!("window.vtoReady && window.vtoReady({})", serde_json::json!({ "text": text, "url": url, "account_generation":generation })));
             }
             #[cfg(windows)]
             match ready_toast(app, text, job_id) {
@@ -148,7 +165,9 @@ fn open_from_args(h: &Handle, args: &[String]) -> bool {
     let id = id.trim_matches('/');
     let Ok(app) = app(h) else { return false };
     let core = app.state::<Arc<Core>>();
-    let page = core.store.job(id).ok().flatten().filter(|j| j.notified).and_then(|j| core.store.video(&j.video_key).ok().flatten());
+    let page = core.library(None).ok().and_then(|library| library.run(|store| {
+        Ok(store.job(id)?.filter(|j| j.notified).and_then(|j| store.video(&j.video_key).ok().flatten()))
+    }).ok().flatten());
     match page {
         Some(v) => {
             open_video(h, &v.page_url);
@@ -366,7 +385,7 @@ pub fn run() {
             // Closing the screen while a job runs only hides it: the job goes on (R6).
             if let WindowEvent::CloseRequested { api, .. } = event {
                 let core = window.app_handle().state::<Arc<Core>>();
-                if core.store.active_job().ok().flatten().is_some() {
+                if core.has_active_job().unwrap_or(true) {
                     api.prevent_close();
                     let _ = window.hide();
                 }

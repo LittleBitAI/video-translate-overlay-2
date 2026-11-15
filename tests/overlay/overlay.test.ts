@@ -140,6 +140,22 @@ function readyBackend() {
   });
 }
 
+test('an account change clears visible subtitles and rejects a late subtitle reply until the video is reopened', async () => {
+  const player = makePlayer(MAIN_MS / 1000);
+  player.seek(2);
+  let reply: ((body: Reply) => void) | undefined;
+  const backend = fakeBackend(c => route(c) === 'GET /jobs' ? {status:200, body:job('ready', 100)}
+    : new Promise(resolve => { reply = resolve; }));
+  await mountOverlay({video:player.video, pageUrl:YT, title:TITLE, mediaUrl:null, request:backend.request});
+  await expect.poll(() => !!reply).toBe(true);
+  window.dispatchEvent(new Event('vto-account-changed'));
+  reply!({status:200, body:subtitlesBody(CUES)});
+  await expect.poll(() => deepAll('[data-vto="status"]')[0]?.textContent).toContain('앱에서 영상을 다시 열어 주세요');
+  expect(shownSubtitle()).toBe('');
+  expect((deepAll('[data-vto="detect"]')[0] as HTMLButtonElement).disabled).toBe(true);
+  expect(backend.calls.filter(c => c.method === 'POST')).toHaveLength(0);
+});
+
 test('ready subtitles offer translation repair without fetching or rewriting the audio', async () => {
   const player = makePlayer(MAIN_MS / 1000);
   const backend = readyBackend();

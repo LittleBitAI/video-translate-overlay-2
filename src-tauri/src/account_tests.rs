@@ -88,6 +88,105 @@ fn configured(profile: &Profile) -> (Arc<Manager>, Arc<Native>) {
 }
 
 #[test]
+fn production_library_requests_select_the_account_and_copy_legacy_data_only_with_current_consent() {
+    use crate::api::{library_request, video_key};
+    use serde_json::json;
+    let profile = Profile::new();
+    let mut core = crate::pipeline::worker_tests::idle_core(&profile.0, "");
+    core.account = Manager::with_test_verifier(profile.0.clone());
+    let native = Arc::new(Native::default());
+    *native.subject.lock().unwrap() = "library-one".into();
+    core.account.configure(native.clone()).unwrap();
+    core.account.restore().unwrap();
+    let first = core.account.sign_in(core.account.status().unwrap().generation).unwrap().generation;
+    let url = "https://lectures.example.org/saved";
+    let key = video_key(&url::Url::parse(url).unwrap());
+    core.store.create_job("legacy", &key, url, "other", "Existing lecture", 5000, None, "original-model").unwrap();
+    core.store.save_region("legacy", &key, 0, &[(123, 2345, "original".into())]).unwrap();
+    core.store.set_translations("legacy", &[(0, "translated".into())]).unwrap();
+    core.store.set_terms(&key, "[]").unwrap();
+    core.store.add_usage("legacy", 12, 4, |_, _| 12.5).unwrap();
+    core.store.finish("legacy").unwrap();
+    core.store.create_playlist("legacy-list", "Existing playlist").unwrap();
+    core.store.add_entry("legacy-list", &key, url, "other", "Existing lecture").unwrap();
+    let original = core.store.library().unwrap();
+    let read = |generation| library_request(&core, Some(generation), "get_library", &json!({})).unwrap();
+    assert_eq!(read(first)["videos"], json!([]));
+    assert_eq!(read(first)["legacy_available"], true);
+    assert_eq!(library_request(&core, None, "get_library", &json!({})).unwrap_err().error, "account_required");
+    let no_consent = json!({"action":{"action":"import_legacy"}});
+    assert_eq!(library_request(&core, Some(first), "library_action", &no_consent).unwrap_err().error, "confirmation_required");
+    assert_eq!(core.store.library().unwrap(), original);
+    let consent = json!({"action":{"action":"import_legacy","confirmed":true}});
+    library_request(&core, Some(first), "library_action", &consent).unwrap();
+    assert_eq!(read(first)["videos"][0]["saved"], true);
+    assert_eq!(read(first)["legacy_available"], false);
+    let subtitle = library_request(&core, Some(first), "get_subtitles", &json!({"video_key":key})).unwrap();
+    assert_eq!(subtitle["cues"][0]["start_ms"], 123);
+    assert_eq!(subtitle["cues"][0]["end_ms"], 2345);
+    let job = library_request(&core, Some(first), "get_job", &json!({"page_url":url})).unwrap();
+    assert_eq!(job["cost_krw"], 12.5);
+    let old = core.library(Some(first)).unwrap();
+    *native.subject.lock().unwrap() = "library-two".into();
+    let second = core.account.sign_in(first).unwrap().generation;
+    assert_eq!(read(second)["videos"], json!([]));
+    assert_eq!(read(second)["playlists"], json!([]));
+    assert_eq!(old.run(|store| Ok(store.library()?)).unwrap_err().error, "account_changed");
+    assert_eq!(library_request(&core, Some(first), "library_action", &consent).unwrap_err().error, "account_changed");
+    let stale_delete = json!({"action":{"action":"delete_video","video_key":key,"title":"Existing lecture","confirmed":true}});
+    assert_eq!(library_request(&core, Some(first), "library_action", &stale_delete).unwrap_err().error, "account_changed");
+    let signed_out = core.account.sign_out(second).unwrap().generation;
+    assert_eq!(read(signed_out)["videos"], original["videos"]);
+    assert_eq!(core.store.library().unwrap(), original);
+    *native.subject.lock().unwrap() = "library-one".into();
+    let returned = core.account.sign_in(signed_out).unwrap().generation;
+    assert_eq!(read(returned)["videos"][0]["saved"], true);
+    assert_eq!(read(returned)["playlists"][0]["name"], "Existing playlist");
+    assert_eq!(read(returned)["legacy_available"], false);
+}
+
+#[test]
+fn switching_accounts_while_a_media_check_is_pending_does_not_create_a_job_in_either_account() {
+    use crate::{api, AudioExtractor};
+    struct Gate {
+        started: mpsc::SyncSender<()>,
+        release: Mutex<mpsc::Receiver<()>>,
+        url: String,
+    }
+    impl AudioExtractor for Gate {
+        fn audio_url(&self, _: &str) -> Result<String, crate::media::Refusal> {
+            self.started.send(()).unwrap();
+            self.release.lock().unwrap().recv_timeout(Duration::from_secs(10)).unwrap();
+            Ok(self.url.clone())
+        }
+    }
+    let profile = Profile::new();
+    let mut core = crate::pipeline::worker_tests::idle_core(&profile.0, "");
+    core.account = Manager::with_test_verifier(profile.0.clone());
+    let native = Arc::new(Native::default());
+    *native.subject.lock().unwrap() = "pending-one".into();
+    core.account.configure(native.clone()).unwrap();
+    core.account.restore().unwrap();
+    let first = core.account.sign_in(core.account.status().unwrap().generation).unwrap().generation;
+    let old = core.account.session().unwrap();
+    let (started, observe) = mpsc::sync_channel(1);
+    let (release, wait) = mpsc::channel();
+    core.svc.extractor = Box::new(Gate { started, release: Mutex::new(wait), url: crate::api::duration_tests::serve_wav() });
+    let core = Arc::new(core);
+    let creating = core.clone();
+    let request = std::thread::spawn(move || api::create_job(&creating, "https://youtu.be/abcDEF12345", None, "Pending lecture", 5000));
+    observe.recv_timeout(Duration::from_secs(10)).unwrap();
+    *native.subject.lock().unwrap() = "pending-two".into();
+    core.account.sign_in(first).unwrap();
+    release.send(()).unwrap();
+    assert_eq!(request.join().unwrap().unwrap_err().error, "account_changed");
+    assert!(!core.has_active_job().unwrap());
+    assert_eq!(old.journal.library().unwrap().library().unwrap()["videos"], serde_json::json!([]));
+    assert_eq!(api::get_library(&core).unwrap()["videos"], serde_json::json!([]));
+    assert!(core.store.library().unwrap()["videos"].as_array().unwrap().is_empty());
+}
+
+#[test]
 fn unsupported_hosts_fail_closed_and_status_never_contains_credentials() {
     let profile = Profile::new();
     let manager = Manager::new(profile.0.clone());

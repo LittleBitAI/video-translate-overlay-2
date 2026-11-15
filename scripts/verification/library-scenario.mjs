@@ -12,13 +12,15 @@ export const assertions = [
   {id: 'manual-link', expected: 'Opening an untranslated playlist entry leaves translation unstarted'},
 ];
 
-export async function call(page, method, route, body = {}) {
-  return page.evaluate(async ({method, route, body}) => {
+export async function call(page, method, route, body = {}, accountGeneration) {
+  return page.evaluate(async ({method, route, body, accountGeneration}) => {
     if (window.__TAURI_INTERNALS__) {
       const subs = /^\/videos\/([^/]+)\/subtitles$/.exec(route);
       const command = subs ? 'get_subtitles' : ({'GET /library/data': 'get_library', 'POST /library/data': 'library_action',
         'GET /jobs': 'get_job', 'POST /browser/open': 'browser_open'})[`${method} ${route}`];
-      const args = subs ? {video_key: subs[1]} : method === 'POST' && route === '/library/data' ? {action: body} : body;
+      const args = subs ? {video_key: subs[1]} : method === 'POST' && route === '/library/data' ? {action: body} : {...body};
+      if (accountGeneration === undefined) accountGeneration = (await window.__TAURI_INTERNALS__.invoke('get_google_account', {})).generation;
+      args.account_generation = accountGeneration;
       try {return {status: 200, body: await window.__TAURI_INTERNALS__.invoke(command, args)};}
       catch (error) {return {status: error.status ?? 500, body: error};}
     }
@@ -26,7 +28,7 @@ export async function call(page, method, route, body = {}) {
     const response = await fetch(route + suffix, {method,
       ...(method !== 'GET' ? {headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)} : {})});
     return {status: response.status, body: await response.json()};
-  }, {method, route, body});
+  }, {method, route, body, accountGeneration});
 }
 
 export default async function scenario(session) {
@@ -79,8 +81,8 @@ export default async function scenario(session) {
     await videoPage.evaluate(() => {const video = document.querySelector('video'); video.currentTime = 1; video.dispatchEvent(new Event('timeupdate'));});
     const cue = videoPage.locator(session.platform === 'browser' ? '[data-feature="watch-subtitles"]' : '[data-vto="subtitle"]');
     await session.until(async () => (await cue.textContent())?.includes('저장된 어텐션'));
-    assert.deepEqual(await call(videoPage, 'GET', `/videos/${saved.video_key}/subtitles`), subsBefore);
-    assert.equal((await call(videoPage, 'GET', '/jobs', {page_url: saved.page_url})).body.cost_krw, 12.5);
+    assert.deepEqual(await call(videoPage, 'GET', `/videos/${saved.video_key}/subtitles`, {}, before.account_generation), subsBefore);
+    assert.equal((await call(videoPage, 'GET', '/jobs', {page_url: saved.page_url}, before.account_generation)).body.cost_krw, 12.5);
     media.assertNoTranslation(); await session.observe('saved-reuse', assertions[0].expected, videoPage);
     await session.restart(); page = session.page;
     await library(); assert.deepEqual(await list(), organized);
@@ -115,7 +117,7 @@ export default async function scenario(session) {
     const manualPage = session.platform === 'browser' ? page : await session.pageFor(saved.page_url.replace('saved.mp4', 'untranslated.mp4'));
     await manualPage.locator('video').waitFor();
     await manualPage.getByRole('button', {name: '영상감지', exact: true}).waitFor();
-    assert.equal((await call(manualPage, 'GET', '/jobs', {page_url: saved.page_url.replace('saved.mp4', 'untranslated.mp4')})).status, 404);
+    assert.equal((await call(manualPage, 'GET', '/jobs', {page_url: saved.page_url.replace('saved.mp4', 'untranslated.mp4')}, after.account_generation)).status, 404);
     media.assertNoTranslation(); await session.observe('manual-link', assertions[5].expected, manualPage);
   } finally {await media.close();}
 }

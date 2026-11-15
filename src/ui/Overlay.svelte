@@ -57,6 +57,7 @@
   let mainMs = $state(0);
   let timer: ReturnType<typeof setTimeout> | undefined;
   let gone = false;
+  let accountRetired = $state(false);
   let generation = 0;
   let loadedJob = '';
   let videoKey: string | undefined;
@@ -123,6 +124,7 @@
   }
 
   async function detect() {
+    if (accountRetired) return;
     if (deletionToken && !confirm('삭제한 영상의 자막을 새로 만듭니다. 추가 API 비용이 발생할 수 있습니다. 번역을 시작할까요?')) return;
     const mine = ++generation;
     // Consent starts a new attempt even when the earlier video's key is unknown.
@@ -169,8 +171,16 @@
     const channel = new BroadcastChannel('vto-library');
     channel.onmessage = invalidate;
     window.addEventListener('vto-video-deleted', invalidate);
+    const accountChanged = () => {
+      accountRetired = true;
+      generation++; job = null; cues = []; loadedJob = ''; starting = false;
+      deletionToken = null; subs = 'none'; look = 'failed';
+      notice = { text:'계정 상태가 바뀌었습니다. 앱에서 영상을 다시 열어 주세요.' };
+      if (timer) clearTimeout(timer);
+    };
+    window.addEventListener('vto-account-changed', accountChanged);
     initial === undefined ? poll() : follow(initial);
-    return () => { channel.close(); window.removeEventListener('vto-video-deleted', invalidate); };
+    return () => { channel.close(); window.removeEventListener('vto-video-deleted', invalidate); window.removeEventListener('vto-account-changed', accountChanged); };
   });
 
   const box = 'rounded-lg bg-surface/90 p-2 text-sm';
@@ -255,7 +265,7 @@
         class="pointer-events-auto min-h-11 shrink-0 rounded-lg px-4 py-2 text-base font-semibold disabled:bg-ink/15 disabled:text-ink/50 disabled:shadow-none {ready
           ? 'border border-ink/30 bg-surface/80 text-ink'
           : 'bg-primary text-surface shadow'}"
-        disabled={starting || look === 'checking' || active || subs === 'loading'}
+        disabled={accountRetired || starting || look === 'checking' || active || subs === 'loading'}
         onclick={detect}>{starting ? '확인하는 중' : '영상감지'}</button
       >
     {/if}
