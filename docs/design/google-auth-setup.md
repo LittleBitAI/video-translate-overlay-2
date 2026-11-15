@@ -203,8 +203,45 @@ an older YouTube fixture expecting browser-open arguments without the required
 account generation. Updating that exact expected request and response to the
 current contract made the affected file pass; the assertion was retained.
 The cleanup audit keeps the new policy boundary test and static-page check,
-extends existing denial/recovery checks, and removes no tests. Native packaging
-and policy-button observations for this repair remain to be recorded.
+extends existing denial/recovery checks, and removes no tests. Its updated
+inventory covers 37 changed or affected source files, including inline API
+checks and the Android capability check.
+
+### Native privacy access at ff30ca8
+
+Windows built and ran source `ff30ca80e0acd1af7c0ec110705ae8dc5d94d881` in the
+same owned disposable profile. Core and screen identities matched, and the
+original Google enrollment restored without interactive sign-in. The executable
+SHA-256 is `de72186bbfc1691697da60e4f4ab4bfa039072328d3e05e2d4a516345489e847`.
+Clicking the actual settings privacy button opened the exact published HTTPS
+policy URL, observed in the external browser address bar. The account generation
+and last-opened video pointer remained unchanged. The native command's fixed
+destination and absence of URL input are separately checked offline.
+
+The initial Windows observation exceeded its legacy PowerShell time limit.
+A later attempt reached the browser URL but then failed because the harness
+tried to intercept Tauri's read-only `invoke` property. Removing that
+interception and using the actual browser destination plus unchanged app state
+produced the passing `windows-policy-native.json` receipt. This was a harness
+repair; the app opener did not change between those observations.
+
+Android's Rust build completed, followed by the documented Windows symlink
+refusal. The freshly copied JNI library was hash-checked and Gradle packaging
+passed. The 488,660,407-byte debug APK has SHA-256
+`a223f624956fe674bd3a8bd85c596d2f2ba9f51704c224b6ba9e9fa0fbe05416`.
+Its packaged stripped core matches the fresh output, all 962 entries exclude
+the publisher Desktop secret, and its certificate retains SHA-256
+`fa6da2233c2062b48baf20b3562eacacce774da80f2e4bb3d20ec3a6a527ec28`.
+ADB then reported no connected phone. The pre-update backup stopped at its
+first read and no installation was attempted. The new Android policy action
+therefore remains an installed-device acceptance requirement; earlier native
+LAN/account evidence remains identified by its earlier build.
+
+The free static website and its approved public contact are the only added
+hosting scope. No website endpoint receives app authentication or library
+transfers, and no paid domain or synchronization service is authorized. Google
+branding/domain verification and the final production publishing status remain
+pending owner observations. No repository gate or final verification was run.
 
 If Google requests a home page, privacy policy, domain ownership, or brand
 verification, prepare the exact text and destinations before publication.
