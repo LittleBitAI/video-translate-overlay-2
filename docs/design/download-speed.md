@@ -99,7 +99,14 @@ The restart cost about 5 s; without it writing would have started at about
 25 s. The app was then sent to the home screen and the job continued under its
 foreground-service notice.
 
-END_TO_END_PLACEHOLDER
+The ready notice came 3,582 s (59.7 minutes) after the press, with the app on
+the home screen throughout. Writing and translation took 3,552 s of that; for
+the first 20 minutes the measurement runs above shared the phone. The job ended
+`ready` at a recorded 373.1 KRW, and reopening the video showed Korean subtitles
+matching the speech at 2, 30 and 58 minutes. As agreed, the old build was not
+run end to end: its downloading stage alone took 1,810–1,836 s, and writing and
+translation are unchanged, so the same run before this change would have taken
+about 30 minutes longer, roughly 90 minutes instead of 60.
 
 ## Limits
 
