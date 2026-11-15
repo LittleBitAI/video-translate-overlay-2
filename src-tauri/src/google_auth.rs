@@ -22,7 +22,8 @@ const MAX_JWKS_BYTES: usize = 256 * 1024;
 const KEY_LIFETIME: Duration = Duration::from_secs(300);
 const FETCH_COOLDOWN: Duration = Duration::from_secs(30);
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Platform {
     Desktop,
     Android,
@@ -280,4 +281,4 @@ fn fetch_keys() -> Result<CoreJsonWebKeySet, AuthError> {
 
 #[cfg(test)]
 #[path = "google_auth_tests.rs"]
-mod tests;
+pub(crate) mod tests;

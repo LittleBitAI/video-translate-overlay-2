@@ -91,6 +91,10 @@ impl Session {
         self.device()?;
         Ok((&self.proof, self.platform))
     }
+
+    pub(crate) fn cancellation(&self) -> Arc<AtomicBool> {
+        self.cancelled.clone()
+    }
 }
 
 struct State {
@@ -144,6 +148,16 @@ pub struct Manager {
 }
 
 impl Manager {
+    pub(crate) fn verifier(&self) -> &Verifier {
+        &self.verifier
+    }
+
+    #[cfg(test)]
+    pub(crate) fn with_test_verifier(root: PathBuf) -> Self {
+        let mut manager = Self::new(root);
+        manager.verifier = Verifier::with_test_keys(crate::google_auth::tests::keys());
+        manager
+    }
     pub fn new(root: PathBuf) -> Self {
         Self {
             root,

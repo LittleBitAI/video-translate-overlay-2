@@ -1,11 +1,5 @@
 use super::*;
-use openidconnect::{
-    core::{
-        CoreIdToken, CoreIdTokenClaims, CoreJsonWebKeySet, CoreJwsSigningAlgorithm,
-        CoreRsaPrivateSigningKey,
-    },
-    JsonWebKeyId, PrivateSigningKey,
-};
+use crate::google_auth::tests::{claims, keys, signed};
 use rustls::{ClientConnection, Connection, ServerConnection};
 use std::io::{Cursor, Write};
 
@@ -37,26 +31,13 @@ fn handshake(client: &mut Connection, server: &mut Connection) -> Result<(), Err
     panic!("fixture handshake did not finish");
 }
 fn proof(subject: &str, nonce: &str, expired: bool) -> (Verifier, String) {
-    let key = CoreRsaPrivateSigningKey::from_pem(
-        include_str!("../tests/fixtures/auth/test-only-rsa.pem"),
-        Some(JsonWebKeyId::new("test".into())),
-    )
-    .unwrap();
+    let mut value = claims(Platform::Android);
+    value["sub"] = subject.into();
+    value["nonce"] = nonce.into();
     let now = time::OffsetDateTime::now_utc().unix_timestamp();
-    let claims: CoreIdTokenClaims = serde_json::from_value(serde_json::json!({"iss":"https://accounts.google.com","sub":subject,"email":"fixture@example.org","email_verified":true,"aud":crate::google_auth::ANDROID_AUDIENCE,"iat":now-3600,"exp":if expired {now-1} else {now+3600},"nonce":nonce})).unwrap();
-    let token = CoreIdToken::new(
-        claims,
-        &key,
-        CoreJwsSigningAlgorithm::RsaSsaPkcs1V15Sha256,
-        None,
-        None,
-    )
-    .unwrap()
-    .to_string();
-    (
-        Verifier::with_test_keys(CoreJsonWebKeySet::new(vec![key.as_verification_key()])),
-        token,
-    )
+    value["iat"] = (now - 3600).into();
+    value["exp"] = (if expired { now - 1 } else { now + 3600 }).into();
+    (Verifier::with_test_keys(keys()), signed(value))
 }
 
 #[test]

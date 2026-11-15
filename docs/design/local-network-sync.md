@@ -17,7 +17,7 @@ task can be reported complete. See [Google registration](google-auth-setup.md).
 format. The native account manager opens it after verified sign-in. Production
 library projection is implemented as an offline storage component; account
 selection in the running library, discovery and encrypted peer transfers are
-not implemented yet. No sync listener opens. No existing user library has
+not connected to a native network worker yet. No sync listener opens. No existing user library has
 been imported or changed.
 
 The settings screen now starts a separate native Google sign-in: Windows uses
@@ -53,6 +53,24 @@ fails. TLS resumption, session tickets and early data are disabled. The module
 opens no sockets and performs no discovery; the owning session releases its
 private key when retired sessions are dropped. This remains preparation for
 the network worker, not implemented LAN delivery.
+
+`sync_channel.rs` owns an already-connected TCP socket and requires mutual TLS
+before its bounded proof exchange. The Android client verifies the PC's bound
+Google proof before sending its own. Only matching signed Google subjects
+authorize transfers. The dedicated authentication phase carries a certificate-
+bound ID proof; it never sends OAuth access/refresh tokens, the publisher
+registration secret, Gemini keys or cookies. Library pages remain behind this
+authorization gate and have no general command, SQL or file-access operation.
+
+Control frames are capped at 16 KiB, and library frames contain one bounded
+page plus framing overhead. Handshakes have a five-second deadline and each
+frame has a thirty-second absolute deadline. Socket I/O checks cancellation
+in slices of at most 250 ms. Each connection worker owns its socket and session;
+dropping the channel closes its socket, without a manager/socket ownership cycle.
+Account cancellation prevents further page reads, writes and journal commits.
+The worker must discard a channel after any failed exchange. Discovery, native
+listener ownership and Android lifecycle integration remain separate unfinished
+work.
 
 The user selected explicit confirmation before importing the legacy local
 library, with its original data preserved. Account registration is authorized
@@ -252,6 +270,16 @@ not Google-issued credentials or a native network connection.
 google_ -- --nocapture` passed 19, including the matching TLS/account test
 names. The audit retained every current security and lifecycle check. No
 native build or real Google sign-in has yet exercised the certificate nonce.
+
+`cargo test -p video-translate-overlay --lib sync_channel:: -- --nocapture`
+passed 5 tests using owned loopback TCP sockets and test-signed Google proofs.
+They cover completed translations and phone-created playlist changes in both
+directions, usable SQLite data after reopening, convergence without echo,
+mismatched subjects despite identical email, sign-out during a blocked read,
+bounded/strict framing, and reconnection after only one direction committed.
+These are local protocol tests, not real Google-account or Windows/Android
+device-transfer acceptance. Duplicate RSA fixture-building code was folded
+into the existing authentication fixtures; all behavior checks remain.
 
 ## Focused authentication evidence
 

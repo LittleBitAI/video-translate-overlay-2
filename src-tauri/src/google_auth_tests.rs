@@ -15,15 +15,15 @@ const PRIVATE_KEY: &str = include_str!("../tests/fixtures/auth/test-only-rsa.pem
 fn key(id: &str) -> CoreRsaPrivateSigningKey {
     CoreRsaPrivateSigningKey::from_pem(PRIVATE_KEY, Some(JsonWebKeyId::new(id.into()))).unwrap()
 }
-fn keys() -> CoreJsonWebKeySet {
+pub(crate) fn keys() -> CoreJsonWebKeySet {
     CoreJsonWebKeySet::new(vec![key("test").as_verification_key()])
 }
-fn claims(platform: Platform) -> Value {
+pub(crate) fn claims(platform: Platform) -> Value {
     json!({"iss":ISSUER,"sub":"verified-google-subject-one",
         "aud":if platform==Platform::Desktop { DESKTOP_CLIENT_ID } else { ANDROID_AUDIENCE },
         "exp":now()+3600,"iat":now(),"nonce":NONCE,"email":"one@example.org","email_verified":true})
 }
-fn signed(value: Value) -> String {
+pub(crate) fn signed(value: Value) -> String {
     sign_with(value, "test", CoreJwsSigningAlgorithm::RsaSsaPkcs1V15Sha256)
 }
 fn sign_with(value: Value, kid: &str, algorithm: CoreJwsSigningAlgorithm) -> String {
