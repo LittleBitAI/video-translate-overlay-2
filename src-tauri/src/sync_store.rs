@@ -8,8 +8,17 @@ CREATE TABLE IF NOT EXISTS sync_import_seen (digest TEXT PRIMARY KEY)
 ";
 
 impl Journal {
-    pub(crate) fn imported_legacy(&self) -> Result<bool> {
-        Ok(Db::open(&self.path)?.query_one("SELECT digest FROM sync_import_seen LIMIT 1", &[])?.is_some())
+    pub(crate) fn has_legacy_changes(&self, source: &Store) -> Result<bool> {
+        let source = legacy_source(source)?;
+        let destination = Db::open(&self.path)?;
+        let mut missing = false;
+        visit_legacy(&source, |change| {
+            let hash = digest(&serde_json::to_vec(&change).map_err(|_| "invalid legacy library")?);
+            missing = destination.query_one("SELECT digest FROM sync_import_seen WHERE digest=?", p![hash])?.is_none();
+            Ok(!missing)
+        })?;
+        source.exec("COMMIT")?;
+        Ok(missing)
     }
 
     pub fn library(&self) -> Result<Store> {
@@ -31,17 +40,7 @@ impl Journal {
     /// The caller must hold the captured account ticket and explicit import confirmation.
     /// A source read snapshot and destination transaction preserve the original library.
     pub fn import_legacy(&self, source: &Store) -> Result<usize> {
-        let source = Db::open(source.path())?;
-        source.exec("BEGIN")?;
-        if source
-            .query_one(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='sync_meta'",
-                &[],
-            )?
-            .is_some()
-        {
-            return Err("account data cannot be imported as an unowned device library".into());
-        }
+        let source = legacy_source(source)?;
         let result = self.transaction(|db| {
             let mut imported = 0;
             visit_legacy(&source, |change| {
@@ -54,7 +53,7 @@ impl Journal {
                     )?
                     .is_some()
                 {
-                    return Ok(());
+                    return Ok(true);
                 }
                 let clock = db
                     .query_one("SELECT clock FROM sync_meta WHERE id=1", &[])?
@@ -77,7 +76,7 @@ impl Journal {
                 merge(db, &record)?;
                 db.execute("INSERT INTO sync_import_seen VALUES (?)", p![hash])?;
                 imported += 1;
-                Ok(())
+                Ok(true)
             })?;
             project(db, 64)?;
             Ok(imported)
@@ -87,16 +86,27 @@ impl Journal {
     }
 }
 
-fn visit_legacy(db: &Db, mut visit: impl FnMut(Change) -> Result<()>) -> Result<()> {
+fn legacy_source(store: &Store) -> Result<Db> {
+    let db = Db::open(store.path())?;
+    db.exec("BEGIN")?;
+    if local::owned(&db)? { return Err("account data cannot be imported as an unowned device library".into()); }
+    Ok(db)
+}
+
+// A false visitor result stops after the first missing content receipt.
+fn visit_legacy(db: &Db, mut visit: impl FnMut(Change) -> Result<bool>) -> Result<()> {
     for row in db.query("SELECT v.video_key,v.page_url,v.title,v.duration_ms,v.source_language,v.terms FROM video v WHERE NOT EXISTS(SELECT 1 FROM deleted_video d WHERE d.video_key=v.video_key) ORDER BY v.video_key", &[])? {
         let video = Video { key: row[0].text(), page_url: row[1].text(), title: row[2].text() };
-        visit(Change::Video { video: video.clone() })?;
+        if !visit(Change::Video { video: video.clone() })? { return Ok(()); }
+        if let Some(position) = db.query_one("SELECT position_ms FROM playback WHERE video_key=?", p![&video.key])? {
+            if !visit(Change::Playback { key: video.key.clone(), position_ms: position[0].int() })? { return Ok(()); }
+        }
         if db.query_one("SELECT id FROM job WHERE video_key=? AND stage IN ('downloading','writing','translating')", p![&video.key])?.is_some() { continue; }
         let Some(job) = db.query_one("SELECT translation_model,cost_krw FROM job WHERE video_key=? AND stage='ready' ORDER BY created_at DESC,rowid DESC LIMIT 1", p![&video.key])? else { continue; };
         let cues = db.query("SELECT start_ms,end_ms,source_text,text_ko FROM cue WHERE video_key=? ORDER BY seq", p![&video.key])?
             .iter().map(|r| Ok(Cue { start_ms:r[0].int(), end_ms:r[1].int(), source_text:r[2].text(), text_ko:r[3].opt_text().ok_or("incomplete legacy translation")? })).collect::<Result<Vec<_>>>()?;
         let terms = row[5].opt_text().map(|s| serde_json::from_str::<Vec<Term>>(&s).map_err(|_| "invalid legacy glossary".to_string())).transpose()?.unwrap_or_default();
-        visit(Change::Translation { translation: Translation { video, duration_ms:row[3].int(), source_language:row[4].opt_text(), terms, model:job[0].text(), cost_krw:job[1].real(), cues } })?;
+        if !visit(Change::Translation { translation: Translation { video, duration_ms:row[3].int(), source_language:row[4].opt_text(), terms, model:job[0].text(), cost_krw:job[1].real(), cues } })? { return Ok(()); }
     }
     for (position, row) in db
         .query("SELECT id,name FROM playlist ORDER BY position,rowid", &[])?
@@ -104,18 +114,18 @@ fn visit_legacy(db: &Db, mut visit: impl FnMut(Change) -> Result<()>) -> Result<
         .enumerate()
     {
         let id = row[0].text();
-        visit(Change::PlaylistName {
+        if !visit(Change::PlaylistName {
             id: id.clone(),
             name: row[1].text(),
-        })?;
-        visit(Change::PlaylistOrder {
+        })? { return Ok(()); }
+        if !visit(Change::PlaylistOrder {
             id: id.clone(),
             position: position as i64,
-        })?;
+        })? { return Ok(()); }
         for (position, entry) in db.query("SELECT e.video_key FROM playlist_entry e WHERE playlist_id=? AND NOT EXISTS(SELECT 1 FROM deleted_video d WHERE d.video_key=e.video_key) ORDER BY position,rowid", p![&id])?.iter().enumerate() {
             let key = entry[0].text();
-            visit(Change::EntryPresence { id:id.clone(), key:key.clone(), present:true })?;
-            visit(Change::EntryOrder { id:id.clone(), key, position:position as i64 })?;
+            if !visit(Change::EntryPresence { id:id.clone(), key:key.clone(), present:true })? { return Ok(()); }
+            if !visit(Change::EntryOrder { id:id.clone(), key, position:position as i64 })? { return Ok(()); }
         }
     }
     Ok(())

@@ -322,7 +322,11 @@ their account database, including after the device credential expires; expiry
 only disables networking. The library offers an explicit confirmed copy of the
 unowned completed library and playlists, preserving the source. No other account
 database is an import source. Its content receipts prevent repeat imports from
-resurrecting deleted items. This offer is implementation work, not evidence that
+resurrecting deleted items. The offer compares current content receipts, so new
+unowned items added after an earlier copy can be offered again. Saved playback
+positions accompany copied video entries. A malformed original library leaves
+the account library readable and makes confirmed import fail without changing
+its source. This offer is implementation work, not evidence that
 any installed user's data has been imported.
 
 The single translation worker inspects only fixed app-owned database names and
@@ -694,3 +698,11 @@ assertion. Multi-file runs also reported a browser/Vite shutdown timeout; the
 existing `LIBCLANG_PATH`; the first attempt lacked that environment setting and
 failed before checking application code. These are focused implementation checks,
 not native playback acceptance or a repository-gate result.
+
+After the repeated-import offer repair, `cargo test -p video-translate-overlay
+--lib legacy_ -- --nocapture` passed four affected storage/account checks.
+They include a later unowned playlist, retained playback position, deletion
+non-resurrection, explicit account ownership and malformed-source rollback.
+`npx vitest run -c vitest.ui.config.ts tests/ui/account-library.test.ts` passed
+four consent, ownership and layout cases. The cleanup audit extended the
+existing import regressions; it removed no current checks.

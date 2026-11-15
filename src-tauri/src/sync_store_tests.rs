@@ -238,6 +238,7 @@ fn legacy_import_is_a_copy_is_idempotent_and_cannot_assign_another_accounts_stor
     )
     .unwrap();
     store.create_playlist("topic", "Device topic").unwrap();
+    store.save_playback(&t.video.key, 2345, 5000).unwrap();
     store
         .add_entry(
             "topic",
@@ -249,7 +250,9 @@ fn legacy_import_is_a_copy_is_idempotent_and_cannot_assign_another_accounts_stor
         .unwrap();
     let original = store.library().unwrap();
     let journal = target.journal();
+    assert!(journal.has_legacy_changes(&store).unwrap());
     assert!(journal.import_legacy(&store).unwrap() > 0);
+    assert!(!journal.has_legacy_changes(&store).unwrap());
     assert_eq!(store.library().unwrap(), original);
     assert_eq!(
         store.ready_job(&t.video.key).unwrap().unwrap().id,
@@ -257,6 +260,7 @@ fn legacy_import_is_a_copy_is_idempotent_and_cannot_assign_another_accounts_stor
     );
     assert_eq!(journal.import_legacy(&store).unwrap(), 0);
     let copied = journal.library().unwrap();
+    assert_eq!(copied.playback(&t.video.key).unwrap(), Some(2345));
     assert_eq!(
         copied.ready_job(&t.video.key).unwrap().unwrap().cost_krw,
         12.5
@@ -268,6 +272,7 @@ fn legacy_import_is_a_copy_is_idempotent_and_cannot_assign_another_accounts_stor
     let other_profile = Profile::new();
     let other = other_profile.journal();
     assert!(other.import_legacy(&copied).is_err());
+    assert!(other.has_legacy_changes(&copied).is_err());
     journal
         .write(
             Change::DeleteVideo {
@@ -277,6 +282,11 @@ fn legacy_import_is_a_copy_is_idempotent_and_cannot_assign_another_accounts_stor
         )
         .unwrap();
     assert_eq!(journal.import_legacy(&store).unwrap(), 0);
+    store.create_playlist("later", "Added after first import").unwrap();
+    assert!(journal.has_legacy_changes(&store).unwrap());
+    assert_eq!(journal.import_legacy(&store).unwrap(), 2);
+    assert!(!journal.has_legacy_changes(&store).unwrap());
+    assert_eq!(journal.library().unwrap().library().unwrap()["playlists"].as_array().unwrap().len(), 2);
     assert!(journal
         .library()
         .unwrap()

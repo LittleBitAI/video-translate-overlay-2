@@ -153,6 +153,15 @@ fn production_library_requests_select_the_account_and_copy_legacy_data_only_with
     assert_eq!(read(returned)["videos"][0]["saved"], true);
     assert_eq!(read(returned)["playlists"][0]["name"], "Existing playlist");
     assert_eq!(read(returned)["legacy_available"], false);
+    core.store.create_playlist("later", "New signed-out playlist").unwrap();
+    assert_eq!(read(returned)["legacy_available"], true);
+    library_request(&core, Some(returned), "library_action", &consent).unwrap();
+    assert_eq!(read(returned)["legacy_available"], false);
+    assert_eq!(read(returned)["playlists"].as_array().unwrap().len(), 2);
+    crate::db::Db::open(core.store.path()).unwrap().execute("UPDATE cue SET text_ko=NULL", &[]).unwrap();
+    assert_eq!(read(returned)["legacy_available"], true);
+    assert_eq!(library_request(&core, Some(returned), "library_action", &consent).unwrap_err().status, 503);
+    assert_eq!(read(returned)["videos"][0]["saved"], true);
 }
 
 #[test]

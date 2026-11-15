@@ -117,10 +117,8 @@ impl Library<'_> {
     pub(crate) fn legacy_available(&self) -> Result<bool, ApiError> {
         self.core.account.with_library(&self.scope, |journal| Ok((|| -> Result<bool, String> {
             let Some(journal) = journal else { return Ok(false) };
-            if journal.imported_legacy()? { return Ok(false); }
-            let legacy = self.core.store.library()?;
-            Ok(legacy["videos"].as_array().is_some_and(|v| !v.is_empty())
-                || legacy["playlists"].as_array().is_some_and(|p| !p.is_empty()))
+            // A broken original library must not hide usable account data; import reports its error.
+            Ok(journal.has_legacy_changes(&self.core.store).unwrap_or(true))
         })())).map_err(unavailable)?.map_err(ApiError::from)
     }
 }
