@@ -188,13 +188,7 @@ fn download(cx: &Ctx, job: &Job) -> Result<(), Stop> {
         // the stage is the first half when it has to come down.
         let mut last = Stage::new(Stage::DOWNLOADING);
         let t = std::time::Instant::now();
-        let preparing = &cx.core.running.preparing_model;
-        // Progress comes only while the model is being fetched: that is when P7 says so.
-        let fetched = cx.core.svc.transcriber.prepare(&cx.core.cfg.data_dir, &mut |p| {
-            *preparing.lock().unwrap_or_else(|p| p.into_inner()) = Some(job.id.clone());
-            cx.percent(&job.id, (p.clamp(0.0, 1.0) * 50.0) as i64, &mut last)
-        });
-        *preparing.lock().unwrap_or_else(|p| p.into_inner()) = None;
+        let fetched = prepare_model(cx, job, &mut |p| cx.percent(&job.id, (p.clamp(0.0, 1.0) * 50.0) as i64, &mut last));
         let fetched = fetched.map_err(|e| format!("model: {e}"))?;
         log(format!("timing job {} model ms={} fetched={fetched}", job.id, t.elapsed().as_millis()));
         let (base, span) = if fetched { (50, 50) } else { (0, 100) };
@@ -219,6 +213,19 @@ fn download(cx: &Ctx, job: &Job) -> Result<(), Stop> {
     }
 }
 
+/// The model's `prepare` for `job`. When it will fetch, P7 reports model
+/// preparation from before the fetch connects, through its waits and retries,
+/// until it ends either way.
+fn prepare_model(cx: &Ctx, job: &Job, progress: &mut dyn FnMut(f32)) -> Result<bool, String> {
+    let preparing = &cx.core.running.preparing_model;
+    if cx.core.svc.transcriber.needs_fetch() {
+        *preparing.lock().unwrap_or_else(|p| p.into_inner()) = Some(job.id.clone());
+    }
+    let got = cx.core.svc.transcriber.prepare(&cx.core.cfg.data_dir, progress);
+    *preparing.lock().unwrap_or_else(|p| p.into_inner()) = None;
+    got
+}
+
 /// Writes the speech regions not yet written, then moves the job to
 /// translating. Stages never go back (E2), so a lost audio file fails the job.
 fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
@@ -228,7 +235,7 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
     };
     // A job resumed here after a restart never passed through downloading in
     // this process: make sure the model is on the device (normally a size check).
-    cx.core.svc.transcriber.prepare(&cx.core.cfg.data_dir, &mut |_| {}).map_err(|e| format!("model: {e}"))?;
+    prepare_model(cx, job, &mut |_| {}).map_err(|e| format!("model: {e}"))?;
     let t = std::time::Instant::now();
     let pcm = audio::decode_file(path.as_ref()).map_err(|e| format!("decode: {e}"))?;
     log(format!("timing job {} decode ms={} samples={}", job.id, t.elapsed().as_millis(), pcm.len()));

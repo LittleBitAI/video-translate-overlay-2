@@ -58,6 +58,10 @@ pub trait Transcriber: Send + Sync {
     fn prepare(&self, _data_dir: &std::path::Path, _progress: &mut dyn FnMut(f32)) -> Result<bool, String> {
         Ok(false)
     }
+    /// Whether `prepare` would fetch the model, known before it connects.
+    fn needs_fetch(&self) -> bool {
+        false
+    }
     /// `pcm` is 16 kHz mono; `progress` receives 0.0..=1.0 as the model works.
     fn transcribe(&self, pcm: &[f32], progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String>;
     /// The language the model heard, when it knows.

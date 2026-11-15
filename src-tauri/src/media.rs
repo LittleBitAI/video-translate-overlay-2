@@ -863,6 +863,15 @@ fn download_file(
         }
         let (a, b, size) = r.content_range.as_deref().and_then(content_range).ok_or_else(|| format!("{url}: 206 without a usable Content-Range"))?;
         let identity = (size, r.etag.clone(), r.last_modified.clone());
+        if first.is_none() && !identifies_revision(&identity) {
+            // Pieces of two equal-length revisions would look alike: take the file in one response instead.
+            drop(r);
+            let r = get(url, None)?;
+            if r.status != 200 {
+                return Err(format!("{url}: HTTP {} to a request for the whole file", r.status));
+            }
+            return copy_whole(r, out, &mut buf, progress);
+        }
         match &first {
             None => first = Some(identity),
             Some(was) if *was != identity => return Err(format!("{url} changed during the download")),
@@ -898,6 +907,13 @@ fn download_file(
             return Ok(());
         }
     }
+}
+
+/// Whether a piece's validators name one revision of the file, so later pieces
+/// can be checked against it: a strong `ETag`, or a `Last-Modified` date
+/// (YouTube's audio sends only this). A weak `ETag` alone does not.
+fn identifies_revision((_, etag, modified): &(u64, Option<String>, Option<String>)) -> bool {
+    etag.as_deref().is_some_and(|e| !e.starts_with("W/")) || modified.is_some()
 }
 
 /// The whole file from one response, checked against its Content-Length.

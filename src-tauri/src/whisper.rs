@@ -96,7 +96,7 @@ impl Transcriber for Whisper {
         if !self.fetch {
             return if self.path.is_file() { Ok(false) } else { Err(format!("model file missing: {}", self.path.display())) };
         }
-        if std::fs::metadata(&self.path).is_ok_and(|m| m.len() == MODEL_BYTES) {
+        if !self.needs_fetch() {
             return Ok(false);
         }
         std::fs::create_dir_all(self.path.parent().unwrap()).map_err(|e| e.to_string())?;
@@ -110,6 +110,10 @@ impl Transcriber for Whisper {
             std::thread::sleep(Duration::from_secs(5 * tries));
         }
         Ok(true)
+    }
+
+    fn needs_fetch(&self) -> bool {
+        self.fetch && !std::fs::metadata(&self.path).is_ok_and(|m| m.len() == MODEL_BYTES)
     }
 
     fn transcribe(&self, pcm: &[f32], progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String> {
