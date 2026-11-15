@@ -15,7 +15,22 @@
   },
   {
    "a": "README.md",
+   "b": "docs/design/google-auth-setup.md",
+   "kind": "link"
+  },
+  {
+   "a": "README.md",
+   "b": "docs/design/local-network-sync.md",
+   "kind": "link"
+  },
+  {
+   "a": "README.md",
    "b": "docs/releases/procedure.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/design/backend.md",
+   "b": "docs/design/local-network-sync.md",
    "kind": "link"
   },
   {
@@ -24,8 +39,43 @@
    "kind": "link"
   },
   {
+   "a": "docs/design/google-auth-setup.md",
+   "b": "docs/evidence/lan-sync/README.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/design/google-auth-setup.md",
+   "b": "docs/releases/procedure.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/design/google-auth-setup.md",
+   "b": "docs/design/local-network-sync.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/design/local-network-sync.md",
+   "b": "docs/evidence/lan-sync/README.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/design/local-network-sync.md",
+   "b": "docs/design/google-auth-setup.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/evidence/lan-sync/README.md",
+   "b": "docs/evidence/lan-sync/diagnostics/README.md",
+   "kind": "link"
+  },
+  {
    "a": "docs/releases/acceptance.md",
    "b": "docs/releases/0.1.7.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/releases/procedure.md",
+   "b": "docs/design/google-auth-setup.md",
    "kind": "link"
   },
   {
@@ -115,8 +165,8 @@
   "docs/design/library-verification.md"
  ],
  "counts": {
-  "docs": 9,
-  "linked": 4,
+  "docs": 13,
+  "linked": 8,
   "read": 3,
   "orphans": 2,
   "pages": 7,
