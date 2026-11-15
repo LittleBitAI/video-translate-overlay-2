@@ -7,6 +7,33 @@ import { $, api, button, calls, features, open, text, type } from './fake';
 const YT = 'https://www.youtube.com/watch?v=kCc8FmEb1nY';
 const FILE = 'https://media.example.org/lectures/attention.mp4';
 
+test('a remote deletion refresh waits for a pending open and then clears only the resulting browser pointer', async () => {
+  let opened: string | null = null;
+  let answer: ((value: any) => void) | undefined;
+  api(call => {
+    if (call.path === '/browser') return [200, {url:opened, job:null}];
+    return new Promise(resolve => { answer = resolve; });
+  });
+  const root = open('/');
+  await vi.waitFor(() => expect(text(root)).toContain('영상 주소를 넣으면'));
+  type($(root, '#address'), FILE);
+  button(root, '열기').click();
+  await vi.waitFor(() => expect(answer).toBeTruthy());
+  window.dispatchEvent(new Event('vto-library-changed'));
+  expect(calls.filter(call => call.path === '/browser')).toHaveLength(1);
+  answer!([200, {opened_url:FILE}]);
+  await vi.waitFor(() => expect(calls.filter(call => call.path === '/browser')).toHaveLength(2));
+  expect(button(root, '열기').disabled).toBe(false);
+  expect(text(root)).toContain('영상 주소를 넣으면');
+  opened = FILE;
+  window.dispatchEvent(new Event('vto-library-changed'));
+  await vi.waitFor(() => expect($(root, 'video')).not.toBeNull());
+  opened = null;
+  window.dispatchEvent(new Event('vto-library-changed'));
+  await vi.waitFor(() => expect($(root, 'video')).toBeNull());
+  expect(calls.filter(call => call.path === '/browser/open')).toHaveLength(1);
+});
+
 test('empty: only the address bar and where the video will open', async () => {
   api(() => [200, { url: null, job: null }]);
   const s1 = open('/');

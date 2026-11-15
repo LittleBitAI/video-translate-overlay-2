@@ -191,6 +191,7 @@ pub(crate) struct LibraryScope {
     session: Option<Arc<Session>>,
 }
 impl LibraryScope {
+    pub(crate) fn owns_account(&self) -> bool { self.session.is_some() }
     pub fn generation(&self) -> u64 {
         self.generation
     }

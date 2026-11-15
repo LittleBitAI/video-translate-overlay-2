@@ -18,6 +18,27 @@ fn unavailable(error: crate::google_auth::AuthError) -> ApiError {
 }
 
 impl Core {
+    pub(crate) fn cleanup_video_files(&self, jobs: &[(String, Option<String>)], current: impl Fn() -> bool) -> Result<(), String> {
+        let entries = match std::fs::read_dir(self.cfg.data_dir.join("audio")) {
+            Ok(entries) => entries,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+            Err(e) => return Err(e.to_string()),
+        };
+        for entry in entries {
+            if !current() { return Err("cleanup cancelled".into()); }
+            let entry = entry.map_err(|e| e.to_string())?;
+            let file = entry.file_name().to_string_lossy().into_owned();
+            if jobs.iter().any(|(id, _)| file.starts_with(&format!("{id}."))) {
+                match std::fs::remove_file(entry.path()) {
+                    Ok(()) => {},
+                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => {},
+                    Err(e) => return Err(e.to_string()),
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub(crate) fn library(&self, expected: Option<u64>) -> Result<Library<'_>, ApiError> {
         let scope = self.account.capture_library().map_err(unavailable)?;
         if expected.is_some_and(|generation| generation != scope.generation()) {
@@ -71,8 +92,15 @@ impl Core {
 }
 
 impl Library<'_> {
+    pub(crate) fn owns_account(&self) -> bool { self.scope.owns_account() }
     pub(crate) fn generation(&self) -> u64 { self.scope.generation() }
     pub(crate) fn email(&self) -> Option<&str> { self.scope.email() }
+
+    pub(crate) fn project_pending(&self) -> Result<usize, ApiError> {
+        self.core.account.with_library(&self.scope, |journal| Ok(match journal {
+            Some(journal) => journal.project_pending(), None => Ok(0),
+        })).map_err(unavailable)?.map_err(ApiError::from)
+    }
 
     pub(crate) fn run<T>(&self, operation: impl FnOnce(&Store) -> Result<T, ApiError>) -> Result<T, ApiError> {
         self.core.account.with_library(&self.scope, |_| Ok(operation(&self.store)))

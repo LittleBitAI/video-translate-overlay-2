@@ -65,6 +65,11 @@ impl Store {
         Ok(self.db.query("SELECT id,audio_path FROM job WHERE video_key=?", p![key])?.iter().map(|r| (r[0].text(), r[1].opt_text())).collect())
     }
 
+    pub(crate) fn pending_video_deletions(&self, after: &str) -> R<Vec<String>> {
+        Ok(self.db.query("SELECT d.video_key FROM deleted_video d WHERE d.complete=0 AND d.video_key>? AND NOT EXISTS(SELECT 1 FROM job j WHERE j.video_key=d.video_key AND j.stage IN ('downloading','writing','translating')) ORDER BY d.video_key LIMIT 16", p![after])?
+            .iter().map(|row| row[0].text()).collect())
+    }
+
     pub fn finish_delete(&self, key: &str, inspected_url: Option<&str>) -> R<()> {
         self.library_write(|db| {
             local::cleanup_video(db, key)?;

@@ -185,7 +185,19 @@ impl Runtime {
         let controls = connections.clone();
         let weak = Arc::downgrade(core);
         let status = core.sync.clone();
-        let handle = thread::Builder::new().name("local-sync".into()).spawn(move || run(weak, controls, status, server, owner)).map_err(|e| e.to_string())?;
+        let handle = thread::Builder::new().name("local-sync".into()).spawn(move || {
+            let recovery = weak.clone(); let receipt = status.clone();
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| run(weak, controls.clone(), status, server, owner.clone())));
+            controls.stop();
+            if result.is_err() {
+                crate::log("native sync controller panicked");
+                if let Some(core) = recovery.upgrade() {
+                    let generation = core.account.status().map(|status| status.generation).unwrap_or_else(|_| receipt.0.lock().map(|s| s.generation).unwrap_or(0));
+                    let _ = core.svc.notifier.sync_background(&owner, generation, false);
+                    receipt.set(generation, ConnectionState::Stopped, false);
+                }
+            }
+        }).map_err(|e| e.to_string())?;
         Ok(Self { connections, thread: Mutex::new(Some(handle)) })
     }
     /// The caller may join on a background thread; never wait for DNS-SD shutdown on the UI thread.
@@ -199,6 +211,10 @@ impl Drop for Runtime {
 }
 
 fn run(weak: Weak<Core>, connections: Arc<Connections>, status: StatusStore, server: bool, owner: String) {
+    let cleanup_core = weak.clone(); let cleanup_controls = connections.clone();
+    let Ok(cleanup_worker) = thread::Builder::new().name("sync-cleanup".into()).spawn(move || cleanup::run(cleanup_core, cleanup_controls)) else {
+        connections.stop(); crate::log("native sync maintenance worker could not start"); return;
+    };
     let (send, receive) = mpsc::sync_channel::<Outcome>(MAX_CONNECTIONS * 2);
     let mut lease: Option<Lease> = None;
     let mut network_check = Instant::now();
@@ -334,9 +350,13 @@ fn run(weak: Weak<Core>, connections: Arc<Connections>, status: StatusStore, ser
     connections.stop();
     drop(lease);
     for worker in workers { if worker.join().is_err() { crate::log("sync connection worker panicked during shutdown"); } }
+    if cleanup_worker.join().is_err() { crate::log("native sync maintenance worker panicked"); }
     if let Some(core) = weak.upgrade() { let _ = core.svc.notifier.sync_background(&owner, generation, false); }
     status.set(generation, ConnectionState::Stopped, false);
 }
+
+#[path = "sync_cleanup.rs"]
+mod cleanup;
 
 #[cfg(test)]
 #[path = "sync_runtime_tests.rs"]

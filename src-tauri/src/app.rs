@@ -180,7 +180,9 @@ fn open_from_args(h: &Handle, args: &[String]) -> bool {
     let Ok(app) = app(h) else { return false };
     let core = app.state::<Arc<Core>>();
     let page = core.library(None).ok().and_then(|library| library.run(|store| {
-        Ok(store.job(id)?.filter(|j| j.notified).and_then(|j| store.video(&j.video_key).ok().flatten()))
+        let Some(job) = store.job(id)?.filter(|j| j.notified) else { return Ok(None) };
+        if store.deleted(&job.video_key)?.is_some() { return Ok(None); }
+        Ok(store.video(&job.video_key)?)
     }).ok().flatten());
     match page {
         Some(v) => {

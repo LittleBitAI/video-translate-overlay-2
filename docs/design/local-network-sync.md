@@ -138,8 +138,8 @@ This service holds no permanent CPU wake lock. Android suspension may delay
 delivery, and actual screen-off latency remains an acceptance requirement.
 The translation job's existing service and wake-lock policy are unchanged.
 
-Automatic cleanup of remote video-deletion markers, playback integration and
-native transfer acceptance remain unfinished. The controller's existence and
+Automatic cleanup of remote video-deletion markers is connected to the native
+controller. Playback integration and native transfer acceptance remain unfinished. The controller's existence and
 offline protocol tests are not evidence that those flows work on devices.
 
 `sync_discovery.rs` selects operational private IPv4, IPv6 ULA and scoped
@@ -316,6 +316,29 @@ notification activations resolve only against the currently selected library.
 The worker's operation-local connections close after each pass, while its
 captured job connection lasts through processing and recovery from a panic.
 
+The native controller also owns a separate local-maintenance worker. Every two
+seconds it projects the selected account's pending records and scans up to
+sixteen incomplete deletion markers, including markers without visible video
+rows. It captures the account's local library scope, so expiry can finish an
+already-authorized local cleanup while network access remains stopped. Sign-out
+retires that scope, and another account is never substituted mid-operation.
+
+Cleanup shares job admission's lock, skips active videos, and removes only files
+whose basenames begin with an owned job ID in the managed audio directory.
+Original media, models, credentials and unrelated jobs are outside that prefix
+selection. It does not follow a stored audio path. Missing files or an absent
+audio directory are already clean. Failures keep the marker for durable retry;
+a rotating key cursor prevents one failing file from starving other markers.
+Finalization and the next projection run through short guarded database
+operations. Network listeners and discovery can close independently of filesystem
+work. The controller joins this maintenance worker during shutdown.
+
+The signed-out unowned library keeps its explicit retry behavior. Maintenance
+does not import it or process its failed deletions automatically. Native ready
+notification activations also reject an incomplete deletion marker. Library and
+watch views refresh after applied remote changes; an in-flight open keeps its
+operation until the queued refresh can read its resulting browser pointer.
+
 Playback position is a durable field for the selected video. Resume may seek
 once when opening a supported player. A late remote position must not seek a
 player the user is already controlling. Progress received in the background
@@ -418,6 +441,24 @@ video-translate-overlay --lib sync::library:: -- --nocapture` then passed all
 restoration; existing completed-version, active-job and consent checks remain.
 
 ## Focused authentication evidence
+
+The cleanup addition passed `cargo test -p video-translate-overlay --lib
+sync_runtime:: -- --nocapture`: 7 tests, including the existing five controller
+cases and two filesystem/database scenarios. They cover an unrelated active
+job, exact file-prefix selection, preserved models and original library, orphan
+markers, replay after cleanup, active-video deferral, a failed directory removal,
+twenty other deletion markers, sign-out and automatic retry after returning to
+the account. The Windows app `cargo check` passed after this addition.
+
+The focused watch/library Chromium run passed 25 tests, including a queued
+remote refresh during opening. Vitest reported that its browser did not close
+within thirty seconds and would be killed on runner exit; test exit was zero.
+This observation is not a clean browser-shutdown receipt. No checks were removed
+or skipped in the cleanup audit; existing deletion confirmation/retry checks
+still exercise the shared file-removal helper.
+After rebuilding `vto-contract-host` with the final shared cleanup helper,
+`cargo test -p vto-contract-tests --test library -- --nocapture` passed all 5
+contracts, including active-job refusal and explicit cleanup failure/retry.
 
 The native-controller addition passed `cargo test -p video-translate-overlay
 --lib sync_ -- --nocapture`: 22 tests across discovery, TLS, protocol and runtime

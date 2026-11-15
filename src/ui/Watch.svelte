@@ -16,6 +16,7 @@
   let addressError = $state('');
   let generation = 0;
   let owner: number | undefined;
+  let refreshPending = false;
   /** The app's ready notice for a video, while this screen is open (the OS one is shown too). */
   let readyNotice = $state<{ text: string; url: string } | null>(null);
 
@@ -31,6 +32,7 @@
 
   /** P9; `quiet` keeps what is shown until it answers. */
   async function load(quiet = false) {
+    refreshPending = false;
     const mine = ++generation;
     if (!quiet) screen = 'loading';
     const r = await request('GET', '/browser');
@@ -61,6 +63,7 @@
     } else {
       addressError = r.body?.message ?? `주소를 열지 못했습니다 (${r.status}).`;
     }
+    if (refreshPending) await load(true);
   }
 
   function submit(e: SubmitEvent) {
@@ -87,7 +90,9 @@
       address = ''; addressError = ''; opening = false; owner = undefined; load();
     };
     window.addEventListener('vto-account-changed', accountChanged);
-    return () => { delete (window as any).vtoReady; window.removeEventListener('vto-account-changed', accountChanged); };
+    const changedLibrary = () => { if (opening) refreshPending = true; else load(true); };
+    window.addEventListener('vto-library-changed', changedLibrary);
+    return () => { delete (window as any).vtoReady; window.removeEventListener('vto-account-changed', accountChanged); window.removeEventListener('vto-library-changed', changedLibrary); };
   });
 </script>
 

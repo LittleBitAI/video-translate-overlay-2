@@ -71,23 +71,7 @@ pub(super) fn library_action_in(library: &crate::library_scope::Library<'_>, act
             let key = s("video_key");
             core.svc.browser.invalidate_video(key)?;
             let jobs = library.run(|store| Ok(store.video_jobs(key)?))?;
-            let cleanup = || -> Result<(), String> {
-                let audio = core.cfg.data_dir.join("audio");
-                // Only the job's generated files in audio/ belong to this video.
-                for entry in std::fs::read_dir(&audio).map_err(|e| e.to_string())? {
-                    let entry = entry.map_err(|e| e.to_string())?;
-                    let file = entry.file_name().to_string_lossy().into_owned();
-                    if jobs.iter().any(|(id, _)| file.starts_with(&format!("{id}."))) {
-                        match std::fs::remove_file(entry.path()) {
-                            Ok(()) => {}
-                            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-                            Err(e) => return Err(e.to_string()),
-                        }
-                    }
-                }
-                Ok(())
-            };
-            cleanup().map_err(|e| {
+            core.cleanup_video_files(&jobs, || library.run(|_| Ok(())).is_ok()).map_err(|e| {
                 log(format!("video cleanup: {e}"));
                 err(503, "cleanup_failed", "파일을 지우지 못했습니다. 자막은 숨겼습니다. 보관함에서 삭제를 다시 시도해 주세요.")
             })?;

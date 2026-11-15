@@ -72,8 +72,8 @@ not copy unfinished jobs, Gemini credentials or YouTube cookies. A job already
 started on this device continues in its original library after account changes.
 The selected device sign-in lasts at most thirty days; expiry stops transfers
 while preserving local account-library access. The development app now starts
-an automatic LAN controller. Native transfer and background acceptance, remote
-deletion cleanup and playback integration remain unfinished; see
+an automatic LAN controller with durable remote deletion cleanup. Native transfer
+and background acceptance and playback integration remain unfinished; see
 [implementation status](docs/design/local-network-sync.md).
 
 ## 처리 방식과 지원 범위
