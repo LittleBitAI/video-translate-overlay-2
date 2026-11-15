@@ -75,13 +75,26 @@ while preserving local account-library access. The development app now starts
 an automatic LAN controller with durable remote deletion cleanup and playback
 position synchronization. Opening a saved video may resume it once where the
 player permits seeking; user input takes priority over a delayed saved position.
-Native transfer and background acceptance remain unfinished; see
+One-account native transfer, playback, restart, deletion and Home-background
+checks passed on Windows and a physical Android phone. Screen-off and two-account
+acceptance remain unfinished; see
 [implementation status](docs/design/local-network-sync.md).
+
+Both devices need a build containing LAN synchronization. An older preview that
+supports only Google sign-in cannot connect. Keep the PC app running and use the
+same reachable local network; Ethernet on the PC and Wi-Fi on the phone can work
+together. Android keeps an ongoing connection notification while its native
+background service is active. Reopening catches up after interruption; a
+force-stopped app receives nothing until reopened. The original device library
+stays separate until its import is confirmed.
 
 If concurrent work leaves several completed subtitle versions, the library's
 saved-version selector retains each response. Select one and reopen the video
 to use its original cue times and recorded cost. Selecting a saved version
 does not transcribe or call Gemini; its selection also synchronizes.
+Selecting an older response does not reduce the recorded cost used by the
+existing retranslation limit. New usage is added to that retained baseline;
+the model, unit prices and per-hour limit are unchanged.
 
 ## 처리 방식과 지원 범위
 

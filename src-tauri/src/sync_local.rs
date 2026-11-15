@@ -171,6 +171,24 @@ pub(crate) fn delete_video(db: &Db, key: &str) -> Result<()> {
     Ok(())
 }
 
+pub(crate) fn retained_cost(db: &Db, key: &str) -> Result<f64> {
+    if !owned(db)? { return Ok(0.0); }
+    let prefix = format!("t/{key}/");
+    let mut after = prefix.clone();
+    let end = format!("{prefix}~");
+    let mut cost: f64 = 0.0;
+    // Read one bounded completed response at a time, including versions never projected here.
+    while let Some(row) = db.query_one("SELECT identity,body FROM sync_record WHERE identity>? AND identity<? ORDER BY identity LIMIT 1", p![&after,&end])? {
+        after = row[0].text();
+        let record = super::library::decode(&row[1].text())?;
+        match record.change {
+            Change::Translation { translation } if translation.video.key == key => cost = cost.max(translation.cost_krw),
+            _ => return Err("invalid retained translation".into()),
+        }
+    }
+    Ok(cost)
+}
+
 pub(crate) fn select_translation(db: &Db, key: &str, identity: &str) -> Result<()> {
     if !owned(db)? { return Err("saved version unavailable".into()); }
     if db.query_one("SELECT id FROM job WHERE video_key=? AND stage IN ('downloading','writing','translating')", p![key])?.is_some()

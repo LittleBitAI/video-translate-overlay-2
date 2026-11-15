@@ -151,5 +151,9 @@ cookies remain separate.
 Registration must be followed by implementation and actual Windows/Android
 acceptance with two Google accounts, including mismatched-account rejection,
 screen-off background delivery, both transfer directions, offline reopening,
-deletion after reconnection, account switching, and restart recovery. No such
-sync acceptance has run yet. The full task and repository gate remain required.
+deletion after reconnection, account switching, and restart recovery. The
+[native evidence](local-network-sync.md#native-one-account-flows-at-fc0d072)
+records one-account transfers, playback, deletion, Home delivery and restart
+recovery. Screen-off delivery, two-account isolation, exclusive Ethernet/Wi-Fi
+acceptance and the public OAuth configuration remain pending. The full task and
+repository gate remain required.

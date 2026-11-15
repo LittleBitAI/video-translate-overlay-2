@@ -191,6 +191,9 @@ fn playback_requests_are_account_scoped_durable_and_leave_completed_subtitles_un
     session.journal.write(Change::Translation { translation: alternate }, Deletions::new()).unwrap();
     let selection = json!({"action":{"action":"select_translation","video_key":key,"translation_id":original}});
     library_request(&core, Some(generation), "library_action", &selection).unwrap();
+    assert_eq!(store.retranslation_cost(&key).unwrap(), 18.5);
+    assert_eq!(library_request(&core, Some(generation), "create_job", &json!({"page_url":url,"retranslate":true})).unwrap_err().error, "cost_limit");
+    assert!(store.active_job().unwrap().is_none());
     let set = |position, duration| library_request(&core, Some(generation), "get_job", &json!({"page_url":url,"playback_action":"set","position_ms":position,"duration_ms":duration}));
     assert_eq!(set(12345, 60000).unwrap()["position_ms"], 12345);
     let through = session.journal.page(0).unwrap().through;

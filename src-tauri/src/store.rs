@@ -255,10 +255,11 @@ impl Store {
                     return Err("sync deletion confirmation required".into());
                 }
             }
+            let cost = self.retranslation_cost(&previous.video_key)?.max(previous.cost_krw);
             self.db.execute(
                 &format!("INSERT INTO job (id,video_key,stage,written_regions,translation_model,input_amount,output_amount,cost_krw,created_at,updated_at)
                     VALUES (?,?,'translating',?,?,?,?,?,{NOW},{NOW})"),
-                p![id, previous.video_key.as_str(), previous.written_regions, model, previous.input_amount, previous.output_amount, previous.cost_krw],
+                p![id, previous.video_key.as_str(), previous.written_regions, model, previous.input_amount, previous.output_amount, cost],
             )?;
             self.db.execute("INSERT INTO retranslation_cue (job_id, seq) SELECT ?, seq FROM cue WHERE video_key=?", p![id, previous.video_key.as_str()])?;
             crate::sync::local::capture_job(&self.db, id, &previous.video_key)?;
@@ -270,6 +271,11 @@ impl Store {
 
     pub fn job(&self, id: &str) -> R<Option<Job>> {
         Ok(self.db.query_one(&format!("SELECT {JOB_COLS} FROM job WHERE id=?"), p![id])?.map(|r| job(&r)))
+    }
+
+    pub(crate) fn retranslation_cost(&self, video_key: &str) -> R<f64> {
+        let spent = self.db.query_one("SELECT COALESCE(MAX(cost_krw),0) FROM job WHERE video_key=?", p![video_key])?.ok_or("missing cost summary")?[0].real();
+        Ok(spent.max(crate::sync::local::retained_cost(&self.db, video_key)?))
     }
 
     pub fn latest_job(&self, video_key: &str) -> R<Option<Job>> {
@@ -382,11 +388,17 @@ impl Store {
     }
 
     pub fn add_usage(&self, id: &str, input: i64, output: i64, cost_of: impl Fn(i64, i64) -> f64) -> R<Job> {
+        if input < 0 || output < 0 { return Err("invalid usage".into()); }
         let j = self.job(id)?.ok_or("job vanished")?;
-        let (i, o) = (j.input_amount + input, j.output_amount + output);
+        let i = j.input_amount.checked_add(input).ok_or("usage total overflow")?;
+        let o = j.output_amount.checked_add(output).ok_or("usage total overflow")?;
+        // Saved peers carry recorded cost without their original provider token counters.
+        let added = cost_of(input, output);
+        let cost = j.cost_krw + added;
+        if !added.is_finite() || added < 0.0 || !cost.is_finite() { return Err("invalid usage cost".into()); }
         self.db.execute(
             &format!("UPDATE job SET input_amount=?, output_amount=?, cost_krw=?, updated_at={NOW} WHERE id=?"),
-            p![i, o, cost_of(i, o), id],
+            p![i, o, cost, id],
         )?;
         self.job(id)?.ok_or_else(|| "job vanished".into())
     }

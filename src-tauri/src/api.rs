@@ -379,8 +379,9 @@ fn retranslate_job_in(library: &crate::library_scope::Library<'_>, page_url: &st
     }
     let (previous, video) = library.run(|store| {
         let ready = store.ready_job(&key)?.is_some();
-        let previous = store.latest_job(&key)?.filter(|_| ready)
+        let mut previous = store.latest_job(&key)?.filter(|_| ready)
             .ok_or_else(|| err(409, "not_ready", "완료된 자막만 다시 번역할 수 있습니다."))?;
+        previous.cost_krw = store.retranslation_cost(&key)?;
         let video = store.video(&key)?.ok_or_else(|| err(404, "no_video", "저장된 원문이 없습니다."))?;
         Ok((previous, video))
     })?;

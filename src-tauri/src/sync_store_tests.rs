@@ -405,6 +405,24 @@ fn concurrent_completed_versions_are_retained_and_fresh_restoration_waits_for_cl
             assert_eq!(listed.iter().filter(|v| v["selected"]==true).count(), 1);
         }
     }
+    let original = versions.iter().find(|r| matches!(&r.change, Change::Translation { translation } if translation.cost_krw==12.5)).unwrap();
+    first.library().unwrap().select_translation(&video_key(), &original.identity()).unwrap();
+    let fresh = Profile::new();
+    let third = fresh.journal();
+    send(&first, &third);
+    let fresh_store = third.library().unwrap();
+    let old_snapshot = fresh_store.ready_job(&video_key()).unwrap().unwrap();
+    assert_eq!(old_snapshot.cost_krw, 12.5);
+    assert_eq!(fresh_store.retranslation_cost(&video_key()).unwrap(), 18.5);
+    fresh_store.retranslate("budget-first", &old_snapshot, crate::gemini::MODEL).unwrap();
+    assert_eq!(fresh_store.job("budget-first").unwrap().unwrap().cost_krw, 18.5);
+    assert!(fresh_store.add_usage("budget-first", -1, 1, |_, _| 2.0).is_err());
+    assert!(fresh_store.add_usage("budget-first", 1, 1, |_, _| f64::NAN).is_err());
+    fresh_store.add_usage("budget-first", 1, 1, |_, _| 2.0).unwrap();
+    assert!(fresh_store.add_usage("budget-first", i64::MAX, 1, |_, _| 2.0).is_err());
+    fresh_store.fail("budget-first", "fixture_finished").unwrap();
+    fresh_store.retranslate("budget-next", &old_snapshot, crate::gemini::MODEL).unwrap();
+    assert_eq!(fresh_store.job("budget-next").unwrap().unwrap().cost_krw, 20.5);
     assert!(first.library().unwrap().select_translation(&video_key(), "t/not-owned").is_err());
     let selected = versions[0].identity();
     let store = first.library().unwrap();

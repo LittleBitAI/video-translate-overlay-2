@@ -10,8 +10,10 @@ sign-out stops its connections immediately; changing a Google password elsewhere
 does not immediately revoke this local credential. New or expired credentials
 require fresh Google verification. This policy needs no hosted service or paid
 call. It supersedes the temporary one-hour proof cutoff described in historical
-implementation notes below. Offline implementation checks pass; native acceptance
-of the thirty-day credential remains pending.
+implementation notes below. Both native apps restored this enrollment without
+interactive sign-in after process restart at `fc0d072`. Expired-proof reconnection
+and the fixed thirty-day expiry are covered offline; no thirty-day elapsed-time
+device run is claimed.
 
 The production goal remains automatic bidirectional synchronization of completed
 translations, library entries, playlists, and playback position between Windows
@@ -29,7 +31,8 @@ format. The native account manager opens it after verified sign-in. Production
 library projection and account selection are connected to the library APIs.
 Discovery and encrypted peer transfers are now connected to a native controller.
 Only native app setup starts it; development HTTP and contract hosts do not open
-the sync listener. Current native-device acceptance remains pending. No existing user library has
+the sync listener. One-account native flows passed at `fc0d072`; screen-off and
+two-account acceptance remain pending. No existing user library has
 been imported or changed.
 
 The settings screen now starts a separate native Google sign-in: Windows uses
@@ -207,6 +210,15 @@ or paid request is made. Selection refuses active/deleted videos and cannot
 address another account's record. Reopen the video to load the selected cues.
 Job reads use the selected completed response even when two ready-job timestamps
 tie; active or failed-job status keeps its existing meaning.
+
+Retranslation uses the highest recorded cumulative cost across the video's job
+history and retained completed responses, including versions never projected on
+this device. Selection cannot roll that baseline back. The store rechecks it in
+the job-creation transaction; later provider usage adds only the new call's cost
+to the retained amount. A remote saved response need not have its original token
+counters to preserve that amount. Reading versions remains bounded to one
+response at a time. The model, unit prices, exchange rate and duration-based
+limit are unchanged.
 
 The existing Store mutation paths append typed records inside their originating
 SQLite transactions when the database belongs to an account. Legacy stores do
@@ -768,7 +780,107 @@ with `VTO_CONTRACT_HOST` naming that binary: 5 library and 1 playback tests.
 No full gate, CI or final verification was dispatched.
 
 Private preflight receipts and the expired-state screenshot are retained under
-ignored `artifacts/native-sync-20261115/`. ADB currently reports no connected
-device, so this APK has not been installed or exercised for these flows.
-Two-account sign-in, actual LAN delivery in both directions, background latency,
-offline/restart/deletion recovery and public OAuth configuration remain pending.
+ignored `artifacts/native-sync-20261115/`. No phone was connected during that
+preflight. The subsequent installed-device observations below supersede that
+readiness-only status.
+
+## Native one-account flows at fc0d072
+
+Windows ran the executable above in an owned disposable application and WebView
+profile. Android ran the matching debug APK on a physical Samsung SM-G996N
+(Galaxy S21+, Android 15, API 35), installed over the older app without uninstalling.
+The original phone had three completed translations and no active jobs. Every
+original root-database table row and the sealed Gemini credential's hash remained
+unchanged after the update and scenarios. Its existing library was not imported
+into the Google account. This is not a Galaxy S21 Ultra or performance run.
+
+The phone initially ran `31ced1f`, which implemented identity setup but not native
+LAN synchronization. After installing `fc0d072` and renewing its Google sign-in
+to enroll a certificate-bound key, both actual native screens reported connected.
+Process restarts restored the thirty-day enrollment without interactive sign-in.
+No thirty-day elapsed-time device observation is claimed.
+
+Actual screen actions created two playlists and two untranslated links in both
+directions. Playlist delivery took 596 ms from Windows and 5,162 ms from Android;
+link delivery took 2,032 ms and 1,999 ms respectively. Local SQLite, local API
+responses and visible remote library rows agreed. No address or manual sync
+button was used. A concurrent Android rename and Windows reorder of the same
+playlist converged with both fields preserved.
+
+Two generated completed responses were inserted into the respective owned local
+journals, then projected and transferred by the native controller. This fixture
+insertion replaces transcription and translation, not the network or database
+projection. Both devices retained exact cue intervals `[[0,1000],[1000,3000]]`,
+original text, translated text, glossary and recorded costs of 12.5 and 18.5 KRW.
+An alternate completed response at 23.5 KRW remained available after selecting
+the original 12.5 KRW response through the phone's version controls. Both devices
+converged on that selection without changing its cues or recorded cost.
+
+A private fixture served a generated three-second black video. The Windows
+player saved 1,250 ms and the phone resumed there when opened. A subsequent phone
+seek to 2,000 ms reached Windows storage without moving its already-controlled
+player. Reopening the Windows player resumed at 2,000 ms. The remote Android
+page could not call settings, Google-account or library commands. No video
+detection or retranslation action was invoked, and no real model or Gemini
+translation request was needed. The owned fixture server was stopped afterward.
+
+With Android on Home and its synchronization foreground service active, a
+Windows playlist rename reached phone SQLite in 2,123 ms. The observer used a
+separate local debug SQLite helper instead of foreground WebView IPC. The phone
+was USB-charging. This measures Home delivery, not deep Doze or screen-off
+delivery. Screen-off acceptance remains pending.
+
+Windows deletion cancellation preserved the saved video. Confirmed deletion
+while Android was force-stopped removed that video's two playlist memberships,
+preserved the other translation and playlists, and refused a stale P6 request
+without fresh deletion confirmation. A queued rename and deletion survived a
+clean Windows shutdown and restart. Closing the owned native windows exited
+zero in 8,350 ms and left no old process listener. Reopening Android caught up
+with the queued changes and retained the unrelated response's cues and 18.5 KRW
+cost. No delivery to a force-stopped application is claimed. A later confirmed
+Android deletion reached Windows in 2,307 ms, removed both memberships and made
+subtitle reads return `410`, while retaining unrelated links and playlists.
+
+The PC's Ethernet address was `192.168.0.3` and the phone's Wi-Fi address was
+`192.168.0.2`. Connections to the actual app listener were observed between
+those addresses. USB tethering also supplied another reachable interface during
+these scenarios, so the receipts do not prove that every transfer used only
+Ethernet and Wi-Fi. Acceptance with tethering disabled, two real Google accounts,
+screen-off latency and the project's public OAuth configuration remain pending.
+
+Ignored receipts under `artifacts/native-sync-20261115/` include the library,
+completed-response, playback, version, Home, offline, restart and online-deletion
+flows, original-data retention checks and native screenshots. They identify
+`fc0d072`; later repairs must identify their own sources and builds. These are
+focused manual diagnostics, not registered collection receipts, a repository
+gate result or final verification.
+
+## Retained cost regression repair
+
+Reviewing version selection exposed two related cost regressions: selecting a
+cheaper older response could lower the retranslation baseline, and adding new
+usage to a synced response could erase its carried cost because original token
+counters are not transferred. The repair keeps the maximum known cumulative
+cost and adds each new call's existing unit-price calculation. It does not sum
+overlapping cumulative histories or change prices, models or the per-hour cap.
+
+The existing concurrent-version and account/playback regressions were extended
+to cover unprojected retained responses, selection of a cheaper version, API
+cost-limit refusal, retry from a stale snapshot, additive usage and invalid
+usage rejection. The first storage run failed because the carried baseline was
+lost during usage accounting; fixing that shared accounting path made all
+13 `sync::library::tests` cases pass. The focused `playback_requests` test passed.
+`cargo test -p video-translate-overlay --lib pipeline:: -- --nocapture` then
+passed all 13 cases in 177.35 seconds, including the deliberate HTTP 503 retry
+backoff. An earlier session's final output was unavailable after compaction;
+this rerun retained its complete local log instead of inferring a pass.
+
+After rebuilding `vto-contract-host`, `cargo test -p vto-contract-tests --test
+translation --test library --test playback -- --nocapture` with
+`VTO_CONTRACT_HOST` naming that binary passed 5 translation, 5 library and
+1 playback cases. These use stand-ins and made no paid translation request.
+The cleanup audit retained the extended storage/account regressions and the
+affected pipeline/contract checks; none covers a removed path or duplicates
+the retained-version admission boundary. No tests were removed. Native binaries
+from `fc0d072` predate this repair; their observations above remain identified
+by that source revision. The server-owned gate has not been run here.
