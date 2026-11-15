@@ -138,26 +138,49 @@ new public destinations or contact details.
 The owner subsequently reported that Google blocked production publishing
 until a valid app name, support email, homepage URL and privacy-policy URL are
 provided on Branding. Publishing approval has not bypassed this requirement.
-The source repository is public, but its GitHub metadata has no homepage and
-Pages is not enabled. Draft [homepage text](../branding/homepage.md) and
-[privacy-policy text](../branding/privacy-policy.md) are prepared for review;
-their contact and hosting placeholders must be resolved before publication.
-No public support address, hosting destination or domain purchase has been
-chosen. A static information website is not a synchronization backend.
+At that point the public source repository had no configured homepage or Pages
+site. The owner then approved free GitHub Pages and the Google account currently
+signed in to the Windows app as the public support email. That identity was
+read from the native app and checked against the original-account acceptance
+receipt before inserting the approved address into both pages.
+
+The approved [homepage source](../branding/index.html) and
+[privacy-policy source](../branding/privacy.html) replace the earlier drafts.
+Only those two HTML pages, their shared CSS and `.nojekyll` belong in the
+publishing tree. They contain no scripts, forms or library-upload functions.
+This is a static information website, not a synchronization backend. The
+approval permits these free public pages; it does not authorize a paid domain,
+another hosting service, a new application release or hosted synchronization.
+
+| Google Branding field | Approved value |
+| --- | --- |
+| App name | `Video Translate Overlay` |
+| User support email | The public address displayed on the homepage, selected from the project's permitted email list |
+| Application home page | `https://littlebitai.github.io/video-translate-overlay-2/` |
+| Privacy policy | `https://littlebitai.github.io/video-translate-overlay-2/privacy.html` |
+| Authorized domain | `littlebitai.github.io`, subject to Google's actual ownership verification |
+
+`node tests/branding.test.mjs` checks both pages at 384, 400 and 1280 CSS pixels,
+navigation in both directions, consistent support links, the approved type
+scale, 44 px navigation targets, absence of active collection surfaces and a
+private-file request returning 404. All six layouts passed without horizontal
+overflow. The website reuses the existing C1 palette instead of introducing a
+new color system. Unused whitespace remains empty. Private layout receipts and
+the approved contact capture stay under ignored `artifacts/branding/`.
 
 Google's [branding requirements](https://support.google.com/cloud/answer/15549049?hl=en)
 require a public homepage on an owned verified domain, a matching privacy-policy
 link on that same domain, and a monitored support address visible to users.
 GitHub Pages is [available for public repositories on GitHub Free](https://docs.github.com/en/pages/quickstart).
-It is a candidate static host, not an already authorized deployment or a claim
-that Google has verified its domain. An existing owner-controlled website can
-also serve the approved information pages. Google domain ownership verification
-and the actual resulting branding/publishing states must still be observed.
+Google domain ownership verification and the actual resulting
+branding/publishing states must still be observed. An accessible Pages URL is
+not evidence that Google has accepted or verified that domain.
 
 If Google requests a home page, privacy policy, domain ownership, or brand
 verification, prepare the exact text and destinations before publication.
 The owner supplies contact details and any required domain ownership. Do not
-invent those details, buy a domain, deploy hosting, or request broader scopes.
+invent those details, buy a domain, deploy hosting beyond the approved static
+Pages site, or request broader scopes.
 Google's [brand-verification guide](https://developers.google.com/identity/protocols/oauth2/production-readiness/brand-verification)
 describes the requirements and possible review delay. A submitted or pending
 review is not an accepted public configuration.

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta name="description" content="How Video Translate Overlay handles Google identity, local libraries, encrypted nearby-device transfers and translation data.">
+  <link rel="canonical" href="https://littlebitai.github.io/video-translate-overlay-2/privacy.html">
+  <link rel="stylesheet" href="./style.css">
+  <title>Privacy policy · Video Translate Overlay</title>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header>
+    <nav aria-label="Main navigation">
+      <a href="./">Home</a>
+      <a href="./privacy.html" aria-current="page">Privacy policy</a>
+      <a href="mailto:cjday999@gmail.com">Support</a>
+    </nav>
+  </header>
+  <main id="main">
+    <h1>Video Translate Overlay privacy policy</h1>
+    <p>Last updated: 2026-11-15.</p>
+    <p>This notice describes Video Translate Overlay on Windows and Android. Sections about Google app sign-in and local-network synchronization apply to builds containing those features. The approved 0.1.7 release does not contain them.</p>
+    <h2>Google account information</h2>
+    <p>When you choose Google app sign-in, Google supplies basic identity information: your verified email address, a stable account identifier, and a signed identity token. The app uses this information to display the selected account, separate its local library from other accounts, and verify device identity for nearby synchronization. It requests identity scopes only. It does not request Google Drive, Gmail or YouTube data through this app sign-in.</p>
+    <p>Google handles the sign-in screen. The app does not receive your Google password. Its native sign-in session and device private key are sealed with Windows user-scoped DPAPI or Android Keystore protection. Local device enrollment lasts at most thirty days, after which transfers require renewed sign-in. New sign-ins do not request or retain OAuth refresh tokens.</p>
+    <p>During encrypted device authentication, the app can exchange a Google-signed identity proof bound to its device certificate. Matching verified account identities are required before library transfer. Anonymous discovery messages do not contain your account identifier, email address or credentials. The publisher does not operate a server that collects your sign-in tokens or stores your synchronized library.</p>
+    <p>The app does not sell Google sign-in information, use it for advertising, or send it to speech-recognition or translation models. Google processes sign-in requests under its own <a href="https://policies.google.com/privacy">Privacy Policy</a>.</p>
+    <h2>Local library and device transfers</h2>
+    <p>The app stores video titles and source URLs, transcripts, translated timed cues, glossaries, recorded translation costs, playlists and playback positions in local SQLite files. Those library files are separate from the operating system's protection of credentials; this notice does not claim that the SQLite files themselves are encrypted.</p>
+    <p>When both devices use the same Google app account on a reachable local network, completed library records synchronize through authenticated encrypted connections. Copies remain on the receiving device for later use. Original media playback still depends on its source and network access. No hosted library database, Google Drive storage or cloud relay is used for this feature.</p>
+    <p>Synchronization excludes unfinished jobs, original video and audio files, speech models, Gemini API keys, Google OAuth refresh/access tokens, and YouTube browser cookies. Existing unowned device-library data is copied to an account only after an explicit import confirmation. Account switching selects a different local account library and stops the old account's transfers.</p>
+    <h2>Transcription, translation and other network requests</h2>
+    <p>Speech recognition runs on the device. When you explicitly request translation, the app sends transcript text, translation context and glossary content to Google's Gemini API using your own API key. Google processes those requests under the terms and data practices applicable to your Gemini account. Signing in to the app or opening a saved translation does not itself request a new transcription or Gemini translation.</p>
+    <p>Gemini API keys use Windows Credential Manager or Android Keystore-backed storage. They are not part of the synchronized library. YouTube sign-in uses the app browser's separate session, whose cookies stay in its local WebView profile. The app also connects to media sources, speech-model download sources and the approved GitHub Releases channel when those features are used. Those services receive the network requests needed for the selected operation.</p>
+    <h2>Retention and your controls</h2>
+    <p>Signing out stops that app's account transfers and removes its saved sign-in credential. Previously synchronized library copies remain local to their accounts. Signing out does not erase other devices. Changes to your Google account or permissions elsewhere do not immediately invalidate the app's existing thirty-day local device enrollment; sign out in the app on the relevant devices to stop their transfers.</p>
+    <p>Confirmed video deletion removes the video's stored transcript, subtitle responses, glossary, job history, managed per-video files and playlist memberships. Connected devices apply the deletion; disconnected devices apply it after reconnecting. Durable deletion markers and synchronization receipts remain to prevent stale copies from resurrecting deleted records. File-cleanup failures remain visible for retry. Deleting a playlist or removing one entry keeps the underlying translation.</p>
+    <p>Deleting a Gemini key or signing out of YouTube uses separate settings controls. Removing local application data removes that device's copy; it does not constitute a deletion request to other disconnected devices. Windows uninstallation may retain local application data. There is no publisher cloud account database requiring a separate remote-erasure request.</p>
+    <h2>Website visits and support</h2>
+    <p>These public information pages are hosted on GitHub Pages. GitHub logs and stores visitors' IP addresses for security purposes, even when visitors are not signed in. See the <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub Privacy Statement</a>. These pages contain no sign-in form, analytics script or library-upload function.</p>
+    <p>If you contact support, the publisher receives the address and information you choose to send. Do not send passwords, API keys, sign-in tokens or browser cookies in support requests or public issue reports.</p>
+    <p>Support and privacy questions: <a href="mailto:cjday999@gmail.com">cjday999@gmail.com</a>.</p>
+  </main>
+  <footer><p><a href="./">Application homepage</a></p></footer>
+</body>
+</html>

@@ -55,3 +55,9 @@ controls. Show the verified email, progress, cancellation and recovery inline;
 confirm sign-out and preserve existing saved data. A signed-in identity alone
 must not appear as an established sync connection. Account responses must match
 the captured account generation as well as the screen generation.
+
+Public app-information pages have two reading tasks: understand the app and
+Google identity use on the homepage, and read the complete data practices on
+the privacy page. They reuse C1 and the 14/16/20/28 px type scale. A 70ch reading
+column, wrapping navigation, 44 px navigation targets and normal document flow
+serve both phone and desktop. They have no forms, scripts or account dashboard.
