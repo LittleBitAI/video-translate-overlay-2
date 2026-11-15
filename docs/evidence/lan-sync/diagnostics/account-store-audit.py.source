@@ -1,0 +1,35 @@
+import json
+import re
+import sqlite3
+import subprocess
+from pathlib import Path
+
+folder=Path(__file__).resolve().parent
+baseline=json.loads((folder/'account-session-baseline.json').read_text(encoding='utf-8'))
+marker=json.loads((folder/'account-mismatch.json').read_text(encoding='utf-8'))
+root=folder.parent.parent/'artifacts/google-auth-native-20261115a/data/sync'
+scopes={p.name for p in root.iterdir() if re.fullmatch(r'[0-9a-f]{64}',p.name)}
+assert len(scopes)==2 and baseline['scope'] in scopes
+adb='<USER_HOME>/AppData/Local/Temp/vto-android/sdk/platform-tools/adb.exe'
+def run(*args,data=None):
+    r=subprocess.run([adb,'-s','<APPROVED_DEVICE>',*args],input=data,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=15)
+    assert r.returncode==0,'Native private-store observation failed'
+    return r.stdout.decode()
+phone_paths=run('exec-out','run-as','dev.vto.overlay','find','sync','-maxdepth','2','-name','sync.sqlite3').splitlines()
+assert set(phone_paths)=={f'sync/{scope}/sync.sqlite3' for scope in scopes}
+def lit(s):return "'"+s.replace("'","''")+"'"
+for scope in scopes:
+    if scope==baseline['scope']:
+        sql=f"SELECT (SELECT COUNT(*) FROM video)=2 AND (SELECT COUNT(*) FROM playlist)=2 AND EXISTS(SELECT 1 FROM playlist WHERE id={lit(marker['account_one_queued_playlist'])} AND name={lit(marker['account_one_queued_name'])}) AND NOT EXISTS(SELECT 1 FROM playlist WHERE id={lit(marker['account_two_marker'])});"
+    else:
+        sql=f"SELECT (SELECT COUNT(*) FROM video)=0 AND (SELECT COUNT(*) FROM playlist)=1 AND EXISTS(SELECT 1 FROM playlist WHERE id={lit(marker['account_two_marker'])} AND name='LAN second account Windows 20261115');"
+    db=sqlite3.connect((root/scope/'sync.sqlite3').as_uri()+'?mode=ro',uri=True)
+    assert db.execute(sql).fetchone()==(1,),'Windows account data was lost or mixed'
+    db.close()
+    rows=run('shell','-T','run-as','dev.vto.overlay','files/vto-sync-fixture',f'sync/{scope}/sync.sqlite3',data=sql.encode()).splitlines()
+    assert rows==['1','fixture transaction complete'],'Android account data was lost or mixed'
+receipt={'head':baseline['head'],'both_devices_have_two_distinct_account_stores':True,
+         'original_account_queued_change_preserved':True,'second_account_marker_preserved_after_switching_away':True,
+         'no_cross_account_rows':True}
+(folder/'account-store-audit.json').write_text(json.dumps(receipt,indent=2)+'\n',encoding='utf-8')
+print(json.dumps(receipt))

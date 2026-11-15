@@ -3,6 +3,7 @@
   import { onDestroy, onMount } from 'svelte';
   import { inApp, request } from './api';
   import Link from './Link.svelte';
+  import GoogleAccount from './GoogleAccount.svelte';
 
   type Settings = { key_set: boolean; key_masked: string | null; translation_model: string };
 
@@ -125,6 +126,7 @@
 </header>
 
 <main class="mx-auto flex max-w-2xl flex-col gap-4 p-2 sm:p-4">
+  <GoogleAccount />
   <section class={card}>
     <h2 class="text-lg font-semibold">앱 업데이트</h2>
     <p class="mt-1 text-sm text-ink/70">승인된 새 버전과 추가 기능을 확인합니다. 닫은 버전도 다시 볼 수 있습니다.</p>

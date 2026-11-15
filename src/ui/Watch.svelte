@@ -15,6 +15,8 @@
   let opening = $state(false);
   let addressError = $state('');
   let generation = 0;
+  let owner: number | undefined;
+  let refreshPending = false;
   /** The app's ready notice for a video, while this screen is open (the OS one is shown too). */
   let readyNotice = $state<{ text: string; url: string } | null>(null);
 
@@ -30,6 +32,7 @@
 
   /** P9; `quiet` keeps what is shown until it answers. */
   async function load(quiet = false) {
+    refreshPending = false;
     const mine = ++generation;
     if (!quiet) screen = 'loading';
     const r = await request('GET', '/browser');
@@ -39,6 +42,7 @@
       return;
     }
     opened = r.body.url ?? null;
+    owner = r.body.account_generation;
     openedJob = r.body.job ?? null;
     if (opened && !address) address = gateNext ?? opened;
     screen = 'ready';
@@ -59,6 +63,7 @@
     } else {
       addressError = r.body?.message ?? `주소를 열지 못했습니다 (${r.status}).`;
     }
+    if (refreshPending) await load(true);
   }
 
   function submit(e: SubmitEvent) {
@@ -76,9 +81,18 @@
   onMount(() => {
     document.title = '영상 번역 오버레이';
     // The app calls this when a job's subtitles are ready.
-    (window as any).vtoReady = (n: { text: string; url: string }) => (readyNotice = n);
+    (window as any).vtoReady = (n: { text: string; url: string; account_generation?: number }) => {
+      if (n.account_generation === owner) readyNotice = n;
+    };
     load();
-    return () => delete (window as any).vtoReady;
+    const accountChanged = () => {
+      generation++; opened = null; openedJob = undefined; readyNotice = null;
+      address = ''; addressError = ''; opening = false; owner = undefined; load();
+    };
+    window.addEventListener('vto-account-changed', accountChanged);
+    const changedLibrary = () => { if (opening) refreshPending = true; else load(true); };
+    window.addEventListener('vto-library-changed', changedLibrary);
+    return () => { delete (window as any).vtoReady; window.removeEventListener('vto-account-changed', accountChanged); window.removeEventListener('vto-library-changed', changedLibrary); };
   });
 </script>
 

@@ -4,6 +4,10 @@
   "local": true,
   "windows": ["main"],
   "permissions": [
+    "allow-open-privacy-policy",
+    "allow-get-google-account",
+    "allow-google-sign-in",
+    "allow-google-sign-out",
     "allow-check-updates",
     "allow-dismiss-update",
     "allow-open-update",

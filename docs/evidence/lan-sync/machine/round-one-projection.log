@@ -1,0 +1,15 @@
+running 13 tests
+test sync::library::tests::failed_projection_rolls_back_received_records_and_cursor_together ... ok
+test sync::library::tests::concurrent_order_ties_have_the_same_visible_order_on_both_replicas ... ok
+test sync::library::tests::active_jobs_defer_projection_and_confirmed_deletion_stays_hidden_until_cleanup ... ok
+test sync::library::tests::invalid_legacy_completion_rolls_back_the_copy_and_active_jobs_stay_local ... ok
+test sync::library::tests::job_completion_cannot_adopt_a_deletion_received_after_the_job_started ... ok
+test sync::library::tests::legacy_import_is_a_copy_is_idempotent_and_cannot_assign_another_accounts_store ... ok
+test sync::library::tests::native_completion_and_its_journal_commit_atomically_and_do_not_replace_the_local_job ... ok
+test sync::library::tests::concurrent_completed_versions_are_retained_and_fresh_restoration_waits_for_cleanup ... ok
+test sync::library::tests::ordinary_library_mutations_publish_and_incoming_projection_does_not_echo ... ok
+test sync::library::tests::queued_remote_deletion_invalidates_earlier_consent_before_projection ... ok
+test sync::library::tests::deletion_and_a_fresh_link_or_translation_in_one_page_cannot_bypass_cleanup ... ok
+test sync::library::tests::received_ready_library_is_usable_without_processing_and_survives_restart ... ok
+test sync::library::tests::partial_dependencies_survive_restart_and_blocked_rows_do_not_starve_later_work ... ok
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 196 filtered out; finished in 12.98s

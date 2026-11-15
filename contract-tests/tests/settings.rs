@@ -70,6 +70,15 @@ fn test_site_page_cannot_call_key_commands() {
     assert!(del.status >= 400, "the site page deleted the key: {del:?}");
     let get = app.call(PAGE, "GET", "/settings", json!(null));
     assert!(get.status >= 400, "the site page read the settings: {get:?}");
+    for (method, path, body) in [
+        ("GET", "/account", json!(null)),
+        ("POST", "/account/sign-in", json!({"generation":0})),
+        ("POST", "/account/sign-out", json!({"generation":0})),
+        ("POST", "/privacy/open", json!({"url":"https://untrusted.example.org/"})),
+    ] {
+        let result = app.call(PAGE, method, path, body);
+        assert!(result.status >= 400, "the site page reached Google account controls: {result:?}");
+    }
 
     let s = app.settings();
     assert_eq!(s.body["key_set"], true, "{s:?}");

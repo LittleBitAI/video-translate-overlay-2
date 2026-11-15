@@ -1,0 +1,25 @@
+{
+  "head": "5f899a2c72080208f84db666d83e119aa4fcd788",
+  "device": "windows",
+  "state": "signed_in",
+  "observations": [
+    {
+      "state": "signed_in",
+      "generation": 3,
+      "connection": "connected"
+    },
+    {
+      "state": "signing_in",
+      "generation": 5,
+      "connection": "signed_out"
+    },
+    {
+      "state": "signed_in",
+      "generation": 5,
+      "connection": "listening"
+    }
+  ],
+  "original_account": true,
+  "original_library_retained": true,
+  "second_account_rows_absent": true
+}

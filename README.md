@@ -59,9 +59,48 @@ subtitles are hidden and `삭제 다시 시도` lets you finish cleanup. Transla
 deleted video later requires a new confirmation and may incur API costs.
 
 The library and playlists use the existing local SQLite database on Android and
-Windows. They persist after restart and remain separate on each device. There
-are no accounts, cloud sync, automatic next-video playback, or original-video
-offline copies.
+Windows. They persist after restart. The published 0.1.7 release keeps separate
+device libraries. There is no cloud sync, automatic next-video playback, or
+original-video offline copy.
+
+The development branch adds a separate Google app account under Settings.
+Signing in selects that account's local library; signing out returns to the
+original device library. `기존 보관함 가져오기` offers a confirmed copy of the
+original completed translations, links and playlists into the displayed Google
+account. The original data, cue times and recorded costs remain intact. It does
+not copy unfinished jobs, Gemini credentials or YouTube cookies. A job already
+started on this device continues in its original library after account changes.
+The selected device sign-in lasts at most thirty days; expiry stops transfers
+while preserving local account-library access. The development app now starts
+an automatic LAN controller with durable remote deletion cleanup and playback
+position synchronization. Opening a saved video may resume it once where the
+player permits seeking; user input takes priority over a delayed saved position.
+Native transfer, playback, restart, deletion, Home and screen-off delivery, and
+two-account isolation checks passed on Windows and a physical Android phone.
+The owner confirmed Google's public production configuration after completing
+the approved branding fields. The server-owned gate remains pending; see
+[implementation status](docs/design/local-network-sync.md).
+
+The [app homepage](https://littlebitai.github.io/video-translate-overlay-2/) and
+[privacy policy](https://littlebitai.github.io/video-translate-overlay-2/privacy.html)
+describe Google identity and local-network data handling. The development
+settings screen also opens the policy independently of Google sign-in.
+
+Both devices need a build containing LAN synchronization. An older preview that
+supports only Google sign-in cannot connect. Keep the PC app running and use the
+same reachable local network; Ethernet on the PC and Wi-Fi on the phone can work
+together. Android keeps an ongoing connection notification while its native
+background service is active. Reopening catches up after interruption; a
+force-stopped app receives nothing until reopened. The original device library
+stays separate until its import is confirmed.
+
+If concurrent work leaves several completed subtitle versions, the library's
+saved-version selector retains each response. Select one and reopen the video
+to use its original cue times and recorded cost. Selecting a saved version
+does not transcribe or call Gemini; its selection also synchronizes.
+Selecting an older response does not reduce the recorded cost used by the
+existing retranslation limit. New usage is added to that retained baseline;
+the model, unit prices and per-hour limit are unchanged.
 
 ## 처리 방식과 지원 범위
 
@@ -134,6 +173,12 @@ npm ci --prefer-offline --no-audit --no-fund
 ```
 
 ### Windows 데스크톱 앱
+
+The publisher's Windows app build needs the existing Desktop OAuth credential
+JSON at `artifacts/google-oauth/desktop-client.json`, or its local path in
+`VTO_GOOGLE_DESKTOP_CLIENT_JSON`. Follow the [Google registration guide](docs/design/google-auth-setup.md).
+Installed-app users sign in directly; they do not supply credentials or client
+IDs. Android builds do not need the Desktop credential file.
 
 PowerShell에서 `LIBCLANG_PATH`를 `libclang.dll`이 있는 폴더로 지정한 뒤 실행합니다.
 

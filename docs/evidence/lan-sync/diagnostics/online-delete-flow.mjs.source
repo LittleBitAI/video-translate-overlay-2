@@ -1,0 +1,53 @@
+import {chromium} from 'playwright';
+import {readFile,writeFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const fixture=JSON.parse(await readFile(new URL('./expected-android.json',import.meta.url)));
+const browsers=[];
+async function wait(read,predicate){const end=Date.now()+20000;do{const value=await read();if(predicate(value))return value;await new Promise(r=>setTimeout(r,200));}while(Date.now()<end);throw new Error('Native online mutation did not converge');}
+try{
+  const devices=[];
+  for(const [name,port] of [['windows',9226],['android',9227]]){
+    const b=await chromium.connectOverCDP(`http://127.0.0.1:${port}`);browsers.push(b);
+    const p=b.contexts().flatMap(c=>c.pages()).find(p=>p.url().startsWith('http://tauri.localhost'));assert(p);
+    const account=await p.evaluate(()=>window.__TAURI_INTERNALS__.invoke('get_google_account'));assert.equal(account.state,'signed_in');
+    const owner=account.generation;
+    const read=()=>p.evaluate(g=>window.__TAURI_INTERNALS__.invoke('get_library',{account_generation:g}),owner);
+    if(!(await p.getByRole('heading',{name:'보관함',exact:true}).count()))await p.getByRole('link',{name:'보관함',exact:true}).click();
+    devices.push({name,p,owner,read});
+  }
+  const [pc,phone]=devices;
+  const lists=(await phone.read()).playlists;
+  for(const list of lists){
+    const current=(await phone.read()).playlists.find(p=>p.id===list.id);
+    if(current.entries.includes(fixture.video.key))continue;
+    await phone.p.getByRole('button',{name:`${current.name} (${current.entries.length})`,exact:true}).click();
+    await phone.p.getByRole('combobox',{name:'저장된 영상',exact:true}).selectOption(fixture.video.key);
+    await phone.p.getByRole('button',{name:'저장 영상 추가',exact:true}).click();
+    await wait(phone.read,d=>d.playlists.find(p=>p.id===list.id).entries.includes(fixture.video.key));
+  }
+  await wait(pc.read,d=>d.playlists.every(p=>p.entries.includes(fixture.video.key)));
+  const androidList=(await phone.read()).playlists.find(p=>p.name==='LAN check android 20261115');assert(androidList);
+  await phone.p.getByRole('button',{name:`${androidList.name} (2)`,exact:true}).click();
+  const renamed='LAN concurrent Android 20261115';
+  await phone.p.getByLabel('재생목록 이름',{exact:true}).fill(renamed);
+  await Promise.all([
+    phone.p.getByRole('button',{name:'이름 바꾸기',exact:true}).click(),
+    pc.p.getByRole('button',{name:`${androidList.name} 재생목록 위로`,exact:true}).click(),
+  ]);
+  for(const device of devices)await wait(device.read,d=>d.playlists[0].id===androidList.id&&d.playlists[0].name===renamed);
+  await phone.p.getByRole('button',{name:'전체 영상',exact:true}).click();
+  const row=phone.p.locator(`li[data-video-key="${fixture.video.key}"]`);
+  await row.getByRole('button',{name:'영상 삭제',exact:true}).click();
+  const start=Date.now();
+  await phone.p.getByRole('alertdialog').getByRole('button',{name:'영구 삭제 확인',exact:true}).click();
+  const remote=await wait(pc.read,d=>!d.videos.some(v=>v.video_key===fixture.video.key));
+  const latency=Date.now()-start;
+  assert.equal(remote.playlists.length,2);assert(remote.playlists.every(p=>!p.entries.includes(fixture.video.key)));
+  assert(remote.videos.every(v=>v.saved===false&&v.active===false));
+  const refused=await pc.p.evaluate(async({generation,key})=>{
+    try{await window.__TAURI_INTERNALS__.invoke('get_subtitles',{video_key:key,account_generation:generation});return false;}
+    catch(e){return e.status===410&&e.error==='video_deleted';}
+  },{generation:pc.owner,key:fixture.video.key});assert(refused);
+  const receipt={head:'fc0d072f78248e120db7a7582852add873814cec',concurrent_name_and_order_preserved:true,phone_confirmed_delete_reached_windows:true,delete_delivery_ms:latency,deleted_from_two_playlists:true,playlists_and_unrelated_links_preserved:true,deleted_subtitle_reads_refused:true};
+  await writeFile(new URL('./online-delete-flow.json',import.meta.url),JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));
+}finally{for(const b of browsers)await b.close();}

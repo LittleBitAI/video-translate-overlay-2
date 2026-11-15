@@ -1,0 +1,36 @@
+import {chromium} from 'playwright';
+import {readFile,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import assert from 'node:assert/strict';
+const baseline=JSON.parse(await readFile(new URL('./account-session-baseline.json',import.meta.url)));
+const mismatch=JSON.parse(await readFile(new URL('./account-mismatch.json',import.meta.url)));
+const digest=email=>createHash('sha256').update(baseline.salt+'\0'+email).digest('hex');
+const browsers=[],observed=[];
+try{
+  for(const [device,port] of [['windows',9226],['android',9227]]){
+    const b=await chromium.connectOverCDP(`http://127.0.0.1:${port}`);browsers.push(b);
+    const p=b.contexts().flatMap(c=>c.pages()).find(p=>p.url().startsWith('http://tauri.localhost'));assert(p);
+    let account,library;const deadline=Date.now()+25000;
+    do{
+      ({account,library}=await p.evaluate(async()=>{
+        const account=await window.__TAURI_INTERNALS__.invoke('get_google_account');
+        return {account,library:await window.__TAURI_INTERNALS__.invoke('get_library',{account_generation:account.generation})};
+      }));
+      if(account.connection?.state==='connected'&&library.playlists.find(p=>p.id===mismatch.account_one_queued_playlist)?.name===mismatch.account_one_queued_name)break;
+      await p.waitForTimeout(250);
+    }while(Date.now()<deadline);
+    assert.equal(account.state,'signed_in');assert.equal(digest(account.email),baseline.account1_digest);
+    assert.equal(account.connection.state,'connected');assert.equal(library.videos.length,2);assert.equal(library.playlists.length,2);
+    assert.equal(library.playlists.find(p=>p.id===mismatch.account_one_queued_playlist)?.name,mismatch.account_one_queued_name);
+    assert(!library.playlists.some(p=>p.id===mismatch.account_two_marker));
+    assert.deepEqual(library.videos.map(v=>v.video_key).sort(),baseline.videos.map(v=>v.video_key).sort());
+    const refused=await p.evaluate(async generation=>{
+      try{await window.__TAURI_INTERNALS__.invoke('get_library',{account_generation:generation-2});return false;}
+      catch(e){return e.status===409&&e.error==='account_changed';}
+    },account.generation);assert(refused);
+    observed.push({device,generation:account.generation,connected:true,original_account_restored:true,
+      queued_original_account_change_received:true,second_account_rows_absent:true,retired_second_account_reads_refused:true});
+  }
+  const receipt={head:baseline.head,devices:observed};
+  await writeFile(new URL('./account-restored-flow.json',import.meta.url),JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));
+}finally{for(const b of browsers)await b.close();}

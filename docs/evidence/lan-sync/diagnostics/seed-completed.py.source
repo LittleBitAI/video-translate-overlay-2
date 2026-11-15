@@ -1,0 +1,84 @@
+import hashlib
+import json
+import re
+import sqlite3
+import subprocess
+import sys
+from pathlib import Path
+
+folder=Path(__file__).parent
+root=folder.parents[1]
+device=sys.argv[1]
+assert device in ("windows","android")
+alternate=len(sys.argv)>2 and sys.argv[2]=="alternate-windows"
+assert len(sys.argv)==2 or (len(sys.argv)==3 and alternate and device=="android")
+adb="<USER_HOME>/AppData/Local/Temp/vto-android/sdk/platform-tools/adb.exe"
+
+def phone(*args, data=None):
+    result=subprocess.run([adb,"-s","<APPROVED_DEVICE>",*args],input=data,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=15)
+    return result.stdout
+
+def android_sql(path, sql):
+    data=phone("shell","-T","run-as","dev.vto.overlay","files/vto-sync-fixture",path,data=sql.encode())
+    lines=data.decode().splitlines()
+    assert lines and lines[-1]=="fixture transaction complete", "Native fixture transaction failed"
+    return lines[:-1]
+
+def canonical(value):
+    return json.dumps(value,ensure_ascii=False,separators=(",",":"))
+
+def digest(value):
+    return hashlib.sha256(value.encode()).hexdigest()
+
+def literal(value):
+    return "'"+value.replace("'","''")+"'"
+
+video_device="windows" if alternate else device
+page=f"http://192.168.0.3:8139/native-sync/{video_device}"
+key=digest(page)
+translation={"video":{"key":key,"page_url":page,"title":f"LAN saved {video_device}"},"duration_ms":3000,
+             "source_language":"en","terms":[{"source":"attention","target":"어텐션"}],
+             "model":"gemini-3.1-flash-lite","cost_krw":12.5 if device=="windows" else 18.5,
+             "cues":[{"start_ms":0,"end_ms":1000,"source_text":f"{device} original first","text_ko":f"{device} 저장 자막 첫 구간"},
+                     {"start_ms":1000,"end_ms":3000,"source_text":f"{device} original second","text_ko":f"{device} 저장 자막 둘째 구간"}]}
+if alternate:
+    translation["cost_krw"]=23.5
+    for cue in translation["cues"]: cue["text_ko"]="별도로 보존한 대체 저장본"
+identity=f"t/{key}/{digest(canonical(translation))}"
+if device=="windows":
+    paths=list((root/"artifacts/google-auth-native-20261115a/data/sync").glob("*/sync.sqlite3"))
+    assert len(paths)==1, "Select the current isolated account explicitly before seeding"
+    db=sqlite3.connect(paths[0],timeout=5)
+    db.execute("BEGIN IMMEDIATE")
+    replica,clock,sequence=db.execute("SELECT replica,clock,sequence FROM sync_meta WHERE id=1").fetchone()
+else:
+    paths=phone("exec-out","run-as","dev.vto.overlay","find","sync","-maxdepth","2","-name","sync.sqlite3").decode().splitlines()
+    assert len(paths)==1 and re.fullmatch(r"sync/[0-9a-f]{64}/sync.sqlite3",paths[0]), "Select the current phone account explicitly before seeding"
+    meta=android_sql(paths[0],"SELECT replica,clock,sequence FROM sync_meta WHERE id=1;")
+    assert len(meta)==1
+    replica,clock,sequence=meta[0].split("\t")
+    clock,sequence=int(clock),int(sequence)
+assert re.fullmatch(r"[0-9a-f]{32}",replica)
+record={"stamp":{"clock":clock+1,"replica":replica},"seen_deletions":{},"change":{"kind":"translation","translation":translation}}
+body=canonical(record)
+sql=f"""
+CREATE TEMP TABLE fixture_assert(value INTEGER NOT NULL CHECK(value=1));
+INSERT INTO fixture_assert VALUES(COALESCE((SELECT clock={clock} AND sequence={sequence} AND replica={literal(replica)} FROM sync_meta WHERE id=1),0));
+INSERT INTO fixture_assert VALUES(NOT EXISTS(SELECT 1 FROM sync_record WHERE identity={literal(identity)}));
+INSERT INTO fixture_assert VALUES(NOT EXISTS(SELECT 1 FROM deleted_video WHERE video_key={literal(key)}));
+INSERT INTO fixture_assert VALUES(NOT EXISTS(SELECT 1 FROM sync_record WHERE video_key={literal(key)} AND identity LIKE 'd/%'));
+INSERT INTO fixture_assert VALUES(NOT EXISTS(SELECT 1 FROM job WHERE stage IN ('downloading','writing','translating')));
+INSERT INTO sync_seen VALUES({literal(replica)},{clock+1},{literal(digest(body))});
+INSERT INTO sync_record VALUES({literal(identity)},{literal(key)},NULL,{clock+1},{literal(replica)},{sequence+1},{literal(body)});
+UPDATE sync_meta SET clock={clock+1},sequence={sequence+1} WHERE id=1;
+INSERT OR IGNORE INTO sync_dirty VALUES('video',{literal(key)});
+"""
+if device=="windows":
+    # Executes each statement inside the already-owned write transaction.
+    for statement in sql.split(";"):
+        if statement.strip(): db.execute(statement)
+    db.commit();db.close()
+else:
+    android_sql(paths[0],"BEGIN IMMEDIATE;"+sql+"COMMIT;")
+(folder/f"expected-{'alternate-windows' if alternate else device}.json").write_text(json.dumps(translation,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+print(json.dumps({"device":device,"fixture_key":key,"completed_fixture_seeded":True,"processing_job_created":False}))

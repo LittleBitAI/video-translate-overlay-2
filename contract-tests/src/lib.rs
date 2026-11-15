@@ -858,7 +858,7 @@ impl App {
         let mut seen = Vec::new();
         loop {
             let r = self.job(page_url);
-            assert_eq!(r.status, 200, "GET /jobs while polling: {r:?}");
+            assert_eq!(r.status, 200, "GET /jobs while polling in {:?}: {r:?}\n{}", self.data_dir(), String::from_utf8_lossy(&self.logs()));
             let finished = done(&r.body);
             seen.push(r.body);
             if finished {

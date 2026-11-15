@@ -29,7 +29,13 @@ class MainActivity : TauriActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        SyncService.foreground(this, true)
+    }
+
     override fun onPause() {
+        SyncService.foreground(this, false)
         CookieManager.getInstance().flush()
         super.onPause()
     }

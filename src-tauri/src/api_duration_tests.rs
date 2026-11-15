@@ -42,7 +42,7 @@ impl AudioExtractor for Fake {
 }
 
 /// Serves a one-second silent WAV on every request.
-pub(super) fn serve_wav() -> String {
+pub(crate) fn serve_wav() -> String {
     let mut wav = b"RIFF\x00\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00\x80\x3e\x00\x00\x00\x7d\x00\x00\x02\x00\x10\x00data".to_vec();
     wav.extend_from_slice(&32_000u32.to_le_bytes());
     wav.resize(wav.len() + 32_000, 0);
@@ -122,6 +122,8 @@ fn resumed_youtube_source_refreshes_unavailable_hints_but_preserves_refusals() {
         }
         let calls = Arc::new(AtomicUsize::new(0));
         let core = Core {
+            sync: Default::default(),
+            account: crate::account::Manager::new(dir.clone()),
             updates: Default::default(),
             cfg: Config { data_dir: dir, gemini_base_url: String::new(), allow_loopback_media: true },
             store: crate::store::Store::open(&path).unwrap(),

@@ -39,6 +39,7 @@ app = ["whisper", "dep:tauri-build", "dep:tauri-plugin-notification", "dep:tauri
 whisper = ["dep:whisper-rs"]
 
 [build-dependencies]
+serde_json = "1"
 # Keep Android preparation from rewriting the reviewed manifest.
 tauri-build = { version = "2", optional = true, features = [] }
 
@@ -47,15 +48,27 @@ tauri-build = { version = "2", optional = true, features = [] }
 # the app build its capability authority from capabilities/*.json at start-up.
 tauri = { version = "2", default-features = false, features = ["wry", "test", "dynamic-acl"] }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = { version = "1", features = ["float_roundtrip"] }
 url = "2"
 sha2 = "0.10"
 getrandom = "0.3"
+# OIDC signature, issuer, audience, expiry and nonce verification; HTTP uses the existing client.
+openidconnect = { version = "4.0.1", default-features = false }
 # whisper.cpp, built from source for the target (CPU; Android through the NDK's CMake).
 whisper-rs = { version = "0.16", optional = true }
 tauri-plugin-notification = { version = "2", optional = true }
 # TLS where WinHTTP is not there (Android): ring and Mozilla's roots, no C toolchain beyond the NDK's.
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+# Native per-login device certificates; TLS uses the existing ring provider.
+rcgen = { version = "0.14", default-features = false, features = ["crypto", "ring"] }
+time = "0.3"
+zeroize = "1"
+# Read the authenticated certificate's expiry rather than trusting a peer-supplied timestamp.
+x509-parser = { version = "0.18", default-features = false }
+# Standards-based discovery and explicit private-interface selection.
+mdns-sd = { version = "0.21", default-features = false }
+if-addrs = "0.15"
+socket2 = "0.6"
 webpki-roots = "1"
 # Decoding where Media Foundation is not there (Android); built everywhere so its tests run on Windows too.
 symphonia = { version = "0.5", default-features = false, features = ["aac", "isomp4", "mkv", "mp3", "pcm", "vorbis"] }
@@ -80,5 +93,6 @@ windows = { version = "0.61", features = [
   "Win32_System_Registry",
   "Win32_Media_MediaFoundation",
   "Win32_Security_Credentials",
+  "Win32_Security_Cryptography",
   "Win32_System_Com",
 ] }

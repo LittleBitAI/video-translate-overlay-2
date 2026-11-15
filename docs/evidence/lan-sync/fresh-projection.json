@@ -1,0 +1,78 @@
+{
+  "source_revision": "c52830bf29506fc57810067cf6f1f5fba2621e09",
+  "environment": {
+    "os": "10.0.26200",
+    "node": "v24.18.0",
+    "rust": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "stand_ins": true
+  },
+  "observations": [
+    {
+      "name": "sync::library::tests::failed_projection_rolls_back_received_records_and_cursor_together",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync::library::tests::concurrent_order_ties_have_the_same_visible_order_on_both_replicas",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync::library::tests::active_jobs_defer_projection_and_confirmed_deletion_stays_hidden_until_cleanup",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync::library::tests::invalid_legacy_completion_rolls_back_the_copy_and_active_jobs_stay_local",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync::library::tests::job_completion_cannot_adopt_a_deletion_received_after_the_job_started",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync::library::tests::legacy_import_is_a_copy_is_idempotent_and_cannot_assign_another_accounts_store",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync::library::tests::native_completion_and_its_journal_commit_atomically_and_do_not_replace_the_local_job",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync::library::tests::concurrent_completed_versions_are_retained_and_fresh_restoration_waits_for_cleanup",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync::library::tests::ordinary_library_mutations_publish_and_incoming_projection_does_not_echo",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync::library::tests::queued_remote_deletion_invalidates_earlier_consent_before_projection",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync::library::tests::deletion_and_a_fresh_link_or_translation_in_one_page_cannot_bypass_cleanup",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync::library::tests::received_ready_library_is_usable_without_processing_and_survives_restart",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync::library::tests::partial_dependencies_survive_restart_and_blocked_rows_do_not_starve_later_work",
+      "pass": true,
+      "actual": "ok"
+    }
+  ],
+  "result": "13 passed; 0 failed; 0 ignored",
+  "observed_at": "2026-11-15T10:11:57.569Z"
+}

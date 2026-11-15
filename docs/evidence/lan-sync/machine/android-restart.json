@@ -1,0 +1,21 @@
+{
+  "device": "android",
+  "head": "fc0d072f78248e120db7a7582852add873814cec",
+  "state": "signed_in",
+  "generation": 1,
+  "restored_without_interactive_sign_in": true,
+  "queued_rename_retained": true,
+  "deletion_retained": true,
+  "two_playlists_preserved": true,
+  "unrelated_cost_krw": 18.5,
+  "unrelated_intervals": [
+    [
+      0,
+      1000
+    ],
+    [
+      1000,
+      3000
+    ]
+  ]
+}

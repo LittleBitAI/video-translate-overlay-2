@@ -1,0 +1,37 @@
+import {chromium} from 'playwright';
+import {readFile,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {execFile,execFileSync} from 'node:child_process';
+import {promisify} from 'node:util';
+import assert from 'node:assert/strict';
+const run=promisify(execFile),device=process.argv[2];assert(['windows','android'].includes(device));
+const baseline=JSON.parse(await readFile('artifacts/native-sync-20261115/account-session-baseline.json','utf8'));
+const head=JSON.parse(await readFile('artifacts/native-sync-20261115/apk-build.json','utf8')).head;
+execFileSync('git',['diff','--exit-code',head,'HEAD','--','src','src-tauri/src','src-tauri/build.rs','src-tauri/capabilities','src-tauri/gen/android/app/src','src-tauri/Cargo.toml','src-tauri/tauri.conf.json','Cargo.toml','Cargo.lock','package.json','package-lock.json','vite.config.ts','vite.overlay.config.ts']);
+const policy='https://littlebitai.github.io/video-translate-overlay-2/privacy.html';
+const browser=await chromium.connectOverCDP(`http://127.0.0.1:${device==='windows'?9226:9227}`);
+try{
+  const page=browser.contexts().flatMap(c=>c.pages()).find(p=>p.url().startsWith('http://tauri.localhost'));assert(page);
+  await page.waitForFunction(()=>window.__TAURI_INTERNALS__?.invoke);
+  assert.equal(await page.evaluate(()=>window.__WIKI_NATIVE_BUILD_HEAD__),head);
+  assert.equal(await page.locator('meta[name=wiki-build-head]').getAttribute('content'),head);
+  const account=await page.evaluate(()=>window.__TAURI_INTERNALS__.invoke('get_google_account'));
+  assert.equal(account.state,'signed_in');assert.equal(createHash('sha256').update(baseline.salt+'\0'+account.email).digest('hex'),baseline.account1_digest);
+  const call=(name,args)=>page.evaluate(({name,args})=>window.__TAURI_INTERNALS__.invoke(name,args),{name,args});
+  const before=await call('get_browser',{account_generation:account.generation});
+  if(!(await page.locator('section[aria-label="Google 앱 계정"]').count()))await page.getByRole('link',{name:'설정',exact:true}).click();
+  const button=page.getByRole('button',{name:'개인정보처리방침',exact:true});await button.waitFor();
+  assert((await button.boundingBox()).height>=44);
+  await button.click();
+  const external=JSON.parse((await run(device==='windows'?'pwsh':'python',device==='windows'
+    ?['-NoProfile','-File','artifacts/branding/observe-windows-policy.ps1']
+    :['artifacts/branding/observe-android-policy.py'],{timeout:45000})).stdout);
+  assert.equal(external.external_browser_destination,policy);assert.equal(external.observed_in_address_bar,true);
+  await writeFile(`artifacts/branding/${device}-policy-browser.json`,JSON.stringify(external,null,2)+'\n');
+  await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='개인정보처리방침'&&!b.disabled));
+  const after=await call('get_browser',{account_generation:account.generation});assert.deepEqual(after,before);
+  const current=await call('get_google_account');assert.equal(current.generation,account.generation);assert.equal(current.state,'signed_in');
+  const receipt={device,head,core_screen_match:true,account_restored_without_sign_in:true,fixed_policy_opened:true,
+    video_pointer_unchanged:true,account_generation_unchanged:true,...external};
+  await writeFile(`artifacts/branding/${device}-policy-native.json`,JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));
+}finally{await browser.close();}

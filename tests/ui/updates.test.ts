@@ -7,12 +7,14 @@ const update = (version = '0.1.7', platform = 'windows-x64') => ({
   download_url: `https://github.com/LittleBitAI/video-translate-overlay-2/releases/download/v${version}/video-translate-overlay-${version}-${platform === 'android-arm64' ? 'arm64.apk' : 'windows-x64-setup.exe'}`,
 });
 const settings = { key_set: false, key_masked: null, translation_model: 'gemini' };
+const account = { generation: 0, state: 'unsupported', email: null, error: null, sync_ready: false };
 const answer = (value: unknown = update(), platform = 'windows-x64') => ({installed_version: '0.1.6', platform, update: value});
 
 test.each(['android-arm64', 'windows-x64'])('launch notice displays text safely and invokes the %s download action', async platform => {
   const invoked: {command: string; args: any}[] = [];
   vi.stubGlobal('__TAURI_INTERNALS__', {invoke: async (command: string, args: any) => {
     invoked.push({command, args});
+    if (command === 'get_google_account') return account;
     if (command === 'check_updates') return answer(update('0.1.7', platform), platform);
     if (command === 'get_settings') return settings;
     return {opened: true};
@@ -52,6 +54,7 @@ test('repeated foreground events share a pending request and a queued manual che
   let release: (v: any) => void = () => {};
   let checks = 0;
   vi.stubGlobal('__TAURI_INTERNALS__', {invoke: (command: string) => {
+    if (command === 'get_google_account') return Promise.resolve(account);
     if (command === 'check_updates') {checks++; return new Promise(r => release = r);}
     return Promise.resolve(settings);
   }});
@@ -69,6 +72,7 @@ test('repeated foreground events share a pending request and a queued manual che
 test('automatic failure and unsafe destination never become a usable notice', async () => {
   let response: any = null;
   vi.stubGlobal('__TAURI_INTERNALS__', {invoke: async (command: string) => {
+    if (command === 'get_google_account') return account;
     if (command !== 'check_updates') return settings;
     if (!response) throw {status: 503};
     return response;
@@ -86,6 +90,7 @@ test.each(['automatic', 'manual', 'queued manual', 'manual failure'])('a later d
   let count = 0;
   let release: (v: any) => void = () => {};
   vi.stubGlobal('__TAURI_INTERNALS__', {invoke: async (command: string) => {
+    if (command === 'get_google_account') return account;
     if (command === 'check_updates' && ++count % 2 === 0) return new Promise(r => release = r);
     if (command === 'check_updates') return answer();
     return settings;

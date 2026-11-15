@@ -1,0 +1,52 @@
+import {chromium} from 'playwright';
+import {readFile,writeFile,readdir} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import assert from 'node:assert/strict';
+const baseline=JSON.parse(await readFile(new URL('./account-session-baseline.json',import.meta.url)));
+const digest=email=>createHash('sha256').update(baseline.salt+'\0'+email).digest('hex');
+const browsers=[],devices=[];
+try{
+  for(const [name,port] of [['windows',9226],['android',9227]]){
+    const b=await chromium.connectOverCDP(`http://127.0.0.1:${port}`);browsers.push(b);
+    const p=b.contexts().flatMap(c=>c.pages()).find(p=>p.url().startsWith('http://tauri.localhost'));assert(p);
+    const call=(name,args)=>p.evaluate(({name,args})=>window.__TAURI_INTERNALS__.invoke(name,args),{name,args});
+    const a=await call('get_google_account');assert.equal(a.state,'signed_in');
+    assert.equal(digest(a.email)===baseline.account1_digest,name==='android');
+    assert.equal(await p.evaluate(()=>window.__WIKI_NATIVE_BUILD_HEAD__),baseline.head);
+    const read=()=>call('get_library',{account_generation:a.generation});
+    const back=p.locator('a[href="/"]');if(await back.count())await back.click();
+    if(!(await p.getByRole('heading',{name:'보관함',exact:true}).count()))await p.getByRole('link',{name:'보관함',exact:true}).click();
+    devices.push({name,p,call,read,generation:a.generation});
+  }
+  const [pc,phone]=devices;
+  assert.equal((await pc.read()).videos.length,0);assert.equal((await pc.read()).playlists.length,0);
+  const marker='LAN account two 20261115';
+  await pc.p.getByLabel('새 재생목록 이름',{exact:true}).fill(marker);
+  await pc.p.getByRole('button',{name:'재생목록 만들기',exact:true}).click();
+  const first=await phone.read();assert.equal(first.playlists.length,2);assert.equal(first.videos.length,2);
+  const list=first.playlists.find(p=>p.id==='c09fca8f-1b56-4209-9d35-7fb8a8d4ba6d');assert(list);
+  await phone.p.getByRole('button',{name:`${list.name} (${list.entries.length})`,exact:true}).click();
+  const isolated='LAN isolated account one 20261115';
+  await phone.p.getByLabel('재생목록 이름',{exact:true}).fill(isolated);
+  await phone.p.getByRole('button',{name:'이름 바꾸기',exact:true}).click();
+  const started=Date.now(),states={windows:[],android:[]};
+  while(Date.now()-started<16000){
+    for(const d of devices){
+      const a=await d.call('get_google_account');assert.equal(a.generation,d.generation);
+      const state=a.connection?.state??null;if(states[d.name].at(-1)!==state)states[d.name].push(state);
+    }
+    const second=await pc.read(),original=await phone.read();
+    assert.equal(second.videos.length,0);assert.equal(second.playlists.length,1);assert.equal(second.playlists[0].name,marker);
+    assert.equal(original.videos.length,2);assert.equal(original.playlists.length,2);assert(!original.playlists.some(p=>p.name===marker));
+    assert.equal(original.playlists.find(p=>p.id===list.id)?.name,isolated);
+    await pc.p.waitForTimeout(500);
+  }
+  const scopes=(await readdir('artifacts/google-auth-native-20261115a/data/sync')).filter(x=>/^[0-9a-f]{64}$/.test(x));
+  assert.equal(scopes.length,2);assert(scopes.includes(baseline.scope));
+  const second=await pc.read();
+  const receipt={head:baseline.head,different_verified_accounts:true,account_one_not_visible_in_account_two:true,
+    account_two_not_visible_in_account_one:true,old_account_changes_not_sent_to_new_account:true,
+    observed_ms:Date.now()-started,connection_states:states,account_two_marker:second.playlists[0].id,
+    account_two_marker_name:marker,account_one_queued_playlist:list.id,account_one_queued_name:isolated};
+  await writeFile(new URL('./account-mismatch.json',import.meta.url),JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));
+}finally{for(const b of browsers)await b.close();}

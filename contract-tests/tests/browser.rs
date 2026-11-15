@@ -161,7 +161,8 @@ fn test_clearing_site_data_ends_youtube_login() {
     assert_eq!(cleared.status, 200, "{cleared:?}");
     assert_eq!(cleared.body["cleared"], true, "{cleared:?}");
     assert_eq!(youtube_cookie(&app.webview()), None, "the YouTube cookie survived");
-    assert!(app.data_files_containing(SID.as_bytes()).is_empty(), "the cookie is still on disk");
+    let remaining = app.data_files_containing(SID.as_bytes());
+    assert!(remaining.is_empty(), "the cookie is still on disk: {remaining:?}\n{}", String::from_utf8_lossy(&app.logs()));
 
     let again = app.open(YT);
     assert_eq!(again.body["account_gate"], true, "the account screen did not come back: {again:?}");

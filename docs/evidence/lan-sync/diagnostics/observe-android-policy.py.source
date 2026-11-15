@@ -1,0 +1,29 @@
+import json
+import re
+import subprocess
+import time
+import xml.etree.ElementTree as E
+
+adb='<USER_HOME>/AppData/Local/Temp/vto-android/sdk/platform-tools/adb.exe'
+expected='https://littlebitai.github.io/video-translate-overlay-2/privacy.html'
+path='/data/local/tmp/vto-privacy-observer.xml'
+def run(*args):
+    r=subprocess.run([adb,'-s','<APPROVED_DEVICE>',*args],stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=15)
+    assert r.returncode==0,'Privacy browser observation failed'
+    return r.stdout
+try:
+    for attempt in range(3):
+        run('shell','uiautomator','dump',path)
+        tree=E.fromstring(run('exec-out','cat',path))
+        bar=next((n for n in tree.iter('node') if n.get('resource-id')=='com.android.chrome:id/url_bar'),None)
+        if bar is None:
+            time.sleep(1);continue
+        value=bar.get('text','')
+        if value.removeprefix('https://')==expected.removeprefix('https://'):break
+        bounds=list(map(int,re.findall(r'\d+',bar.get('bounds',''))));assert len(bounds)==4
+        run('shell','input','tap',str((bounds[0]+bounds[2])//2),str((bounds[1]+bounds[3])//2))
+    else:raise AssertionError('The exact privacy URL was not observed in the browser address bar')
+    print(json.dumps({'external_browser_destination':expected,'observed_in_address_bar':True}))
+finally:
+    run('shell','rm',path)
+    run('shell','am','start','-n','dev.vto.overlay/.MainActivity')

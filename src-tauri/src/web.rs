@@ -151,6 +151,9 @@ fn content_type(f: &Path) -> &'static str {
 pub fn call(core: &Core, cmd: &str, a: &Value) -> ApiResult {
     let s = |k: &str| a[k].as_str().unwrap_or_default().to_string();
     match cmd {
+        "get_google_account" => api::get_google_account(core),
+        "google_sign_in" | "google_sign_out" => Err(err(403, "native_required", "Google 계정은 Windows 또는 Android 앱에서 연결해 주세요.")),
+        "open_privacy_policy" => Err(err(403, "native_required", "브라우저에서는 개인정보처리방침 링크를 열어 주세요.")),
         "check_updates" => core.updates.check(&core.cfg.data_dir, a["manual"].as_bool().unwrap_or(false)),
         "dismiss_update" => core.updates.dismiss(&core.cfg.data_dir, &s("version")),
         "open_update" => crate::updates::open(core, &s("version")),
@@ -164,6 +167,7 @@ pub fn call(core: &Core, cmd: &str, a: &Value) -> ApiResult {
         "delete_api_key" => api::delete_api_key(core),
         "create_job" if a["retranslate"] == true => api::retranslate_job(core, &s("page_url")),
         "create_job" => api::create_job_with_consent(core, &s("page_url"), a["media_url"].as_str(), a["title"].as_str().unwrap_or_default(), a["duration_ms"].as_i64().unwrap_or(0), a["deletion_token"].as_str()),
+        "get_job" if !a["playback_action"].is_null() => api::library_request(core, a["account_generation"].as_u64(), cmd, a),
         "get_job" => api::get_job(core, &s("page_url")),
         "get_subtitles" => api::get_subtitles(core, &s("video_key")),
         other => Err(err(404, "no_route", other.to_string())),

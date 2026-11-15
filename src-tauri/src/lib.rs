@@ -3,6 +3,9 @@
 //! and the device services those need.
 
 pub mod api;
+pub mod account;
+#[cfg(windows)]
+pub mod account_secrets;
 #[cfg(all(feature = "app", target_os = "android"))]
 pub mod android;
 #[cfg(feature = "app")]
@@ -13,17 +16,28 @@ pub mod db;
 // MPEG-TS everywhere; every other format off Windows.
 mod decode;
 pub mod gemini;
+pub mod google_auth;
+pub mod google_desktop;
+mod google_registration;
 pub mod http;
 pub mod media;
 pub mod pipeline;
 pub mod platform;
 pub mod screens;
 pub mod store;
+mod library_scope;
+pub mod sync;
+mod sync_tls;
+mod sync_channel;
+mod sync_discovery;
+mod sync_runtime;
 pub mod updates;
 pub mod web;
 #[cfg(feature = "whisper")]
 pub mod whisper;
 pub mod youtube;
+
+pub const PRIVACY_POLICY_URL: &str = "https://littlebitai.github.io/video-translate-overlay-2/privacy.html";
 
 use std::path::PathBuf;
 use std::sync::{Arc, Condvar, Mutex};
@@ -61,7 +75,10 @@ pub trait KeyStore: Send + Sync {
 
 /// The in-app webview that shows video sites.
 pub trait Browser: Send + Sync {
+    fn refresh_library(&self) -> Result<(), String> { Ok(()) }
+    fn invalidate_account(&self, _generation: u64) -> Result<(), String> { Ok(()) }
     fn open_download(&self, _url: &str) -> Result<(), String> { Err("external downloads are unavailable".into()) }
+    fn open_privacy_policy(&self) -> Result<(), String> { self.open_download(PRIVACY_POLICY_URL) }
     /// Drops cached subtitles in open views before permanent cleanup starts.
     fn invalidate_video(&self, _key: &str) -> Result<(), String> { Ok(()) }
     /// Shows `url`; `overlay` attaches the overlay script (never on Google's sign-in pages).
@@ -72,6 +89,8 @@ pub trait Browser: Send + Sync {
 
 /// The notification shade.
 pub trait Notifier: Send + Sync {
+    fn register_sync(&self, _owner: &str) -> Result<(), String> { Ok(()) }
+    fn sync_background(&self, _owner: &str, _generation: u64, _enabled: bool) -> Result<bool, String> { Ok(true) }
     /// The ongoing notice of a running job: `shown`, `updated` or `hidden`.
     fn ongoing(&self, job_id: &str, state: &str, title: &str, percent: i64);
     /// Called when 영상감지 is pressed, before the media check, while the app is
@@ -110,6 +129,8 @@ pub const GEMINI_BASE_URL: &str = "https://generativelanguage.googleapis.com";
 
 /// Everything the commands and the worker share.
 pub struct Core {
+    pub(crate) sync: sync_runtime::StatusStore,
+    pub account: account::Manager,
     pub updates: updates::Checker,
     pub cfg: Config,
     pub store: store::Store,
@@ -124,14 +145,11 @@ impl Core {
     pub fn start(cfg: Config, svc: Services) -> Result<Arc<Core>, String> {
         std::fs::create_dir_all(cfg.data_dir.join("audio")).map_err(|e| format!("data folder: {e}"))?;
         let store = store::Store::open(&cfg.data_dir.join("app.sqlite3"))?;
-        let core = Arc::new(Core { cfg, store, svc, updates: updates::Checker::default(), wake: (Mutex::new(false), Condvar::new()), create_lock: Mutex::new(()) });
+        let account = account::Manager::new(cfg.data_dir.clone());
+        let core = Arc::new(Core { cfg, store, svc, account, sync: Default::default(), updates: updates::Checker::default(), wake: (Mutex::new(false), Condvar::new()), create_lock: Mutex::new(()) });
         let worker = core.clone();
         std::thread::Builder::new().name("jobs".into()).spawn(move || pipeline::run_worker(worker)).map_err(|e| e.to_string())?;
         Ok(core)
-    }
-
-    pub fn db_path(&self) -> PathBuf {
-        self.cfg.data_dir.join("app.sqlite3")
     }
 
     pub fn wake_worker(&self) {

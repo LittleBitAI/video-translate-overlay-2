@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta name="description" content="Video Translate Overlay turns lecture speech into Korean subtitles on Windows and Android. Learn about Google sign-in, local-network sync and privacy.">
+  <link rel="canonical" href="https://littlebitai.github.io/video-translate-overlay-2/">
+  <link rel="stylesheet" href="./style.css">
+  <title>Video Translate Overlay</title>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header>
+    <nav aria-label="Main navigation">
+      <a href="./" aria-current="page">Home</a>
+      <a href="./privacy.html">Privacy policy</a>
+      <a href="mailto:cjday999@gmail.com">Support</a>
+    </nav>
+  </header>
+  <main id="main">
+    <h1>Video Translate Overlay</h1>
+    <p>Watch foreign-language lectures with Korean subtitles in an installed Windows or Android app.</p>
+    <p>The app downloads supported audio, transcribes speech on the device, translates the resulting text with Gemini, and saves subtitles on the original speech timeline. Translation uses your own Gemini API key and may incur API charges.</p>
+    <aside class="notice" aria-labelledby="availability">
+      <h2 id="availability">Availability</h2>
+      <p>The approved 0.1.7 release keeps separate device-local libraries. Google app sign-in and local-network synchronization are development features whose native Windows and Android builds have been exercised; they are not included in that published release. This page does not announce a new APK or installer.</p>
+    </aside>
+    <h2>Google sign-in and nearby-device synchronization</h2>
+    <p>Google sign-in identifies the account used for the app's local library. It uses basic identity information, including a verified email address and stable Google account identifier. App sign-in is separate from signing in to YouTube. It does not request access to Google Drive, Gmail or YouTube account data.</p>
+    <p>In Google sign-in enabled builds, a running Windows app and an Android app signed in to the same account can exchange completed subtitles, video links, playlists and playback positions over a reachable local network. Ethernet on the PC and Wi-Fi on the phone can share that network. Transfers use encrypted, authenticated connections.</p>
+    <p>Library data is stored on each device, with no publisher-operated cloud synchronization database or relay. Unfinished processing jobs, original media files, speech models, Gemini API keys and YouTube cookies are not synchronized.</p>
+    <p>Confirmed video deletion propagates to the same account's connected devices and catches up after a disconnected device reconnects. Android background delivery can be delayed by the operating system; reopening the app catches up.</p>
+    <h2>Learn more and get help</h2>
+    <ul>
+      <li><a href="https://github.com/LittleBitAI/video-translate-overlay-2">User guide and source code</a></li>
+      <li><a href="https://github.com/LittleBitAI/video-translate-overlay-2/releases">Approved downloads</a></li>
+      <li><a href="./privacy.html">Privacy policy</a></li>
+    </ul>
+    <p>Support: <a href="mailto:cjday999@gmail.com">cjday999@gmail.com</a>.</p>
+  </main>
+  <footer><p>Video Translate Overlay · <a href="./privacy.html">Privacy policy</a></p></footer>
+</body>
+</html>

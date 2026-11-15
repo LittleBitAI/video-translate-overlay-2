@@ -75,6 +75,23 @@ fn start_with_core(name: &str) -> (u16, Arc<Core>) {
     (port, core)
 }
 
+#[test]
+fn browser_http_cannot_start_or_end_a_native_google_session() {
+    let port = start("google-account");
+    let (status, account) = json(port, "GET", "/account", None);
+    assert_eq!(status, 200);
+    assert_eq!(account["state"], "unsupported");
+    assert!(account["email"].is_null());
+    for path in ["/account/sign-in", "/account/sign-out", "/privacy/open"] {
+        let (status, body) = json(port, "POST", path, Some(json!({"generation":0})));
+        assert_eq!(status, 403);
+        assert_eq!(body["error"], "native_required");
+    }
+    let (status, _, body) = ask(port, "GET", "/account", None, "Origin: https://example.org\r\n");
+    assert_eq!(status, 403);
+    assert_eq!(body, "forbidden");
+}
+
 /// `(status, content type, body)` of one request; `extra` is more header lines.
 fn ask(port: u16, method: &str, target: &str, body: Option<Value>, extra: &str) -> (u16, String, String) {
     let mut s = TcpStream::connect(("127.0.0.1", port)).unwrap();

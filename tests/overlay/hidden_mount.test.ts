@@ -68,5 +68,6 @@ test('test_an_overlay_mounted_while_hidden_loads_the_existing_job_when_the_page_
   expect(sub.hidden).toBe(true);
   expect(calls.filter(call => call === 'GET /jobs').length).toBeGreaterThan(reads);
   expect(calls.filter(call => call === 'GET /videos/vk-1/subtitles')).toHaveLength(1);
-  expect(calls.every(call => call === 'GET /jobs' || call === 'GET /videos/vk-1/subtitles')).toBe(true);
+  expect(calls.filter(call => call === 'GET /playback')).toHaveLength(1);
+  expect(calls.every(call => call === 'GET /jobs' || call === 'GET /videos/vk-1/subtitles' || call === 'GET /playback')).toBe(true);
 });

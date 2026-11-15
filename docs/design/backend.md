@@ -56,12 +56,28 @@
 ## 나중에 되돌리기 어려운 것
 
 - 저장 키: `Video.video_key`, `Job.id`, `Cue.video_key`, `Cue.seq`, `Setting.id` (저장소: SQLite (기기 안 파일))
-- 로그인: `none`
+- App identity: Google OpenID Connect for the LAN account; YouTube login remains a separate browser session.
 - 공개 저장소다: 코드와 설계 문서가 모두에게 보인다
 
 ## 데이터와 API
 
 ### Local library and playlists
+
+The Google-account LAN extension changes A1's earlier no-listener assumption:
+the signed-in native Windows app now owns a restricted private-interface mutual
+TLS listener and anonymous DNS-SD discovery. Android discovers it automatically
+on the same reachable network. No cloud sync service or internet-facing listener
+is introduced. Account libraries, sealed thirty-day device enrollment, bounded
+transfer operations, lifecycle ownership and observed physical-device acceptance
+are specified in [local-network synchronization](local-network-sync.md).
+
+Signed-out requests select the original database; signed-in and expired sessions
+retain their own local account library. Copying the unowned library requires
+explicit confirmation. Existing P7 now also accepts bounded playback get/set
+modes, with a captured account generation. It never changes subtitles or costs;
+P11 playlist, import, saved-version and deletion actions remain local-screen only.
+Opening a saved native player may seek once to its saved position; user control
+cancels a delayed resume. Later remote position updates never seek that player.
 
 P10 (`get_library`, `GET /library/data`) reads existing video/job/cue rows without
 backfill or retranscription. P11 (`library_action`, `POST /library/data`) handles

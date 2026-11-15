@@ -24,11 +24,20 @@ pub fn plugin() -> TauriPlugin<Wry> {
 }
 
 impl Mobile {
+    pub fn register_sync(&self, owner: &str) -> Result<(), String> {
+        self.call("registerSync", json!({"owner":owner})).map(drop)
+    }
+    pub fn sync_background(&self, owner: &str, generation: u64, enabled: bool) -> Result<bool, String> {
+        Ok(self.call("syncBackground", json!({"owner":owner,"generation":generation,"enabled":enabled}))?["active"].as_bool().unwrap_or(false))
+    }
     pub fn update_notice(&self, update: &crate::updates::Update) -> Result<bool, String> {
         Ok(self.call("updateNotice", serde_json::to_value(update).map_err(|e| e.to_string())?)?["download"].as_bool().unwrap_or(false))
     }
     pub fn open_download(&self, url: &str) -> Result<(), String> {
         self.call("openDownload", json!({"url":url})).map(drop)
+    }
+    pub fn open_privacy_policy(&self) -> Result<(), String> {
+        self.call("openPrivacyPolicy", json!({})).map(drop)
     }
     fn call(&self, method: &str, args: Value) -> Result<Value, String> {
         self.0.run_mobile_plugin::<Value>(method, args).map_err(|e| format!("{method}: {e}"))
@@ -78,5 +87,81 @@ impl crate::KeyStore for Mobile {
 
     fn delete(&self) -> Result<(), String> {
         self.call("deleteKey", json!({})).map(drop)
+    }
+}
+
+impl crate::account::NativeAccount for Mobile {
+    fn platform(&self) -> crate::google_auth::Platform {
+        crate::google_auth::Platform::Android
+    }
+    fn read(&self) -> Result<Option<String>, crate::google_auth::AuthError> {
+        self.call("getGoogleSession", json!({}))
+            .map(|v| v["value"].as_str().map(str::to_string))
+            .map_err(|_| crate::google_auth::AuthError::Unavailable)
+    }
+    fn write(&self, value: &str) -> Result<(), crate::google_auth::AuthError> {
+        self.call("setGoogleSession", json!({"value":value}))
+            .map(drop)
+            .map_err(|_| crate::google_auth::AuthError::Unavailable)
+    }
+    fn delete(&self) -> Result<(), crate::google_auth::AuthError> {
+        self.call("deleteGoogleSession", json!({}))
+            .map(drop)
+            .map_err(|_| crate::google_auth::AuthError::Unavailable)
+    }
+    fn cancel_sign_in(&self) {
+        let _ = self.call("googleCancel", json!({}));
+    }
+    fn sign_in(
+        &self,
+        nonce: &str,
+        cancelled: &std::sync::atomic::AtomicBool,
+        verifier: &crate::google_auth::Verifier,
+    ) -> Result<crate::google_desktop::Credentials, crate::google_auth::AuthError> {
+        use crate::google_auth::{AuthError, Platform, ANDROID_AUDIENCE};
+        use std::{
+            sync::{atomic::Ordering, mpsc},
+            time::{Duration, Instant},
+        };
+        let (send, receive) = mpsc::channel();
+        let channel: Channel<Value> = Channel::new(move |body| {
+            if let InvokeResponseBody::Json(raw) = body {
+                if let Ok(value) = serde_json::from_str::<Value>(&raw) {
+                    let _ = send.send(value);
+                }
+            }
+            Ok(())
+        });
+        self.call(
+            "googleSignIn",
+            json!({"nonce":nonce,"webClientId":ANDROID_AUDIENCE,"channel":channel}),
+        )
+        .map_err(|_| AuthError::Unavailable)?;
+        let started = Instant::now();
+        loop {
+            if cancelled.load(Ordering::Acquire) {
+                return Err(AuthError::Cancelled);
+            }
+            if started.elapsed() > Duration::from_secs(180) {
+                self.cancel_sign_in();
+                return Err(AuthError::TimedOut);
+            }
+            match receive.recv_timeout(Duration::from_millis(100)) {
+                Ok(value) => {
+                    if value["error"] == "cancelled" {
+                        return Err(AuthError::Cancelled);
+                    }
+                    let token = value["idToken"].as_str().ok_or(AuthError::Unavailable)?;
+                    let identity = verifier.verify(token, nonce, Platform::Android)?;
+                    return Ok(crate::google_desktop::Credentials {
+                        identity,
+                        id_token: token.into(),
+                        refresh_token: None,
+                    });
+                }
+                Err(mpsc::RecvTimeoutError::Timeout) => {}
+                Err(_) => return Err(AuthError::Unavailable),
+            }
+        }
     }
 }

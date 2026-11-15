@@ -1,0 +1,10 @@
+{
+  "head": "fc0d072f78248e120db7a7582852add873814cec",
+  "checks": [
+    "PC user seek persisted and synchronized before opening the phone player",
+    "Phone player automatically resumed near 1250 ms and displayed the saved second cue",
+    "Actual Android site page was denied settings, account status and library commands",
+    "Phone seek synchronized to PC storage without moving its already controlled player",
+    "Reopened PC player resumed near the phone’s saved 2000 ms position"
+  ]
+}

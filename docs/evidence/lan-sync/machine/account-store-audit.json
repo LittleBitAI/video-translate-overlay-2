@@ -1,0 +1,7 @@
+{
+  "head": "5f899a2c72080208f84db666d83e119aa4fcd788",
+  "both_devices_have_two_distinct_account_stores": true,
+  "original_account_queued_change_preserved": true,
+  "second_account_marker_preserved_after_switching_away": true,
+  "no_cross_account_rows": true
+}

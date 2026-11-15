@@ -133,6 +133,35 @@ fn a_job_resumed_before_its_notice_went_out_notifies_once() {
 }
 
 #[test]
+fn a_job_in_an_unselected_account_resumes_in_that_database_and_publishes_its_completed_result() {
+    let dir = temp_dir("account-resume-notice");
+    let journal = crate::sync::Journal::open(&dir, &crate::google_auth::VerifiedIdentity::fixture("prior-account")).unwrap();
+    let store = journal.library().unwrap();
+    let page = "https://lectures.example.org/prior-account";
+    let key = api::video_key(&url::Url::parse(page).unwrap());
+    store.create_job("owned-job", &key, page, "other", "Prior account lecture", 5000, None, "m").unwrap();
+    store.save_region("owned-job", &key, 0, &[(123, 2345, "original".into())]).unwrap();
+    store.end_writing("owned-job").unwrap();
+    store.set_terms(&key, "[]").unwrap();
+    store.set_translations("owned-job", &[(0, "saved translation".into())]).unwrap();
+    store.add_usage("owned-job", 10, 2, |_, _| 12.5).unwrap();
+    let shade = Shade::default();
+    let core = start(&dir, &shade, false);
+    for _ in 0..200 {
+        if store.job("owned-job").unwrap().unwrap().stage == "ready" { break; }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    let job = store.job("owned-job").unwrap().unwrap();
+    assert_eq!((job.stage.as_str(), job.notified, job.cost_krw), ("ready", true, 12.5));
+    assert_eq!(*shade.ready.lock().unwrap(), ["owned-job"]);
+    assert!(core.store.job("owned-job").unwrap().is_none());
+    assert!(api::get_library(&core).unwrap()["videos"].as_array().unwrap().is_empty());
+    assert!(!core.has_active_job().unwrap());
+    assert!(journal.records().unwrap().iter().any(|record| matches!(&record.change, crate::sync::Change::Translation { translation }
+        if translation.cost_krw == 12.5 && translation.cues[0].start_ms == 123 && translation.cues[0].text_ko == "saved translation")));
+}
+
+#[test]
 fn a_bug_fails_the_job_instead_of_leaving_it_running() {
     let dir = temp_dir("panic");
     translated_but_not_notified(&dir);
@@ -144,8 +173,10 @@ fn a_bug_fails_the_job_instead_of_leaving_it_running() {
     assert!(shade.ready.lock().unwrap().is_empty());
 }
 
-fn idle_core(dir: &Path, endpoint: &str) -> Core {
+pub(crate) fn idle_core(dir: &Path, endpoint: &str) -> Core {
     Core {
+        sync: Default::default(),
+        account: crate::account::Manager::new(dir.into()),
         updates: Default::default(),
         cfg: Config { data_dir: dir.into(), gemini_base_url: endpoint.into(), allow_loopback_media: true },
         store: Store::open(&dir.join("app.sqlite3")).unwrap(),

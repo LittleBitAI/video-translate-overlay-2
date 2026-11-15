@@ -1,0 +1,33 @@
+import hashlib
+import json
+import sqlite3
+import subprocess
+import sys
+from pathlib import Path
+
+folder=Path(__file__).parent
+baseline=json.loads((folder/"phone-before-privacy-update-2/baseline.json").read_text())
+out=folder/("phone-after-privacy-update" if len(sys.argv)>1 and sys.argv[1]=="final" else "phone-after-update")
+out.mkdir(exist_ok=False)
+adb="<USER_HOME>/AppData/Local/Temp/vto-android/sdk/platform-tools/adb.exe"
+
+def read(path, optional=False):
+    result=subprocess.run([adb,"-s","<APPROVED_DEVICE>","exec-out","run-as","dev.vto.overlay","cat",path],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    if result.returncode and not optional: raise RuntimeError("Private retention read failed")
+    return result.stdout if result.returncode==0 else None
+
+for suffix in ["","-wal"]:
+    data=read("app.sqlite3"+suffix, bool(suffix))
+    if data is not None: (out/("app.sqlite3"+suffix)).write_bytes(data)
+db=sqlite3.connect(out/"app.sqlite3")
+for table, expected in baseline["root"]["tables"].items():
+    safe=table.replace('"','""')
+    rows=sorted(repr(row) for row in db.execute(f'SELECT * FROM "{safe}"'))
+    assert hashlib.sha256("\n".join(rows).encode()).hexdigest()==expected, "An original library table changed"
+assert hashlib.sha256(read("shared_prefs/vto-key.xml")).hexdigest()==baseline["gemini_sealed_sha256"], "Gemini sealed credential changed"
+receipt={"original_library_rows_preserved":True,"gemini_sealed_credential_preserved":True,
+         "ready_jobs":db.execute("SELECT COUNT(*) FROM job WHERE stage='ready'").fetchone()[0],
+         "active_jobs":db.execute("SELECT COUNT(*) FROM job WHERE stage IN ('downloading','writing','translating')").fetchone()[0]}
+db.close()
+(out/"retention.json").write_text(json.dumps(receipt,indent=2)+"\n",encoding="utf-8")
+print(json.dumps(receipt))

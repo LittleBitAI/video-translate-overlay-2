@@ -1,0 +1,99 @@
+{
+  "source_revision": "fc0d072f78248e120db7a7582852add873814cec",
+  "environment": {
+    "windows": "Windows desktop; isolated native application and WebView profiles",
+    "android": "Physical Galaxy S21+ SM-G996N; Android 15 API 35; ARM64",
+    "date": "2026-11-15",
+    "original_library_imported": false,
+    "paid_translation_requested": false,
+    "windows_executable_sha256": "a4f7a5e20f28048de59b4e89757757baf0891093a1c3521c6b8f436576cb6065",
+    "android_apk_sha256": "d62207ef970f28d65e6415b1a2756b46ab54a3e7fa74c38b93d7de4b9e0bf2df",
+    "core": "fc0d072f78248e120db7a7582852add873814cec",
+    "screen": "fc0d072f78248e120db7a7582852add873814cec"
+  },
+  "observations": [
+    {
+      "name": "offline deletion and confirmation guards",
+      "pass": true,
+      "actual": {
+        "cancel_kept_translation": true,
+        "confirmed_delete_removed_two_memberships": true,
+        "unrelated_translation_preserved": true,
+        "stale_retranslation_refused": true,
+        "force_stopped_phone_kept_old_data": true
+      }
+    },
+    {
+      "name": "live deletion and concurrent name/order changes",
+      "pass": true,
+      "actual": {
+        "concurrent_name_and_order_preserved": true,
+        "phone_confirmed_delete_reached_windows": true,
+        "delete_delivery_ms": 2307,
+        "deleted_from_two_playlists": true,
+        "playlists_and_unrelated_links_preserved": true,
+        "deleted_subtitle_reads_refused": true
+      }
+    },
+    {
+      "name": "Windows process shutdown",
+      "pass": true,
+      "actual": {
+        "owned_pid": 84260,
+        "closed_windows": 3,
+        "exit_code": 0,
+        "shutdown_ms": 8350
+      }
+    },
+    {
+      "name": "windows reopened local data",
+      "pass": true,
+      "actual": {
+        "device": "windows",
+        "head": "fc0d072f78248e120db7a7582852add873814cec",
+        "state": "signed_in",
+        "generation": 1,
+        "restored_without_interactive_sign_in": true,
+        "queued_rename_retained": true,
+        "deletion_retained": true,
+        "two_playlists_preserved": true,
+        "unrelated_cost_krw": 18.5,
+        "unrelated_intervals": [
+          [
+            0,
+            1000
+          ],
+          [
+            1000,
+            3000
+          ]
+        ]
+      }
+    },
+    {
+      "name": "android reopened local data",
+      "pass": true,
+      "actual": {
+        "device": "android",
+        "head": "fc0d072f78248e120db7a7582852add873814cec",
+        "state": "signed_in",
+        "generation": 1,
+        "restored_without_interactive_sign_in": true,
+        "queued_rename_retained": true,
+        "deletion_retained": true,
+        "two_playlists_preserved": true,
+        "unrelated_cost_krw": 18.5,
+        "unrelated_intervals": [
+          [
+            0,
+            1000
+          ],
+          [
+            1000,
+            3000
+          ]
+        ]
+      }
+    }
+  ]
+}

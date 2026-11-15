@@ -1,0 +1,55 @@
+import {chromium} from 'playwright';
+import {writeFile,readdir} from 'node:fs/promises';
+import {createHash,randomBytes} from 'node:crypto';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import assert from 'node:assert/strict';
+const run=promisify(execFile),head='5f899a2c72080208f84db666d83e119aa4fcd788';
+const b=await chromium.connectOverCDP('http://127.0.0.1:9226');
+let watching=true;
+try{
+  const p=b.contexts().flatMap(c=>c.pages()).find(p=>p.url().startsWith('http://tauri.localhost'));assert(p);
+  assert.equal(await p.evaluate(()=>window.__WIKI_NATIVE_BUILD_HEAD__),head);
+  const call=(name,args)=>p.evaluate(({name,args})=>window.__TAURI_INTERNALS__.invoke(name,args),{name,args});
+  const first=await call('get_google_account');assert.equal(first.state,'signed_in');assert.equal(typeof first.email,'string');
+  const library=await call('get_library',{account_generation:first.generation});assert.equal(library.playlists.length,2);assert.equal(library.videos.length,2);
+  const scopes=(await readdir('artifacts/google-auth-native-20261115a/data/sync')).filter(x=>/^[0-9a-f]{64}$/.test(x));assert.equal(scopes.length,1);
+  const salt=randomBytes(32).toString('hex'),digest=email=>createHash('sha256').update(salt+'\0'+email).digest('hex');
+  const baseline={head,salt,account1_digest:digest(first.email),generation:first.generation,scope:scopes[0],playlists:library.playlists,videos:library.videos};
+  await writeFile(new URL('./account-session-baseline.json',import.meta.url),JSON.stringify(baseline,null,2)+'\n',{flag:'wx'});
+  const states=[];let final=null;
+  const watch=(async()=>{
+    const deadline=Date.now()+165000;
+    while(watching&&Date.now()<deadline){
+      const a=await call('get_google_account');
+      const observation={state:a.state,generation:a.generation,connection:a.connection?.state??null};
+      if(JSON.stringify(states.at(-1))!==JSON.stringify(observation))states.push(observation);
+      if(a.generation>=first.generation+2&&a.state==='signed_in'){final=a;return;}
+      if(a.generation>=first.generation+2&&!['signing_in','loading'].includes(a.state)){final=a;return;}
+      await p.waitForTimeout(500);
+    }
+  })();
+  if(!(await p.locator('section[aria-label="Google 앱 계정"]').count()))await p.getByRole('link',{name:'설정',exact:true}).click();
+  await p.getByRole('button',{name:'Google 계정 로그아웃',exact:true}).click();
+  await p.getByRole('button',{name:'Google 로그아웃 확인',exact:true}).click();
+  await p.getByRole('button',{name:'Google 계정으로 로그인',exact:true}).waitFor();
+  const out=await call('get_google_account');assert.equal(out.state,'signed_out');
+  const listeners=(await run('powershell',['-NoProfile','-Command',"@(Get-NetTCPConnection -OwningProcess 139956 -State Listen -ErrorAction SilentlyContinue).Count"],{timeout:15000})).stdout.trim();
+  assert.equal(listeners,'0','Sign-out retained a Windows listener');
+  const stale=await p.evaluate(async generation=>{
+    try{await window.__TAURI_INTERNALS__.invoke('get_library',{account_generation:generation});return false;}
+    catch(e){return e.status===409&&e.error==='account_changed';}
+  },first.generation);assert(stale,'Retired account read was accepted');
+  await p.getByRole('button',{name:'Google 계정으로 로그인',exact:true}).click();
+  console.log(JSON.stringify({phase:'google_browser_opened',sign_out_released_listener:true,retired_account_read_refused:true}));
+  await watch;
+  const result={head,sign_out_released_listener:true,retired_account_read_refused:true,observations:states,
+    state:final?.state??'awaiting_user',generation:final?.generation??null};
+  if(final?.state==='signed_in'){
+    result.different_account=digest(final.email)!==baseline.account1_digest;
+    const second=await call('get_library',{account_generation:final.generation});
+    result.second_account_videos=second.videos.length;result.second_account_playlists=second.playlists.length;
+    if(result.different_account){assert.equal(second.videos.length,0);assert.equal(second.playlists.length,0);}
+  }
+  await writeFile(new URL('./account-two-windows.json',import.meta.url),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
+}finally{watching=false;await b.close();}

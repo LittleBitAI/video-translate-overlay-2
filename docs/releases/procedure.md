@@ -48,6 +48,10 @@ malformed responses fail the check rather than claim the app is up to date.
    SDK 36/build-tools 36.0.0, NDK 27.2.12479018, Ninja, libclang, and Tauri CLI 2.
    Set `JAVA_HOME`, `ANDROID_HOME`, `NDK_HOME`, and `LIBCLANG_PATH`; add their tools
    and the installed Tauri CLI to `PATH`. Build on Windows with the C++ toolchain.
+   The Windows app build requires the publisher's existing Desktop OAuth JSON
+   at `artifacts/google-oauth/desktop-client.json`, or its local path in
+   `VTO_GOOGLE_DESKTOP_CLIENT_JSON`. See [Google registration](../design/google-auth-setup.md).
+   Keep this input outside Git; do not replace the registered client or signing key.
 2. Back up the existing Android signing keystore securely outside Git. Do not
    generate a new key. `npm run package:release` builds the ARM64 release APK
    and the Windows x64 NSIS installer. Every invocation requires an empty

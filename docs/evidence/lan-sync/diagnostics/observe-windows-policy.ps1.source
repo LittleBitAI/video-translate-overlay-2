@@ -1,0 +1,31 @@
+$ErrorActionPreference='Stop'
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class PolicyForeground {
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+}
+'@
+$expected='https://littlebitai.github.io/video-translate-overlay-2/privacy.html'
+$deadline=[DateTime]::UtcNow.AddSeconds(20)
+while ([DateTime]::UtcNow -lt $deadline) {
+  $window=[System.Windows.Automation.AutomationElement]::FromHandle([PolicyForeground]::GetForegroundWindow())
+  if ($window.Current.Name -like '*Privacy policy*Video Translate Overlay*') {
+    $condition=New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::Edit)
+    $edit=$window.FindFirst([System.Windows.Automation.TreeScope]::Descendants,$condition)
+    if ($null -ne $edit) {
+      $pattern=$null
+      if ($edit.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern,[ref]$pattern)) {
+        $value=$pattern.Current.Value
+        if ($value -eq $expected -or $value -eq $expected.Replace('https://','')) {
+          @{external_browser_destination=$expected;observed_in_address_bar=$true} | ConvertTo-Json -Compress
+          exit 0
+        }
+      }
+    }
+  }
+  Start-Sleep -Milliseconds 250
+}
+throw 'The public policy destination was not observed in the foreground browser address bar'

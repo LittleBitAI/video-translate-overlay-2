@@ -4,7 +4,7 @@
   import { go } from './router.svelte';
   import Link from './Link.svelte';
 
-  type Video = { video_key: string; title: string; page_url: string; saved: boolean; active: boolean; deleting: boolean };
+  type Video = { video_key: string; title: string; page_url: string; saved: boolean; active: boolean; deleting: boolean; versions?: {id:string; selected:boolean}[] };
   type Playlist = { id: string; name: string; entries: string[] };
   let videos = $state<Video[]>([]);
   let playlists = $state<Playlist[]>([]);
@@ -23,6 +23,10 @@
   let generation = 0;
   let channel: BroadcastChannel;
   let retired = false;
+  let owner: number | undefined;
+  let legacyAvailable = $state(false);
+  let importing = $state(false);
+  let accountEmail = $state<string | null>(null);
   const playlist = $derived(playlists.find(p => p.id === selected));
   const visible = $derived((playlist ? playlist.entries.map(k => videos.find(v => v.video_key === k)).filter((v): v is Video => !!v) : videos)
     .filter(v => `${v.title} ${v.page_url}`.toLocaleLowerCase().includes(search.toLocaleLowerCase())));
@@ -38,6 +42,9 @@
     if (r.status !== 200) { screen = 'error'; error = r.body?.message ?? '보관함을 불러오지 못했습니다.'; return; }
     videos = r.body.videos;
     playlists = r.body.playlists;
+    owner = r.body.account_generation;
+    accountEmail = typeof r.body.account_email === 'string' ? r.body.account_email : null;
+    legacyAvailable = r.body.legacy_available === true;
     if (!playlists.some(p => p.id === selected)) selected = '';
     screen = 'ready';
   }
@@ -47,7 +54,7 @@
     busy = true;
     error = '';
     const mine = ++generation;
-    const r = await request('POST', '/library/data', action);
+    const r = await request('POST', '/library/data', { ...action, account_generation: owner });
     if (action.action === 'delete_video' && (r.status === 200 || r.status >= 500)) {
       if (!retired) channel.postMessage(action.video_key);
     }
@@ -66,7 +73,7 @@
   async function openVideo(video: Video) {
     busy = true; error = '';
     const mine = ++generation;
-    const r = await request('POST', '/browser/open', { url: video.page_url });
+    const r = await request('POST', '/browser/open', { url: video.page_url, account_generation: owner });
     if (mine !== generation) return;
     busy = false;
     if (r.status === 200) go('/');
@@ -86,11 +93,18 @@
 
   onMount(() => {
     const refresh = () => { if (busy) refreshPending = true; else load(); };
+    const accountChanged = () => {
+      generation++; busy = false; confirmation = null; importing = false;
+      videos = []; playlists = []; selected = ''; owner = undefined;
+      legacyAvailable = false; accountEmail = null; error = ''; load();
+    };
     channel = new BroadcastChannel('vto-library');
     channel.onmessage = refresh;
     window.addEventListener('vto-video-deleted', refresh);
+    window.addEventListener('vto-library-changed', refresh);
+    window.addEventListener('vto-account-changed', accountChanged);
     load();
-    return () => { channel.close(); window.removeEventListener('vto-video-deleted', refresh); };
+    return () => { channel.close(); window.removeEventListener('vto-video-deleted', refresh); window.removeEventListener('vto-library-changed', refresh); window.removeEventListener('vto-account-changed', accountChanged); };
   });
   onDestroy(() => { retired = true; generation++; });
 </script>
@@ -104,9 +118,23 @@
 <main class="mx-auto max-w-5xl space-y-6 p-4">
   <div>
     <h1 class="text-2xl font-semibold">보관함</h1>
-    <p class="mt-2 text-base text-ink/80">저장한 자막을 다시 보고, 주제별로 영상을 골라 보세요. 이 기기에만 저장됩니다.</p>
+    {#if accountEmail}<p class="mt-2 break-words text-base">Google 계정: <bdi>{accountEmail}</bdi></p>{/if}
+    <p class="mt-2 text-base text-ink/80">저장한 자막을 다시 보고, 주제별로 영상을 골라 보세요. 이 기기에 저장하며, 연결한 Google 계정별로 보관함을 구분합니다.</p>
   </div>
   {#if error}<p role="alert" class="rounded-lg border border-accent p-4 text-accent">{error}</p>{/if}
+  {#if legacyAvailable}
+    <section class="space-y-3 rounded-lg border border-ink/30 p-4" aria-label="기존 보관함 가져오기">
+      <h2 class="text-lg font-semibold">이 기기의 기존 보관함</h2>
+      <p>이전에 저장한 영상과 재생목록을 현재 Google 계정의 보관함에 복사할 수 있습니다. 원본, 개인키와 쿠키는 그대로 유지합니다. 진행 중인 작업은 가져오지 않습니다.</p>
+      {#if importing}
+        <p role="status"><bdi>{accountEmail ?? '현재 Google 계정'}</bdi>으로 복사할까요? 같은 계정의 연결된 기기에도 전달됩니다.</p>
+        <button class={button} disabled={busy} onclick={() => change({action:'import_legacy', confirmed:true})}>현재 계정에 복사</button>
+        <button class={button} disabled={busy} onclick={() => importing = false}>취소</button>
+      {:else}
+        <button class={button} disabled={busy} onclick={() => importing = true}>기존 보관함 가져오기</button>
+      {/if}
+    </section>
+  {/if}
   {#if screen === 'loading'}
     <p role="status" aria-busy="true">보관함 불러오는 중…</p>
   {:else if screen === 'error'}
@@ -172,6 +200,18 @@
             <h3 class="text-base font-semibold">{video.title}</h3>
             <p class="break-all text-sm text-ink/80">{video.page_url}</p>
             <p class="text-sm">{video.deleting ? '삭제 미완료 · 다시 시도해 주세요' : video.active ? '처리 중 · 삭제할 수 없음' : video.saved ? '저장 자막 있음 · 재번역 없이 열기' : '저장 자막 없음 · 열어도 자동 번역하지 않음'}</p>
+            {#if video.versions && video.versions.length > 1}
+              <label class="flex flex-col gap-2 text-sm">
+                저장된 자막 {video.versions.length}개 · 선택한 뒤 영상을 다시 열어 주세요
+                <select class={input} aria-label={`${video.title} 저장 자막 선택`} disabled={busy || video.active || video.deleting}
+                  value={video.versions.find(v => v.selected)?.id ?? ''}
+                  onchange={(event) => change({action:'select_translation',video_key:video.video_key,translation_id:event.currentTarget.value})}>
+                  {#each video.versions as version, index}
+                    <option value={version.id}>저장본 {index + 1}{index === 0 ? ' · 최근 선택 또는 완료' : ''}{version.selected ? ' · 사용 중' : ''}</option>
+                  {/each}
+                </select>
+              </label>
+            {/if}
             <div class="flex flex-wrap gap-2">
               <button class="{button} bg-primary font-semibold text-surface" disabled={busy || video.deleting} onclick={() => openVideo(video)}>영상 열기</button>
               {#if playlist}

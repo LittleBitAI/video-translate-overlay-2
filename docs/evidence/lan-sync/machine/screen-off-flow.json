@@ -1,0 +1,30 @@
+{
+  "head": "5f899a2c72080208f84db666d83e119aa4fcd788",
+  "pc_interface": "Ethernet",
+  "pc_ipv4": "192.168.0.3",
+  "phone_interface": "Wi-Fi",
+  "phone_ipv4": "192.168.0.2",
+  "usb_tether_interface_absent": true,
+  "screen_off_before_first_change_ms": 20527,
+  "changes": [
+    {
+      "playlist_id": "c09fca8f-1b56-4209-9d35-7fb8a8d4ba6d",
+      "name": "LAN screen off first 20261115",
+      "delivery_ms": 2695
+    },
+    {
+      "playlist_id": "c09fca8f-1b56-4209-9d35-7fb8a8d4ba6d",
+      "name": "LAN screen off second 20261115",
+      "delivery_ms": 702
+    }
+  ],
+  "foreground_service": true,
+  "connection_notification_id": 2002,
+  "screen_off_observed_ms": 35012,
+  "observed_without_webview_ipc": true,
+  "usb_charging": true,
+  "deep_doze_claimed": false,
+  "wakefulness": "Dozing",
+  "interactive_mode": false,
+  "display_state": "OFF"
+}

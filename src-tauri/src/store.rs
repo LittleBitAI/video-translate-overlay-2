@@ -4,7 +4,7 @@ use crate::db::{Db, Row, Val};
 use crate::p;
 use std::path::Path;
 
-const SCHEMA: &str = "
+pub(crate) const SCHEMA: &str = "
 CREATE TABLE IF NOT EXISTS playlist (
   id TEXT PRIMARY KEY, name TEXT NOT NULL, position INTEGER NOT NULL
 );
@@ -70,6 +70,9 @@ INSERT OR IGNORE INTO setting (id) VALUES (1);
 CREATE TABLE IF NOT EXISTS browser (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   url TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS playback (
+  video_key TEXT PRIMARY KEY, position_ms INTEGER NOT NULL
 )
 ";
 
@@ -142,6 +145,8 @@ pub struct Store {
 type R<T> = Result<T, String>;
 
 impl Store {
+    pub(crate) fn path(&self) -> &Path { &self.path }
+
     pub fn open(path: &Path) -> R<Store> {
         let db = Db::open(path)?;
         // Readers (the overlay polling a job) never wait on the worker's writes,
@@ -195,9 +200,27 @@ impl Store {
         media_url: Option<&str>,
         model: &str,
     ) -> R<()> {
+        self.create_job_with_consent(id, key, page_url, site, title, duration_ms, media_url, model, None)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn create_job_with_consent(
+        &self, id: &str, key: &str, page_url: &str, site: &str, title: &str,
+        duration_ms: i64, media_url: Option<&str>, model: &str, deletion_token: Option<&str>,
+    ) -> R<()> {
         let db = Db::open(&self.path)?;
         db.exec("BEGIN IMMEDIATE")?;
         let r = (|| {
+            if crate::sync::local::owned(&db)? {
+                if let Some(row) = db.query_one("SELECT token,complete FROM deleted_video WHERE video_key=?", p![key])? {
+                    if row[1].int() == 0 || deletion_token != Some(row[0].text().as_str()) {
+                        return Err("sync deletion confirmation required".into());
+                    }
+                }
+                if !crate::sync::local::deletions_cleaned(&db, key)? {
+                    return Err("sync deletion confirmation required".into());
+                }
+            }
             db.execute(
                 &format!(
                     "INSERT INTO video (video_key, page_url, site, title, duration_ms, created_at) VALUES (?,?,?,?,?,{NOW})
@@ -215,6 +238,7 @@ impl Store {
                 p![id, key, media_url, model],
             )?;
             db.execute("DELETE FROM deleted_video WHERE video_key=?", p![key])?;
+            crate::sync::local::capture_job(&db, id, key)?;
             Ok(())
         })();
         db.exec(if r.is_ok() { "COMMIT" } else { "ROLLBACK" })?;
@@ -225,12 +249,20 @@ impl Store {
     pub fn retranslate(&self, id: &str, previous: &Job, model: &str) -> R<()> {
         self.db.exec("BEGIN IMMEDIATE")?;
         let result = (|| {
+            if crate::sync::local::owned(&self.db)? {
+                if self.db.query_one("SELECT video_key FROM deleted_video WHERE video_key=?", p![previous.video_key.as_str()])?.is_some()
+                    || !crate::sync::local::deletions_cleaned(&self.db, &previous.video_key)? {
+                    return Err("sync deletion confirmation required".into());
+                }
+            }
+            let cost = self.retranslation_cost(&previous.video_key)?.max(previous.cost_krw);
             self.db.execute(
                 &format!("INSERT INTO job (id,video_key,stage,written_regions,translation_model,input_amount,output_amount,cost_krw,created_at,updated_at)
                     VALUES (?,?,'translating',?,?,?,?,?,{NOW},{NOW})"),
-                p![id, previous.video_key.as_str(), previous.written_regions, model, previous.input_amount, previous.output_amount, previous.cost_krw],
+                p![id, previous.video_key.as_str(), previous.written_regions, model, previous.input_amount, previous.output_amount, cost],
             )?;
             self.db.execute("INSERT INTO retranslation_cue (job_id, seq) SELECT ?, seq FROM cue WHERE video_key=?", p![id, previous.video_key.as_str()])?;
+            crate::sync::local::capture_job(&self.db, id, &previous.video_key)?;
             Ok(())
         })();
         self.db.exec(if result.is_ok() { "COMMIT" } else { "ROLLBACK" })?;
@@ -241,18 +273,36 @@ impl Store {
         Ok(self.db.query_one(&format!("SELECT {JOB_COLS} FROM job WHERE id=?"), p![id])?.map(|r| job(&r)))
     }
 
+    pub(crate) fn retranslation_cost(&self, video_key: &str) -> R<f64> {
+        let spent = self.db.query_one("SELECT COALESCE(MAX(cost_krw),0) FROM job WHERE video_key=?", p![video_key])?.ok_or("missing cost summary")?[0].real();
+        Ok(spent.max(crate::sync::local::retained_cost(&self.db, video_key)?))
+    }
+
     pub fn latest_job(&self, video_key: &str) -> R<Option<Job>> {
-        Ok(self
+        let latest = self
             .db
             .query_one(&format!("SELECT {JOB_COLS} FROM job WHERE video_key=? ORDER BY created_at DESC, rowid DESC LIMIT 1"), p![video_key])?
-            .map(|r| job(&r)))
+            .map(|r| job(&r));
+        if latest.as_ref().is_some_and(|job| job.stage == "ready") {
+            if let Some(selected) = self.selected_ready_job(video_key)? { return Ok(Some(selected)); }
+        }
+        Ok(latest)
     }
 
     pub fn ready_job(&self, video_key: &str) -> R<Option<Job>> {
+        if let Some(selected) = self.selected_ready_job(video_key)? { return Ok(Some(selected)); }
         Ok(self.db.query_one(
             &format!("SELECT {JOB_COLS} FROM job WHERE video_key=? AND stage='ready' ORDER BY created_at DESC, rowid DESC LIMIT 1"),
             p![video_key],
         )?.map(|r| job(&r)))
+    }
+
+    fn selected_ready_job(&self, video_key: &str) -> R<Option<Job>> {
+        if !crate::sync::local::owned(&self.db)? { return Ok(None); }
+        let Some(row) = self.db.query_one("SELECT identity FROM sync_selected_translation WHERE video_key=?", p![video_key])? else { return Ok(None) };
+        let identity = row[0].text();
+        let hash = identity.rsplit('/').next().ok_or("invalid selected translation")?;
+        Ok(self.job(&format!("sync-{hash}"))?.filter(|job| job.video_key==video_key && job.stage=="ready"))
     }
 
     /// The oldest job still in progress, if any.
@@ -312,6 +362,7 @@ impl Store {
             )?;
             self.db.execute("DELETE FROM retranslation_cue WHERE job_id=?", p![id])?;
             self.db.execute(&format!("UPDATE job SET stage='ready', percent=100, updated_at={NOW} WHERE id=?"), p![id])?;
+            crate::sync::local::finish_job(&self.db, id)?;
             Ok(())
         })();
         self.db.exec(if result.is_ok() { "COMMIT" } else { "ROLLBACK" })?;
@@ -337,11 +388,17 @@ impl Store {
     }
 
     pub fn add_usage(&self, id: &str, input: i64, output: i64, cost_of: impl Fn(i64, i64) -> f64) -> R<Job> {
+        if input < 0 || output < 0 { return Err("invalid usage".into()); }
         let j = self.job(id)?.ok_or("job vanished")?;
-        let (i, o) = (j.input_amount + input, j.output_amount + output);
+        let i = j.input_amount.checked_add(input).ok_or("usage total overflow")?;
+        let o = j.output_amount.checked_add(output).ok_or("usage total overflow")?;
+        // Saved peers carry recorded cost without their original provider token counters.
+        let added = cost_of(input, output);
+        let cost = j.cost_krw + added;
+        if !added.is_finite() || added < 0.0 || !cost.is_finite() { return Err("invalid usage cost".into()); }
         self.db.execute(
             &format!("UPDATE job SET input_amount=?, output_amount=?, cost_krw=?, updated_at={NOW} WHERE id=?"),
-            p![i, o, cost_of(i, o), id],
+            p![i, o, cost, id],
         )?;
         self.job(id)?.ok_or_else(|| "job vanished".into())
     }

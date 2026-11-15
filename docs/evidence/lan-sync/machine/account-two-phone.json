@@ -1,0 +1,32 @@
+{
+  "head": "5f899a2c72080208f84db666d83e119aa4fcd788",
+  "sign_out_stopped_service": true,
+  "retired_account_read_refused": true,
+  "observations": [
+    {
+      "state": "signed_in",
+      "generation": 1,
+      "connection": "account_mismatch"
+    },
+    {
+      "state": "signed_out",
+      "generation": 2,
+      "connection": null
+    },
+    {
+      "state": "signing_in",
+      "generation": 3,
+      "connection": "signed_out"
+    },
+    {
+      "state": "signed_in",
+      "generation": 3,
+      "connection": "background_paused"
+    }
+  ],
+  "state": "signed_in",
+  "generation": 3,
+  "matches_windows_second_account": true,
+  "account_two_marker_received": true,
+  "first_account_rows_absent": true
+}

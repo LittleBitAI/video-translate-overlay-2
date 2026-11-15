@@ -27,9 +27,11 @@ controls and titles, and 14 px for source links and availability. Controls have
 at least 44 px touch targets. Rows and controls wrap at phone widths; links wrap
 without hiding their destination.
 
-All requests belong to this device's SQLite database, with no accounts or cloud
-scope. Each screen captures its generation when a request begins and ignores a
-response from an older generation or retired screen. Mutation authorization is
+Signed-out library requests select the original device database; Google sign-in
+selects a separate account-owned local database. An explicit import confirmation
+copies completed device data while preserving the original. Each screen captures
+its account and screen generations and ignores a response from an older generation
+or retired screen. Mutation authorization is
 separate from rendering: a retired screen may finish an authorized backend
 mutation, but cannot publish its result into the replacement screen. A mutation
 is followed by a fresh read; failed refreshes remain visible errors.
@@ -39,3 +41,27 @@ data removal and future translation costs. Failed cleanup hides subtitles and
 keeps a retry action. Playback views recheck saved availability, discard older
 subtitle responses, and clear cues after deletion. Untranslated links can be
 organized and opened without creating a translation job.
+
+Several completed responses appear in one native saved-version selector, using
+the existing input styling and 44 px target. Selecting a response preserves its
+cue times and cost and requires reopening the video. Initial playback may resume
+once at the saved position; user input cancels delayed resume and later remote
+position changes never move a player already controlled here.
+
+People use the Google account section in `/preferences` to choose the identity
+for the local-network connection, separately from YouTube and Gemini.
+It uses the same approved palette, card spacing, type hierarchy and 44 px
+controls. Show the verified email, progress, cancellation and recovery inline;
+confirm sign-out and preserve existing saved data. A signed-in identity alone
+must not appear as an established sync connection. Account responses must match
+the captured account generation as well as the screen generation.
+
+Keep a 44 px privacy-policy control in that same account section, available
+before sign-in. Its native action opens only the published policy in the
+platform browser and shows a retryable error without changing account state.
+
+Public app-information pages have two reading tasks: understand the app and
+Google identity use on the homepage, and read the complete data practices on
+the privacy page. They reuse C1 and the 14/16/20/28 px type scale. A 70ch reading
+column, wrapping navigation, 44 px navigation targets and normal document flow
+serve both phone and desktop. They have no forms, scripts or account dashboard.

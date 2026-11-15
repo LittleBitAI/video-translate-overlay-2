@@ -1,0 +1,36 @@
+import {chromium} from 'playwright';
+import {readFile,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import assert from 'node:assert/strict';
+const fixture=JSON.parse(await readFile(new URL('./expected-windows.json',import.meta.url)));
+const original=`t/${fixture.video.key}/${createHash('sha256').update(JSON.stringify(fixture)).digest('hex')}`;
+const browsers=[];
+async function wait(read,predicate){const end=Date.now()+15000;do{const value=await read();if(predicate(value))return value;await new Promise(r=>setTimeout(r,200));}while(Date.now()<end);throw new Error('Native saved-version convergence timed out');}
+try {
+  const devices=[];
+  for(const [name,port] of [['windows',9226],['android',9227]]) {
+    const b=await chromium.connectOverCDP(`http://127.0.0.1:${port}`);browsers.push(b);
+    const p=b.contexts().flatMap(c=>c.pages()).find(p=>p.url().startsWith('http://tauri.localhost'));
+    const a=await p.evaluate(()=>window.__TAURI_INTERNALS__.invoke('get_google_account'));
+    const read=()=>p.evaluate(({generation,url,key})=>Promise.all([
+      window.__TAURI_INTERNALS__.invoke('get_library',{account_generation:generation}),
+      window.__TAURI_INTERNALS__.invoke('get_job',{page_url:url,account_generation:generation}),
+      window.__TAURI_INTERNALS__.invoke('get_subtitles',{video_key:key,account_generation:generation})
+    ]),{generation:a.generation,url:fixture.video.page_url,key:fixture.video.key});
+    await wait(read,([library,job])=>library.videos.find(v=>v.video_key===fixture.video.key)?.versions.length===2&&job.cost_krw===23.5);
+    if(!(await p.getByRole('heading',{name:'보관함',exact:true}).count()))await p.getByRole('link',{name:'보관함',exact:true}).click();
+    await p.getByRole('button',{name:'전체 영상',exact:true}).click();
+    devices.push({name,p,read});
+  }
+  const phone=devices[1];
+  const selector=phone.p.getByRole('combobox',{name:`${fixture.video.title} 저장 자막 선택`,exact:true});
+  await selector.selectOption(original);
+  for(const device of devices){
+    const [library,job,subtitles]=await wait(device.read,([_,job])=>job.cost_krw===fixture.cost_krw);
+    const video=library.videos.find(v=>v.video_key===fixture.video.key);
+    assert.equal(video.versions.length,2);assert.equal(video.versions.find(v=>v.selected).id,original);
+    assert.deepEqual(subtitles.cues.map(c=>[c.start_ms,c.end_ms,c.text_ko]),fixture.cues.map(c=>[c.start_ms,c.end_ms,c.text_ko]));
+  }
+  const receipt={head:'fc0d072f78248e120db7a7582852add873814cec',retained_versions:2,selected_original_cost_krw:12.5,alternate_cost_krw:23.5,phone_ui_selection_converged:true,original_cues_preserved:true};
+  await writeFile(new URL('./version-flow.json',import.meta.url),JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));
+}finally{for(const b of browsers)await b.close();}

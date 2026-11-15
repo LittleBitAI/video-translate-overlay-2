@@ -1,0 +1,2678 @@
+{
+  "version": 1,
+  "reviewed_revision": "ac67b9c110aa235af69647a27fffd89679030a02",
+  "application_inventory_revision": "c52830bf29506fc57810067cf6f1f5fba2621e09",
+  "meaning": "Each source_revision identifies the actual application source/build; documentation and evidence-tool descendants are validated by inventory, not relabeled as rebuilt binaries.",
+  "owner_reports": [
+    {
+      "reported": "2026-11-15",
+      "subject": "Google registration",
+      "actual": "External / In production after approved app name, support contact, homepage and policy fields",
+      "independently_inspected": false
+    },
+    {
+      "reported": "Before review round 1",
+      "subject": "Repository gate",
+      "actual": "Passed at ac67b9c, reported by the server through the task conversation",
+      "repair_gate_pass_claimed": false
+    }
+  ],
+  "inventories": {
+    "7d87b59d073c52ba74a55a79e0d6a15bb5a19083d26fce70c6b775e9d5cfb869": {
+      "files": [
+        [
+          ".cargo/config.toml",
+          "0ea305b595e0b970679b1cbfd135061aec684aa1"
+        ],
+        [
+          ".config/nextest.toml",
+          "56ee54c03e0a815c7d1cdebbabdbd33e3b43f903"
+        ],
+        [
+          ".gitattributes",
+          "95c1951cd30655419d3fc2cd7ee0e600ab42e93c"
+        ],
+        [
+          "Cargo.lock",
+          "1e7a6dfa1c44e5331c5956b3b535f56708283e12"
+        ],
+        [
+          "Cargo.toml",
+          "8312d4eed80cdf2fa51b371225ff30bd002e2a95"
+        ],
+        [
+          "index.html",
+          "6051cc7e4edd98aa56ff67691ff908054e30389d"
+        ],
+        [
+          "package-lock.json",
+          "5c1d665a2da1a301b8d611b5fa057d12f0527971"
+        ],
+        [
+          "package.json",
+          "5d4f97df7f2208e063d0ca67ddba9bae40b6554e"
+        ],
+        [
+          "src-tauri/Cargo.toml",
+          "eb1e9de7f57b7bb9301933b1ebb867b942938b24"
+        ],
+        [
+          "src-tauri/android/whisper.toolchain.cmake",
+          "9177bdab1fb1f4f07b5de26c7a1aca4284b50a10"
+        ],
+        [
+          "src-tauri/build.rs",
+          "57fdda63c1758da12f9ebbb07bff54c61d7a8855"
+        ],
+        [
+          "src-tauri/capabilities/main.json",
+          "942d28de08d8af24560b47f1efaa04036f2fcb3f"
+        ],
+        [
+          "src-tauri/capabilities/overlay-android.json",
+          "61f2d8253bf553eb2267da78c470ec29352eab7c"
+        ],
+        [
+          "src-tauri/capabilities/overlay.json",
+          "7e9cbac3164aeafb75676e1484210c351d341d66"
+        ],
+        [
+          "src-tauri/gen/android/.editorconfig",
+          "ebe51d3bfa4701e67ca2c77b074ab814a7d506e3"
+        ],
+        [
+          "src-tauri/gen/android/.gitignore",
+          "1c636c39a7506f77d15071ad26afcafc14f8c253"
+        ],
+        [
+          "src-tauri/gen/android/app/.gitignore",
+          "6c4d56b4a28784fdb17ba7cefa4ba2126bd03f71"
+        ],
+        [
+          "src-tauri/gen/android/app/build.gradle.kts",
+          "43419aa7389a758a7833c1a45477ebd7d7c83ea5"
+        ],
+        [
+          "src-tauri/gen/android/app/proguard-rules.pro",
+          "481bb434814107eb79d7a30b676d344b0df2f8ce"
+        ],
+        [
+          "src-tauri/gen/android/app/src/androidTest/java/dev/vto/overlay/YouTubeSessionTest.kt",
+          "efb58c9b8e2ac5026331577163afaf65525c8687"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/AndroidManifest.xml",
+          "4fa864e5ce69c2b238bc58124c6aa9c5ad5a2a98"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/GoogleAccount.kt",
+          "5989ca876eae1ec3454218b76fc0b08782c03b10"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/JobService.kt",
+          "1a69442530e6a944c679a7d2070c4c1ba06a9012"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/MainActivity.kt",
+          "558eee993fc340438f39d74a4df0b3e86ea7beb7"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/SyncService.kt",
+          "b7770362d752390d5cd5b5eb3f758b4d19d42212"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/VideoChromeClient.kt",
+          "13aced79d4a5da320af2068c705a72f6db0801aa"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/VtoPlugin.kt",
+          "49bf7f0db9a1b8da1d746260d9a3a725e60d249e"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml",
+          "2b068d11462a4b96669193de13a711a3a36220a0"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/drawable/ic_launcher_background.xml",
+          "07d5da9cbf141911847041df5d7b87f0dd5ef9d4"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/layout/activity_main.xml",
+          "4fc244418b5fe524789352d1b1b52d1b22045f3a"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+          "28f1aa119119336781390c2531c381499576ed59"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png",
+          "85d0c88af65bcef008faba29bfc02688883dda8c"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+          "28f1aa119119336781390c2531c381499576ed59"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+          "73e48dbfb7dc31ed1e951b77820af88b93fcc418"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png",
+          "13dd21476b5c7f69cdfb82969bce7150244c127f"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+          "73e48dbfb7dc31ed1e951b77820af88b93fcc418"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+          "1d98044f13bdd3afc7cb426644ae118688c03c14"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png",
+          "a888b336b5bc84b42c0c266ce9b8ec5d9eafed0b"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+          "1d98044f13bdd3afc7cb426644ae118688c03c14"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+          "081832466b4a17180fe9255fa0d3fcba2010592c"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png",
+          "a2a838e7b550ac82b12e73d71427c6ffea06a944"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+          "081832466b4a17180fe9255fa0d3fcba2010592c"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+          "b18bceb64d257ed31d50e65d7f2b98abcfb21158"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png",
+          "3f8a57f38e0273699c8cdd1012042bffdc38abce"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+          "b18bceb64d257ed31d50e65d7f2b98abcfb21158"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/values-night/themes.xml",
+          "f2b6cf287c382afd1bf8487ffd5f01faf742e46c"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/values/colors.xml",
+          "f8c6127d327620c93d2b2d00342a68e97b98a48d"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/values/strings.xml",
+          "d80323600d98ef514256693fd98a6cb2110c9f47"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/values/themes.xml",
+          "f2b6cf287c382afd1bf8487ffd5f01faf742e46c"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/res/xml/file_paths.xml",
+          "782d63b9932cb68dac12773dc25de54ab7ce1644"
+        ],
+        [
+          "src-tauri/gen/android/build.gradle.kts",
+          "6f96a1e6d6753f7bef0af33ce9d5b69350fe08ab"
+        ],
+        [
+          "src-tauri/gen/android/buildSrc/build.gradle.kts",
+          "cc6c9bc0f02091dfe12afa46a2a7e5ae0dafa2d8"
+        ],
+        [
+          "src-tauri/gen/android/buildSrc/src/main/java/dev/vto/overlay/kotlin/BuildTask.kt",
+          "3a293ef803104d891aa46596ad8f7a736b7485ea"
+        ],
+        [
+          "src-tauri/gen/android/buildSrc/src/main/java/dev/vto/overlay/kotlin/RustPlugin.kt",
+          "3309f1cc4b4435998e33df8d0be8e223108fb6cc"
+        ],
+        [
+          "src-tauri/gen/android/gradle.properties",
+          "9e6e7b95e80eba8a6b5e1367cbea39b8f14c9aee"
+        ],
+        [
+          "src-tauri/gen/android/gradle/wrapper/gradle-wrapper.jar",
+          "b1b8ef56b44f16b14dc800fa8103a6d89abb526f"
+        ],
+        [
+          "src-tauri/gen/android/gradle/wrapper/gradle-wrapper.properties",
+          "b2ee479e23661bf76d92f0a909924fad29c26c51"
+        ],
+        [
+          "src-tauri/gen/android/gradlew",
+          "249efbb032ce46a80c687c0723eb172e85f6a136"
+        ],
+        [
+          "src-tauri/gen/android/gradlew.bat",
+          "a51ec4f5886d3bb106b26724ee4507addbbe3fa8"
+        ],
+        [
+          "src-tauri/gen/android/settings.gradle",
+          "39391166fb1cbf120ba1e604338702f148eb7966"
+        ],
+        [
+          "src-tauri/icons/icon.ico",
+          "945016baed64a2a8a4a788944efd787190465c8e"
+        ],
+        [
+          "src-tauri/icons/icon.png",
+          "be3d01730a6de4f9bc2c3ea705c545e2f302abd1"
+        ],
+        [
+          "src-tauri/src/account.rs",
+          "7ce2624846413694d565ce8ad3f9bff6ed4a153f"
+        ],
+        [
+          "src-tauri/src/account_secrets.rs",
+          "ec3eaa76a338321ab703afb9cb436e71d935c7c9"
+        ],
+        [
+          "src-tauri/src/account_tests.rs",
+          "806ee843e06c5270177d1aa4006b944f5dbfdb8f"
+        ],
+        [
+          "src-tauri/src/android.rs",
+          "424c63b8a14e7286cbeccf12e46cdfe30c31a72c"
+        ],
+        [
+          "src-tauri/src/api.rs",
+          "a2f47cc7cce91ac678bddadafa252abf039448a9"
+        ],
+        [
+          "src-tauri/src/api_duration_tests.rs",
+          "e5f9002fd33e78881c41fe744efe536dae465583"
+        ],
+        [
+          "src-tauri/src/api_hold_tests.rs",
+          "3b3e45888c7579fa9ebdd4d1d60350e877a8b932"
+        ],
+        [
+          "src-tauri/src/api_key_tests.rs",
+          "ad1e11f21a9c6ba5d9b347ed496eaec2ee5c4fd4"
+        ],
+        [
+          "src-tauri/src/app.rs",
+          "210ae3d85dbee735f0a279147be6755b7e117f27"
+        ],
+        [
+          "src-tauri/src/app_toast_tests.rs",
+          "ca222ea39259aca410287ee76cdad1cb4b6bc26a"
+        ],
+        [
+          "src-tauri/src/audio.rs",
+          "349d74b46184c456265a9feef4d044ab2423210e"
+        ],
+        [
+          "src-tauri/src/audio_quiet_and_cut_tests.rs",
+          "0a2b09c135cd4cb05ad674e3968a53cd861b676f"
+        ],
+        [
+          "src-tauri/src/bin/vto-contract-host.rs",
+          "d108bc91fa15deed256eab8b99f07795d0dd0a94"
+        ],
+        [
+          "src-tauri/src/bin/vto-web.rs",
+          "67059ae1ddbb376dc4339b9e9718a682ebf457f9"
+        ],
+        [
+          "src-tauri/src/commands.rs",
+          "4578cfed2695ecdf0fa1de9fd32a6e74df4d9356"
+        ],
+        [
+          "src-tauri/src/commands_android_tests.rs",
+          "663bae6cfe86b61f9a4519891e093d489040b684"
+        ],
+        [
+          "src-tauri/src/db.rs",
+          "f2abeff9cb5a5aae25e167d2b866ca89beb9ddce"
+        ],
+        [
+          "src-tauri/src/decode.rs",
+          "cbcd4570f88c4950edc1b41cd829d77465cf31de"
+        ],
+        [
+          "src-tauri/src/decode_container_gap_tests.rs",
+          "5380842fe7fbfd8509259a06c7f293c922e41d24"
+        ],
+        [
+          "src-tauri/src/decode_edit_tests.rs",
+          "104e87f4132add7b869347bf8997a0c2ce57ada7"
+        ],
+        [
+          "src-tauri/src/decode_fmp4_direct_tests.rs",
+          "0dce04edf4b363882ff42bc95e151e54b5b1aace"
+        ],
+        [
+          "src-tauri/src/decode_fmp4_gap_tests.rs",
+          "80232d761a806b52807c537aac585506cc9b15f7"
+        ],
+        [
+          "src-tauri/src/decode_fmp4_lead_tests.rs",
+          "c13d65c57f81dec35617c1f78fb4f52f98fd51cc"
+        ],
+        [
+          "src-tauri/src/decode_gap_tests.rs",
+          "b64c8880f89f6e4dab575899ed31c63464940df7"
+        ],
+        [
+          "src-tauri/src/decode_limits_tests.rs",
+          "25466672defd928bdbaa67ebf9f7c01ba8f1615f"
+        ],
+        [
+          "src-tauri/src/decode_tests.rs",
+          "9e1813a4bdef86b348b843af99a4bb2d82444510"
+        ],
+        [
+          "src-tauri/src/gemini.rs",
+          "acb727456abe1323bf8a762266f2568941241ee1"
+        ],
+        [
+          "src-tauri/src/gemini_key_tests.rs",
+          "88fd3623fb8fa0e4ed95fb885f6b525986d01f96"
+        ],
+        [
+          "src-tauri/src/google_auth.rs",
+          "6a49bb9d6f5b4bb16c1fc81ed16502957924c260"
+        ],
+        [
+          "src-tauri/src/google_auth_tests.rs",
+          "1309f1a6699fa44f5ae2a9a51539534ae1820691"
+        ],
+        [
+          "src-tauri/src/google_desktop.rs",
+          "c336d5d0c1ce3bed34324e213269c2b995c18ade"
+        ],
+        [
+          "src-tauri/src/google_desktop_tests.rs",
+          "ac0af8016018f58e4b0eca50a9313ecc17be46a0"
+        ],
+        [
+          "src-tauri/src/google_registration.rs",
+          "fc5bdf602f0076b4678eca3487dd4c6ba6f8469e"
+        ],
+        [
+          "src-tauri/src/http.rs",
+          "1507d771db744a8c4a080d5f3b2b0f9196e683b2"
+        ],
+        [
+          "src-tauri/src/http_chunked_tests.rs",
+          "2dc485f5d6767413501756d86bf07fc0439b14b1"
+        ],
+        [
+          "src-tauri/src/http_head_limits_tests.rs",
+          "86a70e9520d06be733a7cbc33c980723307c8572"
+        ],
+        [
+          "src-tauri/src/http_length_tests.rs",
+          "9228b0b960fd083b04ba8d58f2ae10d5a9fd74f2"
+        ],
+        [
+          "src-tauri/src/http_pin_tests.rs",
+          "2334c5f2f86cec66f420f81b43dd91a88533a825"
+        ],
+        [
+          "src-tauri/src/http_portable_tests.rs",
+          "74dadf43ef07e04ff8b1d9d999a0d3c5ee353205"
+        ],
+        [
+          "src-tauri/src/lib.rs",
+          "12f637776f7e5dc6d33844c6ea31b79826eda7fe"
+        ],
+        [
+          "src-tauri/src/library_api.rs",
+          "d179610e41ebb2cc924917767ab9741a6ad02628"
+        ],
+        [
+          "src-tauri/src/library_scope.rs",
+          "854aeba6d3a66475de3725cd0269e6d07db54174"
+        ],
+        [
+          "src-tauri/src/library_store.rs",
+          "1b24eea05093e24caf7cc77be07fdc2d5110fe8e"
+        ],
+        [
+          "src-tauri/src/library_store_tests.rs",
+          "dc9221a337f2d4b624a887551bcf992e7627e259"
+        ],
+        [
+          "src-tauri/src/main.rs",
+          "426f955ecf08bca48e727e0b3ca16308c72302f3"
+        ],
+        [
+          "src-tauri/src/media.rs",
+          "50968537249f84157a7704bcda6953f525eba75e"
+        ],
+        [
+          "src-tauri/src/media_audio_group_tests.rs",
+          "ba957c65d24fdf60cd335e3567846d4e0486de51"
+        ],
+        [
+          "src-tauri/src/media_discontinuity_tests.rs",
+          "306053ecc31d6779c470c78539761fb748162443"
+        ],
+        [
+          "src-tauri/src/media_dns_tests.rs",
+          "a792d5326368289358f293532de47b12f73d9834"
+        ],
+        [
+          "src-tauri/src/media_hls_aes_tests.rs",
+          "5930c510bd85821ec5fcc752ad158e50d6e305d6"
+        ],
+        [
+          "src-tauri/src/media_hls_init_tests.rs",
+          "3235b38dbee90f5db25617f29e0643a7a4b95938"
+        ],
+        [
+          "src-tauri/src/media_hls_pieces_tests.rs",
+          "9bf83ff15832bbbe258890cc085acb519019ffd7"
+        ],
+        [
+          "src-tauri/src/media_hls_start_tests.rs",
+          "d26f164bd010101b2390d99d67c11137f0596c2c"
+        ],
+        [
+          "src-tauri/src/media_norange_tests.rs",
+          "ba2ff22b274adc20e7ad7e0fc67a7ca11856ffbc"
+        ],
+        [
+          "src-tauri/src/media_not_audio_tests.rs",
+          "0b835235a3bbaf8141be8e27b194a9d15c7ff051"
+        ],
+        [
+          "src-tauri/src/media_probe_tests.rs",
+          "c72f24b7b51bf9e5b1955a34bcfa8ed29e761d51"
+        ],
+        [
+          "src-tauri/src/media_tracks_tests.rs",
+          "1a742c16e6c82272ec183978a9af1561f3fcdfb0"
+        ],
+        [
+          "src-tauri/src/media_webm_drm_tests.rs",
+          "5c784efbe27a9ee9ff87e37fa8e349d71dca9373"
+        ],
+        [
+          "src-tauri/src/pipeline.rs",
+          "d0e5bcff25701eeb3ccb0c233e9f21613ce939dc"
+        ],
+        [
+          "src-tauri/src/pipeline_audio_tests.rs",
+          "b443538c1c0f5a8728ff8696abdd8e4cadba4d47"
+        ],
+        [
+          "src-tauri/src/pipeline_cost_tests.rs",
+          "ce980c40e28102a51d9832160f7b0d2fdfb9ae6d"
+        ],
+        [
+          "src-tauri/src/pipeline_glossary_tests.rs",
+          "b284688840630b9ebbd88c02ad97c68e424341e5"
+        ],
+        [
+          "src-tauri/src/pipeline_worker_tests.rs",
+          "aec1e9df4eb6a1ebfd2043364e7acb144e58070a"
+        ],
+        [
+          "src-tauri/src/platform.rs",
+          "f09ddbda30ae4d32bab8de38440229bcdd44c2a2"
+        ],
+        [
+          "src-tauri/src/screens.rs",
+          "2e372bc13121f1b2999f7db83367ee4365288e2f"
+        ],
+        [
+          "src-tauri/src/store.rs",
+          "7fbd3b57cfd7c88dbaed63daba53a78c3a0e14ef"
+        ],
+        [
+          "src-tauri/src/store_wal_tests.rs",
+          "fdc29d14caa325f748ac62630bfc2ebf7fb3acba"
+        ],
+        [
+          "src-tauri/src/sync.rs",
+          "95d9a06036f23e74128b94ffe5301e7444311a5f"
+        ],
+        [
+          "src-tauri/src/sync_channel.rs",
+          "93b96c40be7f8959866cd2d23a2ef047b0647210"
+        ],
+        [
+          "src-tauri/src/sync_channel_tests.rs",
+          "1e60030c2d16b66063f5aa5b03306ebafb55b52f"
+        ],
+        [
+          "src-tauri/src/sync_cleanup.rs",
+          "2ed15940b8b896556e9bf628428014e3513ae1ea"
+        ],
+        [
+          "src-tauri/src/sync_cleanup_tests.rs",
+          "6f3b1dc56d6ee0379b1c11c726fa50ea0b2b0c71"
+        ],
+        [
+          "src-tauri/src/sync_discovery.rs",
+          "12047be6e260889a59a2425535b1feb7d0cb72ce"
+        ],
+        [
+          "src-tauri/src/sync_discovery_tests.rs",
+          "74b66aa5a756bbbbbf8f99489fb9385c8bd21df8"
+        ],
+        [
+          "src-tauri/src/sync_local.rs",
+          "76ba8945c8b8f4db79bef0b2cbf05a0e4d6e446f"
+        ],
+        [
+          "src-tauri/src/sync_runtime.rs",
+          "7de54335509c3b5dc9e5c70de74b38781adbfd91"
+        ],
+        [
+          "src-tauri/src/sync_runtime_tests.rs",
+          "35e0597ffcdd6d42d1137b7ac27aa709a1459faa"
+        ],
+        [
+          "src-tauri/src/sync_store.rs",
+          "bcca1e832b09cd92fa2110af94474b39c63633d8"
+        ],
+        [
+          "src-tauri/src/sync_store_tests.rs",
+          "d97e9c493b641e0691b65ed2cf4e2ced5d3a1687"
+        ],
+        [
+          "src-tauri/src/sync_tests.rs",
+          "77af5049b5fb635dc33e5e1ad5cd1537b8ef9e57"
+        ],
+        [
+          "src-tauri/src/sync_tls.rs",
+          "9bfa218eebedc5c9ee2f38617e159e46eb91696f"
+        ],
+        [
+          "src-tauri/src/sync_tls_tests.rs",
+          "da97c36ecebc98d9a34aa15f192bf35bbe4849bd"
+        ],
+        [
+          "src-tauri/src/updates.rs",
+          "5aea5946e1582c0f7bf075d483e351ae9cbae13d"
+        ],
+        [
+          "src-tauri/src/updates_tests.rs",
+          "1f7d4b20fddbd00f1bde1f764a18f5e3cb68c6f4"
+        ],
+        [
+          "src-tauri/src/web.rs",
+          "93bc9c7731ef101c9a92b17f53195b74ca66e132"
+        ],
+        [
+          "src-tauri/src/web_tests.rs",
+          "e1b2b2ed797935c2dd2b988c727b285979f584cb"
+        ],
+        [
+          "src-tauri/src/whisper.rs",
+          "9c413df5de3e348bacc18acbdf71ff4789d2ea61"
+        ],
+        [
+          "src-tauri/src/whisper_tests.rs",
+          "16c1b1d9efd3dbda9662eaac2577995b3e2b9952"
+        ],
+        [
+          "src-tauri/src/youtube.rs",
+          "7e035e89d9b2e77019fb58588fc1c782da430355"
+        ],
+        [
+          "src-tauri/src/youtube_live_tests.rs",
+          "93d1d721d97ecf27d37befcde86bc6f224b7c93c"
+        ],
+        [
+          "src-tauri/tauri.conf.json",
+          "b3c98683ec6005a001d58cf701b414b513a3e3ac"
+        ],
+        [
+          "src-tauri/tests/audio_clock_probe.rs",
+          "97d2ef2d4396132111e05d2a1592f48711e925a4"
+        ],
+        [
+          "src-tauri/tests/decode_memory.rs",
+          "bc5a100c146dd2bb87f4e7ca8e4abee350fd8c76"
+        ],
+        [
+          "src-tauri/tests/fixtures/audio/cut.mp4",
+          "27ce1c373b8ac0fb9fe920e8424c6403a3509dbc"
+        ],
+        [
+          "src-tauri/tests/fixtures/audio/gap.mp4",
+          "f7dbec24c95690bc479c20429eb458f337f828b1"
+        ],
+        [
+          "src-tauri/tests/fixtures/audio/gap.ts",
+          "7cbe7b88be4554baff1fa83d76991d993b860e66"
+        ],
+        [
+          "src-tauri/tests/fixtures/audio/gap.webm",
+          "d75d4f1aa2f406ace57f8ca957cac911a6ec32e6"
+        ],
+        [
+          "src-tauri/tests/fixtures/audio/lead.mp4",
+          "99ad29c38736dd1a44e7f8d58710035dfe9e416b"
+        ],
+        [
+          "src-tauri/tests/fixtures/audio/skip.mp4",
+          "2ab4cea1523b29a3674545e02f92ec33e68797d1"
+        ],
+        [
+          "src-tauri/tests/fixtures/audio/tone.aac",
+          "0a84174859aee2dc8315628be4fc6e950d2ceca3"
+        ],
+        [
+          "src-tauri/tests/fixtures/audio/tone.m4a",
+          "b3bb48f1bf3c149d70c5bc1658a0e6c5201c29ab"
+        ],
+        [
+          "src-tauri/tests/fixtures/audio/tone.mp3",
+          "967f9169469dcb80f6bf87844955b1789c4ddb8f"
+        ],
+        [
+          "src-tauri/tests/fixtures/audio/tone.ts",
+          "f8789f0c0ba0cf5ac77c52e4f869055c68d02c91"
+        ],
+        [
+          "src-tauri/tests/fixtures/audio/trim.mp4",
+          "09cda31fbb114b4ed04001496c6c83894d3bf688"
+        ],
+        [
+          "src-tauri/tests/fixtures/auth/test-only-rsa.pem",
+          "b7d5b5a445723d63129d441e88571e5c340ae7f2"
+        ],
+        [
+          "src-tauri/tests/fixtures/hls_disc/index.m3u8",
+          "c3f91de0de16e058bf067f960b72e796f28643ba"
+        ],
+        [
+          "src-tauri/tests/fixtures/hls_disc/seg0.ts",
+          "e279c80f89aace56baac81b8aa2e8d5653f8e3c3"
+        ],
+        [
+          "src-tauri/tests/fixtures/hls_disc/seg1.ts",
+          "aad58b5ea6cd5ebea206d68451b6a979303ff795"
+        ],
+        [
+          "src-tauri/tests/fixtures/hls_gap/init.mp4",
+          "4616f26bbbaa7d8a465f2fee92f574e7f01f1cfb"
+        ],
+        [
+          "src-tauri/tests/fixtures/hls_gap/seg0.m4s",
+          "e8c082fe6468e22bef1eebaa82a8df0357d7af0a"
+        ],
+        [
+          "src-tauri/tests/fixtures/hls_gap/seg1-late.m4s",
+          "ae5f6a898815b3957cd1783d4b0fdcf3021d69fe"
+        ],
+        [
+          "src-tauri/tests/fixtures/hls_lead/init-tfdt.mp4",
+          "308a58d5b52aeff0b14c9b7fecd9aa3999ea7879"
+        ],
+        [
+          "src-tauri/tests/fixtures/hls_lead/init.mp4",
+          "3b54b15d1547469fe47c3dd4be213219a9c82eab"
+        ],
+        [
+          "src-tauri/tests/fixtures/hls_lead/seg0-tfdt.m4s",
+          "a8f149df9e51adf50708cb090ab6305cb6647105"
+        ],
+        [
+          "src-tauri/tests/fixtures/hls_lead/seg0.m4s",
+          "cb35816a206175af8a68d3d1976069d8a2ecff9a"
+        ],
+        [
+          "src-tauri/tests/fixtures/hls_maps/a0.m4s",
+          "ca812878832d59143abc6f3f8d3240d5941324ee"
+        ],
+        [
+          "src-tauri/tests/fixtures/hls_maps/b0.m4s",
+          "15ec43d2682070ec7e2c0ce91db72e1a45ce1d45"
+        ],
+        [
+          "src-tauri/tests/fixtures/hls_maps/index.m3u8",
+          "bea2d73c9053bb038332a40ef569ef5591b77c78"
+        ],
+        [
+          "src-tauri/tests/fixtures/hls_maps/init-a.mp4",
+          "5968cc06274ef907fcc03145231dcf6423947471"
+        ],
+        [
+          "src-tauri/tests/fixtures/hls_maps/init-b.mp4",
+          "079fd9523e4fa5b6458a983acbc97c1cad16e02c"
+        ],
+        [
+          "src-tauri/tests/fixtures/library-video.mp4",
+          "b5b6be5fced256c9f27e2699e7997b78089885e9"
+        ],
+        [
+          "src-tauri/tests/fixtures/tracks/video-init.mp4",
+          "913d0d0f8afd2246d5e5c939ecee73f0f0e83c56"
+        ],
+        [
+          "src-tauri/tests/fixtures/tracks/video.mp4",
+          "c37a88a285c632b47d7318cb45efe7330f336224"
+        ],
+        [
+          "src-tauri/tests/fixtures/tracks/video.ts",
+          "e5259b88e4079e6da596dd0e88714831ab30867f"
+        ],
+        [
+          "src-tauri/tests/fixtures/tracks/video.webm",
+          "8c5203ee074b5aedce42dc3d613fed5735c6854c"
+        ],
+        [
+          "src-tauri/tests/fixtures/tracks/video0.m4s",
+          "6a7fb00a125a2c4a109240053867881a09b54e18"
+        ],
+        [
+          "src-tauri/tests/fixtures/tracks/with-audio.webm",
+          "bddea805db074ea7ed101b8a44f724ca4f186e6a"
+        ],
+        [
+          "src-tauri/tests/whisper_model.rs",
+          "54666a3b6569d0f400f6e7c5db39c994a86f09a8"
+        ],
+        [
+          "src/overlay/index.ts",
+          "e803e449817d72dc55dd5ca3a24ae40384b4ff25"
+        ],
+        [
+          "src/overlay/inject.ts",
+          "17fe20b1ee6cec3860d3c35a10092bb5a564ebd6"
+        ],
+        [
+          "src/overlay/page.ts",
+          "28e95b76e9f25748a88223a7638bbc3a0fe5f1a3"
+        ],
+        [
+          "src/overlay/playback.ts",
+          "12b15b313e8ba734e12fef1a4930c1d52cf36b85"
+        ],
+        [
+          "src/overlay/signin.ts",
+          "e921ef11654df6269eb3d517d1a47a39908d4774"
+        ],
+        [
+          "src/ui/App.svelte",
+          "53b0d784e7092907bb62aed310c11b2b8cd4b65f"
+        ],
+        [
+          "src/ui/GoogleAccount.svelte",
+          "85492473a35e6ac45c7cd93ede01b72d2d307630"
+        ],
+        [
+          "src/ui/Library.svelte",
+          "cf503941636968f4904f8a5b298267da1474f9bd"
+        ],
+        [
+          "src/ui/Link.svelte",
+          "ab0dd910acee4bc1d88ffc51b3f5698f89e14871"
+        ],
+        [
+          "src/ui/Overlay.svelte",
+          "096051ae39022774b184c6d584e63c05d921b0d3"
+        ],
+        [
+          "src/ui/Preferences.svelte",
+          "218889bdbe88afb698d886a69e04a87ae54f8620"
+        ],
+        [
+          "src/ui/Stage.svelte",
+          "fb4340e1dca1d24c355e527216a57c2f3557e633"
+        ],
+        [
+          "src/ui/Updates.svelte",
+          "7c9987c0b9b23d655f5e1c7055ed79dd9618f038"
+        ],
+        [
+          "src/ui/Watch.svelte",
+          "a99eab6236e038a72cfa20bb5816d2174952c861"
+        ],
+        [
+          "src/ui/api.ts",
+          "a1cbac720f0a530ef173461bd14049bab5400a01"
+        ],
+        [
+          "src/ui/app.css",
+          "c6e56064ee05b061ccfda7618a325239089f56d5"
+        ],
+        [
+          "src/ui/main.ts",
+          "547406b971aa213d1d0480b1de05b9a3a3c38e5d"
+        ],
+        [
+          "src/ui/router.svelte.ts",
+          "10fe1045c0f2a2883c9f5e6d7ceef57730703823"
+        ],
+        [
+          "vite.config.ts",
+          "68c8020a02cf7b245e1c107865a43ccf83e39ab1"
+        ],
+        [
+          "vite.overlay.config.ts",
+          "d81ed740eaec3f80d99739ee6c9de47f1653e027"
+        ]
+      ],
+      "sha256": "7d87b59d073c52ba74a55a79e0d6a15bb5a19083d26fce70c6b775e9d5cfb869"
+    },
+    "3b3583b3f9ed7cfe64f8d92b6f97092e0abcf6a0f2b9ef8f4926664c5e5ecc29": {
+      "files": [
+        [
+          "Cargo.lock",
+          "1e7a6dfa1c44e5331c5956b3b535f56708283e12"
+        ],
+        [
+          "Cargo.toml",
+          "8312d4eed80cdf2fa51b371225ff30bd002e2a95"
+        ],
+        [
+          "src-tauri/Cargo.toml",
+          "eb1e9de7f57b7bb9301933b1ebb867b942938b24"
+        ],
+        [
+          "src-tauri/capabilities/overlay.json",
+          "7e9cbac3164aeafb75676e1484210c351d341d66"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/AndroidManifest.xml",
+          "4fa864e5ce69c2b238bc58124c6aa9c5ad5a2a98"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/GoogleAccount.kt",
+          "5989ca876eae1ec3454218b76fc0b08782c03b10"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/MainActivity.kt",
+          "558eee993fc340438f39d74a4df0b3e86ea7beb7"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/SyncService.kt",
+          "b7770362d752390d5cd5b5eb3f758b4d19d42212"
+        ],
+        [
+          "src-tauri/src/account.rs",
+          "7ce2624846413694d565ce8ad3f9bff6ed4a153f"
+        ],
+        [
+          "src-tauri/src/account_secrets.rs",
+          "ec3eaa76a338321ab703afb9cb436e71d935c7c9"
+        ],
+        [
+          "src-tauri/src/google_auth.rs",
+          "6a49bb9d6f5b4bb16c1fc81ed16502957924c260"
+        ],
+        [
+          "src-tauri/src/google_desktop.rs",
+          "c336d5d0c1ce3bed34324e213269c2b995c18ade"
+        ],
+        [
+          "src-tauri/src/google_registration.rs",
+          "fc5bdf602f0076b4678eca3487dd4c6ba6f8469e"
+        ],
+        [
+          "src-tauri/src/library_api.rs",
+          "d179610e41ebb2cc924917767ab9741a6ad02628"
+        ],
+        [
+          "src-tauri/src/library_scope.rs",
+          "854aeba6d3a66475de3725cd0269e6d07db54174"
+        ],
+        [
+          "src-tauri/src/library_store.rs",
+          "1b24eea05093e24caf7cc77be07fdc2d5110fe8e"
+        ],
+        [
+          "src-tauri/src/sync.rs",
+          "95d9a06036f23e74128b94ffe5301e7444311a5f"
+        ],
+        [
+          "src-tauri/src/sync_channel.rs",
+          "93b96c40be7f8959866cd2d23a2ef047b0647210"
+        ],
+        [
+          "src-tauri/src/sync_cleanup.rs",
+          "2ed15940b8b896556e9bf628428014e3513ae1ea"
+        ],
+        [
+          "src-tauri/src/sync_discovery.rs",
+          "12047be6e260889a59a2425535b1feb7d0cb72ce"
+        ],
+        [
+          "src-tauri/src/sync_runtime.rs",
+          "7de54335509c3b5dc9e5c70de74b38781adbfd91"
+        ],
+        [
+          "src-tauri/src/sync_store.rs",
+          "bcca1e832b09cd92fa2110af94474b39c63633d8"
+        ],
+        [
+          "src-tauri/src/sync_tls.rs",
+          "9bfa218eebedc5c9ee2f38617e159e46eb91696f"
+        ],
+        [
+          "src/ui/Library.svelte",
+          "cf503941636968f4904f8a5b298267da1474f9bd"
+        ]
+      ],
+      "sha256": "3b3583b3f9ed7cfe64f8d92b6f97092e0abcf6a0f2b9ef8f4926664c5e5ecc29"
+    },
+    "c57331781324776364a775382aad5d14dbd20795ae084804ef7e3eb523d14912": {
+      "files": [
+        [
+          "Cargo.lock",
+          "1e7a6dfa1c44e5331c5956b3b535f56708283e12"
+        ],
+        [
+          "Cargo.toml",
+          "8312d4eed80cdf2fa51b371225ff30bd002e2a95"
+        ],
+        [
+          "src-tauri/Cargo.toml",
+          "eb1e9de7f57b7bb9301933b1ebb867b942938b24"
+        ],
+        [
+          "src-tauri/capabilities/overlay.json",
+          "7e9cbac3164aeafb75676e1484210c351d341d66"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/AndroidManifest.xml",
+          "4fa864e5ce69c2b238bc58124c6aa9c5ad5a2a98"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/GoogleAccount.kt",
+          "5989ca876eae1ec3454218b76fc0b08782c03b10"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/MainActivity.kt",
+          "558eee993fc340438f39d74a4df0b3e86ea7beb7"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/SyncService.kt",
+          "b7770362d752390d5cd5b5eb3f758b4d19d42212"
+        ],
+        [
+          "src-tauri/src/account.rs",
+          "7ce2624846413694d565ce8ad3f9bff6ed4a153f"
+        ],
+        [
+          "src-tauri/src/account_secrets.rs",
+          "ec3eaa76a338321ab703afb9cb436e71d935c7c9"
+        ],
+        [
+          "src-tauri/src/google_auth.rs",
+          "6a49bb9d6f5b4bb16c1fc81ed16502957924c260"
+        ],
+        [
+          "src-tauri/src/google_desktop.rs",
+          "c336d5d0c1ce3bed34324e213269c2b995c18ade"
+        ],
+        [
+          "src-tauri/src/google_registration.rs",
+          "fc5bdf602f0076b4678eca3487dd4c6ba6f8469e"
+        ],
+        [
+          "src-tauri/src/library_api.rs",
+          "d179610e41ebb2cc924917767ab9741a6ad02628"
+        ],
+        [
+          "src-tauri/src/library_scope.rs",
+          "854aeba6d3a66475de3725cd0269e6d07db54174"
+        ],
+        [
+          "src-tauri/src/library_store.rs",
+          "1b24eea05093e24caf7cc77be07fdc2d5110fe8e"
+        ],
+        [
+          "src-tauri/src/sync.rs",
+          "95d9a06036f23e74128b94ffe5301e7444311a5f"
+        ],
+        [
+          "src-tauri/src/sync_channel.rs",
+          "93b96c40be7f8959866cd2d23a2ef047b0647210"
+        ],
+        [
+          "src-tauri/src/sync_cleanup.rs",
+          "2ed15940b8b896556e9bf628428014e3513ae1ea"
+        ],
+        [
+          "src-tauri/src/sync_discovery.rs",
+          "12047be6e260889a59a2425535b1feb7d0cb72ce"
+        ],
+        [
+          "src-tauri/src/sync_runtime.rs",
+          "7de54335509c3b5dc9e5c70de74b38781adbfd91"
+        ],
+        [
+          "src-tauri/src/sync_store.rs",
+          "bcca1e832b09cd92fa2110af94474b39c63633d8"
+        ],
+        [
+          "src-tauri/src/sync_tls.rs",
+          "9bfa218eebedc5c9ee2f38617e159e46eb91696f"
+        ],
+        [
+          "src/overlay/index.ts",
+          "e803e449817d72dc55dd5ca3a24ae40384b4ff25"
+        ],
+        [
+          "src/overlay/inject.ts",
+          "17fe20b1ee6cec3860d3c35a10092bb5a564ebd6"
+        ],
+        [
+          "src/overlay/playback.ts",
+          "12b15b313e8ba734e12fef1a4930c1d52cf36b85"
+        ],
+        [
+          "src/ui/Library.svelte",
+          "cf503941636968f4904f8a5b298267da1474f9bd"
+        ],
+        [
+          "src/ui/Overlay.svelte",
+          "096051ae39022774b184c6d584e63c05d921b0d3"
+        ]
+      ],
+      "sha256": "c57331781324776364a775382aad5d14dbd20795ae084804ef7e3eb523d14912"
+    },
+    "c8690cbb247332622bca74198384d07e09a655756c5370513228ce880afc21ce": {
+      "files": [
+        [
+          "Cargo.lock",
+          "1e7a6dfa1c44e5331c5956b3b535f56708283e12"
+        ],
+        [
+          "Cargo.toml",
+          "8312d4eed80cdf2fa51b371225ff30bd002e2a95"
+        ],
+        [
+          "src-tauri/Cargo.toml",
+          "eb1e9de7f57b7bb9301933b1ebb867b942938b24"
+        ],
+        [
+          "src-tauri/capabilities/overlay.json",
+          "7e9cbac3164aeafb75676e1484210c351d341d66"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/AndroidManifest.xml",
+          "4fa864e5ce69c2b238bc58124c6aa9c5ad5a2a98"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/GoogleAccount.kt",
+          "5989ca876eae1ec3454218b76fc0b08782c03b10"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/MainActivity.kt",
+          "558eee993fc340438f39d74a4df0b3e86ea7beb7"
+        ],
+        [
+          "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/SyncService.kt",
+          "b7770362d752390d5cd5b5eb3f758b4d19d42212"
+        ],
+        [
+          "src-tauri/src/account.rs",
+          "7ce2624846413694d565ce8ad3f9bff6ed4a153f"
+        ],
+        [
+          "src-tauri/src/account_secrets.rs",
+          "ec3eaa76a338321ab703afb9cb436e71d935c7c9"
+        ],
+        [
+          "src-tauri/src/google_auth.rs",
+          "6a49bb9d6f5b4bb16c1fc81ed16502957924c260"
+        ],
+        [
+          "src-tauri/src/google_desktop.rs",
+          "c336d5d0c1ce3bed34324e213269c2b995c18ade"
+        ],
+        [
+          "src-tauri/src/google_registration.rs",
+          "fc5bdf602f0076b4678eca3487dd4c6ba6f8469e"
+        ],
+        [
+          "src-tauri/src/library_api.rs",
+          "d179610e41ebb2cc924917767ab9741a6ad02628"
+        ],
+        [
+          "src-tauri/src/library_scope.rs",
+          "854aeba6d3a66475de3725cd0269e6d07db54174"
+        ],
+        [
+          "src-tauri/src/library_store.rs",
+          "1b24eea05093e24caf7cc77be07fdc2d5110fe8e"
+        ],
+        [
+          "src-tauri/src/store.rs",
+          "7fbd3b57cfd7c88dbaed63daba53a78c3a0e14ef"
+        ],
+        [
+          "src-tauri/src/sync.rs",
+          "95d9a06036f23e74128b94ffe5301e7444311a5f"
+        ],
+        [
+          "src-tauri/src/sync_channel.rs",
+          "93b96c40be7f8959866cd2d23a2ef047b0647210"
+        ],
+        [
+          "src-tauri/src/sync_cleanup.rs",
+          "2ed15940b8b896556e9bf628428014e3513ae1ea"
+        ],
+        [
+          "src-tauri/src/sync_discovery.rs",
+          "12047be6e260889a59a2425535b1feb7d0cb72ce"
+        ],
+        [
+          "src-tauri/src/sync_local.rs",
+          "76ba8945c8b8f4db79bef0b2cbf05a0e4d6e446f"
+        ],
+        [
+          "src-tauri/src/sync_runtime.rs",
+          "7de54335509c3b5dc9e5c70de74b38781adbfd91"
+        ],
+        [
+          "src-tauri/src/sync_store.rs",
+          "bcca1e832b09cd92fa2110af94474b39c63633d8"
+        ],
+        [
+          "src-tauri/src/sync_tls.rs",
+          "9bfa218eebedc5c9ee2f38617e159e46eb91696f"
+        ],
+        [
+          "src/ui/Library.svelte",
+          "cf503941636968f4904f8a5b298267da1474f9bd"
+        ]
+      ],
+      "sha256": "c8690cbb247332622bca74198384d07e09a655756c5370513228ce880afc21ce"
+    },
+    "c55011b8515d6dd62e2198af632314d398c933ef13a4f77e7a1393b54508604e": {
+      "files": [
+        [
+          "docs/branding/.nojekyll",
+          "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+        ],
+        [
+          "docs/branding/index.html",
+          "cb921e302d0b8185ddeed0ee4b51847175ada479"
+        ],
+        [
+          "docs/branding/privacy.html",
+          "555681563c13133978e72b392d7cb9fb7ac4c171"
+        ],
+        [
+          "docs/branding/style.css",
+          "53ec49e8cbbfb7a45ed6b1c8999f812ef5cf68f6"
+        ]
+      ],
+      "sha256": "c55011b8515d6dd62e2198af632314d398c933ef13a4f77e7a1393b54508604e"
+    }
+  },
+  "executions": [
+    {
+      "id": "fresh-api",
+      "kind": "api",
+      "status": "executed",
+      "command": "node scripts/verification/run.mjs api",
+      "source_revision": "c52830bf29506fc57810067cf6f1f5fba2621e09",
+      "inventory": "7d87b59d073c52ba74a55a79e0d6a15bb5a19083d26fce70c6b775e9d5cfb869",
+      "receipt": "docs/evidence/lan-sync/fresh-api.json",
+      "receipt_sha256": "bf33ef1533f1c3eaa3d85e730c3c5191f3d6d27959c848ca5e2f8956c44cb789",
+      "environment": {
+        "os": "10.0.26200",
+        "node": "v24.18.0",
+        "rust": "rustc 1.98.1 (48a229cea 2026-09-01)",
+        "stand_ins": true,
+        "compiled_head": "c52830bf29506fc57810067cf6f1f5fba2621e09",
+        "owned_process_checked": true,
+        "server_sha256": "0eb2d95902bf35b179767102bc0167cf469db8b6d22bf109f192d845f70cb483"
+      },
+      "audit": {
+        "sources": [
+          {
+            "path": "scripts/verification/run.mjs",
+            "sha256": "165dc717649e1318ffb89e4e09f2eafd7ad9800973cab200324395930ea330ce"
+          },
+          {
+            "path": "scripts/verification/seed.py",
+            "sha256": "c755edc144426aab90c2f6702a0d869ae3c52174000a96705500ba879bada30b"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/round-one-api.json",
+            "sha256": "b478929c07531332662e0b6f9e0312180c24b5b8f1d3c646224e729623faf781"
+          }
+        ],
+        "actions": [
+          {
+            "id": "saved-reopen",
+            "source": "scripts/verification/run.mjs",
+            "excerpt": "await request('POST', '/browser/open', {url: saved.page_url});"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "saved-reuse",
+            "source": "scripts/verification/run.mjs",
+            "excerpt": "assert.equal(reuse.body.reused, true); assert.equal(reuse.status, 200);",
+            "output": "docs/evidence/lan-sync/machine/round-one-api.json",
+            "field": [
+              "observations",
+              0,
+              "actual"
+            ],
+            "expected": "\"reused\":true",
+            "operator": "contains"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
+    },
+    {
+      "id": "fresh-browser",
+      "kind": "browser",
+      "status": "executed",
+      "command": "node scripts/verification/run.mjs browser",
+      "source_revision": "c52830bf29506fc57810067cf6f1f5fba2621e09",
+      "inventory": "7d87b59d073c52ba74a55a79e0d6a15bb5a19083d26fce70c6b775e9d5cfb869",
+      "receipt": "docs/evidence/lan-sync/fresh-browser.json",
+      "receipt_sha256": "dd3c8057ea6827cd73e3ea5a8216bede9f39889f39c59337217d1e1738c11fdd",
+      "environment": {
+        "os": "10.0.26200",
+        "node": "v24.18.0",
+        "rust": "rustc 1.98.1 (48a229cea 2026-09-01)",
+        "stand_ins": true,
+        "compiled_head": "c52830bf29506fc57810067cf6f1f5fba2621e09",
+        "screen_head": "c52830bf29506fc57810067cf6f1f5fba2621e09",
+        "chromium": "149.0.7827.55",
+        "owned_process_checked": true,
+        "server_sha256": "0eb2d95902bf35b179767102bc0167cf469db8b6d22bf109f192d845f70cb483"
+      },
+      "audit": {
+        "sources": [
+          {
+            "path": "scripts/verification/run.mjs",
+            "sha256": "165dc717649e1318ffb89e4e09f2eafd7ad9800973cab200324395930ea330ce"
+          },
+          {
+            "path": "scripts/verification/library-scenario.mjs",
+            "sha256": "34a696513b201d4a7316cbb9495b98111205009a2adcdd0f18b359d1d836b4cd"
+          },
+          {
+            "path": "scripts/verification/fixture.mjs",
+            "sha256": "21f1d396d7e7b25dad74d9c7a5b439f8bd8344faa11902cedfe788428b31c994"
+          },
+          {
+            "path": "scripts/verification/seed.py",
+            "sha256": "c755edc144426aab90c2f6702a0d869ae3c52174000a96705500ba879bada30b"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/round-one-browser.json",
+            "sha256": "96e3c15bb63f6fd2d7976f1044c5df5f675640e87471f690763537ef1d4828e7"
+          }
+        ],
+        "actions": [
+          {
+            "id": "open-saved",
+            "source": "scripts/verification/library-scenario.mjs",
+            "excerpt": "await click('영상 열기', row('Saved attention'));"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "exact-saved-response",
+            "source": "scripts/verification/library-scenario.mjs",
+            "excerpt": "assert.deepEqual(await call(videoPage, 'GET', `/videos/${saved.video_key}/subtitles`, {}, before.account_generation), subsBefore);",
+            "output": "docs/evidence/lan-sync/machine/round-one-browser.json",
+            "field": [
+              "observations",
+              0,
+              "id"
+            ],
+            "expected": "saved-reuse",
+            "operator": "equal"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
+    },
+    {
+      "id": "fresh-live-command",
+      "kind": "api",
+      "status": "executed",
+      "command": "node scripts/verification/live-sync-evidence.mjs <fresh-attempt-directory>",
+      "source_revision": "c52830bf29506fc57810067cf6f1f5fba2621e09",
+      "inventory": "7d87b59d073c52ba74a55a79e0d6a15bb5a19083d26fce70c6b775e9d5cfb869",
+      "receipt": "docs/evidence/lan-sync/fresh-live-command.json",
+      "receipt_sha256": "cf515927b15c8a68941213340dff26e38ad1364b5e2e586097ed63ca7a517106",
+      "environment": {
+        "os": "10.0.26200",
+        "node": "v24.18.0",
+        "stand_ins": true,
+        "binary_sha256": "0eb2d95902bf35b179767102bc0167cf469db8b6d22bf109f192d845f70cb483",
+        "compiled_head": "c52830bf29506fc57810067cf6f1f5fba2621e09",
+        "owned_launcher_pid": 79424,
+        "owned_server_pid": 54624
+      },
+      "audit": {
+        "sources": [
+          {
+            "path": "scripts/verification/live-sync-evidence.mjs",
+            "sha256": "81778f25a641a6601f214d12db6f39e8a81d795513ed52503c7676738289b957"
+          },
+          {
+            "path": "scripts/live.mjs",
+            "sha256": "70d3214fe75dc11e111a4e1be36e8f5d61a7af10592f558f82823ee3058c90f4"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/round-one-live.json",
+            "sha256": "a27e033e264ceb30518dab96656a0a4d251ae53eeb002c35478187651527df5c"
+          }
+        ],
+        "actions": [
+          {
+            "id": "start-live",
+            "source": "scripts/verification/live-sync-evidence.mjs",
+            "excerpt": "const child=spawn(process.execPath,['scripts/live.mjs','--stand-ins'],{windowsHide:true,"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "native-http-denial",
+            "source": "scripts/verification/live-sync-evidence.mjs",
+            "excerpt": "const privacy=await request('POST','/privacy/open');assert.equal(privacy.status,403);assert.equal(privacy.body.error,'native_required');",
+            "output": "docs/evidence/lan-sync/machine/round-one-live.json",
+            "field": [
+              "observations",
+              2,
+              "actual",
+              "status"
+            ],
+            "expected": 403,
+            "operator": "equal"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
+    },
+    {
+      "id": "fresh-native",
+      "kind": "desktop",
+      "status": "executed",
+      "command": "node scripts/verification/sync-native-evidence.mjs ff30ca80e0acd1af7c0ec110705ae8dc5d94d881 <receipt-path>",
+      "source_revision": "ff30ca80e0acd1af7c0ec110705ae8dc5d94d881",
+      "inventory": "7d87b59d073c52ba74a55a79e0d6a15bb5a19083d26fce70c6b775e9d5cfb869",
+      "receipt": "docs/evidence/lan-sync/fresh-native.json",
+      "receipt_sha256": "4f18656fd6c1b357fd5acad602aeadba3b979b3e4bae2dd12615b3f5324ee76c",
+      "environment": {
+        "windows": "10.0.26200",
+        "android": {
+          "model": "SM-G996N",
+          "release": "15",
+          "api": "35"
+        },
+        "date": "2026-11-15",
+        "original_library_imported": false,
+        "paid_translation_requested": false,
+        "windows_binary_sha256": "de72186bbfc1691697da60e4f4ab4bfa039072328d3e05e2d4a516345489e847",
+        "packaged_apk_sha256": "a223f624956fe674bd3a8bd85c596d2f2ba9f51704c224b6ba9e9fa0fbe05416",
+        "compiled_core": "ff30ca80e0acd1af7c0ec110705ae8dc5d94d881",
+        "compiled_screen": "ff30ca80e0acd1af7c0ec110705ae8dc5d94d881"
+      },
+      "audit": {
+        "sources": [
+          {
+            "path": "scripts/verification/sync-native-evidence.mjs",
+            "sha256": "a0f83fc9deec0363a3fa12ace1d46c058a65d3b176ca541ab36361a2b822d196"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/round-one-native.json",
+            "sha256": "0a6acdcffe146d932a4ddc6cb27d743bdbe5722b31f5e5e723448ae62a153841"
+          }
+        ],
+        "actions": [
+          {
+            "id": "rename-native",
+            "source": "scripts/verification/sync-native-evidence.mjs",
+            "excerpt": "const start=Date.now();await rename(marker);"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "restored-fixture-data",
+            "source": "scripts/verification/sync-native-evidence.mjs",
+            "excerpt": "for(const device of devices)assert(isDeepStrictEqual(await device.read(),device.initial),'Fixture state must be restored');",
+            "output": "docs/evidence/lan-sync/machine/round-one-native.json",
+            "field": [
+              "observations",
+              5,
+              "actual"
+            ],
+            "expected": true,
+            "operator": "equal"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
+    },
+    {
+      "id": "fresh-offline",
+      "kind": "offline",
+      "status": "executed",
+      "command": "cargo test -p video-translate-overlay --lib sync_ -- --nocapture",
+      "source_revision": "c52830bf29506fc57810067cf6f1f5fba2621e09",
+      "inventory": "7d87b59d073c52ba74a55a79e0d6a15bb5a19083d26fce70c6b775e9d5cfb869",
+      "receipt": "docs/evidence/lan-sync/fresh-offline.json",
+      "receipt_sha256": "2dfbb40ec84c6a85a4e5385b10ff6bd6f3723bb315bcc71f7ec38d99f17de39d",
+      "environment": {
+        "os": "10.0.26200",
+        "node": "v24.18.0",
+        "rust": "rustc 1.98.1 (48a229cea 2026-09-01)",
+        "stand_ins": true
+      },
+      "audit": {
+        "sources": [
+          {
+            "path": "src-tauri/src/sync_tls_tests.rs",
+            "sha256": "b1b98cb747f98471b1b3126f0b1f16a139002ac2e3c11bd33f2102dc5295350d"
+          },
+          {
+            "path": "src-tauri/src/sync_channel_tests.rs",
+            "sha256": "04c6304da5d3991ea4d124e3a4b5a2560089d6173eaa8083a53d0bc410d0840e"
+          },
+          {
+            "path": "src-tauri/src/sync_discovery_tests.rs",
+            "sha256": "7cfa77385b33099a9d72149af8d06afe248766ab691b0723b040f08dcfb14e3b"
+          },
+          {
+            "path": "src-tauri/src/sync_runtime_tests.rs",
+            "sha256": "af26f7d9f0f05136ed5dc41a44288dc8eddf6caec6ef8706cbbd553aee3984c9"
+          },
+          {
+            "path": "src-tauri/src/sync_cleanup_tests.rs",
+            "sha256": "a32a8c169c8d498246db4942381d45e359e711278fbd1669b305a19b013ca745"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/round-one-offline.log",
+            "sha256": "5627236506a704aaee7b10a0d36b11b6c10de28552e608575516d1e710a9f83c"
+          }
+        ],
+        "actions": [
+          {
+            "id": "peer-verification",
+            "source": "src-tauri/src/sync_tls_tests.rs",
+            "excerpt": "assert!(PeerCertificate::from_tls(&client).is_err());"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "transport-tests",
+            "source": "src-tauri/src/sync_tls_tests.rs",
+            "excerpt": "assert!(PeerCertificate::from_tls(&client).is_err());",
+            "output": "docs/evidence/lan-sync/machine/round-one-offline.log",
+            "field": [],
+            "expected": "test result: ok. 24 passed; 0 failed; 0 ignored",
+            "operator": "contains"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
+    },
+    {
+      "id": "fresh-projection",
+      "kind": "offline",
+      "status": "executed",
+      "command": "cargo test -p video-translate-overlay --lib sync::library::tests -- --nocapture",
+      "source_revision": "c52830bf29506fc57810067cf6f1f5fba2621e09",
+      "inventory": "7d87b59d073c52ba74a55a79e0d6a15bb5a19083d26fce70c6b775e9d5cfb869",
+      "receipt": "docs/evidence/lan-sync/fresh-projection.json",
+      "receipt_sha256": "bab78b5d8b4bd7d3e6219eccc61ce033362bbdcc598a2824742c312955a6f942",
+      "environment": {
+        "os": "10.0.26200",
+        "node": "v24.18.0",
+        "rust": "rustc 1.98.1 (48a229cea 2026-09-01)",
+        "stand_ins": true
+      },
+      "audit": {
+        "sources": [
+          {
+            "path": "src-tauri/src/sync_store_tests.rs",
+            "sha256": "df2ded483b0b5e62ba9691a5e993da04b013443213a53d0765eae608e5edd187"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/round-one-projection.log",
+            "sha256": "97a580adc53a8233467aec8e3455bd56063d254930423a47b12bb0028d5f653d"
+          }
+        ],
+        "actions": [
+          {
+            "id": "projection-cursor",
+            "source": "src-tauri/src/sync_store_tests.rs",
+            "excerpt": "assert_eq!(second.cursor(first.replica()).unwrap(), checkpoint);"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "projection-tests",
+            "source": "src-tauri/src/sync_store_tests.rs",
+            "excerpt": "assert_eq!(second.cursor(first.replica()).unwrap(), checkpoint);",
+            "output": "docs/evidence/lan-sync/machine/round-one-projection.log",
+            "field": [],
+            "expected": "test result: ok. 13 passed; 0 failed; 0 ignored",
+            "operator": "contains"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
+    },
+    {
+      "id": "reused-completed-and-versions",
+      "kind": "desktop",
+      "status": "reused",
+      "command": "Manual native fixture seeding followed by completed-flow.mjs and version-flow.mjs (historical diagnostics)",
+      "source_revision": "fc0d072f78248e120db7a7582852add873814cec",
+      "inventory": "3b3583b3f9ed7cfe64f8d92b6f97092e0abcf6a0f2b9ef8f4926664c5e5ecc29",
+      "paths": [
+        "Cargo.toml",
+        "Cargo.lock",
+        "src-tauri/Cargo.toml",
+        "src-tauri/src/account.rs",
+        "src-tauri/src/account_secrets.rs",
+        "src-tauri/src/google_auth.rs",
+        "src-tauri/src/google_desktop.rs",
+        "src-tauri/src/google_registration.rs",
+        "src-tauri/src/sync.rs",
+        "src-tauri/src/sync_store.rs",
+        "src-tauri/src/sync_channel.rs",
+        "src-tauri/src/sync_tls.rs",
+        "src-tauri/src/sync_discovery.rs",
+        "src-tauri/src/sync_runtime.rs",
+        "src-tauri/src/sync_cleanup.rs",
+        "src-tauri/src/library_scope.rs",
+        "src-tauri/src/library_api.rs",
+        "src-tauri/src/library_store.rs",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/GoogleAccount.kt",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/SyncService.kt",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/MainActivity.kt",
+        "src-tauri/gen/android/app/src/main/AndroidManifest.xml",
+        "src-tauri/capabilities/overlay.json",
+        "src/ui/Library.svelte"
+      ],
+      "receipt": "docs/evidence/lan-sync/reused-completed-and-versions.json",
+      "receipt_sha256": "7a194d81135b8d8cddb9f3f5c40200dd511e339dd5941ee60ef61d51a4b1a7b4",
+      "environment": {
+        "windows": "Windows desktop; isolated native application and WebView profiles",
+        "android": "Physical Galaxy S21+ SM-G996N; Android 15 API 35; ARM64",
+        "date": "2026-11-15",
+        "original_library_imported": false,
+        "paid_translation_requested": false,
+        "windows_executable_sha256": "a4f7a5e20f28048de59b4e89757757baf0891093a1c3521c6b8f436576cb6065",
+        "android_apk_sha256": "d62207ef970f28d65e6415b1a2756b46ab54a3e7fa74c38b93d7de4b9e0bf2df",
+        "core": "fc0d072f78248e120db7a7582852add873814cec",
+        "screen": "fc0d072f78248e120db7a7582852add873814cec"
+      },
+      "reuse_reason": "Reused earlier manual device observation, not re-executed in this repair. The listed identity, transport, journal, projection, library UI and service inputs are byte-identical. Other changed application inputs are listed separately. Since fc0d072, store.rs and sync_local.rs gained carried-cost validation and accounting, covered by the fresh 13 projection/cost tests; subsequent native call-site changes only add the fixed privacy opener and its local permission. No claim of whole-application identity for those older builds follows. The ff30ca8 fresh bidirectional native check separately exercises the final integration.",
+      "other_changed_application_inputs": [
+        "src-tauri/README.md",
+        "src-tauri/build.rs",
+        "src-tauri/capabilities/main.json",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/VtoPlugin.kt",
+        "src-tauri/src/account_tests.rs",
+        "src-tauri/src/android.rs",
+        "src-tauri/src/api.rs",
+        "src-tauri/src/app.rs",
+        "src-tauri/src/commands.rs",
+        "src-tauri/src/lib.rs",
+        "src-tauri/src/store.rs",
+        "src-tauri/src/sync_local.rs",
+        "src-tauri/src/sync_store_tests.rs",
+        "src-tauri/src/web.rs",
+        "src-tauri/src/web_tests.rs",
+        "src/ui/GoogleAccount.svelte",
+        "src/ui/api.ts"
+      ],
+      "audit": {
+        "sources": [
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/completed-flow.mjs.source",
+            "sha256": "ef2485e51b39d3d1a2c9639866567f5b1497fca73ae9730ad5fadb9679f8f617"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/version-flow.mjs.source",
+            "sha256": "50635024b00a611260e2ab5b18d77b7fc5ed1e2f57d52092ae5d3e38ed85506b"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/seed-completed.py.source",
+            "sha256": "611cb59ba51ffc287237ce4388f978619e181af8ed5f046a475f7189e0ee59d3"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/sql-fixture.c.source",
+            "sha256": "caeb606974fbbdb7ee5b362553bbea64862f1729794e73dd48f00b648011a175"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/expected-windows.json",
+            "sha256": "11bf6f0cea28d3b036e5c7f2167ac5febb352cfdb9508666c2768d561b498605"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/expected-android.json",
+            "sha256": "f0914336f1d92d0e62d2bd2cfb90637e291d96650af90a784d2cec7d5550def7"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/expected-alternate-windows.json",
+            "sha256": "6f2c8e523f85ac693bf55776d7f798eda95e5464bf18b59e7034318418403f37"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/completed-flow.json",
+            "sha256": "2f6304707a4d36031cf1c4660b85e36436a4c5e18a6ef7d680d0b020aeba0fc4"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/version-flow.json",
+            "sha256": "815b7293bb4b90326f098140e6ea4d2b3859450183aca9865c36bf3315e02692"
+          }
+        ],
+        "actions": [
+          {
+            "id": "select-version",
+            "source": "docs/evidence/lan-sync/diagnostics/version-flow.mjs.source",
+            "excerpt": "await selector.selectOption(original);"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "exact-cues",
+            "source": "docs/evidence/lan-sync/diagnostics/completed-flow.mjs.source",
+            "excerpt": "assert.deepEqual(saved.subtitles.cues.map(c=>[c.start_ms,c.end_ms,c.text_ko]),fixture.cues.map(c=>[c.start_ms,c.end_ms,c.text_ko]));",
+            "output": "docs/evidence/lan-sync/machine/completed-flow.json",
+            "field": [
+              "checks",
+              0,
+              "intervals"
+            ],
+            "expected": [
+              [
+                0,
+                1000
+              ],
+              [
+                1000,
+                3000
+              ]
+            ],
+            "operator": "equal"
+          },
+          {
+            "id": "retained-versions",
+            "source": "docs/evidence/lan-sync/diagnostics/version-flow.mjs.source",
+            "excerpt": "assert.equal(video.versions.length,2);assert.equal(video.versions.find(v=>v.selected).id,original);",
+            "output": "docs/evidence/lan-sync/machine/version-flow.json",
+            "field": [
+              "retained_versions"
+            ],
+            "expected": 2,
+            "operator": "equal"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
+    },
+    {
+      "id": "reused-playback",
+      "kind": "desktop",
+      "status": "reused",
+      "command": "node playback-flow.mjs (historical manual diagnostic)",
+      "source_revision": "fc0d072f78248e120db7a7582852add873814cec",
+      "inventory": "c57331781324776364a775382aad5d14dbd20795ae084804ef7e3eb523d14912",
+      "paths": [
+        "Cargo.toml",
+        "Cargo.lock",
+        "src-tauri/Cargo.toml",
+        "src-tauri/src/account.rs",
+        "src-tauri/src/account_secrets.rs",
+        "src-tauri/src/google_auth.rs",
+        "src-tauri/src/google_desktop.rs",
+        "src-tauri/src/google_registration.rs",
+        "src-tauri/src/sync.rs",
+        "src-tauri/src/sync_store.rs",
+        "src-tauri/src/sync_channel.rs",
+        "src-tauri/src/sync_tls.rs",
+        "src-tauri/src/sync_discovery.rs",
+        "src-tauri/src/sync_runtime.rs",
+        "src-tauri/src/sync_cleanup.rs",
+        "src-tauri/src/library_scope.rs",
+        "src-tauri/src/library_api.rs",
+        "src-tauri/src/library_store.rs",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/GoogleAccount.kt",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/SyncService.kt",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/MainActivity.kt",
+        "src-tauri/gen/android/app/src/main/AndroidManifest.xml",
+        "src-tauri/capabilities/overlay.json",
+        "src/ui/Library.svelte",
+        "src/overlay/playback.ts",
+        "src/overlay/index.ts",
+        "src/overlay/inject.ts",
+        "src/ui/Overlay.svelte"
+      ],
+      "receipt": "docs/evidence/lan-sync/reused-playback.json",
+      "receipt_sha256": "21763bc299468d4b429ecc3c697301a7c799714510b8a901bdddf8bdaae4be63",
+      "environment": {
+        "windows": "Windows desktop; isolated native application and WebView profiles",
+        "android": "Physical Galaxy S21+ SM-G996N; Android 15 API 35; ARM64",
+        "date": "2026-11-15",
+        "original_library_imported": false,
+        "paid_translation_requested": false,
+        "windows_executable_sha256": "a4f7a5e20f28048de59b4e89757757baf0891093a1c3521c6b8f436576cb6065",
+        "android_apk_sha256": "d62207ef970f28d65e6415b1a2756b46ab54a3e7fa74c38b93d7de4b9e0bf2df",
+        "core": "fc0d072f78248e120db7a7582852add873814cec",
+        "screen": "fc0d072f78248e120db7a7582852add873814cec"
+      },
+      "reuse_reason": "Reused earlier manual device observation, not re-executed in this repair. The listed identity, transport, journal, projection, library UI and service inputs are byte-identical. Other changed application inputs are listed separately. Since fc0d072, store.rs and sync_local.rs gained carried-cost validation and accounting, covered by the fresh 13 projection/cost tests; subsequent native call-site changes only add the fixed privacy opener and its local permission. No claim of whole-application identity for those older builds follows. The ff30ca8 fresh bidirectional native check separately exercises the final integration.",
+      "other_changed_application_inputs": [
+        "src-tauri/README.md",
+        "src-tauri/build.rs",
+        "src-tauri/capabilities/main.json",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/VtoPlugin.kt",
+        "src-tauri/src/account_tests.rs",
+        "src-tauri/src/android.rs",
+        "src-tauri/src/api.rs",
+        "src-tauri/src/app.rs",
+        "src-tauri/src/commands.rs",
+        "src-tauri/src/lib.rs",
+        "src-tauri/src/store.rs",
+        "src-tauri/src/sync_local.rs",
+        "src-tauri/src/sync_store_tests.rs",
+        "src-tauri/src/web.rs",
+        "src-tauri/src/web_tests.rs",
+        "src/ui/GoogleAccount.svelte",
+        "src/ui/api.ts"
+      ],
+      "native_flow": "playback",
+      "audit": {
+        "sources": [
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/playback-flow.mjs.source",
+            "sha256": "4d55979b38a8f8b0960da4c60b9557f486efa676bc39aeefaeef68788846ac4a"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/expected-windows.json",
+            "sha256": "11bf6f0cea28d3b036e5c7f2167ac5febb352cfdb9508666c2768d561b498605"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/playback-flow.json",
+            "sha256": "f8e2891b4be6d081a27537f1c877c9ddc586cf7965517cff6b62f0c7c24842ff"
+          }
+        ],
+        "actions": [
+          {
+            "id": "seek-pc",
+            "source": "docs/evidence/lan-sync/diagnostics/playback-flow.mjs.source",
+            "excerpt": "await pcSite.locator('video').evaluate(v=>{v.currentTime=1.25;});"
+          },
+          {
+            "id": "seek-phone",
+            "source": "docs/evidence/lan-sync/diagnostics/playback-flow.mjs.source",
+            "excerpt": "await phoneSite.locator('video').evaluate(v=>{v.currentTime=2;});"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "pc-position",
+            "source": "docs/evidence/lan-sync/diagnostics/playback-flow.mjs.source",
+            "excerpt": "await poll(()=>position(phone),r=>r.position_ms===1250,'Phone did not receive PC position');",
+            "output": "docs/evidence/lan-sync/machine/playback-flow.json",
+            "field": [
+              "checks",
+              0
+            ],
+            "expected": "PC user seek persisted and synchronized before opening the phone player",
+            "operator": "equal",
+            "failure_excerpt": "throw new Error(label);"
+          },
+          {
+            "id": "phone-resume",
+            "source": "docs/evidence/lan-sync/diagnostics/playback-flow.mjs.source",
+            "excerpt": "await poll(()=>phoneSite.locator('video').evaluate(v=>v.currentTime),time=>Math.abs(time-1.25)<0.15,'Phone did not resume at PC position');",
+            "output": "docs/evidence/lan-sync/machine/playback-flow.json",
+            "field": [
+              "checks",
+              1
+            ],
+            "expected": "Phone player automatically resumed near 1250 ms and displayed the saved second cue",
+            "operator": "equal",
+            "failure_excerpt": "throw new Error(label);"
+          },
+          {
+            "id": "controlled-player",
+            "source": "docs/evidence/lan-sync/diagnostics/playback-flow.mjs.source",
+            "excerpt": "assert(Math.abs(await pcSite.locator('video').evaluate(v=>v.currentTime)-1.25)<0.15,'Remote position unexpectedly moved a controlled PC player');",
+            "output": "docs/evidence/lan-sync/machine/playback-flow.json",
+            "field": [
+              "checks",
+              3
+            ],
+            "expected": "Phone seek synchronized to PC storage without moving its already controlled player",
+            "operator": "equal"
+          },
+          {
+            "id": "pc-reopen",
+            "source": "docs/evidence/lan-sync/diagnostics/playback-flow.mjs.source",
+            "excerpt": "await poll(()=>pcSite.locator('video').evaluate(v=>v.currentTime),time=>Math.abs(time-2)<0.15,'Reopened PC did not resume phone position');",
+            "output": "docs/evidence/lan-sync/machine/playback-flow.json",
+            "field": [
+              "checks",
+              4
+            ],
+            "expected": "Reopened PC player resumed near the phone’s saved 2000 ms position",
+            "operator": "equal",
+            "failure_excerpt": "throw new Error(label);"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
+    },
+    {
+      "id": "reused-deletion-and-restart",
+      "kind": "desktop",
+      "status": "reused",
+      "command": "offline-prepare.mjs, restart-flow.mjs and online-delete-flow.mjs around actual owned process restarts (historical diagnostics)",
+      "source_revision": "fc0d072f78248e120db7a7582852add873814cec",
+      "inventory": "3b3583b3f9ed7cfe64f8d92b6f97092e0abcf6a0f2b9ef8f4926664c5e5ecc29",
+      "paths": [
+        "Cargo.toml",
+        "Cargo.lock",
+        "src-tauri/Cargo.toml",
+        "src-tauri/src/account.rs",
+        "src-tauri/src/account_secrets.rs",
+        "src-tauri/src/google_auth.rs",
+        "src-tauri/src/google_desktop.rs",
+        "src-tauri/src/google_registration.rs",
+        "src-tauri/src/sync.rs",
+        "src-tauri/src/sync_store.rs",
+        "src-tauri/src/sync_channel.rs",
+        "src-tauri/src/sync_tls.rs",
+        "src-tauri/src/sync_discovery.rs",
+        "src-tauri/src/sync_runtime.rs",
+        "src-tauri/src/sync_cleanup.rs",
+        "src-tauri/src/library_scope.rs",
+        "src-tauri/src/library_api.rs",
+        "src-tauri/src/library_store.rs",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/GoogleAccount.kt",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/SyncService.kt",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/MainActivity.kt",
+        "src-tauri/gen/android/app/src/main/AndroidManifest.xml",
+        "src-tauri/capabilities/overlay.json",
+        "src/ui/Library.svelte"
+      ],
+      "receipt": "docs/evidence/lan-sync/reused-deletion-and-restart.json",
+      "receipt_sha256": "7d99c629b422a378e570bdd64905b5b6c62dd222168f2a7ddfde2123808a16a9",
+      "environment": {
+        "windows": "Windows desktop; isolated native application and WebView profiles",
+        "android": "Physical Galaxy S21+ SM-G996N; Android 15 API 35; ARM64",
+        "date": "2026-11-15",
+        "original_library_imported": false,
+        "paid_translation_requested": false,
+        "windows_executable_sha256": "a4f7a5e20f28048de59b4e89757757baf0891093a1c3521c6b8f436576cb6065",
+        "android_apk_sha256": "d62207ef970f28d65e6415b1a2756b46ab54a3e7fa74c38b93d7de4b9e0bf2df",
+        "core": "fc0d072f78248e120db7a7582852add873814cec",
+        "screen": "fc0d072f78248e120db7a7582852add873814cec"
+      },
+      "reuse_reason": "Reused earlier manual device observation, not re-executed in this repair. The listed identity, transport, journal, projection, library UI and service inputs are byte-identical. Other changed application inputs are listed separately. Since fc0d072, store.rs and sync_local.rs gained carried-cost validation and accounting, covered by the fresh 13 projection/cost tests; subsequent native call-site changes only add the fixed privacy opener and its local permission. No claim of whole-application identity for those older builds follows. The ff30ca8 fresh bidirectional native check separately exercises the final integration.",
+      "other_changed_application_inputs": [
+        "src-tauri/README.md",
+        "src-tauri/build.rs",
+        "src-tauri/capabilities/main.json",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/VtoPlugin.kt",
+        "src-tauri/src/account_tests.rs",
+        "src-tauri/src/android.rs",
+        "src-tauri/src/api.rs",
+        "src-tauri/src/app.rs",
+        "src-tauri/src/commands.rs",
+        "src-tauri/src/lib.rs",
+        "src-tauri/src/store.rs",
+        "src-tauri/src/sync_local.rs",
+        "src-tauri/src/sync_store_tests.rs",
+        "src-tauri/src/web.rs",
+        "src-tauri/src/web_tests.rs",
+        "src/ui/GoogleAccount.svelte",
+        "src/ui/api.ts"
+      ],
+      "native_flow": "deletion_restart",
+      "audit": {
+        "sources": [
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/offline-prepare.mjs.source",
+            "sha256": "39509ac2c7e5debda86272f27e68bc71268ad6c16f6254dce6f9acd3c2ac7222"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/restart-flow.mjs.source",
+            "sha256": "22d3b8a4b70e107cf4ec364a356e49a84bd824c388c15b3cb12da4351656f027"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/online-delete-flow.mjs.source",
+            "sha256": "dfc7c14cd3880dc5ea4a469effa4d43c7e379ccd12343b1d7ef3101ae28179a2"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/phone-query.py.source",
+            "sha256": "53ff68593ee4f5fd1614559a383bf586f170e73e1ae28a3acc6ba9d2723b88a8"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/sql-fixture.c.source",
+            "sha256": "caeb606974fbbdb7ee5b362553bbea64862f1729794e73dd48f00b648011a175"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/close-windows.py.source",
+            "sha256": "1a534044eec23156ef28ff6115ee55ae164fd04c73f9ea28e291843345c9ec18"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/expected-windows.json",
+            "sha256": "11bf6f0cea28d3b036e5c7f2167ac5febb352cfdb9508666c2768d561b498605"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/expected-android.json",
+            "sha256": "f0914336f1d92d0e62d2bd2cfb90637e291d96650af90a784d2cec7d5550def7"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/offline-prepared.json",
+            "sha256": "5b57233714efea53483c78c50a4052240ee40f6456ec2ed9ef580c019f1f129c"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/windows-restart.json",
+            "sha256": "66985a12bd9fe78ce9a806b721f30068e27a7ed9fe6a193252f9ac97a4522bbe"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/android-restart.json",
+            "sha256": "bee298f326f4d4f9cd892225c7b10a6052dfe18fd15a298512c9bdfa0f3bb73d"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/online-delete-flow.json",
+            "sha256": "4da2567845f9309f94105b584946fe977188a170140b22cd4b7c87247db5f2f4"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/windows-shutdown.json",
+            "sha256": "05fd05b7bfe178e1dc97298a615093cbfa87724019fa6b5368a2ff90956c0e74"
+          }
+        ],
+        "actions": [
+          {
+            "id": "cancel-ui",
+            "source": "docs/evidence/lan-sync/diagnostics/offline-prepare.mjs.source",
+            "excerpt": "await page.getByRole('alertdialog').getByRole('button',{name:'취소',exact:true}).click();"
+          },
+          {
+            "id": "delete-ui",
+            "source": "docs/evidence/lan-sync/diagnostics/offline-prepare.mjs.source",
+            "excerpt": "await page.getByRole('alertdialog').getByRole('button',{name:'영구 삭제 확인',exact:true}).click();"
+          },
+          {
+            "id": "close-owned-windows",
+            "source": "docs/evidence/lan-sync/diagnostics/close-windows.py.source",
+            "excerpt": "for window in windows:assert user.PostMessageW(window,0x0010,0,0)"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "cancel",
+            "source": "docs/evidence/lan-sync/diagnostics/offline-prepare.mjs.source",
+            "excerpt": "assert((await read()).videos.some(v=>v.video_key===fixture.video.key&&v.saved));",
+            "output": "docs/evidence/lan-sync/machine/offline-prepared.json",
+            "field": [
+              "cancel_kept_translation"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "memberships",
+            "source": "docs/evidence/lan-sync/diagnostics/offline-prepare.mjs.source",
+            "excerpt": "assert.equal(data.playlists.length,2);assert(data.playlists.every(p=>!p.entries.includes(fixture.video.key)));",
+            "output": "docs/evidence/lan-sync/machine/offline-prepared.json",
+            "field": [
+              "confirmed_delete_removed_two_memberships"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "stale-request",
+            "source": "docs/evidence/lan-sync/diagnostics/offline-prepare.mjs.source",
+            "excerpt": "},{generation:owner,url:fixture.video.page_url});assert(blocked,'Deleted video accepted a stale translation request');",
+            "output": "docs/evidence/lan-sync/machine/offline-prepared.json",
+            "field": [
+              "stale_retranslation_refused"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "windows-restart",
+            "source": "docs/evidence/lan-sync/diagnostics/restart-flow.mjs.source",
+            "excerpt": "assert(!library.videos.some(v=>v.video_key===prepared.deleted_fixture));",
+            "output": "docs/evidence/lan-sync/machine/windows-restart.json",
+            "field": [
+              "deletion_retained"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "android-restart",
+            "source": "docs/evidence/lan-sync/diagnostics/restart-flow.mjs.source",
+            "excerpt": "assert.equal(library.playlists.find(p=>p.id===prepared.playlist_id)?.name,prepared.queued_name);",
+            "output": "docs/evidence/lan-sync/machine/android-restart.json",
+            "field": [
+              "queued_rename_retained"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "unrelated-cues",
+            "source": "docs/evidence/lan-sync/diagnostics/restart-flow.mjs.source",
+            "excerpt": "assert.deepEqual(saved.subtitles.cues.map(c=>[c.start_ms,c.end_ms,c.text_ko]),expected.cues.map(c=>[c.start_ms,c.end_ms,c.text_ko]));",
+            "output": "docs/evidence/lan-sync/machine/android-restart.json",
+            "field": [
+              "unrelated_intervals"
+            ],
+            "expected": [
+              [
+                0,
+                1000
+              ],
+              [
+                1000,
+                3000
+              ]
+            ],
+            "operator": "equal"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
+    },
+    {
+      "id": "reused-screen-off",
+      "kind": "desktop",
+      "status": "reused",
+      "command": "node screen-off-flow.mjs (historical manual diagnostic)",
+      "source_revision": "5f899a2c72080208f84db666d83e119aa4fcd788",
+      "inventory": "c8690cbb247332622bca74198384d07e09a655756c5370513228ce880afc21ce",
+      "paths": [
+        "Cargo.toml",
+        "Cargo.lock",
+        "src-tauri/Cargo.toml",
+        "src-tauri/src/account.rs",
+        "src-tauri/src/account_secrets.rs",
+        "src-tauri/src/google_auth.rs",
+        "src-tauri/src/google_desktop.rs",
+        "src-tauri/src/google_registration.rs",
+        "src-tauri/src/sync.rs",
+        "src-tauri/src/sync_store.rs",
+        "src-tauri/src/sync_channel.rs",
+        "src-tauri/src/sync_tls.rs",
+        "src-tauri/src/sync_discovery.rs",
+        "src-tauri/src/sync_runtime.rs",
+        "src-tauri/src/sync_cleanup.rs",
+        "src-tauri/src/library_scope.rs",
+        "src-tauri/src/library_api.rs",
+        "src-tauri/src/library_store.rs",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/GoogleAccount.kt",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/SyncService.kt",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/MainActivity.kt",
+        "src-tauri/gen/android/app/src/main/AndroidManifest.xml",
+        "src-tauri/capabilities/overlay.json",
+        "src/ui/Library.svelte",
+        "src-tauri/src/store.rs",
+        "src-tauri/src/sync_local.rs"
+      ],
+      "receipt": "docs/evidence/lan-sync/reused-screen-off.json",
+      "receipt_sha256": "65a8b16df270713d049a2586d37531ebe5d13401485c777d381dbe725a78d1f3",
+      "environment": {
+        "windows": "Windows desktop; isolated native application and WebView profiles",
+        "android": "Physical Galaxy S21+ SM-G996N; Android 15 API 35; ARM64",
+        "date": "2026-11-15",
+        "original_library_imported": false,
+        "paid_translation_requested": false,
+        "windows_executable_sha256": "a07588146b8cca5b8ea6afcb53a479a9fbf99ef5c0ee0ccccc55f9c532abb0f5",
+        "android_apk_sha256": "e64fc81d8d99045e5150ce8b828f6f36a94373face41caa18eeaf5e3d1d27fd7",
+        "core": "5f899a2c72080208f84db666d83e119aa4fcd788",
+        "screen": "5f899a2c72080208f84db666d83e119aa4fcd788"
+      },
+      "reuse_reason": "Reused earlier manual device observation, not re-executed in this repair. The listed identity, transport, journal, projection, library UI and service inputs are byte-identical. Other changed application inputs are listed separately. Since fc0d072, store.rs and sync_local.rs gained carried-cost validation and accounting, covered by the fresh 13 projection/cost tests; subsequent native call-site changes only add the fixed privacy opener and its local permission. No claim of whole-application identity for those older builds follows. The ff30ca8 fresh bidirectional native check separately exercises the final integration.",
+      "other_changed_application_inputs": [
+        "src-tauri/README.md",
+        "src-tauri/build.rs",
+        "src-tauri/capabilities/main.json",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/VtoPlugin.kt",
+        "src-tauri/src/android.rs",
+        "src-tauri/src/api.rs",
+        "src-tauri/src/app.rs",
+        "src-tauri/src/commands.rs",
+        "src-tauri/src/lib.rs",
+        "src-tauri/src/web.rs",
+        "src-tauri/src/web_tests.rs",
+        "src/ui/GoogleAccount.svelte",
+        "src/ui/api.ts"
+      ],
+      "native_flow": "screen_off",
+      "audit": {
+        "sources": [
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/screen-off-flow.mjs.source",
+            "sha256": "4856664c35d3ef02a17d455392a7e4832ac9eb72597bc1bb786052b21f942704"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/phone-query.py.source",
+            "sha256": "53ff68593ee4f5fd1614559a383bf586f170e73e1ae28a3acc6ba9d2723b88a8"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/sql-fixture.c.source",
+            "sha256": "caeb606974fbbdb7ee5b362553bbea64862f1729794e73dd48f00b648011a175"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/screen-off-flow.json",
+            "sha256": "3d0b0c99ab9064236737b1ba1dc100256e5a0ab5c5b68083cc88b84b8d5020f5"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/home-flow.json",
+            "sha256": "4c0c1d8296ee529816fb91ab68fd1c3c7c02b37ce46837e68af216118de38b9a"
+          }
+        ],
+        "actions": [
+          {
+            "id": "screen-off",
+            "source": "docs/evidence/lan-sync/diagnostics/screen-off-flow.mjs.source",
+            "excerpt": "await shell('input','keyevent','KEYCODE_SLEEP');asleep=true;"
+          },
+          {
+            "id": "rename-while-off",
+            "source": "docs/evidence/lan-sync/diagnostics/screen-off-flow.mjs.source",
+            "excerpt": "const started=Date.now();await page.getByRole('button',{name:'이름 바꾸기',exact:true}).click();"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "display-off",
+            "source": "docs/evidence/lan-sync/diagnostics/screen-off-flow.mjs.source",
+            "excerpt": "assert(/^  mScreenState=OFF\\s*$/m.test(display),'The display was not off');",
+            "output": "docs/evidence/lan-sync/machine/screen-off-flow.json",
+            "field": [
+              "display_state"
+            ],
+            "expected": "OFF",
+            "operator": "equal"
+          },
+          {
+            "id": "noninteractive",
+            "source": "docs/evidence/lan-sync/diagnostics/screen-off-flow.mjs.source",
+            "excerpt": "assert(power.includes('mHalInteractiveModeEnabled=false'),'Interactive mode remained enabled');",
+            "output": "docs/evidence/lan-sync/machine/screen-off-flow.json",
+            "field": [
+              "interactive_mode"
+            ],
+            "expected": false,
+            "operator": "equal"
+          },
+          {
+            "id": "foreground-service",
+            "source": "docs/evidence/lan-sync/diagnostics/screen-off-flow.mjs.source",
+            "excerpt": "assert(services.includes('dev.vto.overlay/.SyncService')&&services.includes('isForeground=true')&&services.includes('foregroundId=2002'));",
+            "output": "docs/evidence/lan-sync/machine/screen-off-flow.json",
+            "field": [
+              "connection_notification_id"
+            ],
+            "expected": 2002,
+            "operator": "equal"
+          },
+          {
+            "id": "delivery",
+            "source": "docs/evidence/lan-sync/diagnostics/screen-off-flow.mjs.source",
+            "excerpt": "assert(result.matches,'Native sync failed while the screen was off');await asleepNow();",
+            "output": "docs/evidence/lan-sync/machine/screen-off-flow.json",
+            "field": [
+              "changes",
+              0,
+              "delivery_ms"
+            ],
+            "expected": 2695,
+            "operator": "equal"
+          },
+          {
+            "id": "network",
+            "source": "docs/evidence/lan-sync/diagnostics/screen-off-flow.mjs.source",
+            "excerpt": "const addresses=await shell('ip','-4','addr','show');assert(addresses.includes('192.168.0.2/24')&&!addresses.includes('usb0:'));",
+            "output": "docs/evidence/lan-sync/machine/screen-off-flow.json",
+            "field": [
+              "usb_tether_interface_absent"
+            ],
+            "expected": true,
+            "operator": "equal"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
+    },
+    {
+      "id": "reused-two-real-accounts",
+      "kind": "desktop",
+      "status": "reused",
+      "command": "User-assisted Google sign-ins, account-mismatch.mjs, account-two-transfer.mjs, account-restore.mjs and account-store-audit.py (historical diagnostics)",
+      "source_revision": "5f899a2c72080208f84db666d83e119aa4fcd788",
+      "inventory": "c8690cbb247332622bca74198384d07e09a655756c5370513228ce880afc21ce",
+      "paths": [
+        "Cargo.toml",
+        "Cargo.lock",
+        "src-tauri/Cargo.toml",
+        "src-tauri/src/account.rs",
+        "src-tauri/src/account_secrets.rs",
+        "src-tauri/src/google_auth.rs",
+        "src-tauri/src/google_desktop.rs",
+        "src-tauri/src/google_registration.rs",
+        "src-tauri/src/sync.rs",
+        "src-tauri/src/sync_store.rs",
+        "src-tauri/src/sync_channel.rs",
+        "src-tauri/src/sync_tls.rs",
+        "src-tauri/src/sync_discovery.rs",
+        "src-tauri/src/sync_runtime.rs",
+        "src-tauri/src/sync_cleanup.rs",
+        "src-tauri/src/library_scope.rs",
+        "src-tauri/src/library_api.rs",
+        "src-tauri/src/library_store.rs",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/GoogleAccount.kt",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/SyncService.kt",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/MainActivity.kt",
+        "src-tauri/gen/android/app/src/main/AndroidManifest.xml",
+        "src-tauri/capabilities/overlay.json",
+        "src/ui/Library.svelte",
+        "src-tauri/src/store.rs",
+        "src-tauri/src/sync_local.rs"
+      ],
+      "receipt": "docs/evidence/lan-sync/reused-two-real-accounts.json",
+      "receipt_sha256": "7395947b63e253e0608d8d7306f4e8c2b52c668b1afcc96fb7b7649f3e6695ec",
+      "environment": {
+        "windows": "Windows desktop; isolated native application and WebView profiles",
+        "android": "Physical Galaxy S21+ SM-G996N; Android 15 API 35; ARM64",
+        "date": "2026-11-15",
+        "original_library_imported": false,
+        "paid_translation_requested": false,
+        "windows_executable_sha256": "a07588146b8cca5b8ea6afcb53a479a9fbf99ef5c0ee0ccccc55f9c532abb0f5",
+        "android_apk_sha256": "e64fc81d8d99045e5150ce8b828f6f36a94373face41caa18eeaf5e3d1d27fd7",
+        "core": "5f899a2c72080208f84db666d83e119aa4fcd788",
+        "screen": "5f899a2c72080208f84db666d83e119aa4fcd788"
+      },
+      "reuse_reason": "Reused earlier manual device observation, not re-executed in this repair. The listed identity, transport, journal, projection, library UI and service inputs are byte-identical. Other changed application inputs are listed separately. Since fc0d072, store.rs and sync_local.rs gained carried-cost validation and accounting, covered by the fresh 13 projection/cost tests; subsequent native call-site changes only add the fixed privacy opener and its local permission. No claim of whole-application identity for those older builds follows. The ff30ca8 fresh bidirectional native check separately exercises the final integration.",
+      "other_changed_application_inputs": [
+        "src-tauri/README.md",
+        "src-tauri/build.rs",
+        "src-tauri/capabilities/main.json",
+        "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/VtoPlugin.kt",
+        "src-tauri/src/android.rs",
+        "src-tauri/src/api.rs",
+        "src-tauri/src/app.rs",
+        "src-tauri/src/commands.rs",
+        "src-tauri/src/lib.rs",
+        "src-tauri/src/web.rs",
+        "src-tauri/src/web_tests.rs",
+        "src/ui/GoogleAccount.svelte",
+        "src/ui/api.ts"
+      ],
+      "native_flow": "account_isolation",
+      "audit": {
+        "sources": [
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/account-two-windows.mjs.source",
+            "sha256": "e8c0409455114fc373e76636c394040e0d8611458fd26869e2ef83d8b6b57a6e"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/account-mismatch.mjs.source",
+            "sha256": "afbc7231a10edeeaecbda148d22aee756f41a95a8390a110b9008f96e971a486"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/account-two-phone.mjs.source",
+            "sha256": "35341f7d71bba0d432a8c992d489ca9b35e9518b286d33693bf1a44b72c7a8ce"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/account-two-transfer.mjs.source",
+            "sha256": "98d6c39198a177b4ac8b36585524003725447690431c00a06be0f8632818f118"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/account-restore.mjs.source",
+            "sha256": "6b08841b944387c86581633dbafbc05f44c573052b3cc147cf0736dacba61c35"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/account-restored-flow.mjs.source",
+            "sha256": "d4efdeb9b9ae7a0ba6d0d79dc2ba624965edf186f75322328ce6815f7c8fa63c"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/account-store-audit.py.source",
+            "sha256": "7b58f7c38a6587c80c9de643f2f83284ff435d113251461a8cf4c459a307727a"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/sql-fixture.c.source",
+            "sha256": "caeb606974fbbdb7ee5b362553bbea64862f1729794e73dd48f00b648011a175"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/account-two-windows.json",
+            "sha256": "514ca79a4f47eaeaddffe698311d16187d89bb9805fd7f021ea3d5c0d0e89a6e"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/account-mismatch.json",
+            "sha256": "003ece71e5a0153817b6880569d093f6cb004c8c5ff33b3dcaefc8089e08b599"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/account-two-phone.json",
+            "sha256": "b8b033956d68549832d7c8f89da7d3a2ff53d934d912270e5b24304b743faaa5"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/account-two-transfer.json",
+            "sha256": "6f8656504d25499e15b737ffce9e1b32c050d488d4d7f2ec1d74e1bd5eab6731"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/account-restore-windows.json",
+            "sha256": "c4463fdd21c8749a48c0254c70a2ebcb0559faa1afe3647045f4e0b622a60a19"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/account-restore-android.json",
+            "sha256": "72a3940d1e198bfcd28f15a1a96c3ee2eff5323d533975c3f8de349ffaa36147"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/account-restored-flow.json",
+            "sha256": "f6bc919f6e84ba9ac05e6e67355db2d6db21866db52feb30b2b7d7fb43c19126"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/account-store-audit.json",
+            "sha256": "6f9661143bcd10b32d86088561bdd5a871761e86d66580a6e80f6973bc1f9bb5"
+          }
+        ],
+        "actions": [
+          {
+            "id": "mismatched-account-marker",
+            "source": "docs/evidence/lan-sync/diagnostics/account-mismatch.mjs.source",
+            "excerpt": "await pc.p.getByRole('button',{name:'재생목록 만들기',exact:true}).click();"
+          },
+          {
+            "id": "queued-old-account-edit",
+            "source": "docs/evidence/lan-sync/diagnostics/account-mismatch.mjs.source",
+            "excerpt": "await phone.p.getByRole('button',{name:'이름 바꾸기',exact:true}).click();"
+          },
+          {
+            "id": "user-assisted-account-choice",
+            "source": "docs/evidence/lan-sync/diagnostics/account-two-phone.mjs.source",
+            "excerpt": "await p.getByRole('button',{name:'Google 계정으로 로그인',exact:true}).click();"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "different-accounts",
+            "source": "docs/evidence/lan-sync/diagnostics/account-mismatch.mjs.source",
+            "excerpt": "assert.equal(digest(a.email)===baseline.account1_digest,name==='android');",
+            "output": "docs/evidence/lan-sync/machine/account-mismatch.json",
+            "field": [
+              "different_verified_accounts"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "windows-isolation",
+            "source": "docs/evidence/lan-sync/diagnostics/account-mismatch.mjs.source",
+            "excerpt": "assert.equal(second.videos.length,0);assert.equal(second.playlists.length,1);assert.equal(second.playlists[0].name,marker);",
+            "output": "docs/evidence/lan-sync/machine/account-mismatch.json",
+            "field": [
+              "account_one_not_visible_in_account_two"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "android-isolation",
+            "source": "docs/evidence/lan-sync/diagnostics/account-mismatch.mjs.source",
+            "excerpt": "assert.equal(original.videos.length,2);assert.equal(original.playlists.length,2);assert(!original.playlists.some(p=>p.name===marker));",
+            "output": "docs/evidence/lan-sync/machine/account-mismatch.json",
+            "field": [
+              "account_two_not_visible_in_account_one"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "old-queue",
+            "source": "docs/evidence/lan-sync/diagnostics/account-mismatch.mjs.source",
+            "excerpt": "assert.equal(original.playlists.find(p=>p.id===list.id)?.name,isolated);",
+            "output": "docs/evidence/lan-sync/machine/account-mismatch.json",
+            "field": [
+              "old_account_changes_not_sent_to_new_account"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "matching-account",
+            "source": "docs/evidence/lan-sync/diagnostics/account-two-phone.mjs.source",
+            "excerpt": "assert.equal(library.playlists[0].id,mismatch.account_two_marker);assert.equal(library.playlists[0].name,mismatch.account_two_marker_name);",
+            "output": "docs/evidence/lan-sync/machine/account-two-phone.json",
+            "field": [
+              "account_two_marker_received"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "separate-stores",
+            "source": "docs/evidence/lan-sync/diagnostics/account-store-audit.py.source",
+            "excerpt": "assert db.execute(sql).fetchone()==(1,),'Windows account data was lost or mixed'",
+            "output": "docs/evidence/lan-sync/machine/account-store-audit.json",
+            "field": [
+              "no_cross_account_rows"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "restore-original",
+            "source": "docs/evidence/lan-sync/diagnostics/account-restore.mjs.source",
+            "excerpt": "assert.deepEqual(library.videos.map(v=>v.video_key).sort(),baseline.videos.map(v=>v.video_key).sort());",
+            "output": "docs/evidence/lan-sync/machine/account-restore-windows.json",
+            "field": [
+              "original_library_retained"
+            ],
+            "expected": true,
+            "operator": "equal"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
+    },
+    {
+      "id": "reused-policy-and-retention",
+      "kind": "desktop",
+      "status": "reused",
+      "command": "node artifacts/branding/privacy-native.mjs windows; node artifacts/branding/privacy-native.mjs android; python phone-privacy-retention.py final",
+      "source_revision": "ff30ca80e0acd1af7c0ec110705ae8dc5d94d881",
+      "inventory": "7d87b59d073c52ba74a55a79e0d6a15bb5a19083d26fce70c6b775e9d5cfb869",
+      "receipt": "docs/evidence/lan-sync/reused-policy-and-retention.json",
+      "receipt_sha256": "9b549fd3a05af6a0bd5c897dc475e8275c27db93323ad2acbc4cf816ab0a9d8e",
+      "environment": {
+        "windows": "Windows desktop; isolated native application and WebView profiles",
+        "android": "Physical Galaxy S21+ SM-G996N; Android 15 API 35; ARM64",
+        "date": "2026-11-15",
+        "original_library_imported": false,
+        "paid_translation_requested": false,
+        "windows_executable_sha256": "de72186bbfc1691697da60e4f4ab4bfa039072328d3e05e2d4a516345489e847",
+        "android_apk_sha256": "a223f624956fe674bd3a8bd85c596d2f2ba9f51704c224b6ba9e9fa0fbe05416",
+        "core": "ff30ca80e0acd1af7c0ec110705ae8dc5d94d881",
+        "screen": "ff30ca80e0acd1af7c0ec110705ae8dc5d94d881"
+      },
+      "reuse_reason": "The complete application input inventory is identical to the current candidate. These are earlier observations, not newly executed privacy navigation or an APK update in this repair.",
+      "other_changed_application_inputs": [
+        "src-tauri/README.md"
+      ],
+      "audit": {
+        "sources": [
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/privacy-native.mjs.source",
+            "sha256": "2f019446e0b6cc5ed548474afc24ee81a94ec333d6728394bc8db6af6f0b02d7"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/observe-windows-policy.ps1.source",
+            "sha256": "2f96568be74e6a041104c611956ca1965b5660a65c10637ff5574903e745bfb3"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/observe-android-policy.py.source",
+            "sha256": "427099eb69a40bfe5725410b2ca016b13a2aba239c89b673a22fd8ec9e9d8d04"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/phone-privacy-retention.py.source",
+            "sha256": "a060e7773223950e855233720d4f02c04ff9c53e135b1f6b96bab79d29c5f752"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/phone-privacy-baseline.py.source",
+            "sha256": "05018e51a44ab6e0a432cb0a6e10b64759446ac5bf4aa2fd6a8a36525465ca4c"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/windows-policy-native.json",
+            "sha256": "49a06615d1744a07c280deba26c7f461930a20419a23d037e7199418e1684741"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/android-policy-native.json",
+            "sha256": "7b585113c4524ea36eebd1fffaa5dc3cea7e7f8cb66b39b049da6fc596590f31"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/phone-retention.json",
+            "sha256": "90635b53d3d3c56690fb039817bf52c169a5f151662e3451f8d3bef630d417f7"
+          }
+        ],
+        "actions": [
+          {
+            "id": "privacy-ui",
+            "source": "docs/evidence/lan-sync/diagnostics/privacy-native.mjs.source",
+            "excerpt": "await button.click();"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "policy-address-bar",
+            "source": "docs/evidence/lan-sync/diagnostics/privacy-native.mjs.source",
+            "excerpt": "assert.equal(external.external_browser_destination,policy);assert.equal(external.observed_in_address_bar,true);",
+            "output": "docs/evidence/lan-sync/machine/android-policy-native.json",
+            "field": [
+              "observed_in_address_bar"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "original-library-retained",
+            "source": "docs/evidence/lan-sync/diagnostics/phone-privacy-retention.py.source",
+            "excerpt": "assert hashlib.sha256(\"\\n\".join(rows).encode()).hexdigest()==expected, \"An original library table changed\"",
+            "output": "docs/evidence/lan-sync/machine/phone-retention.json",
+            "field": [
+              "original_library_rows_preserved"
+            ],
+            "expected": true,
+            "operator": "equal"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
+    },
+    {
+      "id": "reused-public-pages",
+      "kind": "browser",
+      "status": "reused",
+      "command": "node artifacts/branding/check-live.mjs (earlier anonymous HTTPS and actual browser navigation)",
+      "source_revision": "ac67b9c110aa235af69647a27fffd89679030a02",
+      "inventory": "c55011b8515d6dd62e2198af632314d398c933ef13a4f77e7a1393b54508604e",
+      "paths": [
+        "docs/branding/index.html",
+        "docs/branding/privacy.html",
+        "docs/branding/style.css",
+        "docs/branding/.nojekyll"
+      ],
+      "receipt": "docs/evidence/lan-sync/reused-public-pages.json",
+      "receipt_sha256": "5900c91106c85bac1f742ef0725c0b6f5655ef5820c3a9c048b3619bfe313b22",
+      "environment": {
+        "anonymous": true,
+        "static_commit": "989a4ebcdf1e1a5bc28c16f9e87f693dcd17cc6b"
+      },
+      "reuse_reason": "The four published files are unchanged. Their anonymous HTTPS response hashes and live browser navigation are preserved; Google configuration is an owner report, not inferred from page availability.",
+      "other_changed_application_inputs": [
+        "src-tauri/README.md"
+      ],
+      "audit": {
+        "sources": [
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/check-live.mjs.source",
+            "sha256": "1234fccda0b4e3920d84d1e1249d2a3777d911233bfed748f4532300cd13c7c8"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/publication-receipt.json",
+            "sha256": "16669a84bd785f10d16842cad1abcd24a3f114e2105448e5f2b78a4cc546fda3"
+          }
+        ],
+        "actions": [
+          {
+            "id": "anonymous-get",
+            "source": "docs/evidence/lan-sync/diagnostics/check-live.mjs.source",
+            "excerpt": "const response=await fetch(url,{signal:AbortSignal.timeout(15000),redirect:'error'});"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "published-bytes",
+            "source": "docs/evidence/lan-sync/diagnostics/check-live.mjs.source",
+            "excerpt": "assert.equal(createHash('sha256').update(bytes).digest('hex'),asset.sha256,`${asset.name}: published bytes differ`);",
+            "output": "docs/evidence/lan-sync/machine/publication-receipt.json",
+            "field": [
+              "assets",
+              0,
+              "status"
+            ],
+            "expected": 200,
+            "operator": "equal"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
+    }
+  ],
+  "audit_contract": "Every execution requires hashed diagnostic sources, retained machine output, inspectable actions and executable assertion bindings. Four required native flows have independent assertion coverage; kind coverage alone is insufficient. Earlier executions remain reused observations, not freshly performed Google sign-ins.",
+  "unavailable_attempts": [
+    {
+      "kind": "desktop",
+      "eligible_as_passing_evidence": false,
+      "execution_checkout": "a29d1577da533e4c7dcc267fa0d584f716a88fd8",
+      "command": "node scripts/verification/sync-native-evidence.mjs <compiled-revision> <receipt-path>",
+      "actual": "The probe refused before CDP attachment or app mutations because zero approved phones were connected. The subsequent ADB inventory confirms no connected device. No new native-flow pass is claimed in review round 2.",
+      "output": "docs/evidence/lan-sync/machine/round-two-adb-unavailable.log",
+      "sha256": "64b7402f33254c3fdbe6eff364e661cd1164f8a17f4e247d5f8445757f543162"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "head": "5f899a2c72080208f84db666d83e119aa4fcd788",
+  "different_verified_accounts": true,
+  "account_one_not_visible_in_account_two": true,
+  "account_two_not_visible_in_account_one": true,
+  "old_account_changes_not_sent_to_new_account": true,
+  "observed_ms": 16089,
+  "connection_states": {
+    "windows": [
+      "listening"
+    ],
+    "android": [
+      "account_mismatch"
+    ]
+  },
+  "account_two_marker": "6dd06ee5-21aa-4726-be6e-8642edd5b113",
+  "account_two_marker_name": "LAN account two 20261115",
+  "account_one_queued_playlist": "c09fca8f-1b56-4209-9d35-7fb8a8d4ba6d",
+  "account_one_queued_name": "LAN isolated account one 20261115"
+}

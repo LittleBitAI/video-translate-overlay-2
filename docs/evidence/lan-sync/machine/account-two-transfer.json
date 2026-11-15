@@ -1,0 +1,17 @@
+{
+  "head": "5f899a2c72080208f84db666d83e119aa4fcd788",
+  "second_real_account": true,
+  "first_account_rows_absent": true,
+  "changes": [
+    {
+      "source": "Android",
+      "name": "LAN second account Android 20261115",
+      "delivery_ms": 581
+    },
+    {
+      "source": "Windows",
+      "name": "LAN second account Windows 20261115",
+      "delivery_ms": 2356
+    }
+  ]
+}

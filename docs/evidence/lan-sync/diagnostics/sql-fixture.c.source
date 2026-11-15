@@ -1,0 +1,27 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include "sqlite3.h"
+
+/* A local debug fixture tool, never shipped in the app or exposed to peers. */
+static int row(void *unused, int count, char **values, char **names) {
+    for (int i=0; i<count; i++) printf("%s%s", i ? "\t" : "", values[i] ? values[i] : "NULL");
+    putchar('\n');
+    return 0;
+}
+int main(int argc, char **argv) {
+    if (argc != 2) { fputs("fixture database path required\n", stderr); return 2; }
+    char sql[65537];
+    size_t count = fread(sql, 1, sizeof(sql)-1, stdin);
+    if (count == sizeof(sql)-1 || ferror(stdin)) { fputs("fixture SQL exceeds bound\n",stderr); return 2; }
+    sql[count] = 0;
+    sqlite3 *db = NULL;
+    int rc = sqlite3_open_v2(argv[1], &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, NULL);
+    if (rc == SQLITE_OK) {
+        sqlite3_busy_timeout(db, 5000);
+        rc = sqlite3_exec(db, sql, row, NULL, NULL);
+    }
+    if (db) sqlite3_close(db);
+    if (rc != SQLITE_OK) { fprintf(stderr,"fixture transaction failed (%d)\n",rc); return 1; }
+    puts("fixture transaction complete");
+    return 0;
+}

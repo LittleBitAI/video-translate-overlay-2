@@ -13,15 +13,18 @@ use std::time::Duration;
 type Stop = String;
 
 pub fn run_worker(core: Arc<Core>) {
-    // Its own connection, so the worker's transactions never mix with the commands' writes.
-    let open = || Store::open(&core.db_path()).map_err(|e| log(format!("worker cannot open the database: {e}")));
-    let Ok(mut store) = open() else { return };
     let mut resumed = false;
     loop {
-        // Audio a kill or a failed delete left behind (on start, then once a round).
-        sweep_audio(&store);
-        match store.active_job() {
-            Ok(Some(job)) => {
+        // Captured databases keep running after sign-out; the worker never resolves a new owner mid-job.
+        let next = (|| -> Result<_, String> {
+            for store in core.job_stores()? {
+                sweep_audio(&store);
+                if let Some(job) = store.active_job()? { return Ok(Some((store, job))); }
+            }
+            Ok(None)
+        })();
+        match next {
+            Ok(Some((store, job))) => {
                 let title = store.video(&job.video_key).ok().flatten().map(|v| v.title).unwrap_or_default();
                 if !resumed {
                     log(format!("resuming job {} at {}", job.id, job.stage));
@@ -34,10 +37,12 @@ pub fn run_worker(core: Arc<Core>) {
                     // A bug must not leave the job active, holding up every later one. The
                     // old connection is dropped (rolling back anything it left open) and a
                     // fresh one records the failure.
+                    let path = store.path().to_path_buf();
                     drop(store);
-                    let Ok(fresh) = open() else { return };
-                    store = fresh;
-                    give_up(&core, &store, &id, &title, "panic");
+                    match Store::open(&path) {
+                        Ok(fresh) => give_up(&core, &fresh, &id, &title, "panic"),
+                        Err(e) => log(format!("worker cannot reopen its owning database: {e}")),
+                    }
                 }
             }
             Ok(None) => {
@@ -383,7 +388,7 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
 
 #[cfg(test)]
 #[path = "pipeline_worker_tests.rs"]
-mod worker_tests;
+pub(crate) mod worker_tests;
 
 #[cfg(test)]
 #[path = "pipeline_audio_tests.rs"]

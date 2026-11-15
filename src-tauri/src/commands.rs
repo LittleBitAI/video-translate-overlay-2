@@ -14,8 +14,8 @@ use tauri::utils::acl::{capability::Capability, manifest::Manifest, resolved::Re
 use tauri::{Runtime, State};
 
 /// Every registered command, P1 to P11.
-pub const COMMANDS: [&str; 14] =
-    ["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles", "get_browser", "get_library", "library_action", "check_updates", "dismiss_update", "open_update"];
+pub const COMMANDS: [&str; 18] =
+    ["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles", "get_browser", "get_library", "library_action", "check_updates", "dismiss_update", "open_update", "get_google_account", "google_sign_in", "google_sign_out", "open_privacy_policy"];
 
 /// The commands a site page (the overlay) may call.
 pub const OVERLAY_COMMANDS: [&str; 3] = ["create_job", "get_job", "get_subtitles"];
@@ -62,6 +62,60 @@ async fn blocking(f: impl FnOnce() -> ApiResult + Send + 'static) -> ApiResult {
 
 type Shared<'a> = State<'a, Arc<Core>>;
 
+fn account_error(error: crate::google_auth::AuthError) -> ApiError {
+    use crate::google_auth::AuthError;
+    let (status, code, message) = match error {
+        AuthError::Expired => (401, "auth_expired", "Google 로그인이 만료됐습니다. 다시 로그인해 주세요."),
+        AuthError::Unavailable => (503, "auth_unavailable", "Google 로그인을 확인하지 못했습니다. 앱과 네트워크를 확인한 뒤 다시 시도해 주세요."),
+        AuthError::AccountMismatch => (403, "account_mismatch", "같은 Google 계정으로 로그인한 기기끼리만 연결할 수 있습니다."),
+        AuthError::Registration => (503, "auth_registration", "앱의 Google 로그인 등록 정보를 확인하지 못했습니다. 앱 제공자에게 문의해 주세요."),
+        AuthError::Cancelled => (409, "auth_cancelled", "로그인이 취소됐거나 계정 상태가 바뀌었습니다."),
+        AuthError::Denied => (403, "auth_denied", "Google 로그인에 동의하지 않았습니다."),
+        AuthError::TimedOut => (408, "auth_timeout", "Google 로그인 시간이 지났습니다. 다시 시도해 주세요."),
+        _ => (401, "auth_invalid", "Google 로그인을 완료하지 못했습니다. 다시 시도해 주세요."),
+    };
+    api::err(status, code, message)
+}
+
+#[tauri::command(async, rename_all = "snake_case")]
+pub async fn get_google_account(core: Shared<'_>) -> ApiResult {
+    api::get_google_account(&core)
+}
+
+#[tauri::command(async, rename_all = "snake_case")]
+pub async fn google_sign_in(core: Shared<'_>, generation: u64) -> ApiResult {
+    let core = core.inner().clone();
+    blocking(move || {
+        let attempt = core.account.begin_sign_in(generation).map_err(account_error)?;
+        let pending = core.account.pending_status(&attempt).map_err(account_error)?;
+        if let Err(e) = core.svc.browser.invalidate_account(pending.generation) { crate::log(format!("account view invalidation: {e}")); }
+        let worker = core.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            let generation = attempt.generation;
+            if std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| worker.account.finish_sign_in(attempt))).is_err() {
+                worker.account.fail_attempt(generation);
+            }
+            if let Ok(status) = worker.account.status() {
+                if status.generation == generation {
+                    let _ = worker.svc.browser.invalidate_account(generation);
+                    worker.wake_worker();
+                }
+            }
+        });
+        serde_json::to_value(pending).map_err(|_| api::err(500, "internal", "계정 상태를 불러오지 못했습니다."))
+    }).await
+}
+
+#[tauri::command(async, rename_all = "snake_case")]
+pub async fn google_sign_out(core: Shared<'_>, generation: u64) -> ApiResult {
+    let core = core.inner().clone();
+    blocking(move || {
+        let status = core.account.sign_out(generation).map_err(account_error)?;
+        if let Err(e) = core.svc.browser.invalidate_account(status.generation) { crate::log(format!("account view invalidation: {e}")); }
+        serde_json::to_value(status).map_err(|_| api::err(500, "internal", "계정 상태를 불러오지 못했습니다."))
+    }).await
+}
+
 #[tauri::command(async, rename_all = "snake_case")]
 pub async fn check_updates(core: Shared<'_>, manual: Option<bool>) -> ApiResult {
     let core = core.inner().clone();
@@ -80,15 +134,15 @@ pub async fn open_update(core: Shared<'_>, version: String) -> ApiResult {
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
-pub async fn browser_open(core: Shared<'_>, url: String) -> ApiResult {
+pub async fn browser_open(core: Shared<'_>, url: String, account_generation: Option<u64>) -> ApiResult {
     let core = core.inner().clone();
-    blocking(move || api::browser_open(&core, &url)).await
+    blocking(move || api::library_request(&core, account_generation, "browser_open", &json!({"url":url}))).await
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
-pub async fn get_browser(core: Shared<'_>) -> ApiResult {
+pub async fn get_browser(core: Shared<'_>, account_generation: Option<u64>) -> ApiResult {
     let core = core.inner().clone();
-    blocking(move || api::get_browser(&core)).await
+    blocking(move || api::library_request(&core, account_generation, "get_browser", &json!({}))).await
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
@@ -116,34 +170,33 @@ pub async fn delete_api_key(core: Shared<'_>) -> ApiResult {
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
-pub async fn create_job(core: Shared<'_>, page_url: String, media_url: Option<String>, title: Option<String>, duration_ms: Option<i64>, retranslate: Option<bool>, deletion_token: Option<String>) -> ApiResult {
+pub async fn create_job(core: Shared<'_>, page_url: String, media_url: Option<String>, title: Option<String>, duration_ms: Option<i64>, retranslate: Option<bool>, deletion_token: Option<String>, account_generation: Option<u64>) -> ApiResult {
     let core = core.inner().clone();
-    blocking(move || if retranslate == Some(true) { api::retranslate_job(&core, &page_url) }
-        else { api::create_job_with_consent(&core, &page_url, media_url.as_deref(), title.as_deref().unwrap_or(""), duration_ms.unwrap_or(0), deletion_token.as_deref()) }).await
+    blocking(move || api::library_request(&core, account_generation, "create_job", &json!({"page_url":page_url,"media_url":media_url,"title":title,"duration_ms":duration_ms,"retranslate":retranslate,"deletion_token":deletion_token}))).await
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
-pub async fn get_library(core: Shared<'_>) -> ApiResult {
+pub async fn get_library(core: Shared<'_>, account_generation: Option<u64>) -> ApiResult {
     let core = core.inner().clone();
-    blocking(move || api::get_library(&core)).await
+    blocking(move || api::library_request(&core, account_generation, "get_library", &json!({}))).await
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
-pub async fn library_action(core: Shared<'_>, action: Value) -> ApiResult {
+pub async fn library_action(core: Shared<'_>, action: Value, account_generation: Option<u64>) -> ApiResult {
     let core = core.inner().clone();
-    blocking(move || api::library_action(&core, &action)).await
+    blocking(move || api::library_request(&core, account_generation, "library_action", &json!({"action":action}))).await
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
-pub async fn get_job(core: Shared<'_>, page_url: String) -> ApiResult {
+pub async fn get_job(core: Shared<'_>, page_url: String, account_generation: Option<u64>, playback_action: Option<api::PlaybackAction>, position_ms: Option<i64>, duration_ms: Option<i64>) -> ApiResult {
     let core = core.inner().clone();
-    blocking(move || api::get_job(&core, &page_url)).await
+    blocking(move || api::library_request(&core, account_generation, "get_job", &json!({"page_url":page_url,"playback_action":playback_action,"position_ms":position_ms,"duration_ms":duration_ms}))).await
 }
 
 #[tauri::command(async, rename_all = "snake_case")]
-pub async fn get_subtitles(core: Shared<'_>, video_key: String) -> ApiResult {
+pub async fn get_subtitles(core: Shared<'_>, video_key: String, account_generation: Option<u64>) -> ApiResult {
     let core = core.inner().clone();
-    blocking(move || api::get_subtitles(&core, &video_key)).await
+    blocking(move || api::library_request(&core, account_generation, "get_subtitles", &json!({"video_key":video_key}))).await
 }
 
 /// Registers the commands and their state on a builder.
@@ -151,9 +204,19 @@ pub fn register<R: Runtime>(builder: tauri::Builder<R>, core: Arc<Core>) -> taur
     handlers(builder.manage(core))
 }
 
+#[tauri::command(async)]
+pub async fn open_privacy_policy(core: Shared<'_>) -> ApiResult {
+    let core = core.inner().clone();
+    blocking(move || api::open_privacy_policy(&core)).await
+}
+
 /// Only the handlers; the app manages its `Arc<Core>` in `setup`, once its data folder is known.
 pub fn handlers<R: Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
     builder.invoke_handler(tauri::generate_handler![
+        get_google_account,
+        google_sign_in,
+        google_sign_out,
+        open_privacy_policy,
         browser_open,
         clear_site_data,
         get_settings,
@@ -175,6 +238,10 @@ pub fn handlers<R: Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
 pub fn route(method: &str, path: &str, body: &Value) -> Option<(&'static str, Value)> {
     let mut args = if body.is_object() { body.clone() } else { json!({}) };
     let cmd = match (method, path) {
+        ("GET", "/account") => "get_google_account",
+        ("POST", "/account/sign-in") => "google_sign_in",
+        ("POST", "/account/sign-out") => "google_sign_out",
+        ("POST", "/privacy/open") => "open_privacy_policy",
         ("POST", "/updates/check") => "check_updates",
         ("POST", "/updates/dismiss") => "dismiss_update",
         ("POST", "/updates/open") => "open_update",
@@ -188,6 +255,8 @@ pub fn route(method: &str, path: &str, body: &Value) -> Option<(&'static str, Va
         ("DELETE", "/settings/api-key") => "delete_api_key",
         ("POST", "/jobs") => "create_job",
         ("GET", "/jobs") => "get_job",
+        ("GET", "/playback") => { args["playback_action"] = json!("get"); "get_job" },
+        ("PUT", "/playback") => { args["playback_action"] = json!("set"); "get_job" },
         ("GET", p) => {
             let key = p.strip_prefix("/videos/")?.strip_suffix("/subtitles")?;
             if key.is_empty() || key.contains('/') {
@@ -224,6 +293,10 @@ mod tests {
     #[test]
     fn routes_cover_every_command() {
         let mut seen: Vec<&str> = [
+            ("GET", "/account"),
+            ("POST", "/account/sign-in"),
+            ("POST", "/account/sign-out"),
+            ("POST", "/privacy/open"),
             ("POST", "/updates/check"),
             ("POST", "/updates/dismiss"),
             ("POST", "/updates/open"),
@@ -247,5 +320,11 @@ mod tests {
         all.sort();
         assert_eq!(seen, all);
         assert!(route("GET", "/videos/a/b/subtitles", &Value::Null).is_none());
+        for (method, action) in [("GET", "get"), ("PUT", "set")] {
+            let (command, args) = route(method, "/playback", &json!({"position_ms":123})).unwrap();
+            assert_eq!(command, "get_job");
+            assert_eq!(args["playback_action"], action);
+            assert_eq!(args["position_ms"], 123);
+        }
     }
 }

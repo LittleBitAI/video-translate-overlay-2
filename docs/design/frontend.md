@@ -44,7 +44,26 @@ Native deletion invalidates open views; browser tabs use BroadcastChannel. Saved
 playback views also poll availability and clear stale cues on deletion. Source
 links open through P1, so selecting an untranslated entry never starts P6.
 
+The native site overlay reads saved playback position once per mounted player
+and may seek once after metadata is ready and an advertisement ends. User input
+or an earlier seek cancels a delayed resume. It saves actual position through
+existing P7 modes and never applies later remote position updates to playback
+already controlled on this device. It does not start, pause or change speed.
+
+Videos with multiple retained completed responses show a native saved-version
+select control. It names the current response and orders recent selection or
+completion first. Selection is disabled during processing/deletion; the user
+reopens the video to use that response. It does not start a paid translation.
+
 ### S2 `/preferences` — 개인키를 넣거나 지우고 유튜브 로그아웃을 하는 설정 화면
+
+The development build's Google app account section is separate from Gemini
+credentials and YouTube sign-in. It shows account identity and native connection
+recovery, confirms sign-out, and preserves local libraries. A 44 px privacy
+control is available before sign-in: native P18 opens only the published policy
+in the external browser, while HTTP screens use a normal HTTPS link. Opening it
+does not change the selected account or last-opened video. Failures remain
+retryable without exposing platform diagnostics.
 
 ![S2 desktop](shots/S2-desktop.png)
 ![S2 phone](shots/S2-phone.png)

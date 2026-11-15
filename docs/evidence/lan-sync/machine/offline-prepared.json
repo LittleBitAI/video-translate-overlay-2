@@ -1,0 +1,11 @@
+{
+  "head": "fc0d072f78248e120db7a7582852add873814cec",
+  "deleted_fixture": "925492de70b4679854c3dd5f73952be7ce86d9b82e361ae2be463191586cb3bf",
+  "playlist_id": "5b56dfa5-1a4b-4307-a255-ef419c6a809d",
+  "queued_name": "LAN offline queue 20261115",
+  "cancel_kept_translation": true,
+  "confirmed_delete_removed_two_memberships": true,
+  "unrelated_translation_preserved": true,
+  "stale_retranslation_refused": true,
+  "force_stopped_phone_kept_old_data": true
+}
