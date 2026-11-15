@@ -50,6 +50,11 @@ or an earlier seek cancels a delayed resume. It saves actual position through
 existing P7 modes and never applies later remote position updates to playback
 already controlled on this device. It does not start, pause or change speed.
 
+Videos with multiple retained completed responses show a native saved-version
+select control. It names the current response and orders recent selection or
+completion first. Selection is disabled during processing/deletion; the user
+reopens the video to use that response. It does not start a paid translation.
+
 ### S2 `/preferences` — 개인키를 넣거나 지우고 유튜브 로그아웃을 하는 설정 화면
 
 ![S2 desktop](shots/S2-desktop.png)

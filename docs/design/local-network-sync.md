@@ -199,6 +199,14 @@ deletion hides saved data before managed file cleanup, retaining the existing
 durable cleanup retry marker. An interrupted projection or cleanup remains
 pending after restart. Different completed versions stay in the journal;
 selection is deterministic and does not discard another completed response.
+When several saved responses exist, the library exposes their retained IDs in
+a native select control. Selecting one republishes that same completed content
+with a newer journal stamp and projects its original cues and cost atomically.
+This selection converges through the existing transfer format; no new transcript
+or paid request is made. Selection refuses active/deleted videos and cannot
+address another account's record. Reopen the video to load the selected cues.
+Job reads use the selected completed response even when two ready-job timestamps
+tie; active or failed-job status keeps its existing meaning.
 
 The existing Store mutation paths append typed records inside their originating
 SQLite transactions when the database belongs to an account. Legacy stores do
@@ -706,3 +714,15 @@ non-resurrection, explicit account ownership and malformed-source rollback.
 `npx vitest run -c vitest.ui.config.ts tests/ui/account-library.test.ts` passed
 four consent, ownership and layout cases. The cleanup audit extended the
 existing import regressions; it removed no current checks.
+
+Saved-version selection extended the existing concurrent-completion regression
+instead of adding a duplicate retention test. `cargo test -p
+video-translate-overlay --lib sync::library::tests -- --nocapture` passed all
+13 projection/import checks. Selecting either response converges its exact cues
+and cost across two reopened stores; unknown IDs, active jobs and deleted videos
+are refused. The production playback/account regression also exercises P11
+selection and rejects it after account retirement. That focused test passed.
+`npx vitest run -c vitest.ui.config.ts tests/ui/account-library.test.ts
+tests/ui/library.test.ts` passed 19 cases, including measured 44-pixel version
+controls without horizontal overflow at 384 and 1280 pixels. `npm run build`
+passed. Changed text was checked as valid UTF-8 without BOM; API JSON parsed.

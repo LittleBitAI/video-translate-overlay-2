@@ -273,17 +273,30 @@ impl Store {
     }
 
     pub fn latest_job(&self, video_key: &str) -> R<Option<Job>> {
-        Ok(self
+        let latest = self
             .db
             .query_one(&format!("SELECT {JOB_COLS} FROM job WHERE video_key=? ORDER BY created_at DESC, rowid DESC LIMIT 1"), p![video_key])?
-            .map(|r| job(&r)))
+            .map(|r| job(&r));
+        if latest.as_ref().is_some_and(|job| job.stage == "ready") {
+            if let Some(selected) = self.selected_ready_job(video_key)? { return Ok(Some(selected)); }
+        }
+        Ok(latest)
     }
 
     pub fn ready_job(&self, video_key: &str) -> R<Option<Job>> {
+        if let Some(selected) = self.selected_ready_job(video_key)? { return Ok(Some(selected)); }
         Ok(self.db.query_one(
             &format!("SELECT {JOB_COLS} FROM job WHERE video_key=? AND stage='ready' ORDER BY created_at DESC, rowid DESC LIMIT 1"),
             p![video_key],
         )?.map(|r| job(&r)))
+    }
+
+    fn selected_ready_job(&self, video_key: &str) -> R<Option<Job>> {
+        if !crate::sync::local::owned(&self.db)? { return Ok(None); }
+        let Some(row) = self.db.query_one("SELECT identity FROM sync_selected_translation WHERE video_key=?", p![video_key])? else { return Ok(None) };
+        let identity = row[0].text();
+        let hash = identity.rsplit('/').next().ok_or("invalid selected translation")?;
+        Ok(self.job(&format!("sync-{hash}"))?.filter(|job| job.video_key==video_key && job.stage=="ready"))
     }
 
     /// The oldest job still in progress, if any.

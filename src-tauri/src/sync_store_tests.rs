@@ -361,6 +361,7 @@ fn concurrent_completed_versions_are_retained_and_fresh_restoration_waits_for_cl
         unreachable!()
     };
     alternate.cues[0].text_ko = "Independent completed response".into();
+    alternate.cost_krw = 18.5;
     second
         .write(
             Change::Translation {
@@ -384,9 +385,36 @@ fn concurrent_completed_versions_are_retained_and_fresh_restoration_waits_for_cl
             .count(),
         2
     );
+    let versions = first.records().unwrap().into_iter().filter(|r| matches!(r.change, Change::Translation { .. })).collect::<Vec<_>>();
+    for version in &versions {
+        let store = first.library().unwrap();
+        let Change::Translation { translation: expected } = &version.change else { unreachable!() };
+        store.select_translation(&video_key(), &version.identity()).unwrap();
+        let through = first.page(0).unwrap().through;
+        store.select_translation(&video_key(), &version.identity()).unwrap();
+        assert_eq!(first.page(0).unwrap().through, through);
+        send(&first, &second);
+        for journal in [&first, &second] {
+            let reopened = journal.library().unwrap();
+            assert_eq!(reopened.cues(&video_key()).unwrap()[0].text_ko.as_deref(), Some(expected.cues[0].text_ko.as_str()));
+            assert_eq!(reopened.ready_job(&video_key()).unwrap().unwrap().cost_krw, expected.cost_krw);
+            assert_eq!(reopened.latest_job(&video_key()).unwrap().unwrap().cost_krw, expected.cost_krw);
+            let library = reopened.library().unwrap();
+            let listed = library["videos"][0]["versions"].as_array().unwrap();
+            assert_eq!(listed.len(), 2);
+            assert_eq!(listed.iter().filter(|v| v["selected"]==true).count(), 1);
+        }
+    }
+    assert!(first.library().unwrap().select_translation(&video_key(), "t/not-owned").is_err());
+    let selected = versions[0].identity();
+    let store = first.library().unwrap();
+    store.create_job("active-version", &video_key(), "https://lectures.example.org/projected", "other", "Active", 5000, None, crate::gemini::MODEL).unwrap();
+    assert!(store.select_translation(&video_key(), &selected).is_err());
+    store.fail("active-version", "fixture_finished").unwrap();
     first
         .write(Change::DeleteVideo { key: video_key() }, Deletions::new())
         .unwrap();
+    assert!(store.select_translation(&video_key(), &selected).is_err());
     send(&first, &second);
     let context = first.deletions(&video_key()).unwrap();
     first.write(translation(), context).unwrap();

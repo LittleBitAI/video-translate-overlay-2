@@ -38,6 +38,7 @@ impl Store {
     pub fn library(&self) -> R<Value> {
         let db = Db::open(&self.path)?;
         db.exec("BEGIN")?;
+        let owned = local::owned(&db)?;
         let videos = db
             .query(
                 "SELECT v.video_key,v.page_url,v.title,v.duration_ms,
@@ -48,11 +49,15 @@ impl Store {
                 &[],
             )?
             .iter()
-            .map(|r| {
-                json!({"video_key":r[0].text(),"page_url":r[1].text(),"title":r[2].text(),"duration_ms":r[3].int(),
-                "saved":r[4].int()!=0 && r[6].int()==0,"active":r[5].int()!=0,"deleting":r[6].int()!=0})
+            .map(|r| -> R<Value> {
+                let versions = if owned && r[6].int()==0 {
+                    db.query("SELECT r.identity,COALESCE(r.identity=s.identity,0) FROM sync_record r LEFT JOIN sync_selected_translation s ON s.video_key=r.video_key WHERE r.video_key=? AND r.identity LIKE 't/%' ORDER BY r.clock DESC,r.replica DESC", p![r[0].text()])?
+                        .iter().map(|v| json!({"id":v[0].text(),"selected":v[1].int()!=0})).collect::<Vec<_>>()
+                } else { Vec::new() };
+                Ok(json!({"video_key":r[0].text(),"page_url":r[1].text(),"title":r[2].text(),"duration_ms":r[3].int(),
+                "saved":r[4].int()!=0 && r[6].int()==0,"active":r[5].int()!=0,"deleting":r[6].int()!=0,"versions":versions}))
             })
-            .collect::<Vec<_>>();
+            .collect::<R<Vec<_>>>()?;
         let mut playlists = Vec::new();
         for r in db.query("SELECT id,name FROM playlist ORDER BY position,id", &[])? {
             let entries = db
@@ -64,6 +69,10 @@ impl Store {
         }
         db.exec("COMMIT")?;
         Ok(json!({"videos":videos,"playlists":playlists}))
+    }
+
+    pub(crate) fn select_translation(&self, key: &str, identity: &str) -> R<()> {
+        self.library_write(|db| local::select_translation(db, key, identity))
     }
 
     pub fn deleted(&self, key: &str) -> R<Option<(String, bool)>> {

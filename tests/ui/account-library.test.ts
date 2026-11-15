@@ -4,6 +4,29 @@ import '../../src/ui/app.css';
 import { page } from 'vitest/browser';
 import { $, api, button, calls, open, text } from './fake';
 
+test.each([384, 1280])('retained subtitle versions at %i px can be selected without starting translation', async width => {
+  await page.viewport(width, 854);
+  let selected = 'new';
+  const video = {video_key:'saved', title:'Retained lecture', page_url:'https://lectures.example.org/a', saved:true, active:false, deleting:false};
+  api(c => {
+    if (c.method === 'GET') return [200, {account_generation:9, videos:[{...video, versions:['new','old'].map(id => ({id,selected:id===selected}))}], playlists:[]}];
+    expect(c.path).toBe('/library/data');
+    expect(c.body).toEqual({action:'select_translation',video_key:'saved',translation_id:'old',account_generation:9});
+    selected = 'old'; return [200, {changed:true}];
+  });
+  const root = open('/library');
+  await vi.waitFor(() => expect(text(root)).toContain('저장된 자막 2개'));
+  const select = $(root, 'select[aria-label="Retained lecture 저장 자막 선택"]') as HTMLSelectElement;
+  expect(select.value).toBe('new');
+  expect(select.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+  expect(select.getBoundingClientRect().right).toBeLessThanOrEqual(width);
+  select.value='old'; select.dispatchEvent(new Event('change', {bubbles:true}));
+  await vi.waitFor(() => expect(select.value).toBe('old'));
+  await vi.waitFor(() => expect(text(root)).toContain('저장본 2 · 사용 중'));
+  expect(calls.filter(c => c.method==='POST')).toHaveLength(1);
+  expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(width);
+});
+
 test.each([384, 1280])('legacy import at %i px names the account copy and sends consent only after confirmation', async width => {
   await page.viewport(width, 854);
   let imported = false;

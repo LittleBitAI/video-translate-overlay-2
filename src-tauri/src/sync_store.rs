@@ -160,7 +160,7 @@ fn record(db: &Db, identity: &str) -> Result<Option<Record>> {
     .transpose()
 }
 
-fn decode(body: &str) -> Result<Record> {
+pub(super) fn decode(body: &str) -> Result<Record> {
     let record: Record = serde_json::from_str(body).map_err(|_| "invalid stored sync record")?;
     record.validate()?;
     Ok(record)
@@ -210,7 +210,7 @@ pub(super) fn project(db: &Db, limit: i64) -> Result<usize> {
     Ok(completed)
 }
 
-fn video(db: &Db, key: &str) -> Result<bool> {
+pub(super) fn video(db: &Db, key: &str) -> Result<bool> {
     if db.query_one("SELECT id FROM job WHERE video_key=? AND stage IN ('downloading','writing','translating')", p![key])?.is_some() { return Ok(false); }
     let newest = db.query_one("SELECT body FROM sync_record WHERE video_key=? AND identity LIKE 't/%' ORDER BY clock DESC,replica DESC LIMIT 1", p![key])?
         .map(|r| decode(&r[0].text())).transpose()?;

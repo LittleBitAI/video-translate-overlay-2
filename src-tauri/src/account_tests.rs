@@ -182,6 +182,15 @@ fn playback_requests_are_account_scoped_durable_and_leave_completed_subtitles_un
     store.set_terms(&key, "[]").unwrap();
     store.add_usage("saved", 12, 4, |_, _| 12.5).unwrap();
     store.finish("saved").unwrap();
+    let original = store.library().unwrap()["videos"][0]["versions"][0]["id"].as_str().unwrap().to_string();
+    let mut alternate = session.journal.records().unwrap().into_iter().find_map(|record| match record.change {
+        Change::Translation { translation } => Some(translation), _ => None,
+    }).unwrap();
+    alternate.cues[0].text_ko = "Other retained translation".into();
+    alternate.cost_krw = 18.5;
+    session.journal.write(Change::Translation { translation: alternate }, Deletions::new()).unwrap();
+    let selection = json!({"action":{"action":"select_translation","video_key":key,"translation_id":original}});
+    library_request(&core, Some(generation), "library_action", &selection).unwrap();
     let set = |position, duration| library_request(&core, Some(generation), "get_job", &json!({"page_url":url,"playback_action":"set","position_ms":position,"duration_ms":duration}));
     assert_eq!(set(12345, 60000).unwrap()["position_ms"], 12345);
     let through = session.journal.page(0).unwrap().through;
@@ -201,6 +210,7 @@ fn playback_requests_are_account_scoped_durable_and_leave_completed_subtitles_un
     assert_eq!(reopened.cues(&key).unwrap()[0].end_ms, 2345);
     assert_eq!(reopened.ready_job(&key).unwrap().unwrap().cost_krw, 12.5);
     core.account.sign_out(generation).unwrap();
+    assert_eq!(library_request(&core, Some(generation), "library_action", &selection).unwrap_err().status, 409);
     assert_eq!(set(30000, 60000).unwrap_err().status, 409);
     assert_eq!(store.playback(&key).unwrap(), Some(12345));
     assert_eq!(core.store.playback(&key).unwrap(), None);

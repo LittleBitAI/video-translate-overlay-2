@@ -171,6 +171,22 @@ pub(crate) fn delete_video(db: &Db, key: &str) -> Result<()> {
     Ok(())
 }
 
+pub(crate) fn select_translation(db: &Db, key: &str, identity: &str) -> Result<()> {
+    if !owned(db)? { return Err("saved version unavailable".into()); }
+    if db.query_one("SELECT id FROM job WHERE video_key=? AND stage IN ('downloading','writing','translating')", p![key])?.is_some()
+        || db.query_one("SELECT video_key FROM deleted_video WHERE video_key=?", p![key])?.is_some()
+        || !deletions_cleaned(db, key)? { return Err("saved version unavailable".into()); }
+    let body = db.query_one("SELECT body FROM sync_record WHERE video_key=? AND identity=? AND identity LIKE 't/%'", p![key,identity])?
+        .ok_or("saved version unavailable")?[0].text();
+    let record = super::library::decode(&body)?;
+    if !matches!(record.change, Change::Translation { .. }) { return Err("invalid saved version".into()); }
+    if db.query_one("SELECT identity FROM sync_selected_translation WHERE video_key=? AND identity=?", p![key,identity])?.is_some() { return Ok(()); }
+    append(db, record.change, record.seen_deletions, false)?;
+    if !super::library::video(db, key)? { return Err("saved version unavailable".into()); }
+    db.execute("DELETE FROM sync_dirty WHERE kind='video' AND key=?", p![key])?;
+    Ok(())
+}
+
 pub(crate) fn cleanup_video(db: &Db, key: &str) -> Result<()> {
     if !owned(db)? {
         return Ok(());

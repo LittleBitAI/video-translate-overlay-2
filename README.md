@@ -78,6 +78,11 @@ player permits seeking; user input takes priority over a delayed saved position.
 Native transfer and background acceptance remain unfinished; see
 [implementation status](docs/design/local-network-sync.md).
 
+If concurrent work leaves several completed subtitle versions, the library's
+saved-version selector retains each response. Select one and reopen the video
+to use its original cue times and recorded cost. Selecting a saved version
+does not transcribe or call Gemini; its selection also synchronizes.
+
 ## 처리 방식과 지원 범위
 
 | 항목 | 현재 동작 |

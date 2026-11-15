@@ -52,6 +52,8 @@ pub(super) fn library_action_in(library: &crate::library_scope::Library<'_>, act
         }
         "remove_entry" => store.remove_entry(id, s("video_key"))?,
         "move_entry" => store.move_library_item(id, Some(s("video_key")), delta)?,
+        "select_translation" => store.select_translation(s("video_key"), s("translation_id"))
+            .map_err(|_| err(409, "version_unavailable", "저장본을 선택하지 못했습니다. 처리와 삭제 상태를 확인하고 보관함을 다시 불러와 주세요."))?,
         "delete_video" => {
             let key = s("video_key");
             let video = store.video(key)?.ok_or_else(|| err(404, "no_video", "영상이 없습니다."))?;

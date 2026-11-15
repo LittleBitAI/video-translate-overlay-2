@@ -4,7 +4,7 @@
   import { go } from './router.svelte';
   import Link from './Link.svelte';
 
-  type Video = { video_key: string; title: string; page_url: string; saved: boolean; active: boolean; deleting: boolean };
+  type Video = { video_key: string; title: string; page_url: string; saved: boolean; active: boolean; deleting: boolean; versions?: {id:string; selected:boolean}[] };
   type Playlist = { id: string; name: string; entries: string[] };
   let videos = $state<Video[]>([]);
   let playlists = $state<Playlist[]>([]);
@@ -200,6 +200,18 @@
             <h3 class="text-base font-semibold">{video.title}</h3>
             <p class="break-all text-sm text-ink/80">{video.page_url}</p>
             <p class="text-sm">{video.deleting ? '삭제 미완료 · 다시 시도해 주세요' : video.active ? '처리 중 · 삭제할 수 없음' : video.saved ? '저장 자막 있음 · 재번역 없이 열기' : '저장 자막 없음 · 열어도 자동 번역하지 않음'}</p>
+            {#if video.versions && video.versions.length > 1}
+              <label class="flex flex-col gap-2 text-sm">
+                저장된 자막 {video.versions.length}개 · 선택한 뒤 영상을 다시 열어 주세요
+                <select class={input} aria-label={`${video.title} 저장 자막 선택`} disabled={busy || video.active || video.deleting}
+                  value={video.versions.find(v => v.selected)?.id ?? ''}
+                  onchange={(event) => change({action:'select_translation',video_key:video.video_key,translation_id:event.currentTarget.value})}>
+                  {#each video.versions as version, index}
+                    <option value={version.id}>저장본 {index + 1}{index === 0 ? ' · 최근 선택 또는 완료' : ''}{version.selected ? ' · 사용 중' : ''}</option>
+                  {/each}
+                </select>
+              </label>
+            {/if}
             <div class="flex flex-wrap gap-2">
               <button class="{button} bg-primary font-semibold text-surface" disabled={busy || video.deleting} onclick={() => openVideo(video)}>영상 열기</button>
               {#if playlist}
