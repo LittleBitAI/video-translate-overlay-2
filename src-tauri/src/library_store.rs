@@ -1,5 +1,6 @@
 use super::*;
 use serde_json::{json, Value};
+use crate::sync::{local, Change};
 
 impl Store {
     // Mutations use a separate connection so concurrent IPC never joins another transaction.
@@ -30,9 +31,9 @@ impl Store {
             })
             .collect::<Vec<_>>();
         let mut playlists = Vec::new();
-        for r in db.query("SELECT id,name FROM playlist ORDER BY position,rowid", &[])? {
+        for r in db.query("SELECT id,name FROM playlist ORDER BY position,id", &[])? {
             let entries = db
-                .query("SELECT video_key FROM playlist_entry WHERE playlist_id=? ORDER BY position,rowid", p![r[0].text()])?
+                .query("SELECT video_key FROM playlist_entry WHERE playlist_id=? ORDER BY position,video_key", p![r[0].text()])?
                 .iter()
                 .map(|e| e[0].text())
                 .collect::<Vec<_>>();
@@ -51,6 +52,7 @@ impl Store {
             if db.query_one("SELECT id FROM job WHERE video_key=? AND stage IN ('downloading','writing','translating')", p![key])?.is_some() {
                 return Err("active video".into());
             }
+            local::delete_video(db, key)?;
             db.execute(
                 "INSERT INTO deleted_video (video_key,token) VALUES (?,?) ON CONFLICT(video_key) DO UPDATE SET token=excluded.token,complete=0",
                 p![key, token],
@@ -65,6 +67,7 @@ impl Store {
 
     pub fn finish_delete(&self, key: &str, inspected_url: Option<&str>) -> R<()> {
         self.library_write(|db| {
+            local::cleanup_video(db, key)?;
             db.execute("DELETE FROM retranslation_cue WHERE job_id IN (SELECT id FROM job WHERE video_key=?)", p![key])?;
             db.execute("DELETE FROM playlist_entry WHERE video_key=?", p![key])?;
             db.execute("DELETE FROM cue WHERE video_key=?", p![key])?;
@@ -85,17 +88,25 @@ impl Store {
     pub fn create_playlist(&self, id: &str, name: &str) -> R<()> {
         self.library_write(|db| {
             db.execute("INSERT INTO playlist (id,name,position) SELECT ?,?,COALESCE(MAX(position),-1)+1 FROM playlist", p![id, name])?;
+            local::write(db, Change::PlaylistName { id:id.into(), name:name.into() })?;
+            let position = db.query_one("SELECT position FROM playlist WHERE id=?", p![id])?.ok_or("missing playlist")?[0].int();
+            local::write(db, Change::PlaylistOrder { id:id.into(), position })?;
             Ok(())
         })
     }
 
     pub fn rename_playlist(&self, id: &str, name: &str) -> R<()> {
-        self.db.execute("UPDATE playlist SET name=? WHERE id=?", p![name, id])?;
-        Ok(())
+        self.library_write(|db| {
+            if db.execute("UPDATE playlist SET name=? WHERE id=? AND name!=?", p![name,id,name])? != 0 {
+                local::write(db, Change::PlaylistName { id:id.into(),name:name.into() })?;
+            }
+            Ok(())
+        })
     }
 
     pub fn delete_playlist(&self, id: &str) -> R<()> {
         self.library_write(|db| {
+            local::write(db, Change::DeletePlaylist { id:id.into() })?;
             db.execute("DELETE FROM playlist_entry WHERE playlist_id=?", p![id])?;
             db.execute("DELETE FROM playlist WHERE id=?", p![id])?;
             Ok(())
@@ -106,21 +117,30 @@ impl Store {
         self.library_write(|db| {
             db.execute(&format!("INSERT OR IGNORE INTO video (video_key,page_url,site,title,duration_ms,created_at) VALUES (?,?,?,?,0,{NOW})"), p![key,page,site,title])?;
             db.execute("INSERT OR IGNORE INTO playlist_entry (playlist_id,video_key,position) SELECT ?,?,COALESCE(MAX(position),-1)+1 FROM playlist_entry WHERE playlist_id=?", p![id,key,id])?;
+            if local::owned(db)? {
+                local::video(db, key)?;
+                local::write(db, Change::EntryPresence { id:id.into(), key:key.into(), present:true })?;
+                let position = db.query_one("SELECT position FROM playlist_entry WHERE playlist_id=? AND video_key=?", p![id,key])?.ok_or("missing playlist entry")?[0].int();
+                local::write(db, Change::EntryOrder { id:id.into(), key:key.into(), position })?;
+            }
             Ok(())
         })
     }
 
     pub fn remove_entry(&self, id: &str, key: &str) -> R<()> {
-        self.db.execute("DELETE FROM playlist_entry WHERE playlist_id=? AND video_key=?", p![id, key])?;
-        Ok(())
+        self.library_write(|db| {
+            db.execute("DELETE FROM playlist_entry WHERE playlist_id=? AND video_key=?", p![id,key])?;
+            local::write(db, Change::EntryPresence { id:id.into(),key:key.into(),present:false })?;
+            Ok(())
+        })
     }
 
     pub fn move_library_item(&self, id: &str, key: Option<&str>, delta: i64) -> R<()> {
         self.library_write(|db| {
             let rows = if key.is_some() {
-                db.query("SELECT video_key FROM playlist_entry WHERE playlist_id=? ORDER BY position,rowid", p![id])?
+                db.query("SELECT video_key FROM playlist_entry WHERE playlist_id=? ORDER BY position,video_key", p![id])?
             } else {
-                db.query("SELECT id FROM playlist ORDER BY position,rowid", &[])?
+                db.query("SELECT id FROM playlist ORDER BY position,id", &[])?
             };
             let mut ids = rows.iter().map(|r| r[0].text()).collect::<Vec<_>>();
             let from = ids.iter().position(|v| v == key.unwrap_or(id)).ok_or("missing item")?;
@@ -128,9 +148,13 @@ impl Store {
             ids.swap(from, to);
             for (i, value) in ids.iter().enumerate() {
                 if key.is_some() {
-                    db.execute("UPDATE playlist_entry SET position=? WHERE playlist_id=? AND video_key=?", p![i as i64, id, value])?;
+                    if db.execute("UPDATE playlist_entry SET position=? WHERE playlist_id=? AND video_key=? AND position!=?", p![i as i64,id,value,i as i64])? != 0 {
+                        local::write(db, Change::EntryOrder { id:id.into(),key:value.clone(),position:i as i64 })?;
+                    }
                 } else {
-                    db.execute("UPDATE playlist SET position=? WHERE id=?", p![i as i64, value])?;
+                    if db.execute("UPDATE playlist SET position=? WHERE id=? AND position!=?", p![i as i64,value,i as i64])? != 0 {
+                        local::write(db, Change::PlaylistOrder { id:value.clone(),position:i as i64 })?;
+                    }
                 }
             }
             Ok(())

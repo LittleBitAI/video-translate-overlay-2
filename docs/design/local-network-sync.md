@@ -55,6 +55,20 @@ durable cleanup retry marker. An interrupted projection or cleanup remains
 pending after restart. Different completed versions stay in the journal;
 selection is deterministic and does not discard another completed response.
 
+The existing Store mutation paths append typed records inside their originating
+SQLite transactions when the database belongs to an account. Legacy stores do
+not acquire sync tables or publish records. Incoming projection writes tables
+directly, avoiding an echo through those local mutation paths. Concurrent equal
+order values use stable playlist IDs and video keys as visible tie breakers.
+
+A native job captures deletion knowledge when created, including retranslation
+jobs. Completion publishes the complete response with that captured knowledge;
+it cannot adopt a deletion received during processing. Both normal job creation
+and retranslation recheck deletion inside their write transaction. Completed
+cleanup remembers which deletion marks it covered, so another deletion arriving
+before projection invalidates an older confirmation token. Cleanup retries do
+not create additional deletion intents.
+
 Each account has a separate durable sync database under an SHA-256 digest of its
 Google subject and issuer. The subject must come from verified Google identity,
 never a supplied email address. Directory names, discovery instance names, and
@@ -188,6 +202,22 @@ legacy copying, unfinished-job exclusion, partial dependencies across restart,
 retry-queue fairness, concurrent completed versions and cleanup before fresh
 restoration. The audit retained all current tests; none were removed or skipped.
 These tests do not establish running account selection or network delivery.
+
+Local mutation integration then passed all 21 sync tests and all 5 existing
+Store tests. The final deletion-race regression expanded the projection suite:
+`cargo test -p video-translate-overlay --lib sync::library:: -- --nocapture`
+passed 12. After extending the existing completion test to cover retranslation,
+`cargo test -p video-translate-overlay --lib sync::library::tests::native_completion
+-- --nocapture` passed 1. An injected journal failure rolls back the native ready
+mark; incomplete replacement text never publishes, and both completed versions
+survive a later replacement. No tests were deleted or skipped.
+
+`cargo test -p video-translate-overlay --lib
+pipeline::worker_tests::retranslation_resumes_partial_work_and_publishes_only_a_complete_set
+-- --nocapture` passed 1. After rebuilding `vto-contract-host`, `cargo test -p
+vto-contract-tests --test library -- --nocapture` passed all 5 library contracts,
+including reuse without paid calls, active-job refusal and cleanup retry. These
+are focused checks; the server-owned repository gate has not run.
 
 ## Focused authentication evidence
 

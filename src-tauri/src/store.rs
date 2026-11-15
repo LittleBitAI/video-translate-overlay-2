@@ -197,9 +197,27 @@ impl Store {
         media_url: Option<&str>,
         model: &str,
     ) -> R<()> {
+        self.create_job_with_consent(id, key, page_url, site, title, duration_ms, media_url, model, None)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn create_job_with_consent(
+        &self, id: &str, key: &str, page_url: &str, site: &str, title: &str,
+        duration_ms: i64, media_url: Option<&str>, model: &str, deletion_token: Option<&str>,
+    ) -> R<()> {
         let db = Db::open(&self.path)?;
         db.exec("BEGIN IMMEDIATE")?;
         let r = (|| {
+            if crate::sync::local::owned(&db)? {
+                if let Some(row) = db.query_one("SELECT token,complete FROM deleted_video WHERE video_key=?", p![key])? {
+                    if row[1].int() == 0 || deletion_token != Some(row[0].text().as_str()) {
+                        return Err("sync deletion confirmation required".into());
+                    }
+                }
+                if !crate::sync::local::can_start_job(&db, key)? {
+                    return Err("sync deletion confirmation required".into());
+                }
+            }
             db.execute(
                 &format!(
                     "INSERT INTO video (video_key, page_url, site, title, duration_ms, created_at) VALUES (?,?,?,?,?,{NOW})
@@ -217,6 +235,7 @@ impl Store {
                 p![id, key, media_url, model],
             )?;
             db.execute("DELETE FROM deleted_video WHERE video_key=?", p![key])?;
+            crate::sync::local::capture_job(&db, id, key)?;
             Ok(())
         })();
         db.exec(if r.is_ok() { "COMMIT" } else { "ROLLBACK" })?;
@@ -227,12 +246,19 @@ impl Store {
     pub fn retranslate(&self, id: &str, previous: &Job, model: &str) -> R<()> {
         self.db.exec("BEGIN IMMEDIATE")?;
         let result = (|| {
+            if crate::sync::local::owned(&self.db)? {
+                if self.db.query_one("SELECT video_key FROM deleted_video WHERE video_key=?", p![previous.video_key.as_str()])?.is_some()
+                    || !crate::sync::local::can_start_job(&self.db, &previous.video_key)? {
+                    return Err("sync deletion confirmation required".into());
+                }
+            }
             self.db.execute(
                 &format!("INSERT INTO job (id,video_key,stage,written_regions,translation_model,input_amount,output_amount,cost_krw,created_at,updated_at)
                     VALUES (?,?,'translating',?,?,?,?,?,{NOW},{NOW})"),
                 p![id, previous.video_key.as_str(), previous.written_regions, model, previous.input_amount, previous.output_amount, previous.cost_krw],
             )?;
             self.db.execute("INSERT INTO retranslation_cue (job_id, seq) SELECT ?, seq FROM cue WHERE video_key=?", p![id, previous.video_key.as_str()])?;
+            crate::sync::local::capture_job(&self.db, id, &previous.video_key)?;
             Ok(())
         })();
         self.db.exec(if result.is_ok() { "COMMIT" } else { "ROLLBACK" })?;
@@ -314,6 +340,7 @@ impl Store {
             )?;
             self.db.execute("DELETE FROM retranslation_cue WHERE job_id=?", p![id])?;
             self.db.execute(&format!("UPDATE job SET stage='ready', percent=100, updated_at={NOW} WHERE id=?"), p![id])?;
+            crate::sync::local::finish_job(&self.db, id)?;
             Ok(())
         })();
         self.db.exec(if result.is_ok() { "COMMIT" } else { "ROLLBACK" })?;

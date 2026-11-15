@@ -433,3 +433,302 @@ fn invalid_legacy_completion_rolls_back_the_copy_and_active_jobs_stay_local() {
         "unfinished"
     );
 }
+
+fn prepare_local_job(store: &Store, id: &str) {
+    let Change::Translation { translation: t } = translation() else {
+        unreachable!()
+    };
+    let consent = store.deleted(&t.video.key).unwrap().map(|(token, _)| token);
+    store
+        .create_job_with_consent(
+            id,
+            &t.video.key,
+            &t.video.page_url,
+            "other",
+            &t.video.title,
+            t.duration_ms,
+            None,
+            &t.model,
+            consent.as_deref(),
+        )
+        .unwrap();
+    let db = Db::open(store.path()).unwrap();
+    db.execute(
+        "UPDATE job SET stage='translating',cost_krw=12.5 WHERE id=?",
+        p![id],
+    )
+    .unwrap();
+    db.execute(
+        "INSERT INTO cue VALUES (?,?,?,?,?,?)",
+        p![
+            t.video.key,
+            0i64,
+            1234i64,
+            4321i64,
+            "Original source",
+            "Saved translation"
+        ],
+    )
+    .unwrap();
+}
+
+#[test]
+fn native_completion_and_its_journal_commit_atomically_and_do_not_replace_the_local_job() {
+    let a = Profile::new();
+    let b = Profile::new();
+    let first = a.journal();
+    let second = b.journal();
+    let store = first.library().unwrap();
+    prepare_local_job(&store, "native-complete");
+    let db = Db::open(store.path()).unwrap();
+    db.execute("CREATE TRIGGER refuse_journal BEFORE INSERT ON sync_seen BEGIN SELECT RAISE(ABORT,'fixture journal failure'); END", &[]).unwrap();
+    assert!(store.finish("native-complete").is_err());
+    assert_eq!(
+        store.job("native-complete").unwrap().unwrap().stage,
+        "translating"
+    );
+    assert!(first.records().unwrap().is_empty());
+    db.execute("DROP TRIGGER refuse_journal", &[]).unwrap();
+    store.finish("native-complete").unwrap();
+    first.project_pending().unwrap();
+    assert_eq!(
+        store.ready_job(&video_key()).unwrap().unwrap().id,
+        "native-complete"
+    );
+    send(&first, &second);
+    assert_eq!(
+        second.library().unwrap().cues(&video_key()).unwrap(),
+        store.cues(&video_key()).unwrap()
+    );
+    assert_eq!(
+        second
+            .library()
+            .unwrap()
+            .ready_job(&video_key())
+            .unwrap()
+            .unwrap()
+            .cost_krw,
+        12.5
+    );
+    let previous = store.ready_job(&video_key()).unwrap().unwrap();
+    store
+        .retranslate("native-retranslation", &previous, crate::gemini::MODEL)
+        .unwrap();
+    assert!(store.finish("native-retranslation").is_err());
+    assert_eq!(
+        first
+            .records()
+            .unwrap()
+            .iter()
+            .filter(|r| matches!(r.change, Change::Translation { .. }))
+            .count(),
+        1
+    );
+    store
+        .set_translations(
+            "native-retranslation",
+            &[(0, "Complete replacement".into())],
+        )
+        .unwrap();
+    store.finish("native-retranslation").unwrap();
+    first.project_pending().unwrap();
+    assert_eq!(
+        store.ready_job(&video_key()).unwrap().unwrap().id,
+        "native-retranslation"
+    );
+    send(&first, &second);
+    assert_eq!(
+        second.library().unwrap().cues(&video_key()).unwrap()[0]
+            .text_ko
+            .as_deref(),
+        Some("Complete replacement")
+    );
+    assert_eq!(
+        first
+            .records()
+            .unwrap()
+            .iter()
+            .filter(|r| matches!(r.change, Change::Translation { .. }))
+            .count(),
+        2
+    );
+}
+
+#[test]
+fn ordinary_library_mutations_publish_and_incoming_projection_does_not_echo() {
+    let a = Profile::new();
+    let b = Profile::new();
+    let first = a.journal();
+    let second = b.journal();
+    let store = first.library().unwrap();
+    let Change::Translation { translation: t } = translation() else {
+        unreachable!()
+    };
+    store.create_playlist("one", "First").unwrap();
+    store.create_playlist("two", "Second").unwrap();
+    store.rename_playlist("one", "Renamed").unwrap();
+    store.move_library_item("two", None, -1).unwrap();
+    store
+        .add_entry(
+            "one",
+            &video_key(),
+            &t.video.page_url,
+            "other",
+            &t.video.title,
+        )
+        .unwrap();
+    send(&first, &second);
+    assert_eq!(
+        store.library().unwrap(),
+        second.library().unwrap().library().unwrap()
+    );
+    let checkpoint = second.page(0).unwrap().through;
+    second.project_pending().unwrap();
+    send(&first, &second);
+    assert_eq!(second.page(0).unwrap().through, checkpoint);
+    store.remove_entry("one", &video_key()).unwrap();
+    store.delete_playlist("two").unwrap();
+    send(&first, &second);
+    assert_eq!(
+        store.library().unwrap(),
+        second.library().unwrap().library().unwrap()
+    );
+    store.begin_delete(&video_key(), "first-cleanup").unwrap();
+    let after_delete = first.page(0).unwrap().through;
+    store.begin_delete(&video_key(), "retry-cleanup").unwrap();
+    assert_eq!(first.page(0).unwrap().through, after_delete);
+}
+
+#[test]
+fn job_completion_cannot_adopt_a_deletion_received_after_the_job_started() {
+    let a = Profile::new();
+    let b = Profile::new();
+    let first = a.journal();
+    let second = b.journal();
+    let store = second.library().unwrap();
+    prepare_local_job(&store, "started-before-delete");
+    first
+        .write(Change::DeleteVideo { key: video_key() }, Deletions::new())
+        .unwrap();
+    send(&first, &second);
+    drop(store);
+    drop(second);
+    let second = b.journal();
+    let store = second.library().unwrap();
+    store.finish("started-before-delete").unwrap();
+    second.project_pending().unwrap();
+    assert!(second
+        .records()
+        .unwrap()
+        .iter()
+        .all(|r| !matches!(r.change, Change::Translation { .. })));
+    assert!(store.deleted(&video_key()).unwrap().is_some());
+    assert_eq!(store.library().unwrap()["videos"][0]["saved"], false);
+    store.finish_delete(&video_key(), None).unwrap();
+    // The API admits this new job only after checking the completed marker's confirmation token.
+    prepare_local_job(&store, "newly-confirmed-job");
+    store.finish("newly-confirmed-job").unwrap();
+    second.project_pending().unwrap();
+    assert!(store.deleted(&video_key()).unwrap().is_none());
+    assert_eq!(
+        store.ready_job(&video_key()).unwrap().unwrap().id,
+        "newly-confirmed-job"
+    );
+}
+
+#[test]
+fn concurrent_order_ties_have_the_same_visible_order_on_both_replicas() {
+    let a = Profile::new();
+    let b = Profile::new();
+    let first = a.journal();
+    let second = b.journal();
+    first
+        .library()
+        .unwrap()
+        .create_playlist("z-first", "From first")
+        .unwrap();
+    second
+        .library()
+        .unwrap()
+        .create_playlist("a-second", "From second")
+        .unwrap();
+    send(&first, &second);
+    send(&second, &first);
+    assert_eq!(
+        first.library().unwrap().library().unwrap(),
+        second.library().unwrap().library().unwrap()
+    );
+    assert_eq!(
+        first.library().unwrap().library().unwrap()["playlists"][0]["id"],
+        "a-second"
+    );
+}
+
+#[test]
+fn queued_remote_deletion_invalidates_earlier_consent_before_projection() {
+    let a = Profile::new();
+    let b = Profile::new();
+    let first = a.journal();
+    let second = b.journal();
+    first
+        .write(Change::DeleteVideo { key: video_key() }, Deletions::new())
+        .unwrap();
+    send(&first, &second);
+    let store = second.library().unwrap();
+    store.finish_delete(&video_key(), None).unwrap();
+    let old_token = store.deleted(&video_key()).unwrap().unwrap().0;
+    let deletion = first
+        .write(Change::DeleteVideo { key: video_key() }, Deletions::new())
+        .unwrap();
+    second.transaction(|db| merge(db, &deletion)).unwrap();
+    let Change::Translation { translation: t } = translation() else {
+        unreachable!()
+    };
+    assert!(store
+        .create_job_with_consent(
+            "stale-consent",
+            &t.video.key,
+            &t.video.page_url,
+            "other",
+            &t.video.title,
+            t.duration_ms,
+            None,
+            &t.model,
+            Some(&old_token)
+        )
+        .is_err());
+    assert!(store.active_job().unwrap().is_none());
+    second.project_pending().unwrap();
+    assert!(!store.deleted(&video_key()).unwrap().unwrap().1);
+    store.finish_delete(&video_key(), None).unwrap();
+    let new_token = store.deleted(&video_key()).unwrap().unwrap().0;
+    assert_ne!(old_token, new_token);
+    second.project_pending().unwrap();
+    assert!(store.deleted(&video_key()).unwrap().unwrap().1);
+    assert!(store
+        .create_job_with_consent(
+            "old-token",
+            &t.video.key,
+            &t.video.page_url,
+            "other",
+            &t.video.title,
+            t.duration_ms,
+            None,
+            &t.model,
+            Some(&old_token)
+        )
+        .is_err());
+    store
+        .create_job_with_consent(
+            "fresh-consent",
+            &t.video.key,
+            &t.video.page_url,
+            "other",
+            &t.video.title,
+            t.duration_ms,
+            None,
+            &t.model,
+            Some(&new_token),
+        )
+        .unwrap();
+}

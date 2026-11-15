@@ -27,8 +27,11 @@ real-account and physical-device checks during implementation.
 ## Create the registration
 
 The owner selected the following project and supplied all three client IDs on
-2026-11-15. These are public registration identifiers, recorded from the owner;
-they have not yet been validated by an actual app sign-in.
+2026-11-15. These are public registration identifiers, recorded from the owner.
+User-assisted sign-in and restoration after restart succeeded on Windows and
+the physical Android phone at `31ced1f`; see the
+[native authentication evidence](local-network-sync.md#native-authentication-at-31ced1f).
+Public audience and branding configuration remain unverified.
 
 | Registration | Owner-supplied value |
 | --- | --- |

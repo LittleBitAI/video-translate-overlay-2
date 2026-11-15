@@ -209,10 +209,20 @@ fn video(db: &Db, key: &str) -> Result<bool> {
         .max_by_key(|r| &r.stamp);
     if description.is_none() {
         if !deletion_marks(db, key)?.is_empty() {
+            if db
+                .query_one(
+                    "SELECT video_key FROM deleted_video WHERE video_key=? AND complete=1",
+                    p![key],
+                )?
+                .is_some()
+                && local::can_start_job(db, key)?
+            {
+                return Ok(true);
+            }
             let mut random = [0u8; 16];
             getrandom::fill(&mut random).map_err(|_| "deletion token unavailable")?;
             db.execute(
-                "INSERT INTO deleted_video VALUES (?,?,0) ON CONFLICT(video_key) DO UPDATE SET token=excluded.token,complete=0 WHERE deleted_video.complete=1 AND EXISTS(SELECT 1 FROM video WHERE video_key=excluded.video_key)",
+                "INSERT INTO deleted_video VALUES (?,?,0) ON CONFLICT(video_key) DO UPDATE SET token=excluded.token,complete=0 WHERE deleted_video.complete=1",
                 p![key, digest(&random)],
             )?;
             db.execute("DELETE FROM playlist_entry WHERE video_key=?", p![key])?;

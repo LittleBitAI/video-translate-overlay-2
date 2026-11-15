@@ -15,6 +15,9 @@ const MAX_DURATION_MS: i64 = 6 * 60 * 60 * 1000;
 type Result<T> = std::result::Result<T, String>;
 pub type Deletions = BTreeMap<String, i64>;
 
+#[path = "sync_local.rs"]
+pub(crate) mod local;
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(deny_unknown_fields)]
 pub struct Stamp {
@@ -353,6 +356,7 @@ impl Journal {
         db.exec(SCHEMA)?;
         db.exec(crate::store::SCHEMA)?;
         db.exec(library::SCHEMA)?;
+        db.exec(local::SCHEMA)?;
         let mut random = [0u8; 16];
         getrandom::fill(&mut random).map_err(|e| e.to_string())?;
         let replica: String = random.iter().map(|b| format!("{b:02x}")).collect();

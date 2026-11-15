@@ -299,7 +299,11 @@ pub fn create_job_with_consent(core: &Core, page_url: &str, media_url: Option<&s
             media::Source::File { url, .. } if youtube::is_youtube(&page) => youtube::stream_duration_ms(url).unwrap_or(duration_ms),
             _ => duration_ms,
         };
-        core.store.create_job(&id, &key, page_url.trim(), site(&page), &title, duration_ms, media_url.map(str::trim).filter(|m| !m.is_empty()), MODEL)?;
+        core.store.create_job_with_consent(&id, &key, page_url.trim(), site(&page), &title, duration_ms, media_url.map(str::trim).filter(|m| !m.is_empty()), MODEL, deletion_token)
+            .map_err(|detail| if detail == "sync deletion confirmation required" {
+                core.store.deleted(&key).ok().flatten().map(|(token,complete)| deleted_error(token,complete))
+                    .unwrap_or_else(|| err(409,"cleanup_pending","다른 기기에서 영상을 삭제했습니다. 보관함을 다시 불러와 주세요."))
+            } else { detail.into() })?;
         Ok(())
     })();
     if let Err(e) = created {
