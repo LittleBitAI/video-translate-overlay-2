@@ -25,6 +25,7 @@ struct Native {
     saved: Mutex<Option<String>>,
     gate: Mutex<Option<(mpsc::Sender<()>, mpsc::Receiver<()>)>>,
     fail_write: AtomicBool,
+    wrong_nonce: AtomicBool,
 }
 impl NativeAccount for Native {
     fn platform(&self) -> Platform {
@@ -46,9 +47,9 @@ impl NativeAccount for Native {
     }
     fn sign_in(
         &self,
-        _nonce: &str,
+        nonce: &str,
         _cancelled: &AtomicBool,
-        _verifier: &Verifier,
+        verifier: &Verifier,
     ) -> Result<Credentials, AuthError> {
         let subject = self.subject.lock().unwrap().clone();
         let gate = self.gate.lock().unwrap().take();
@@ -56,15 +57,24 @@ impl NativeAccount for Native {
             started.send(()).unwrap();
             release.recv_timeout(Duration::from_secs(30)).unwrap();
         }
+        let actual_nonce = if self.wrong_nonce.load(Ordering::Acquire) {
+            "wrong-device-nonce-000000000000000000000000000000000000000000000"
+        } else {
+            nonce
+        };
+        let mut claims = crate::google_auth::tests::claims(Platform::Desktop);
+        claims["sub"] = subject.into();
+        claims["nonce"] = actual_nonce.into();
+        let token = crate::google_auth::tests::signed(claims);
         Ok(Credentials {
-            identity: VerifiedIdentity::fixture(&subject),
-            id_token: format!("offline-token-{subject}"),
+            identity: verifier.verify(&token, actual_nonce, Platform::Desktop)?,
+            id_token: token,
             refresh_token: Some("offline-refresh-token".into()),
         })
     }
 }
 fn configured(profile: &Profile) -> (Arc<Manager>, Arc<Native>) {
-    let manager = Arc::new(Manager::new(profile.0.clone()));
+    let manager = Arc::new(Manager::with_test_verifier(profile.0.clone()));
     let native = Arc::new(Native::default());
     *native.subject.lock().unwrap() = "account-one".into();
     manager.configure(native.clone()).unwrap();
@@ -119,6 +129,8 @@ fn each_login_seals_a_new_device_key_bound_to_its_google_nonce() {
         serde_json::from_str(native.saved.lock().unwrap().as_ref().unwrap()).unwrap();
     assert_eq!(saved.nonce, first_nonce);
     validate_device(&saved).unwrap();
+    assert!(saved.enrollment.as_ref().unwrap().expires_at > now() + DEVICE_LIFETIME - 60);
+    assert!(saved.refresh_token.is_none());
     let mut malformed = serde_json::to_value(&saved).unwrap();
     malformed["nonce"] = "another-device-certificate-000000000000000000000000000000000".into();
     assert_eq!(
@@ -141,6 +153,175 @@ fn each_login_seals_a_new_device_key_bound_to_its_google_nonce() {
     );
     let session = manager.session().unwrap();
     assert_eq!(session.peer_proof().unwrap().1, Platform::Desktop);
+}
+
+#[test]
+fn sealing_rejects_a_providers_valid_google_proof_for_another_device_nonce() {
+    let profile = Profile::new();
+    let (manager, native) = configured(&profile);
+    native.wrong_nonce.store(true, Ordering::Release);
+    assert!(matches!(
+        manager.sign_in(manager.status().unwrap().generation),
+        Err(AuthError::Invalid)
+    ));
+    assert!(native.saved.lock().unwrap().is_none());
+    assert!(manager.session().is_err());
+}
+
+#[test]
+fn sealed_device_enrollment_restores_without_google_and_expiry_cannot_be_extended() {
+    let profile = Profile::new();
+    let (manager, native) = configured(&profile);
+    manager
+        .sign_in(manager.status().unwrap().generation)
+        .unwrap();
+    let original = manager.session().unwrap();
+    let certificate = original.device().unwrap().nonce();
+    drop(original);
+    manager.shutdown();
+    drop(manager);
+    // An ordinary manager has no cached fixture keys: a successful restore must use the native receipt.
+    let restored = Manager::new(profile.0.clone());
+    restored.configure(native.clone()).unwrap();
+    assert_eq!(restored.restore().unwrap().state, AuthState::SignedIn);
+    assert_eq!(
+        restored.session().unwrap().device().unwrap().nonce(),
+        certificate
+    );
+    restored.shutdown();
+    drop(restored);
+    let raw = native.saved.lock().unwrap().clone().unwrap();
+    for invalid in ["extended", "wrong_certificate", "expired"] {
+        let mut saved: Saved = serde_json::from_str(&raw).unwrap();
+        let receipt = saved.enrollment.as_mut().unwrap();
+        match invalid {
+            "extended" => receipt.expires_at += DEVICE_LIFETIME,
+            "wrong_certificate" => receipt.certificate = "0".repeat(64),
+            "expired" => {
+                receipt.issued_at = now() - DEVICE_LIFETIME - 86400;
+                receipt.google_expires_at = receipt.issued_at + 3600;
+                receipt.expires_at = receipt.issued_at + DEVICE_LIFETIME;
+            }
+            _ => unreachable!(),
+        }
+        *native.saved.lock().unwrap() = Some(serde_json::to_string(&saved).unwrap());
+        let attempt = Manager::new(profile.0.clone());
+        attempt.configure(native.clone()).unwrap();
+        let status = attempt.restore().unwrap();
+        assert_ne!(status.state, AuthState::SignedIn, "{invalid}");
+        assert!(attempt.session().is_err(), "{invalid}");
+    }
+}
+
+pub(crate) fn historical_receipt(subject: &str, platform: Platform, created_at: i64) -> String {
+    let device = DeviceKey::historical_for_test(created_at);
+    let nonce = device.nonce();
+    let mut claims = crate::google_auth::tests::claims(platform);
+    claims["sub"] = subject.into();
+    claims["nonce"] = nonce.clone().into();
+    claims["iat"] = (created_at + 60).into();
+    claims["exp"] = (created_at + 3660).into();
+    let token = crate::google_auth::tests::signed(claims);
+    let saved = Saved {
+        id_token: token,
+        refresh_token: None,
+        nonce: nonce.clone(),
+        enrollment: Some(SavedEnrollment {
+            subject: subject.into(),
+            email: "one@example.org".into(),
+            issued_at: created_at + 60,
+            google_expires_at: created_at + 3660,
+            expires_at: device.expires_at().unwrap(),
+            certificate: nonce.clone(),
+        }),
+        device: Some(device),
+    };
+    serde_json::to_string(&saved).unwrap()
+}
+
+#[test]
+fn a_historical_native_receipt_restores_after_its_google_proof_expires_without_extending_that_proof(
+) {
+    let profile = Profile::new();
+    let created_at = now() - 7200;
+    let raw = historical_receipt("account-one", Platform::Desktop, created_at);
+    let saved: Saved = serde_json::from_str(&raw).unwrap();
+    let nonce = saved.nonce.clone();
+    assert!(matches!(
+        Verifier::with_test_keys(crate::google_auth::tests::keys()).verify(
+            &saved.id_token,
+            &nonce,
+            Platform::Desktop
+        ),
+        Err(AuthError::Expired)
+    ));
+    let native = Arc::new(Native::default());
+    *native.saved.lock().unwrap() = Some(raw);
+    let manager = Manager::new(profile.0.clone());
+    manager.configure(native).unwrap();
+    assert_eq!(manager.restore().unwrap().state, AuthState::SignedIn);
+    let session = manager.session().unwrap();
+    assert!(session.require_current().is_ok());
+    assert!(matches!(session.peer_proof(), Err(AuthError::Expired)));
+    assert_eq!(session.device().unwrap().nonce(), nonce);
+    assert_eq!(session.identity.expires_at(), created_at + DEVICE_LIFETIME);
+}
+
+#[test]
+fn credential_expiry_keeps_local_library_ownership_and_account_switching_retires_that_scope() {
+    let profile = Profile::new();
+    let native = Arc::new(Native::default());
+    *native.subject.lock().unwrap() = "account-two".into();
+    *native.saved.lock().unwrap() = Some(historical_receipt(
+        "account-one",
+        Platform::Desktop,
+        now() - DEVICE_LIFETIME - 86400,
+    ));
+    let manager = Manager::with_test_verifier(profile.0.clone());
+    manager.configure(native.clone()).unwrap();
+    assert_eq!(manager.restore().unwrap().state, AuthState::Expired);
+    assert!(manager.session().is_err());
+    let local = manager.capture_library().unwrap();
+    manager
+        .with_library(&local, |journal| {
+            journal
+                .unwrap()
+                .library()?
+                .create_playlist("offline", "Kept locally")
+        })
+        .unwrap();
+    assert_eq!(local.generation(), manager.status().unwrap().generation);
+    manager
+        .sign_in(manager.status().unwrap().generation)
+        .unwrap();
+    assert!(matches!(
+        manager.with_library::<()>(&local, |_| panic!("retired account scope must not write")),
+        Err(AuthError::Cancelled)
+    ));
+    let newer = manager.capture_library().unwrap();
+    manager
+        .with_library(&newer, |journal| {
+            assert!(journal.unwrap().library()?.library()?["playlists"]
+                .as_array()
+                .unwrap()
+                .is_empty());
+            Ok(())
+        })
+        .unwrap();
+    *native.subject.lock().unwrap() = "account-one".into();
+    manager
+        .sign_in(manager.status().unwrap().generation)
+        .unwrap();
+    let original = manager.capture_library().unwrap();
+    manager
+        .with_library(&original, |journal| {
+            assert_eq!(
+                journal.unwrap().library()?.library()?["playlists"][0]["id"],
+                "offline"
+            );
+            Ok(())
+        })
+        .unwrap();
 }
 
 #[test]
@@ -278,7 +459,13 @@ fn expiration_and_shutdown_revoke_existing_session_tickets() {
     {
         let mut state = manager.state.lock().unwrap();
         state.session = Some(Arc::new(Session {
-            identity: VerifiedIdentity::expired_fixture("account-one"),
+            identity: DeviceIdentity {
+                subject: "account-one".into(),
+                email: "fixture@example.org".into(),
+                issued_at: now() - DEVICE_LIFETIME,
+                google_expires_at: now() - 1,
+                expires_at: now() - 1,
+            },
             journal: Journal::open(&profile.0, &VerifiedIdentity::fixture("account-one")).unwrap(),
             cancelled: state.cancelled.clone(),
             device: None,

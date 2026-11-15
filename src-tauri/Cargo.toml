@@ -63,6 +63,8 @@ rustls = { version = "0.23", default-features = false, features = ["ring", "std"
 rcgen = { version = "0.14", default-features = false, features = ["crypto", "ring"] }
 time = "0.3"
 zeroize = "1"
+# Read the authenticated certificate's expiry rather than trusting a peer-supplied timestamp.
+x509-parser = { version = "0.18", default-features = false }
 # Standards-based discovery and explicit private-interface selection.
 mdns-sd = { version = "0.21", default-features = false }
 if-addrs = "0.15"

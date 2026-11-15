@@ -54,14 +54,126 @@ pub struct Status {
 #[serde(deny_unknown_fields)]
 struct Saved {
     id_token: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     refresh_token: Option<String>,
     nonce: String,
     #[serde(default)]
     device: Option<DeviceKey>,
+    #[serde(default)]
+    enrollment: Option<SavedEnrollment>,
+}
+
+pub(crate) const DEVICE_LIFETIME: i64 = 30 * 24 * 60 * 60;
+pub(crate) fn now() -> i64 {
+    time::OffsetDateTime::now_utc().unix_timestamp()
+}
+
+/// A native device grant, not a fresh Google token. It has no remote deserializer.
+pub struct DeviceIdentity {
+    subject: String,
+    email: String,
+    issued_at: i64,
+    google_expires_at: i64,
+    expires_at: i64,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SavedEnrollment {
+    subject: String,
+    email: String,
+    issued_at: i64,
+    google_expires_at: i64,
+    expires_at: i64,
+    certificate: String,
+}
+impl DeviceIdentity {
+    pub fn subject(&self) -> &str {
+        &self.subject
+    }
+    pub fn email(&self) -> &str {
+        &self.email
+    }
+    pub(crate) fn expires_at(&self) -> i64 {
+        self.expires_at
+    }
+    fn require_current(&self) -> Result<(), AuthError> {
+        if self.expires_at <= now() || self.issued_at > now() + 30 {
+            Err(AuthError::Expired)
+        } else {
+            Ok(())
+        }
+    }
+    fn from_verified(
+        identity: &VerifiedIdentity,
+        device: Option<&DeviceKey>,
+    ) -> Result<Self, AuthError> {
+        identity.require_current()?;
+        let expires_at = match device {
+            Some(device) => device.expires_at()?.min(
+                identity
+                    .issued_at()
+                    .checked_add(DEVICE_LIFETIME)
+                    .ok_or(AuthError::Invalid)?,
+            ),
+            None => identity.expires_at(),
+        };
+        let result = Self {
+            subject: identity.subject().into(),
+            email: identity.email().into(),
+            issued_at: identity.issued_at(),
+            google_expires_at: identity.expires_at(),
+            expires_at,
+        };
+        result.require_current()?;
+        Ok(result)
+    }
+    fn save(&self, certificate: String) -> SavedEnrollment {
+        SavedEnrollment {
+            subject: self.subject.clone(),
+            email: self.email.clone(),
+            issued_at: self.issued_at,
+            google_expires_at: self.google_expires_at,
+            expires_at: self.expires_at,
+            certificate,
+        }
+    }
+}
+impl SavedEnrollment {
+    // Only NativeAccount::read supplies this receipt, after OS-authenticated unsealing.
+    fn restore(&self, device: &DeviceKey) -> Result<DeviceIdentity, AuthError> {
+        if self.subject.is_empty()
+            || self.subject.len() > 255
+            || !self.subject.bytes().all(|b| b.is_ascii_graphic())
+            || self.email.len() > 254
+            || !self.email.contains('@')
+            || self.email.chars().any(char::is_control)
+            || self.issued_at < 0
+            || self.issued_at > now() + 30
+            || self.google_expires_at <= self.issued_at
+            || self.expires_at <= self.issued_at
+            || self.expires_at
+                > self
+                    .issued_at
+                    .checked_add(DEVICE_LIFETIME)
+                    .ok_or(AuthError::Invalid)?
+            || self.expires_at > device.expires_at()?
+            || self.certificate != device.nonce()
+        {
+            return Err(AuthError::Invalid);
+        }
+        let identity = DeviceIdentity {
+            subject: self.subject.clone(),
+            email: self.email.clone(),
+            issued_at: self.issued_at,
+            google_expires_at: self.google_expires_at,
+            expires_at: self.expires_at,
+        };
+        Ok(identity)
+    }
 }
 
 pub struct Session {
-    pub identity: VerifiedIdentity,
+    pub identity: DeviceIdentity,
     pub journal: Journal,
     cancelled: Arc<AtomicBool>,
     device: Option<DeviceKey>,
@@ -73,6 +185,15 @@ pub struct LoginAttempt {
     pub generation: u64,
     cancelled: Arc<AtomicBool>,
     provider: Arc<dyn NativeAccount>,
+}
+pub(crate) struct LibraryScope {
+    generation: u64,
+    session: Option<Arc<Session>>,
+}
+impl LibraryScope {
+    pub fn generation(&self) -> u64 {
+        self.generation
+    }
 }
 impl Session {
     pub fn require_current(&self) -> Result<(), AuthError> {
@@ -89,11 +210,17 @@ impl Session {
 
     pub(crate) fn peer_proof(&self) -> Result<(&str, Platform), AuthError> {
         self.device()?;
+        if self.identity.google_expires_at <= now() {
+            return Err(AuthError::Expired);
+        }
         Ok((&self.proof, self.platform))
     }
 
     pub(crate) fn cancellation(&self) -> Arc<AtomicBool> {
         self.cancelled.clone()
+    }
+    pub(crate) fn platform(&self) -> Platform {
+        self.platform
     }
 }
 
@@ -128,7 +255,9 @@ impl State {
         Ok((self.generation, self.cancelled.clone()))
     }
     fn require(&self, generation: u64) -> Result<(), AuthError> {
-        if self.generation != generation || self.cancelled.load(Ordering::Acquire) {
+        if self.generation != generation
+            || (self.cancelled.load(Ordering::Acquire) && self.auth != AuthState::Expired)
+        {
             Err(AuthError::Cancelled)
         } else {
             Ok(())
@@ -229,7 +358,8 @@ impl Manager {
             .as_ref()
             .is_some_and(|s| s.identity.require_current().is_err())
         {
-            state.begin(AuthState::Expired)?;
+            state.cancelled.store(true, Ordering::Release);
+            state.auth = AuthState::Expired;
             state.error = Some(AuthError::Expired);
         }
         Ok(state.status())
@@ -254,15 +384,20 @@ impl Manager {
                 return Err(AuthError::Invalid);
             }
             let saved: Saved = serde_json::from_str(&raw).map_err(|_| AuthError::Invalid)?;
-            let identity =
-                self.verifier
-                    .verify(&saved.id_token, &saved.nonce, provider.platform())?;
             validate_device(&saved)?;
+            let identity = if let Some(enrollment) = &saved.enrollment {
+                enrollment.restore(saved.device.as_ref().ok_or(AuthError::Invalid)?)?
+            } else {
+                let verified =
+                    self.verifier
+                        .verify(&saved.id_token, &saved.nonce, provider.platform())?;
+                DeviceIdentity::from_verified(&verified, None)?
+            };
             if cancelled.load(Ordering::Acquire) {
                 return Err(AuthError::Cancelled);
             }
             let journal =
-                Journal::open(&self.root, &identity).map_err(|_| AuthError::Unavailable)?;
+                Journal::for_device(&self.root, &identity).map_err(|_| AuthError::Unavailable)?;
             Ok(Some(Arc::new(Session {
                 identity,
                 journal,
@@ -276,7 +411,14 @@ impl Manager {
         state.require(generation)?;
         match result {
             Ok(session) => {
-                state.auth = if session.is_some() {
+                let expired = session
+                    .as_ref()
+                    .is_some_and(|s| s.identity.require_current().is_err());
+                state.auth = if expired {
+                    state.cancelled.store(true, Ordering::Release);
+                    state.error = Some(AuthError::Expired);
+                    AuthState::Expired
+                } else if session.is_some() {
                     AuthState::SignedIn
                 } else {
                     AuthState::SignedOut
@@ -355,10 +497,9 @@ impl Manager {
                 .require(generation)?;
             let device = DeviceKey::generate()?;
             let nonce = device.nonce();
-            let (identity, id_token, refresh_token) = provider
+            let (_identity, id_token, refresh_token) = provider
                 .sign_in(&nonce, &cancelled, &self.verifier)?
                 .into_parts();
-            identity.require_current()?;
             if cancelled.load(Ordering::Acquire) {
                 return Err(AuthError::Cancelled);
             }
@@ -369,18 +510,24 @@ impl Manager {
             {
                 return Err(AuthError::Invalid);
             }
+            // The sealing boundary verifies the proof against this login's device key itself.
+            let verified = self
+                .verifier
+                .verify(&id_token, &nonce, provider.platform())?;
+            let identity = DeviceIdentity::from_verified(&verified, Some(&device))?;
             let saved = Saved {
                 id_token,
-                refresh_token,
-                nonce,
+                refresh_token: None,
+                nonce: nonce.clone(),
                 device: Some(device),
+                enrollment: Some(identity.save(nonce.clone())),
             };
             let serialized = serde_json::to_string(&saved).map_err(|_| AuthError::Invalid)?;
             let mut state = self.state.lock().map_err(|_| AuthError::Unavailable)?;
             state.require(generation)?;
             self.require_running()?;
             let journal =
-                Journal::open(&self.root, &identity).map_err(|_| AuthError::Unavailable)?;
+                Journal::for_device(&self.root, &identity).map_err(|_| AuthError::Unavailable)?;
             provider.write(&serialized)?;
             state.session = Some(Arc::new(Session {
                 identity,
@@ -429,6 +576,51 @@ impl Manager {
         Ok(session)
     }
 
+    pub(crate) fn capture_library(&self) -> Result<LibraryScope, AuthError> {
+        self.require_running()?;
+        let state = self.state.lock().map_err(|_| AuthError::Unavailable)?;
+        if !matches!(
+            state.auth,
+            AuthState::Unsupported
+                | AuthState::SignedOut
+                | AuthState::SignedIn
+                | AuthState::Expired
+        ) {
+            return Err(AuthError::Unavailable);
+        }
+        Ok(LibraryScope {
+            generation: state.generation,
+            session: state.session.clone(),
+        })
+    }
+
+    pub(crate) fn with_library<T>(
+        &self,
+        scope: &LibraryScope,
+        f: impl FnOnce(Option<&Journal>) -> Result<T, String>,
+    ) -> Result<T, AuthError> {
+        self.require_running()?;
+        let state = self.state.lock().map_err(|_| AuthError::Unavailable)?;
+        let same = match (&scope.session, &state.session) {
+            (Some(a), Some(b)) => Arc::ptr_eq(a, b),
+            (None, None) => true,
+            _ => false,
+        };
+        if scope.generation != state.generation
+            || !same
+            || !matches!(
+                state.auth,
+                AuthState::Unsupported
+                    | AuthState::SignedOut
+                    | AuthState::SignedIn
+                    | AuthState::Expired
+            )
+        {
+            return Err(AuthError::Cancelled);
+        }
+        f(scope.session.as_ref().map(|s| &s.journal)).map_err(|_| AuthError::Unavailable)
+    }
+
     pub fn with_session<T>(
         &self,
         session: &Arc<Session>,
@@ -445,6 +637,43 @@ impl Manager {
             return Err(AuthError::Cancelled);
         }
         f(&session.journal).map_err(|_| AuthError::Unavailable)
+    }
+
+    pub(crate) fn peer_trust(
+        &self,
+        session: &Arc<Session>,
+        certificate: &crate::sync_tls::PeerCertificate,
+    ) -> Result<Option<i64>, AuthError> {
+        session.device()?;
+        let expiry = self.with_session(session, |journal| {
+            journal.peer_expiry(certificate.fingerprint())
+        })?;
+        Ok(expiry
+            .map(|e| {
+                e.min(session.identity.expires_at())
+                    .min(certificate.expires_at())
+            })
+            .filter(|e| *e > now()))
+    }
+
+    pub(crate) fn enroll_peer(
+        &self,
+        session: &Arc<Session>,
+        peer: &crate::sync_tls::PeerIdentity,
+    ) -> Result<i64, AuthError> {
+        session.device()?;
+        peer.require_fresh()?;
+        if peer.subject() != session.identity.subject() {
+            return Err(AuthError::AccountMismatch);
+        }
+        let expiry = peer.expires_at().min(session.identity.expires_at());
+        if expiry <= now() {
+            return Err(AuthError::Expired);
+        }
+        self.with_session(session, |journal| {
+            journal.trust_peer(peer.certificate(), expiry)
+        })?;
+        Ok(expiry)
     }
 
     pub fn shutdown(&self) {
@@ -469,6 +698,7 @@ fn validate_device(saved: &Saved) -> Result<(), AuthError> {
         }
         device.client_config()?;
         device.server_config()?;
+        device.expires_at()?;
     }
     Ok(())
 }
@@ -512,4 +742,4 @@ impl NativeAccount for WindowsAccount {
 
 #[cfg(test)]
 #[path = "account_tests.rs"]
-mod tests;
+pub(crate) mod tests;

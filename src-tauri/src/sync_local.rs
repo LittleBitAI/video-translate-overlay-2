@@ -4,6 +4,7 @@ use super::*;
 pub(crate) const SCHEMA: &str = "
 CREATE TABLE IF NOT EXISTS sync_job_context (job_id TEXT PRIMARY KEY, deletions TEXT NOT NULL)
 ;CREATE TABLE IF NOT EXISTS sync_cleanup_context (video_key TEXT PRIMARY KEY, deletions TEXT NOT NULL)
+;CREATE TABLE IF NOT EXISTS sync_peer (certificate TEXT PRIMARY KEY, expires_at INTEGER NOT NULL)
 ";
 
 pub(crate) fn owned(db: &Db) -> Result<bool> {

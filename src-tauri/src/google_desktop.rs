@@ -111,7 +111,6 @@ impl DesktopLogin {
             )
             .add_scope(Scope::new("email".into()))
             .add_extra_param("prompt", "select_account")
-            .add_extra_param("access_type", "offline")
             .set_pkce_challenge(challenge)
             .url();
         Ok(Self {

@@ -45,6 +45,25 @@ impl Profile {
             .unwrap();
         manager
     }
+    fn historical_manager(&self, subject: &str, platform: Platform) -> Arc<Manager> {
+        let manager = Arc::new(Manager::new(self.0.clone()));
+        manager
+            .configure(Arc::new(Native {
+                subject: subject.into(),
+                platform,
+                saved: Mutex::new(Some(crate::account::tests::historical_receipt(
+                    subject,
+                    platform,
+                    crate::account::now() - 7200,
+                ))),
+            }))
+            .unwrap();
+        assert_eq!(
+            manager.restore().unwrap().state,
+            crate::account::AuthState::SignedIn
+        );
+        manager
+    }
 }
 impl Drop for Profile {
     fn drop(&mut self) {
@@ -375,7 +394,7 @@ fn framing_rejects_oversized_lengths_unknown_operations_fields_and_truncated_pag
         write(
             &mut output,
             &Frame::Proof {
-                token: "x".repeat(8193),
+                token: Some("x".repeat(8193)),
                 platform: Platform::Desktop,
                 replica: "a".repeat(32)
             }
@@ -383,4 +402,118 @@ fn framing_rejects_oversized_lengths_unknown_operations_fields_and_truncated_pag
         Err(Failure::Protocol)
     ));
     assert!(output.is_empty());
+}
+
+#[test]
+fn enrolled_devices_reconnect_with_expired_google_proofs_but_expired_peer_receipts_require_google_again(
+) {
+    let a = Profile::new();
+    let b = Profile::new();
+    // These native receipts and peer rows model a pair enrolled two hours earlier.
+    let pc = a.historical_manager("same-account", Platform::Desktop);
+    let phone = b.historical_manager("same-account", Platform::Android);
+    let pc_session = pc.session().unwrap();
+    let phone_session = phone.session().unwrap();
+    assert!(matches!(pc_session.peer_proof(), Err(AuthError::Expired)));
+    assert!(matches!(
+        phone_session.peer_proof(),
+        Err(AuthError::Expired)
+    ));
+    pc_session
+        .journal
+        .trust_peer(
+            &phone_session.device().unwrap().nonce(),
+            phone_session.identity.expires_at(),
+        )
+        .unwrap();
+    phone_session
+        .journal
+        .trust_peer(
+            &pc_session.device().unwrap().nonce(),
+            pc_session.identity.expires_at(),
+        )
+        .unwrap();
+    pc_session
+        .journal
+        .write(translation(), Deletions::new())
+        .unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = listener.local_addr().unwrap();
+    let owner = pc.clone();
+    let server = thread::spawn(move || {
+        let (tcp, _) = listener.accept().unwrap();
+        let mut channel = Channel::server(tcp, owner.session().unwrap(), &owner).unwrap();
+        channel.exchange(&owner).unwrap();
+        drop(channel);
+        let (tcp, _) = listener.accept().unwrap();
+        assert!(matches!(
+            Channel::server(tcp, owner.session().unwrap(), &owner),
+            Err(Failure::Auth(AuthError::Expired))
+        ));
+    });
+    let mut channel = Channel::client(
+        TcpStream::connect(address).unwrap(),
+        phone_session.clone(),
+        &phone,
+    )
+    .unwrap();
+    assert!(channel.exchange(&phone).unwrap());
+    channel.authorized_until = Some(crate::account::now() - 1);
+    assert!(matches!(
+        channel.exchange(&phone),
+        Err(Failure::Auth(AuthError::Expired))
+    ));
+    drop(channel);
+    let store = phone_session.journal.library().unwrap();
+    let db = crate::db::Db::open(store.path()).unwrap();
+    db.execute(
+        "UPDATE sync_peer SET expires_at=?",
+        crate::p![crate::account::now() - 1],
+    )
+    .unwrap();
+    assert!(matches!(
+        Channel::client(
+            TcpStream::connect(address).unwrap(),
+            phone_session.clone(),
+            &phone
+        ),
+        Err(Failure::Auth(AuthError::Expired))
+    ));
+    server.join().unwrap();
+    assert_eq!(store.library().unwrap()["videos"][0]["saved"], true);
+}
+
+#[test]
+fn an_unknown_certificate_cannot_enroll_using_an_expired_google_proof() {
+    let a = Profile::new();
+    let b = Profile::new();
+    let pc = a.historical_manager("same-account", Platform::Desktop);
+    let phone = b.historical_manager("same-account", Platform::Android);
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = listener.local_addr().unwrap();
+    let owner = pc.clone();
+    let server = thread::spawn(move || {
+        let (tcp, _) = listener.accept().unwrap();
+        assert!(matches!(
+            Channel::server(tcp, owner.session().unwrap(), &owner),
+            Err(Failure::Auth(AuthError::Expired))
+        ));
+    });
+    assert!(matches!(
+        Channel::client(
+            TcpStream::connect(address).unwrap(),
+            phone.session().unwrap(),
+            &phone
+        ),
+        Err(Failure::Auth(AuthError::Expired))
+    ));
+    server.join().unwrap();
+    assert!(pc.session().unwrap().journal.records().unwrap().is_empty());
+    assert!(phone
+        .session()
+        .unwrap()
+        .journal
+        .records()
+        .unwrap()
+        .is_empty());
 }

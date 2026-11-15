@@ -30,12 +30,19 @@ impl Drop for DeviceKey {
 }
 impl DeviceKey {
     pub fn generate() -> Result<Self, AuthError> {
+        Self::generate_at(time::OffsetDateTime::now_utc())
+    }
+    #[cfg(test)]
+    pub(crate) fn historical_for_test(created_at: i64) -> Self {
+        Self::generate_at(time::OffsetDateTime::from_unix_timestamp(created_at).unwrap()).unwrap()
+    }
+    fn generate_at(created_at: time::OffsetDateTime) -> Result<Self, AuthError> {
         let key = rcgen::KeyPair::generate().map_err(|_| AuthError::Unavailable)?;
         let mut params =
             rcgen::CertificateParams::new(vec![NAME.into()]).map_err(|_| AuthError::Unavailable)?;
         params.distinguished_name = rcgen::DistinguishedName::new();
-        params.not_before = time::OffsetDateTime::now_utc() - time::Duration::minutes(5);
-        params.not_after = time::OffsetDateTime::now_utc() + time::Duration::days(30);
+        params.not_before = created_at - time::Duration::minutes(5);
+        params.not_after = created_at + time::Duration::seconds(crate::account::DEVICE_LIFETIME);
         params.extended_key_usages = vec![
             rcgen::ExtendedKeyUsagePurpose::ServerAuth,
             rcgen::ExtendedKeyUsagePurpose::ClientAuth,
@@ -53,6 +60,10 @@ impl DeviceKey {
 
     pub fn nonce(&self) -> String {
         fingerprint(&self.certificate)
+    }
+
+    pub fn expires_at(&self) -> Result<i64, AuthError> {
+        certificate_expiry(&self.certificate)
     }
 
     fn material(
@@ -125,8 +136,45 @@ fn fingerprint(certificate: &[u8]) -> String {
 /// Construction requires a finished, dedicated TLS 1.3 handshake with a client certificate.
 pub(crate) struct PeerCertificate {
     fingerprint: String,
+    expires_at: i64,
+}
+pub(crate) struct PeerIdentity {
+    identity: VerifiedIdentity,
+    certificate: String,
+    expires_at: i64,
+}
+impl PeerIdentity {
+    pub fn subject(&self) -> &str {
+        self.identity.subject()
+    }
+    pub fn certificate(&self) -> &str {
+        &self.certificate
+    }
+    pub fn expires_at(&self) -> i64 {
+        self.expires_at
+    }
+    pub fn require_fresh(&self) -> Result<(), AuthError> {
+        self.identity.require_current()
+    }
+}
+fn certificate_expiry(certificate: &[u8]) -> Result<i64, AuthError> {
+    if certificate.is_empty() || certificate.len() > MAX_CERT {
+        return Err(AuthError::Invalid);
+    }
+    let (rest, parsed) =
+        x509_parser::parse_x509_certificate(certificate).map_err(|_| AuthError::Invalid)?;
+    if !rest.is_empty() {
+        return Err(AuthError::Invalid);
+    }
+    Ok(parsed.validity().not_after.timestamp())
 }
 impl PeerCertificate {
+    pub fn fingerprint(&self) -> &str {
+        &self.fingerprint
+    }
+    pub fn expires_at(&self) -> i64 {
+        self.expires_at
+    }
     pub fn from_tls(tls: &CommonState) -> Result<Self, AuthError> {
         if tls.is_handshaking()
             || tls.protocol_version() != Some(rustls::ProtocolVersion::TLSv1_3)
@@ -140,19 +188,27 @@ impl PeerCertificate {
         }
         Ok(Self {
             fingerprint: fingerprint(certs[0].as_ref()),
+            expires_at: certificate_expiry(certs[0].as_ref())?,
         })
     }
 
     pub fn verify_google(
         &self,
         verifier: &Verifier,
-        local: &VerifiedIdentity,
         token: &str,
         platform: Platform,
-    ) -> Result<VerifiedIdentity, AuthError> {
+    ) -> Result<PeerIdentity, AuthError> {
         let peer = verifier.verify(token, &self.fingerprint, platform)?;
-        local.require_same_account(&peer)?;
-        Ok(peer)
+        let expires_at = self.expires_at.min(
+            peer.issued_at()
+                .checked_add(crate::account::DEVICE_LIFETIME)
+                .ok_or(AuthError::Invalid)?,
+        );
+        Ok(PeerIdentity {
+            identity: peer,
+            certificate: self.fingerprint.clone(),
+            expires_at,
+        })
     }
 }
 

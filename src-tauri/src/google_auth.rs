@@ -65,6 +65,7 @@ pub struct VerifiedIdentity {
     subject: String,
     email: String,
     expires_at: i64,
+    issued_at: i64,
 }
 
 impl VerifiedIdentity {
@@ -76,6 +77,9 @@ impl VerifiedIdentity {
     }
     pub fn expires_at(&self) -> i64 {
         self.expires_at
+    }
+    pub(crate) fn issued_at(&self) -> i64 {
+        self.issued_at
     }
 
     pub fn require_current(&self) -> Result<(), AuthError> {
@@ -102,14 +106,8 @@ impl VerifiedIdentity {
             subject: subject.into(),
             email: "offline-fixture@example.org".into(),
             expires_at: now() + 3600,
+            issued_at: now(),
         }
-    }
-
-    #[cfg(test)]
-    pub(crate) fn expired_fixture(subject: &str) -> Self {
-        let mut identity = Self::fixture(subject);
-        identity.expires_at = now() - 1;
-        identity
     }
 }
 
@@ -135,7 +133,12 @@ pub struct Verifier {
 impl Verifier {
     #[cfg(test)]
     pub(crate) fn with_test_keys(keys: CoreJsonWebKeySet) -> Self {
-        Self { cache: Mutex::new(Cache { keys: Some((Instant::now(), keys)), attempted_at: None }) }
+        Self {
+            cache: Mutex::new(Cache {
+                keys: Some((Instant::now(), keys)),
+                attempted_at: None,
+            }),
+        }
     }
 
     pub fn verify(
@@ -254,6 +257,7 @@ fn verify_token(
         subject: subject.into(),
         email: email.into(),
         expires_at: claims.expiration().timestamp(),
+        issued_at: claims.issue_time().timestamp(),
     })
 }
 

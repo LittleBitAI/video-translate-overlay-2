@@ -342,7 +342,14 @@ pub struct Journal {
 
 impl Journal {
     pub fn open(root: &Path, identity: &crate::google_auth::VerifiedIdentity) -> Result<Self> {
-        let google_subject = identity.subject();
+        Self::open_subject(root,identity.subject())
+    }
+
+    pub(crate) fn for_device(root:&Path,identity:&crate::account::DeviceIdentity)->Result<Self> {
+        Self::open_subject(root,identity.subject())
+    }
+
+    fn open_subject(root:&Path,google_subject:&str)->Result<Self> {
         if !text(google_subject, 255) || !google_subject.is_ascii() {
             return Err("invalid Google subject".into());
         }
@@ -379,6 +386,17 @@ impl Journal {
 
     pub fn account(&self) -> &str {
         &self.account
+    }
+    pub(crate) fn peer_expiry(&self,certificate:&str)->Result<Option<i64>> {
+        if !hex(certificate,64) { return Err("invalid peer certificate".into()); }
+        Ok(Db::open(&self.path)?.query_one("SELECT expires_at FROM sync_peer WHERE certificate=?",p![certificate])?.map(|r|r[0].int()))
+    }
+    pub(crate) fn trust_peer(&self,certificate:&str,expires_at:i64)->Result<()> {
+        if !hex(certificate,64) || expires_at<=0 { return Err("invalid peer credential".into()); }
+        self.transaction(|db| {
+            db.execute("INSERT INTO sync_peer VALUES (?,?) ON CONFLICT(certificate) DO UPDATE SET expires_at=MAX(expires_at,excluded.expires_at)",p![certificate,expires_at])?;
+            Ok(())
+        })
     }
     pub fn replica(&self) -> &str {
         &self.replica

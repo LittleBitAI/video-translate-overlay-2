@@ -38,8 +38,12 @@ type Result<T> = std::result::Result<T, Failure>;
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 enum Frame {
+    FreshGoogleRequired,
+    NeedProof {
+        fresh: bool,
+    },
     Proof {
-        token: String,
+        token: Option<String>,
         platform: Platform,
         replica: String,
     },
@@ -126,12 +130,12 @@ enum Tls {
     Server(StreamOwned<ServerConnection, DeadlineIo>),
 }
 impl Tls {
-    fn rearm(&mut self) {
+    fn rearm(&mut self, timeout: Duration) {
         let io = match self {
             Self::Client(s) => &mut s.sock,
             Self::Server(s) => &mut s.sock,
         };
-        io.deadline = Instant::now() + FRAME_TIME;
+        io.deadline = Instant::now() + timeout;
     }
     fn peer(&self) -> Result<PeerCertificate> {
         match self {
@@ -183,7 +187,11 @@ fn write(stream: &mut impl Write, frame: &Frame) -> Result<()> {
     // Only typed proof/control/library frames cross this exit; never reusable secrets or commands.
     let limit = match frame {
         Frame::Proof { token, replica, .. } => {
-            if token.is_empty() || token.len() > 8192 || !replica_valid(replica) {
+            if token
+                .as_ref()
+                .is_some_and(|t| t.is_empty() || t.len() > 8192)
+                || !replica_valid(replica)
+            {
                 return Err(Failure::Protocol);
             }
             CONTROL_LIMIT
@@ -218,6 +226,7 @@ pub(crate) struct Channel {
     session: Arc<Session>,
     peer_replica: String,
     server: bool,
+    authorized_until: Option<i64>,
 }
 impl Channel {
     pub fn client(tcp: TcpStream, session: Arc<Session>, manager: &Manager) -> Result<Self> {
@@ -239,6 +248,7 @@ impl Channel {
             session,
             peer_replica: String::new(),
             server: false,
+            authorized_until: None,
         };
         channel.authenticate(manager)?;
         Ok(channel)
@@ -261,63 +271,121 @@ impl Channel {
             session,
             peer_replica: String::new(),
             server: true,
+            authorized_until: None,
         };
         channel.authenticate(manager)?;
         Ok(channel)
     }
     fn read(&mut self, limit: usize) -> Result<Frame> {
-        self.session.require_current()?;
-        self.stream.rearm();
+        self.require_current()?;
+        self.stream.rearm(self.remaining());
         let result = read(&mut self.stream, limit);
-        self.session.require_current()?;
+        self.require_current()?;
         result
     }
     fn write(&mut self, frame: Frame) -> Result<()> {
-        self.session.require_current()?;
-        self.stream.rearm();
+        self.require_current()?;
+        self.stream.rearm(self.remaining());
         let result = write(&mut self.stream, &frame);
-        self.session.require_current()?;
+        self.require_current()?;
         result
     }
-    fn send_proof(&mut self) -> Result<()> {
-        let (token, platform) = self.session.peer_proof()?;
+    fn require_current(&self) -> Result<()> {
+        self.session.require_current()?;
+        if self
+            .authorized_until
+            .is_some_and(|until| until <= crate::account::now())
+        {
+            return Err(AuthError::Expired.into());
+        }
+        Ok(())
+    }
+    fn remaining(&self) -> Duration {
+        let until = self
+            .authorized_until
+            .unwrap_or(self.session.identity.expires_at())
+            .min(self.session.identity.expires_at());
+        FRAME_TIME.min(Duration::from_secs(
+            until.saturating_sub(crate::account::now()).max(0) as u64,
+        ))
+    }
+    fn send_proof(&mut self, fresh: bool) -> Result<()> {
+        let token = if fresh {
+            match self.session.peer_proof() {
+                Ok((proof, _)) => Some(proof.to_string()),
+                Err(AuthError::Expired) => {
+                    self.write(Frame::FreshGoogleRequired)?;
+                    return Err(AuthError::Expired.into());
+                }
+                Err(e) => return Err(e.into()),
+            }
+        } else {
+            None
+        };
         self.write(Frame::Proof {
-            token: token.into(),
-            platform,
+            token,
+            platform: self.session.platform(),
             replica: self.session.journal.replica().into(),
         })
     }
     fn accept_proof(&mut self, manager: &Manager) -> Result<()> {
+        let frame = self.read(CONTROL_LIMIT)?;
+        if matches!(frame, Frame::FreshGoogleRequired) {
+            return Err(AuthError::Expired.into());
+        }
         let Frame::Proof {
             token,
             platform,
             replica,
-        } = self.read(CONTROL_LIMIT)?
+        } = frame
         else {
             return Err(Failure::Protocol);
         };
         if !replica_valid(&replica) || replica == self.session.journal.replica() {
             return Err(Failure::Protocol);
         }
-        self.stream.peer()?.verify_google(
-            manager.verifier(),
-            &self.session.identity,
-            &token,
-            platform,
-        )?;
+        let certificate = self.stream.peer()?;
+        let until = match token {
+            Some(token) => manager.enroll_peer(
+                &self.session,
+                &certificate.verify_google(manager.verifier(), &token, platform)?,
+            )?,
+            None => manager
+                .peer_trust(&self.session, &certificate)?
+                .ok_or(AuthError::Expired)?,
+        };
         manager.with_session(&self.session, |_| Ok(()))?;
         self.peer_replica = replica;
+        self.authorized_until = Some(until);
         Ok(())
     }
     fn authenticate(&mut self, manager: &Manager) -> Result<()> {
         if self.server {
-            self.send_proof()?;
+            let fresh = self.requested_proof()?;
+            self.send_proof(fresh)?;
+            self.write(Frame::NeedProof {
+                fresh: manager
+                    .peer_trust(&self.session, &self.stream.peer()?)?
+                    .is_none(),
+            })?;
             self.accept_proof(manager)?;
         } else {
+            self.write(Frame::NeedProof {
+                fresh: manager
+                    .peer_trust(&self.session, &self.stream.peer()?)?
+                    .is_none(),
+            })?;
             self.accept_proof(manager)?;
-            self.send_proof()?;
+            let fresh = self.requested_proof()?;
+            self.send_proof(fresh)?;
         }
         Ok(())
+    }
+    fn requested_proof(&mut self) -> Result<bool> {
+        match self.read(CONTROL_LIMIT)? {
+            Frame::NeedProof { fresh } => Ok(fresh),
+            _ => Err(Failure::Protocol),
+        }
     }
     fn cursor(&mut self) -> Result<i64> {
         match self.read(CONTROL_LIMIT)? {
@@ -332,11 +400,13 @@ impl Channel {
         }
     }
     fn outgoing(&self, manager: &Manager, after: i64) -> Result<Page> {
+        self.require_current()?;
         manager
             .with_session(&self.session, |journal| journal.page(after))
             .map_err(Into::into)
     }
     fn receive(&self, manager: &Manager, page: &Page) -> Result<bool> {
+        self.require_current()?;
         manager
             .with_session(&self.session, |journal| {
                 journal.receive(&self.peer_replica, page)
@@ -344,6 +414,7 @@ impl Channel {
             .map_err(Into::into)
     }
     fn saved_cursor(&self, manager: &Manager) -> Result<i64> {
+        self.require_current()?;
         manager
             .with_session(&self.session, |journal| journal.cursor(&self.peer_replica))
             .map_err(Into::into)

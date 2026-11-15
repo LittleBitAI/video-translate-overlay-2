@@ -28,6 +28,10 @@ fn callback_is_armed_before_the_browser_url_and_uses_fresh_state_and_pkce() {
     assert_eq!(params["code_challenge_method"], "S256");
     assert_eq!(params["nonce"], NONCE);
     assert!(!params.contains_key("client_secret"));
+    assert!(
+        !params.contains_key("access_type"),
+        "device sessions do not request offline Google grants"
+    );
     assert!(!login.authorization_url().contains(SECRET));
     let scopes: std::collections::BTreeSet<_> = params["scope"].split_whitespace().collect();
     assert_eq!(

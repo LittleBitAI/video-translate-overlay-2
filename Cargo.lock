@@ -5322,6 +5322,7 @@ dependencies = [
  "webpki-roots",
  "whisper-rs",
  "windows",
+ "x509-parser",
  "zeroize",
 ]
 

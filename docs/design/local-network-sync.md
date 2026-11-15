@@ -2,6 +2,17 @@
 
 ## Implementation status
 
+The user selected a thirty-day native device sign-in. A fresh Google proof is
+required to enroll an unknown device certificate; subsequent connections may
+use a locally stored trust receipt for that certificate until its fixed expiry.
+The device's private key remains sealed by DPAPI or Android Keystore. App
+sign-out stops its connections immediately; changing a Google password elsewhere
+does not immediately revoke this local credential. New or expired credentials
+require fresh Google verification. This policy needs no hosted service or paid
+call. It supersedes the temporary one-hour proof cutoff described in historical
+implementation notes below. Offline implementation checks pass; native acceptance
+of the thirty-day credential remains pending.
+
 The production goal remains automatic bidirectional synchronization of completed
 translations, library entries, playlists, and playback position between Windows
 and Android on a shared reachable network. Google verifies account identity;
@@ -31,9 +42,11 @@ physical Android phone at `31ced1f`; device transfers remain unimplemented.
 
 Windows seals the private session blob with user-scoped DPAPI. Android seals
 it with its own Keystore AES-GCM key, separate from Gemini credentials. Tokens
-never enter screen status or discovery. At this implementation stage an expired
-ID token requires explicit sign-in; token renewal is not implemented. The UI
-does not claim that identity setup enables synchronization.
+never enter screen status or discovery. A native enrollment receipt retains the
+account's library ownership for thirty days, bounded by the certificate's actual
+expiry. Expiry stops transfers but retains access to that account's local data.
+OAuth refresh tokens are not requested or retained by new sign-ins. The UI does
+not claim that identity setup enables synchronization.
 
 New sign-ins generate a per-login ECDSA device key and anonymous certificate.
 The Google nonce is the certificate's SHA-256 digest. The key is sealed with
@@ -48,17 +61,21 @@ WebPKI checks the bounded certificates, dates, names and key usages; ring checks
 the actual TLS handshake signatures. Possession of a self-issued key does not
 authorize a library request. After the handshake, the peer's Google-signed
 proof must contain that exact certificate digest as its nonce and the same
-verified subject as the local session. A copied proof with another private key
-fails. TLS resumption, session tickets and early data are disabled. The module
+verified subject as the local session when enrolling a new certificate. Later
+connections may use the account journal's private certificate trust receipt;
+neither replay nor reconnection extends its fixed expiry. A copied proof with
+another private key fails. TLS resumption, session tickets and early data are disabled. The module
 opens no sockets and performs no discovery; the owning session releases its
 private key when retired sessions are dropped. This remains preparation for
 the network worker, not implemented LAN delivery.
 
 `sync_channel.rs` owns an already-connected TCP socket and requires mutual TLS
 before its bounded proof exchange. The Android client verifies the PC's bound
-Google proof before sending its own. Only matching signed Google subjects
-authorize transfers. The dedicated authentication phase carries a certificate-
-bound ID proof; it never sends OAuth access/refresh tokens, the publisher
+Google proof or previously enrolled certificate before sending its own proof.
+Only matching signed Google subjects authorize enrollment. An unknown certificate
+with an expired Google proof requires fresh sign-in, without clearing locally
+saved data. The dedicated authentication phase carries a certificate-bound ID
+proof when needed; it never sends OAuth access/refresh tokens, the publisher
 registration secret, Gemini keys or cookies. Library pages remain behind this
 authorization gate and have no general command, SQL or file-access operation.
 
@@ -323,6 +340,23 @@ video-translate-overlay --lib sync::library:: -- --nocapture` then passed all
 restoration; existing completed-version, active-job and consent checks remain.
 
 ## Focused authentication evidence
+
+The thirty-day policy passed `cargo test -p video-translate-overlay --lib
+account:: -- --nocapture` (12 tests), `cargo test -p video-translate-overlay
+--lib sync_channel:: -- --nocapture` (7 tests), and `cargo test -p
+video-translate-overlay --lib google_ -- --nocapture` (25 matching tests).
+Historical test-signed enrollments restore without a Google key fetch after
+their ID proofs expire; established pairs exchange data over actual loopback
+mutual TLS. Unknown certificates, expired trust receipts, mismatched accounts
+and expired live-channel authorization fail closed. Local data stays accessible
+after device-grant expiry, and an account switch retires its old library scope.
+These are offline fixtures, not a thirty-day wall-clock or native-device run.
+
+The test cleanup audit retained all current authentication, account, TLS and
+channel tests. The repeated lower-level mismatched-account assertion was folded
+into the stronger existing socket-transfer rejection test; no test functions,
+skips or expected failures were removed. Unused fixture code for the replaced
+one-hour app-session expiry was removed; strict Google-proof expiry checks remain.
 
 These checks cover the identity component and its local boundaries. They do not
 establish LAN transfers, public OAuth configuration, real Google account

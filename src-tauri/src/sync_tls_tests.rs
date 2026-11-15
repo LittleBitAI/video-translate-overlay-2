@@ -55,30 +55,20 @@ fn mutual_tls_checks_both_device_keys_before_a_matching_google_identity_can_auth
         pc.nonce()
     );
     let (verifier, token) = proof("same-account", &phone.nonce(), false);
-    let local = VerifiedIdentity::fixture("same-account");
     assert_eq!(
         remote
-            .verify_google(&verifier, &local, &token, Platform::Android)
+            .verify_google(&verifier, &token, Platform::Android)
             .unwrap()
             .subject(),
         "same-account"
     );
     assert!(matches!(
-        remote.verify_google(
-            &verifier,
-            &VerifiedIdentity::fixture("other-account"),
-            &token,
-            Platform::Android
-        ),
-        Err(AuthError::AccountMismatch)
-    ));
-    assert!(matches!(
-        remote.verify_google(&verifier, &local, &token, Platform::Desktop),
+        remote.verify_google(&verifier, &token, Platform::Desktop),
         Err(AuthError::Invalid)
     ));
     let (verifier, expired) = proof("same-account", &phone.nonce(), true);
     assert!(matches!(
-        remote.verify_google(&verifier, &local, &expired, Platform::Android),
+        remote.verify_google(&verifier, &expired, Platform::Android),
         Err(AuthError::Expired)
     ));
 }
@@ -97,7 +87,6 @@ fn a_copied_google_proof_does_not_authorize_a_different_tls_key_and_ciphertext_c
     assert!(matches!(
         PeerCertificate::from_tls(&server).unwrap().verify_google(
             &verifier,
-            &VerifiedIdentity::fixture("same-account"),
             &stolen,
             Platform::Android
         ),
