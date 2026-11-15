@@ -18,7 +18,7 @@ documentation do not change application sources.
 Documentation-only descendants retain the same application inventory; they do
 not acquire a newly stamped binary identity.
 
-## Observed executions
+## Observed executions from review round 1 and earlier
 
 The fresh executions ran on Windows build 26200 with Node 24.18.0 and Rust
 1.98.1 against application source `c52830bf29506fc57810067cf6f1f5fba2621e09`.
@@ -93,16 +93,25 @@ and final verification; this packet does not start either or authorize merge.
 
 ## Review repair audit
 
-The evidence boundary is checked across four kinds: API, browser, desktop and
-offline. Six executions are fresh and seven entries reuse identified earlier
-observations. Each receipt has a content hash, actual observations and an
-environment. Both the recorded execution source and the candidate are compared
-against the same input inventory. Missing kinds, empty or failed observations,
-altered receipts, missing inventories, changed inputs and unsupported reuse are
-rejected by a table-driven regression. A separate table checks source additions,
-removals and edits across Rust, screens, Android build files and dependencies.
-Another table checks dirty application inputs independently of committed-source
-equivalence.
+The evidence boundary covers four kinds: API, browser, desktop and offline.
+Six executions were collected fresh in review round 1; seven entries reuse
+earlier observations. Review round 2 reuses those executions while adding the
+previously missing [diagnostic sources and retained machine output](diagnostics/README.md).
+It does not claim fresh execution of the four required native flows.
+
+Every catalog entry now needs hashed producer sources and machine output,
+inspectable action excerpts and executable assertion excerpts bound to observed
+output fields. A named successful observation alone is refused regardless of
+whether its result is a boolean, string, object or null. Required playback,
+deletion/restart, screen-off and account-isolation assertions are checked
+separately; four evidence kinds and a playlist rename cannot substitute for
+those flows. Bounded player predicates also expose their throwing timeout path.
+
+All thirteen entries were audited, including the nine outside the four native
+flows identified in the finding. File hashes, excerpt availability, observed
+output comparisons, required native assertion coverage, source inventories and
+dirty application inputs have separate rejection tests. This validates an
+inspectable audit trail; it does not independently certify historical execution.
 
 The lifecycle correction replaces the reported unstarted-controller paragraph.
 Three additional current-status references were corrected in the backend design,
@@ -111,6 +120,8 @@ under a dated historical section. The documentation regression checks all four
 current descriptions and the actual native start/stop call sites; the fresh
 runtime tests separately exercise resource ownership and cancellation.
 
-The test cleanup pass retains all four evidence/documentation regression cases
-and the native/live probe assertions. They cover separate failure boundaries;
-none is skipped, superseded or tied to a removed route. No test was removed.
+The round-2 cleanup pass extends the original catalog regression rather than
+retaining the old pass-summary acceptance fixture. It keeps the distinct source
+equivalence, dirty-input and lifecycle checks and adds refusal tables for
+pass-only receipts, incomplete native audits and unbounded predicates. No test
+is skipped or tied to a removed route. No behavior check was removed.

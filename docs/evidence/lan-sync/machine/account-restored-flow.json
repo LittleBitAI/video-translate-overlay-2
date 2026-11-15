@@ -1,0 +1,23 @@
+{
+  "head": "5f899a2c72080208f84db666d83e119aa4fcd788",
+  "devices": [
+    {
+      "device": "windows",
+      "generation": 5,
+      "connected": true,
+      "original_account_restored": true,
+      "queued_original_account_change_received": true,
+      "second_account_rows_absent": true,
+      "retired_second_account_reads_refused": true
+    },
+    {
+      "device": "android",
+      "generation": 5,
+      "connected": true,
+      "original_account_restored": true,
+      "queued_original_account_change_received": true,
+      "second_account_rows_absent": true,
+      "retired_second_account_reads_refused": true
+    }
+  ]
+}

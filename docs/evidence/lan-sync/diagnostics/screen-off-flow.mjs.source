@@ -1,0 +1,54 @@
+import {chromium} from 'playwright';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import {writeFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const run=promisify(execFile),adb='<USER_HOME>/AppData/Local/Temp/vto-android/sdk/platform-tools/adb.exe';
+const head='5f899a2c72080208f84db666d83e119aa4fcd788';
+const shell=async(...args)=>(await run(adb,['-s','<APPROVED_DEVICE>','shell',...args],{timeout:15000})).stdout;
+const pause=ms=>new Promise(r=>setTimeout(r,ms));
+const browser=await chromium.connectOverCDP('http://127.0.0.1:9226');
+let asleep=false;
+try{
+  const page=browser.contexts().flatMap(c=>c.pages()).find(p=>p.url().startsWith('http://tauri.localhost'));assert(page);
+  assert.equal(await page.evaluate(()=>window.__WIKI_NATIVE_BUILD_HEAD__),head);
+  const a=await page.evaluate(()=>window.__TAURI_INTERNALS__.invoke('get_google_account'));assert.equal(a.state,'signed_in');
+  const data=await page.evaluate(g=>window.__TAURI_INTERNALS__.invoke('get_library',{account_generation:g}),a.generation);
+  const list=data.playlists.find(p=>p.name==='LAN current Windows 20261115');assert(list);
+  const addresses=await shell('ip','-4','addr','show');assert(addresses.includes('192.168.0.2/24')&&!addresses.includes('usb0:'));
+  const observe=async name=>JSON.parse((await run('python',['artifacts/native-sync-20261115/phone-query.py','playlist',list.id,name],{timeout:15000})).stdout);
+  assert((await observe(list.name)).matches);
+  if(!(await page.getByRole('heading',{name:'보관함',exact:true}).count())){
+    const back=page.locator('a[href="/"]');if(await back.count())await back.click();
+    await page.getByRole('link',{name:'보관함',exact:true}).click();
+  }
+  await page.getByRole('button',{name:`${list.name} (${list.entries.length})`,exact:true}).click();
+  await shell('input','keyevent','KEYCODE_HOME');
+  await shell('input','keyevent','KEYCODE_SLEEP');asleep=true;
+  const sleepStart=Date.now();await pause(20000);
+  const asleepNow=async()=>{
+    const power=await shell('dumpsys','power'),display=await shell('dumpsys','display');
+    const wakefulness=power.match(/^  mWakefulness=(\w+)/m)?.[1];
+    assert(['Asleep','Dozing'].includes(wakefulness),'The phone remained interactive');
+    assert(power.includes('mHalInteractiveModeEnabled=false'),'Interactive mode remained enabled');
+    assert(/^  mScreenState=OFF\s*$/m.test(display),'The display was not off');
+    return wakefulness;
+  };
+  const wakefulness=await asleepNow();
+  const receipt={head,pc_interface:'Ethernet',pc_ipv4:'192.168.0.3',phone_interface:'Wi-Fi',phone_ipv4:'192.168.0.2',usb_tether_interface_absent:true,screen_off_before_first_change_ms:Date.now()-sleepStart,changes:[]};
+  for(const name of ['LAN screen off first 20261115','LAN screen off second 20261115']){
+    await page.getByLabel('재생목록 이름',{exact:true}).fill(name);
+    const started=Date.now();await page.getByRole('button',{name:'이름 바꾸기',exact:true}).click();
+    let result;do{result=await observe(name);if(result.matches)break;await pause(200);}while(Date.now()-started<20000);
+    assert(result.matches,'Native sync failed while the screen was off');await asleepNow();
+    receipt.changes.push({playlist_id:list.id,name,delivery_ms:result.observed_ms-started});
+    if(receipt.changes.length===1)await pause(10000);
+  }
+  const services=await shell('dumpsys','activity','services','dev.vto.overlay');
+  assert(services.includes('dev.vto.overlay/.SyncService')&&services.includes('isForeground=true')&&services.includes('foregroundId=2002'));
+  receipt.foreground_service=true;receipt.connection_notification_id=2002;
+  receipt.screen_off_observed_ms=Date.now()-sleepStart;
+  receipt.observed_without_webview_ipc=true;receipt.usb_charging=true;receipt.deep_doze_claimed=false;
+  receipt.wakefulness=wakefulness;receipt.interactive_mode=false;receipt.display_state='OFF';
+  await writeFile(new URL('./screen-off-flow.json',import.meta.url),JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));
+}finally{if(asleep)await shell('input','keyevent','KEYCODE_WAKEUP');await browser.close();}

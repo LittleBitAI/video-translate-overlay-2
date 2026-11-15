@@ -1,0 +1,39 @@
+import {chromium} from 'playwright';
+import {readFile,writeFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const expected=await Promise.all(['windows','android'].map(async name=>JSON.parse(await readFile(new URL(`./expected-${name}.json`,import.meta.url)))));
+const receipt={head:'fc0d072f78248e120db7a7582852add873814cec',checks:[]};
+const browsers=[];
+try {
+  for(const [name,port] of [['windows',9226],['android',9227]]) {
+    const browser=await chromium.connectOverCDP(`http://127.0.0.1:${port}`);browsers.push(browser);
+    const page=browser.contexts().flatMap(c=>c.pages()).find(p=>p.url().startsWith('http://tauri.localhost'));
+    assert(page,`${name} local screen missing`);
+    const account=await page.evaluate(()=>window.__TAURI_INTERNALS__.invoke('get_google_account'));
+    assert.equal(account.state,'signed_in'); const owner=account.generation;
+    for(const fixture of expected) {
+      const deadline=Date.now()+20000;
+      let found=false;
+      do {
+        const library=await page.evaluate(g=>window.__TAURI_INTERNALS__.invoke('get_library',{account_generation:g}),owner);
+        assert.equal(library.account_generation,owner);
+        found=library.videos.some(v=>v.video_key===fixture.video.key&&v.saved);
+        if(found)break;
+        await page.waitForTimeout(250);
+      } while(Date.now()<deadline);
+      assert(found,`${name} did not materialize a completed fixture`);
+      const saved=await page.evaluate(async ({fixture,generation})=>({
+        subtitles:await window.__TAURI_INTERNALS__.invoke('get_subtitles',{video_key:fixture.video.key,account_generation:generation}),
+        job:await window.__TAURI_INTERNALS__.invoke('get_job',{page_url:fixture.video.page_url,account_generation:generation}),
+      }),{fixture,generation:owner});
+      assert.equal(saved.job.stage,'ready');assert.equal(saved.job.cost_krw,fixture.cost_krw);
+      assert.equal(saved.subtitles.duration_ms,fixture.duration_ms);
+      assert.deepEqual(saved.subtitles.cues.map(c=>[c.start_ms,c.end_ms,c.text_ko]),fixture.cues.map(c=>[c.start_ms,c.end_ms,c.text_ko]));
+      receipt.checks.push({device:name,fixture:fixture.video.title,cost_krw:saved.job.cost_krw,intervals:saved.subtitles.cues.map(c=>[c.start_ms,c.end_ms])});
+    }
+    await page.getByRole('button',{name:'전체 영상',exact:true}).click();
+    for(const fixture of expected) await page.getByRole('heading',{name:fixture.video.title,exact:true}).waitFor();
+    await page.screenshot({path:`artifacts/native-sync-20261115/${name}-completed.png`,fullPage:true,mask:[page.locator('bdi')]});
+  }
+  await writeFile(new URL('./completed-flow.json',import.meta.url),JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));
+}finally{for(const browser of browsers)await browser.close();}

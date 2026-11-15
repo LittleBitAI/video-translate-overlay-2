@@ -1,0 +1,53 @@
+import {chromium} from 'playwright';
+import {readFile,writeFile} from 'node:fs/promises';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import assert from 'node:assert/strict';
+const run=promisify(execFile),adb='<USER_HOME>/AppData/Local/Temp/vto-android/sdk/platform-tools/adb.exe';
+const fixture=JSON.parse(await readFile(new URL('./expected-windows.json',import.meta.url)));
+const browser=await chromium.connectOverCDP('http://127.0.0.1:9226');
+async function wait(read,predicate){const end=Date.now()+15000;do{const value=await read();if(predicate(value))return value;await new Promise(r=>setTimeout(r,200));}while(Date.now()<end);throw new Error('Offline fixture preparation timed out');}
+try {
+  const page=browser.contexts().flatMap(c=>c.pages()).find(p=>p.url().startsWith('http://tauri.localhost'));
+  const account=await page.evaluate(()=>window.__TAURI_INTERNALS__.invoke('get_google_account'));
+  assert.equal(account.state,'signed_in');assert.equal(account.sync_ready,true);const owner=account.generation;
+  const read=()=>page.evaluate(g=>window.__TAURI_INTERNALS__.invoke('get_library',{account_generation:g}),owner);
+  const phone=async(op,...args)=>JSON.parse((await run('python',['artifacts/native-sync-20261115/phone-query.py',op,...args])).stdout);
+  let data=await read();assert.equal(data.videos.filter(v=>v.active).length,0);
+  const lists=data.playlists.filter(p=>p.name.startsWith('LAN '));assert.equal(lists.length,2);
+  for(const list of lists){
+    data=await read();const current=data.playlists.find(p=>p.id===list.id);
+    if(current.entries.includes(fixture.video.key))continue;
+    await page.getByRole('button',{name:`${current.name} (${current.entries.length})`,exact:true}).click();
+    await page.getByRole('combobox',{name:'저장된 영상',exact:true}).selectOption(fixture.video.key);
+    await page.getByRole('button',{name:'저장 영상 추가',exact:true}).click();
+    await wait(read,d=>d.playlists.find(p=>p.id===list.id).entries.includes(fixture.video.key));
+  }
+  await page.getByRole('button',{name:'전체 영상',exact:true}).click();
+  const row=()=>page.locator(`li[data-video-key="${fixture.video.key}"]`);
+  await row().getByRole('button',{name:'영상 삭제',exact:true}).click();
+  await page.getByRole('alertdialog').getByRole('button',{name:'취소',exact:true}).click();
+  assert((await read()).videos.some(v=>v.video_key===fixture.video.key&&v.saved));
+  assert.equal((await phone('saved',fixture.video.key)).matches,true);
+  await run(adb,['-s','<APPROVED_DEVICE>','shell','am','force-stop','dev.vto.overlay']);
+  const pid=(await run(adb,['-s','<APPROVED_DEVICE>','shell','pidof','dev.vto.overlay']).catch(e=>({stdout:''}))).stdout.trim();assert.equal(pid,'');
+  await row().getByRole('button',{name:'영상 삭제',exact:true}).click();
+  await page.getByRole('alertdialog').getByRole('button',{name:'영구 삭제 확인',exact:true}).click();
+  data=await wait(read,d=>!d.videos.some(v=>v.video_key===fixture.video.key));
+  assert(data.videos.some(v=>v.title==='LAN saved android'&&v.saved));
+  assert.equal(data.playlists.length,2);assert(data.playlists.every(p=>!p.entries.includes(fixture.video.key)));
+  assert.equal((await phone('saved',fixture.video.key)).matches,true,'A force-stopped app must not receive deletion');
+  const blocked=await page.evaluate(async({generation,url})=>{
+    try{await window.__TAURI_INTERNALS__.invoke('create_job',{account_generation:generation,page_url:url,media_url:null,title:'LAN saved windows',duration_ms:3000});return false;}
+    catch(e){return e.status===410&&e.error==='video_deleted';}
+  },{generation:owner,url:fixture.video.page_url});assert(blocked,'Deleted video accepted a stale translation request');
+  const list=data.playlists.find(p=>p.name==='LAN home delivered 20261115');assert(list);
+  await page.getByRole('button',{name:`${list.name} (${list.entries.length})`,exact:true}).click();
+  const changed='LAN offline queue 20261115';
+  await page.getByLabel('재생목록 이름',{exact:true}).fill(changed);
+  await page.getByRole('button',{name:'이름 바꾸기',exact:true}).click();
+  await wait(read,d=>d.playlists.find(p=>p.id===list.id).name===changed);
+  assert.equal((await phone('playlist',list.id,changed)).matches,false);
+  const receipt={head:'fc0d072f78248e120db7a7582852add873814cec',deleted_fixture:fixture.video.key,playlist_id:list.id,queued_name:changed,cancel_kept_translation:true,confirmed_delete_removed_two_memberships:true,unrelated_translation_preserved:true,stale_retranslation_refused:true,force_stopped_phone_kept_old_data:true};
+  await writeFile(new URL('./offline-prepared.json',import.meta.url),JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));
+}finally{await browser.close();}

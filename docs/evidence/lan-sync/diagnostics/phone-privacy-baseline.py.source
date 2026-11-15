@@ -1,0 +1,55 @@
+import hashlib
+import json
+import sqlite3
+import subprocess
+from pathlib import Path
+
+root = Path(__file__).resolve().parents[2]
+attempt = Path(__file__).parent / "phone-before-privacy-update-2"
+attempt.mkdir(exist_ok=False)
+adb = "<USER_HOME>/AppData/Local/Temp/vto-android/sdk/platform-tools/adb.exe"
+serial = "<APPROVED_DEVICE>"
+
+def call(*args, optional=False):
+    result = subprocess.run([adb, "-s", serial, *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode and not optional:
+        raise RuntimeError("Phone baseline read failed")
+    return result.stdout if result.returncode == 0 else None
+
+def snapshot(remote, name):
+    folder = attempt / name
+    folder.mkdir()
+    for suffix in ["", "-wal"]:
+        data = call("exec-out", "run-as", "dev.vto.overlay", "cat", remote + suffix, optional=bool(suffix))
+        if data is not None:
+            (folder / ("app.sqlite3" + suffix)).write_bytes(data)
+    db = sqlite3.connect(folder / "app.sqlite3")
+    has_jobs = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='job'").fetchone() is not None
+    active = db.execute("SELECT COUNT(*) FROM job WHERE stage IN ('downloading','writing','translating')").fetchone()[0] if has_jobs else 0
+    ready = db.execute("SELECT COUNT(*) FROM job WHERE stage='ready'").fetchone()[0] if has_jobs else 0
+    tables = {}
+    for (table,) in db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"):
+        safe = table.replace('"', '""')
+        rows = sorted(repr(row) for row in db.execute(f'SELECT * FROM "{safe}"'))
+        tables[table] = hashlib.sha256("\n".join(rows).encode()).hexdigest()
+    db.close()
+    return {"active_jobs":active, "ready_jobs":ready, "tables":tables}
+
+receipt = {"root": snapshot("app.sqlite3", "root"), "accounts":[]}
+paths = call("exec-out", "run-as", "dev.vto.overlay", "find", "sync", "-maxdepth", "2", "-name", "sync.sqlite3").decode().splitlines()
+for index, remote in enumerate(paths):
+    parts = remote.split("/")
+    assert len(parts)==3 and parts[0]=="sync" and len(parts[1])==64 and all(c in "0123456789abcdef" for c in parts[1]) and parts[2]=="sync.sqlite3"
+    receipt["accounts"].append(snapshot(remote, f"account-{index}"))
+assert receipt["root"]["active_jobs"] == 0 and all(account["active_jobs"]==0 for account in receipt["accounts"]), "An active job needs to finish before APK update"
+key = call("exec-out", "run-as", "dev.vto.overlay", "cat", "shared_prefs/vto-key.xml")
+(attempt / "vto-key.xml").write_bytes(key)
+receipt["gemini_sealed_sha256"] = hashlib.sha256(key).hexdigest()
+package = call("shell", "pm", "path", "dev.vto.overlay").decode().strip()
+assert package.startswith("package:/data/app/") and package.endswith("/base.apk") and "\n" not in package
+result = subprocess.run([adb, "-s", serial, "pull", package.removeprefix("package:"), str(attempt / "installed.apk")], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+assert result.returncode==0, "Installed APK backup failed"
+with (attempt / "installed.apk").open("rb") as stream:
+    receipt["installed_apk_sha256"] = hashlib.file_digest(stream, "sha256").hexdigest()
+(attempt / "baseline.json").write_text(json.dumps(receipt, indent=2)+"\n", encoding="utf-8")
+print(json.dumps({"root_active_jobs":receipt["root"]["active_jobs"], "root_ready_jobs":receipt["root"]["ready_jobs"], "account_databases":len(receipt["accounts"]), "backup_complete":True}))

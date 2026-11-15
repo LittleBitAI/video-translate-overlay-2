@@ -1,0 +1,31 @@
+{
+  "video": {
+    "key": "c7b8358948e4f79aeaf7844876a15af77c77edbf9379cb0db3b79f14bc3c8cb2",
+    "page_url": "http://192.168.0.3:8139/native-sync/android",
+    "title": "LAN saved android"
+  },
+  "duration_ms": 3000,
+  "source_language": "en",
+  "terms": [
+    {
+      "source": "attention",
+      "target": "어텐션"
+    }
+  ],
+  "model": "gemini-3.1-flash-lite",
+  "cost_krw": 18.5,
+  "cues": [
+    {
+      "start_ms": 0,
+      "end_ms": 1000,
+      "source_text": "android original first",
+      "text_ko": "android 저장 자막 첫 구간"
+    },
+    {
+      "start_ms": 1000,
+      "end_ms": 3000,
+      "source_text": "android original second",
+      "text_ko": "android 저장 자막 둘째 구간"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+import {chromium} from 'playwright';
+import {readFile,writeFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+
+const fixture=JSON.parse(await readFile(new URL('./expected-windows.json',import.meta.url)));
+const browsers=[];
+const receipt={head:'fc0d072f78248e120db7a7582852add873814cec',checks:[]};
+async function poll(read,predicate,label) {
+  const deadline=Date.now()+15000;
+  do {const value=await read();if(predicate(value))return value;await new Promise(r=>setTimeout(r,200));}while(Date.now()<deadline);
+  throw new Error(label);
+}
+try {
+  const devices=[];
+  for(const [name,port] of [['windows',9226],['android',9227]]) {
+    const browser=await chromium.connectOverCDP(`http://127.0.0.1:${port}`);browsers.push(browser);
+    const context=browser.contexts()[0];
+    const page=context.pages().find(p=>p.url().startsWith('http://tauri.localhost'));
+    const account=await page.evaluate(()=>window.__TAURI_INTERNALS__.invoke('get_google_account'));
+    assert.equal(account.state,'signed_in');assert.equal(account.sync_ready,true);
+    devices.push({name,page,context,owner:account.generation});
+  }
+  const [pc,phone]=devices;
+  async function position(device) {
+    return device.page.evaluate(({url,generation})=>window.__TAURI_INTERNALS__.invoke('get_job',{page_url:url,account_generation:generation,playback_action:'get'}),{url:fixture.video.page_url,generation:device.owner});
+  }
+  async function library(device) {
+    if(!(await device.page.getByRole('heading',{name:'보관함',exact:true}).count())) {
+      await device.page.getByRole('link',{name:'보관함',exact:true}).click();
+    }
+    await device.page.getByRole('button',{name:'전체 영상',exact:true}).click();
+  }
+  async function open(device) {
+    await library(device);
+    const row=device.page.locator('li[data-video-key]').filter({has:device.page.getByRole('heading',{name:fixture.video.title,exact:true})});
+    const existing=device.context.pages().find(p=>p.url()===fixture.video.page_url);
+    const navigation=existing?.waitForEvent('framenavigated',{predicate:frame=>frame===existing.mainFrame()});
+    await row.getByRole('button',{name:'영상 열기',exact:true}).click();
+    if(navigation)await navigation;
+    const site=await poll(async()=>device.context.pages().find(p=>p.url()===fixture.video.page_url),Boolean,`${device.name} site did not open`);
+    await site.waitForLoadState('domcontentloaded');
+    await site.locator('video').waitFor();
+    await poll(()=>site.locator('video').evaluate(v=>({duration:v.duration,ready:v.readyState})),s=>s.ready>=2&&Math.abs(s.duration-3)<0.1,`${device.name} fixture media unavailable`);
+    return site;
+  }
+  const pcSite=await open(pc);
+  await pcSite.locator('[data-vto="overlay"]').waitFor({state:'attached'});
+  await pcSite.locator('video').evaluate(v=>{v.currentTime=1.25;});
+  await poll(()=>position(pc),r=>r.position_ms===1250,'PC position was not saved');
+  await poll(()=>position(phone),r=>r.position_ms===1250,'Phone did not receive PC position');
+  receipt.checks.push('PC user seek persisted and synchronized before opening the phone player');
+  const phoneSite=await open(phone);
+  await poll(()=>phoneSite.locator('video').evaluate(v=>v.currentTime),time=>Math.abs(time-1.25)<0.15,'Phone did not resume at PC position');
+  await poll(()=>phoneSite.locator('[data-vto="subtitle"]').textContent(),text=>text===fixture.cues[1].text_ko,'Phone saved cue did not match original interval');
+  receipt.checks.push('Phone player automatically resumed near 1250 ms and displayed the saved second cue');
+  const forbidden=await phoneSite.evaluate(async()=>{
+    const result={};
+    for(const command of ['get_settings','get_google_account','get_library']) {
+      try {await window.__TAURI_INTERNALS__.invoke(command,{account_generation:2});result[command]=false;}
+      catch {result[command]=true;}
+    }
+    return result;
+  });
+  assert(Object.values(forbidden).every(Boolean));
+  receipt.checks.push('Actual Android site page was denied settings, account status and library commands');
+  await phoneSite.locator('video').evaluate(v=>{v.currentTime=2;});
+  await poll(()=>position(pc),r=>r.position_ms===2000,'PC did not receive phone position');
+  assert(Math.abs(await pcSite.locator('video').evaluate(v=>v.currentTime)-1.25)<0.15,'Remote position unexpectedly moved a controlled PC player');
+  receipt.checks.push('Phone seek synchronized to PC storage without moving its already controlled player');
+  await pcSite.screenshot({path:'artifacts/native-sync-20261115/windows-player.png'});
+  await phoneSite.screenshot({path:'artifacts/native-sync-20261115/android-player.png'});
+  const navigation=pcSite.waitForEvent('framenavigated',{predicate:frame=>frame===pcSite.mainFrame()});
+  await open(pc);
+  await navigation;
+  await poll(()=>pcSite.locator('video').evaluate(v=>v.currentTime),time=>Math.abs(time-2)<0.15,'Reopened PC did not resume phone position');
+  receipt.checks.push('Reopened PC player resumed near the phone’s saved 2000 ms position');
+  await phoneSite.goto('http://tauri.localhost/');
+  await phoneSite.getByRole('link',{name:'보관함',exact:true}).waitFor();
+  await writeFile(new URL('./playback-flow.json',import.meta.url),JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));
+} finally {for(const browser of browsers)await browser.close();}

@@ -1,0 +1,44 @@
+import {chromium} from 'playwright';
+import {readFile,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import assert from 'node:assert/strict';
+const device=process.argv[2];assert(['windows','android'].includes(device));
+const baseline=JSON.parse(await readFile(new URL('./account-session-baseline.json',import.meta.url)));
+const second=JSON.parse(await readFile(new URL('./account-two-session.json',import.meta.url)));
+const digest=email=>createHash('sha256').update(baseline.salt+'\0'+email).digest('hex');
+const b=await chromium.connectOverCDP(`http://127.0.0.1:${device==='windows'?9226:9227}`);
+let watching=true;
+try{
+  const p=b.contexts().flatMap(c=>c.pages()).find(p=>p.url().startsWith('http://tauri.localhost'));assert(p);
+  const call=(name,args)=>p.evaluate(({name,args})=>window.__TAURI_INTERNALS__.invoke(name,args),{name,args});
+  const before=await call('get_google_account');assert.equal(before.state,'signed_in');assert.equal(digest(before.email),second.account2_digest);
+  let final;const states=[];
+  const watch=(async()=>{
+    const deadline=Date.now()+165000;
+    while(watching&&Date.now()<deadline){
+      const a=await call('get_google_account');const observation={state:a.state,generation:a.generation,connection:a.connection?.state??null};
+      if(JSON.stringify(states.at(-1))!==JSON.stringify(observation))states.push(observation);
+      if(a.generation>=before.generation+2&&a.state==='signed_in'){final=a;return;}
+      if(a.generation>=before.generation+2&&!['signing_in','loading'].includes(a.state)){final=a;return;}
+      await p.waitForTimeout(500);
+    }
+  })();
+  if(!(await p.locator('section[aria-label="Google 앱 계정"]').count()))await p.getByRole('link',{name:'설정',exact:true}).click();
+  await p.getByRole('button',{name:'Google 계정 로그아웃',exact:true}).click();
+  await p.getByRole('button',{name:'Google 로그아웃 확인',exact:true}).click();
+  await p.getByRole('button',{name:'Google 계정으로 로그인',exact:true}).waitFor();
+  await p.getByRole('button',{name:'Google 계정으로 로그인',exact:true}).click();
+  console.log(JSON.stringify({device,phase:'choose_original_google_account'}));await watch;
+  const result={head:baseline.head,device,state:final?.state??'awaiting_user',observations:states};
+  if(final?.state==='signed_in'){
+    result.original_account=digest(final.email)===baseline.account1_digest;
+    if(result.original_account){
+      const library=await call('get_library',{account_generation:final.generation});
+      assert.equal(library.videos.length,2);assert.equal(library.playlists.length,2);
+      assert.deepEqual(library.videos.map(v=>v.video_key).sort(),baseline.videos.map(v=>v.video_key).sort());
+      assert.deepEqual(library.playlists.map(v=>v.id).sort(),baseline.playlists.map(v=>v.id).sort());
+      result.original_library_retained=true;result.second_account_rows_absent=true;
+    }
+  }
+  await writeFile(new URL(`./account-restore-${device}.json`,import.meta.url),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
+}finally{watching=false;await b.close();}

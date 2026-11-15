@@ -1230,6 +1230,47 @@
         "compiled_head": "c52830bf29506fc57810067cf6f1f5fba2621e09",
         "owned_process_checked": true,
         "server_sha256": "0eb2d95902bf35b179767102bc0167cf469db8b6d22bf109f192d845f70cb483"
+      },
+      "audit": {
+        "sources": [
+          {
+            "path": "scripts/verification/run.mjs",
+            "sha256": "165dc717649e1318ffb89e4e09f2eafd7ad9800973cab200324395930ea330ce"
+          },
+          {
+            "path": "scripts/verification/seed.py",
+            "sha256": "c755edc144426aab90c2f6702a0d869ae3c52174000a96705500ba879bada30b"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/round-one-api.json",
+            "sha256": "b478929c07531332662e0b6f9e0312180c24b5b8f1d3c646224e729623faf781"
+          }
+        ],
+        "actions": [
+          {
+            "id": "saved-reopen",
+            "source": "scripts/verification/run.mjs",
+            "excerpt": "await request('POST', '/browser/open', {url: saved.page_url});"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "saved-reuse",
+            "source": "scripts/verification/run.mjs",
+            "excerpt": "assert.equal(reuse.body.reused, true); assert.equal(reuse.status, 200);",
+            "output": "docs/evidence/lan-sync/machine/round-one-api.json",
+            "field": [
+              "observations",
+              0,
+              "actual"
+            ],
+            "expected": "\"reused\":true",
+            "operator": "contains"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
       }
     },
     {
@@ -1251,6 +1292,55 @@
         "chromium": "149.0.7827.55",
         "owned_process_checked": true,
         "server_sha256": "0eb2d95902bf35b179767102bc0167cf469db8b6d22bf109f192d845f70cb483"
+      },
+      "audit": {
+        "sources": [
+          {
+            "path": "scripts/verification/run.mjs",
+            "sha256": "165dc717649e1318ffb89e4e09f2eafd7ad9800973cab200324395930ea330ce"
+          },
+          {
+            "path": "scripts/verification/library-scenario.mjs",
+            "sha256": "34a696513b201d4a7316cbb9495b98111205009a2adcdd0f18b359d1d836b4cd"
+          },
+          {
+            "path": "scripts/verification/fixture.mjs",
+            "sha256": "21f1d396d7e7b25dad74d9c7a5b439f8bd8344faa11902cedfe788428b31c994"
+          },
+          {
+            "path": "scripts/verification/seed.py",
+            "sha256": "c755edc144426aab90c2f6702a0d869ae3c52174000a96705500ba879bada30b"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/round-one-browser.json",
+            "sha256": "96e3c15bb63f6fd2d7976f1044c5df5f675640e87471f690763537ef1d4828e7"
+          }
+        ],
+        "actions": [
+          {
+            "id": "open-saved",
+            "source": "scripts/verification/library-scenario.mjs",
+            "excerpt": "await click('영상 열기', row('Saved attention'));"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "exact-saved-response",
+            "source": "scripts/verification/library-scenario.mjs",
+            "excerpt": "assert.deepEqual(await call(videoPage, 'GET', `/videos/${saved.video_key}/subtitles`, {}, before.account_generation), subsBefore);",
+            "output": "docs/evidence/lan-sync/machine/round-one-browser.json",
+            "field": [
+              "observations",
+              0,
+              "id"
+            ],
+            "expected": "saved-reuse",
+            "operator": "equal"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
       }
     },
     {
@@ -1270,6 +1360,48 @@
         "compiled_head": "c52830bf29506fc57810067cf6f1f5fba2621e09",
         "owned_launcher_pid": 79424,
         "owned_server_pid": 54624
+      },
+      "audit": {
+        "sources": [
+          {
+            "path": "scripts/verification/live-sync-evidence.mjs",
+            "sha256": "81778f25a641a6601f214d12db6f39e8a81d795513ed52503c7676738289b957"
+          },
+          {
+            "path": "scripts/live.mjs",
+            "sha256": "70d3214fe75dc11e111a4e1be36e8f5d61a7af10592f558f82823ee3058c90f4"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/round-one-live.json",
+            "sha256": "a27e033e264ceb30518dab96656a0a4d251ae53eeb002c35478187651527df5c"
+          }
+        ],
+        "actions": [
+          {
+            "id": "start-live",
+            "source": "scripts/verification/live-sync-evidence.mjs",
+            "excerpt": "const child=spawn(process.execPath,['scripts/live.mjs','--stand-ins'],{windowsHide:true,"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "native-http-denial",
+            "source": "scripts/verification/live-sync-evidence.mjs",
+            "excerpt": "const privacy=await request('POST','/privacy/open');assert.equal(privacy.status,403);assert.equal(privacy.body.error,'native_required');",
+            "output": "docs/evidence/lan-sync/machine/round-one-live.json",
+            "field": [
+              "observations",
+              2,
+              "actual",
+              "status"
+            ],
+            "expected": 403,
+            "operator": "equal"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
       }
     },
     {
@@ -1295,6 +1427,43 @@
         "packaged_apk_sha256": "a223f624956fe674bd3a8bd85c596d2f2ba9f51704c224b6ba9e9fa0fbe05416",
         "compiled_core": "ff30ca80e0acd1af7c0ec110705ae8dc5d94d881",
         "compiled_screen": "ff30ca80e0acd1af7c0ec110705ae8dc5d94d881"
+      },
+      "audit": {
+        "sources": [
+          {
+            "path": "scripts/verification/sync-native-evidence.mjs",
+            "sha256": "a0f83fc9deec0363a3fa12ace1d46c058a65d3b176ca541ab36361a2b822d196"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/round-one-native.json",
+            "sha256": "0a6acdcffe146d932a4ddc6cb27d743bdbe5722b31f5e5e723448ae62a153841"
+          }
+        ],
+        "actions": [
+          {
+            "id": "rename-native",
+            "source": "scripts/verification/sync-native-evidence.mjs",
+            "excerpt": "const start=Date.now();await rename(marker);"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "restored-fixture-data",
+            "source": "scripts/verification/sync-native-evidence.mjs",
+            "excerpt": "for(const device of devices)assert(isDeepStrictEqual(await device.read(),device.initial),'Fixture state must be restored');",
+            "output": "docs/evidence/lan-sync/machine/round-one-native.json",
+            "field": [
+              "observations",
+              5,
+              "actual"
+            ],
+            "expected": true,
+            "operator": "equal"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
       }
     },
     {
@@ -1311,6 +1480,55 @@
         "node": "v24.18.0",
         "rust": "rustc 1.98.1 (48a229cea 2026-09-01)",
         "stand_ins": true
+      },
+      "audit": {
+        "sources": [
+          {
+            "path": "src-tauri/src/sync_tls_tests.rs",
+            "sha256": "b1b98cb747f98471b1b3126f0b1f16a139002ac2e3c11bd33f2102dc5295350d"
+          },
+          {
+            "path": "src-tauri/src/sync_channel_tests.rs",
+            "sha256": "04c6304da5d3991ea4d124e3a4b5a2560089d6173eaa8083a53d0bc410d0840e"
+          },
+          {
+            "path": "src-tauri/src/sync_discovery_tests.rs",
+            "sha256": "7cfa77385b33099a9d72149af8d06afe248766ab691b0723b040f08dcfb14e3b"
+          },
+          {
+            "path": "src-tauri/src/sync_runtime_tests.rs",
+            "sha256": "af26f7d9f0f05136ed5dc41a44288dc8eddf6caec6ef8706cbbd553aee3984c9"
+          },
+          {
+            "path": "src-tauri/src/sync_cleanup_tests.rs",
+            "sha256": "a32a8c169c8d498246db4942381d45e359e711278fbd1669b305a19b013ca745"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/round-one-offline.log",
+            "sha256": "5627236506a704aaee7b10a0d36b11b6c10de28552e608575516d1e710a9f83c"
+          }
+        ],
+        "actions": [
+          {
+            "id": "peer-verification",
+            "source": "src-tauri/src/sync_tls_tests.rs",
+            "excerpt": "assert!(PeerCertificate::from_tls(&client).is_err());"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "transport-tests",
+            "source": "src-tauri/src/sync_tls_tests.rs",
+            "excerpt": "assert!(PeerCertificate::from_tls(&client).is_err());",
+            "output": "docs/evidence/lan-sync/machine/round-one-offline.log",
+            "field": [],
+            "expected": "test result: ok. 24 passed; 0 failed; 0 ignored",
+            "operator": "contains"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
       }
     },
     {
@@ -1327,6 +1545,39 @@
         "node": "v24.18.0",
         "rust": "rustc 1.98.1 (48a229cea 2026-09-01)",
         "stand_ins": true
+      },
+      "audit": {
+        "sources": [
+          {
+            "path": "src-tauri/src/sync_store_tests.rs",
+            "sha256": "df2ded483b0b5e62ba9691a5e993da04b013443213a53d0765eae608e5edd187"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/round-one-projection.log",
+            "sha256": "97a580adc53a8233467aec8e3455bd56063d254930423a47b12bb0028d5f653d"
+          }
+        ],
+        "actions": [
+          {
+            "id": "projection-cursor",
+            "source": "src-tauri/src/sync_store_tests.rs",
+            "excerpt": "assert_eq!(second.cursor(first.replica()).unwrap(), checkpoint);"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "projection-tests",
+            "source": "src-tauri/src/sync_store_tests.rs",
+            "excerpt": "assert_eq!(second.cursor(first.replica()).unwrap(), checkpoint);",
+            "output": "docs/evidence/lan-sync/machine/round-one-projection.log",
+            "field": [],
+            "expected": "test result: ok. 13 passed; 0 failed; 0 ignored",
+            "operator": "contains"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
       }
     },
     {
@@ -1394,7 +1645,92 @@
         "src-tauri/src/web_tests.rs",
         "src/ui/GoogleAccount.svelte",
         "src/ui/api.ts"
-      ]
+      ],
+      "audit": {
+        "sources": [
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/completed-flow.mjs.source",
+            "sha256": "ef2485e51b39d3d1a2c9639866567f5b1497fca73ae9730ad5fadb9679f8f617"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/version-flow.mjs.source",
+            "sha256": "50635024b00a611260e2ab5b18d77b7fc5ed1e2f57d52092ae5d3e38ed85506b"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/seed-completed.py.source",
+            "sha256": "611cb59ba51ffc287237ce4388f978619e181af8ed5f046a475f7189e0ee59d3"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/sql-fixture.c.source",
+            "sha256": "caeb606974fbbdb7ee5b362553bbea64862f1729794e73dd48f00b648011a175"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/expected-windows.json",
+            "sha256": "11bf6f0cea28d3b036e5c7f2167ac5febb352cfdb9508666c2768d561b498605"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/expected-android.json",
+            "sha256": "f0914336f1d92d0e62d2bd2cfb90637e291d96650af90a784d2cec7d5550def7"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/expected-alternate-windows.json",
+            "sha256": "6f2c8e523f85ac693bf55776d7f798eda95e5464bf18b59e7034318418403f37"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/completed-flow.json",
+            "sha256": "2f6304707a4d36031cf1c4660b85e36436a4c5e18a6ef7d680d0b020aeba0fc4"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/version-flow.json",
+            "sha256": "815b7293bb4b90326f098140e6ea4d2b3859450183aca9865c36bf3315e02692"
+          }
+        ],
+        "actions": [
+          {
+            "id": "select-version",
+            "source": "docs/evidence/lan-sync/diagnostics/version-flow.mjs.source",
+            "excerpt": "await selector.selectOption(original);"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "exact-cues",
+            "source": "docs/evidence/lan-sync/diagnostics/completed-flow.mjs.source",
+            "excerpt": "assert.deepEqual(saved.subtitles.cues.map(c=>[c.start_ms,c.end_ms,c.text_ko]),fixture.cues.map(c=>[c.start_ms,c.end_ms,c.text_ko]));",
+            "output": "docs/evidence/lan-sync/machine/completed-flow.json",
+            "field": [
+              "checks",
+              0,
+              "intervals"
+            ],
+            "expected": [
+              [
+                0,
+                1000
+              ],
+              [
+                1000,
+                3000
+              ]
+            ],
+            "operator": "equal"
+          },
+          {
+            "id": "retained-versions",
+            "source": "docs/evidence/lan-sync/diagnostics/version-flow.mjs.source",
+            "excerpt": "assert.equal(video.versions.length,2);assert.equal(video.versions.find(v=>v.selected).id,original);",
+            "output": "docs/evidence/lan-sync/machine/version-flow.json",
+            "field": [
+              "retained_versions"
+            ],
+            "expected": 2,
+            "operator": "equal"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
     },
     {
       "id": "reused-playback",
@@ -1465,7 +1801,92 @@
         "src-tauri/src/web_tests.rs",
         "src/ui/GoogleAccount.svelte",
         "src/ui/api.ts"
-      ]
+      ],
+      "native_flow": "playback",
+      "audit": {
+        "sources": [
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/playback-flow.mjs.source",
+            "sha256": "4d55979b38a8f8b0960da4c60b9557f486efa676bc39aeefaeef68788846ac4a"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/expected-windows.json",
+            "sha256": "11bf6f0cea28d3b036e5c7f2167ac5febb352cfdb9508666c2768d561b498605"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/playback-flow.json",
+            "sha256": "f8e2891b4be6d081a27537f1c877c9ddc586cf7965517cff6b62f0c7c24842ff"
+          }
+        ],
+        "actions": [
+          {
+            "id": "seek-pc",
+            "source": "docs/evidence/lan-sync/diagnostics/playback-flow.mjs.source",
+            "excerpt": "await pcSite.locator('video').evaluate(v=>{v.currentTime=1.25;});"
+          },
+          {
+            "id": "seek-phone",
+            "source": "docs/evidence/lan-sync/diagnostics/playback-flow.mjs.source",
+            "excerpt": "await phoneSite.locator('video').evaluate(v=>{v.currentTime=2;});"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "pc-position",
+            "source": "docs/evidence/lan-sync/diagnostics/playback-flow.mjs.source",
+            "excerpt": "await poll(()=>position(phone),r=>r.position_ms===1250,'Phone did not receive PC position');",
+            "output": "docs/evidence/lan-sync/machine/playback-flow.json",
+            "field": [
+              "checks",
+              0
+            ],
+            "expected": "PC user seek persisted and synchronized before opening the phone player",
+            "operator": "equal",
+            "failure_excerpt": "throw new Error(label);"
+          },
+          {
+            "id": "phone-resume",
+            "source": "docs/evidence/lan-sync/diagnostics/playback-flow.mjs.source",
+            "excerpt": "await poll(()=>phoneSite.locator('video').evaluate(v=>v.currentTime),time=>Math.abs(time-1.25)<0.15,'Phone did not resume at PC position');",
+            "output": "docs/evidence/lan-sync/machine/playback-flow.json",
+            "field": [
+              "checks",
+              1
+            ],
+            "expected": "Phone player automatically resumed near 1250 ms and displayed the saved second cue",
+            "operator": "equal",
+            "failure_excerpt": "throw new Error(label);"
+          },
+          {
+            "id": "controlled-player",
+            "source": "docs/evidence/lan-sync/diagnostics/playback-flow.mjs.source",
+            "excerpt": "assert(Math.abs(await pcSite.locator('video').evaluate(v=>v.currentTime)-1.25)<0.15,'Remote position unexpectedly moved a controlled PC player');",
+            "output": "docs/evidence/lan-sync/machine/playback-flow.json",
+            "field": [
+              "checks",
+              3
+            ],
+            "expected": "Phone seek synchronized to PC storage without moving its already controlled player",
+            "operator": "equal"
+          },
+          {
+            "id": "pc-reopen",
+            "source": "docs/evidence/lan-sync/diagnostics/playback-flow.mjs.source",
+            "excerpt": "await poll(()=>pcSite.locator('video').evaluate(v=>v.currentTime),time=>Math.abs(time-2)<0.15,'Reopened PC did not resume phone position');",
+            "output": "docs/evidence/lan-sync/machine/playback-flow.json",
+            "field": [
+              "checks",
+              4
+            ],
+            "expected": "Reopened PC player resumed near the phone’s saved 2000 ms position",
+            "operator": "equal",
+            "failure_excerpt": "throw new Error(label);"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
     },
     {
       "id": "reused-deletion-and-restart",
@@ -1532,7 +1953,161 @@
         "src-tauri/src/web_tests.rs",
         "src/ui/GoogleAccount.svelte",
         "src/ui/api.ts"
-      ]
+      ],
+      "native_flow": "deletion_restart",
+      "audit": {
+        "sources": [
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/offline-prepare.mjs.source",
+            "sha256": "39509ac2c7e5debda86272f27e68bc71268ad6c16f6254dce6f9acd3c2ac7222"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/restart-flow.mjs.source",
+            "sha256": "22d3b8a4b70e107cf4ec364a356e49a84bd824c388c15b3cb12da4351656f027"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/online-delete-flow.mjs.source",
+            "sha256": "dfc7c14cd3880dc5ea4a469effa4d43c7e379ccd12343b1d7ef3101ae28179a2"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/phone-query.py.source",
+            "sha256": "53ff68593ee4f5fd1614559a383bf586f170e73e1ae28a3acc6ba9d2723b88a8"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/sql-fixture.c.source",
+            "sha256": "caeb606974fbbdb7ee5b362553bbea64862f1729794e73dd48f00b648011a175"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/close-windows.py.source",
+            "sha256": "1a534044eec23156ef28ff6115ee55ae164fd04c73f9ea28e291843345c9ec18"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/expected-windows.json",
+            "sha256": "11bf6f0cea28d3b036e5c7f2167ac5febb352cfdb9508666c2768d561b498605"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/expected-android.json",
+            "sha256": "f0914336f1d92d0e62d2bd2cfb90637e291d96650af90a784d2cec7d5550def7"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/offline-prepared.json",
+            "sha256": "5b57233714efea53483c78c50a4052240ee40f6456ec2ed9ef580c019f1f129c"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/windows-restart.json",
+            "sha256": "66985a12bd9fe78ce9a806b721f30068e27a7ed9fe6a193252f9ac97a4522bbe"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/android-restart.json",
+            "sha256": "bee298f326f4d4f9cd892225c7b10a6052dfe18fd15a298512c9bdfa0f3bb73d"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/online-delete-flow.json",
+            "sha256": "4da2567845f9309f94105b584946fe977188a170140b22cd4b7c87247db5f2f4"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/windows-shutdown.json",
+            "sha256": "05fd05b7bfe178e1dc97298a615093cbfa87724019fa6b5368a2ff90956c0e74"
+          }
+        ],
+        "actions": [
+          {
+            "id": "cancel-ui",
+            "source": "docs/evidence/lan-sync/diagnostics/offline-prepare.mjs.source",
+            "excerpt": "await page.getByRole('alertdialog').getByRole('button',{name:'취소',exact:true}).click();"
+          },
+          {
+            "id": "delete-ui",
+            "source": "docs/evidence/lan-sync/diagnostics/offline-prepare.mjs.source",
+            "excerpt": "await page.getByRole('alertdialog').getByRole('button',{name:'영구 삭제 확인',exact:true}).click();"
+          },
+          {
+            "id": "close-owned-windows",
+            "source": "docs/evidence/lan-sync/diagnostics/close-windows.py.source",
+            "excerpt": "for window in windows:assert user.PostMessageW(window,0x0010,0,0)"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "cancel",
+            "source": "docs/evidence/lan-sync/diagnostics/offline-prepare.mjs.source",
+            "excerpt": "assert((await read()).videos.some(v=>v.video_key===fixture.video.key&&v.saved));",
+            "output": "docs/evidence/lan-sync/machine/offline-prepared.json",
+            "field": [
+              "cancel_kept_translation"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "memberships",
+            "source": "docs/evidence/lan-sync/diagnostics/offline-prepare.mjs.source",
+            "excerpt": "assert.equal(data.playlists.length,2);assert(data.playlists.every(p=>!p.entries.includes(fixture.video.key)));",
+            "output": "docs/evidence/lan-sync/machine/offline-prepared.json",
+            "field": [
+              "confirmed_delete_removed_two_memberships"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "stale-request",
+            "source": "docs/evidence/lan-sync/diagnostics/offline-prepare.mjs.source",
+            "excerpt": "},{generation:owner,url:fixture.video.page_url});assert(blocked,'Deleted video accepted a stale translation request');",
+            "output": "docs/evidence/lan-sync/machine/offline-prepared.json",
+            "field": [
+              "stale_retranslation_refused"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "windows-restart",
+            "source": "docs/evidence/lan-sync/diagnostics/restart-flow.mjs.source",
+            "excerpt": "assert(!library.videos.some(v=>v.video_key===prepared.deleted_fixture));",
+            "output": "docs/evidence/lan-sync/machine/windows-restart.json",
+            "field": [
+              "deletion_retained"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "android-restart",
+            "source": "docs/evidence/lan-sync/diagnostics/restart-flow.mjs.source",
+            "excerpt": "assert.equal(library.playlists.find(p=>p.id===prepared.playlist_id)?.name,prepared.queued_name);",
+            "output": "docs/evidence/lan-sync/machine/android-restart.json",
+            "field": [
+              "queued_rename_retained"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "unrelated-cues",
+            "source": "docs/evidence/lan-sync/diagnostics/restart-flow.mjs.source",
+            "excerpt": "assert.deepEqual(saved.subtitles.cues.map(c=>[c.start_ms,c.end_ms,c.text_ko]),expected.cues.map(c=>[c.start_ms,c.end_ms,c.text_ko]));",
+            "output": "docs/evidence/lan-sync/machine/android-restart.json",
+            "field": [
+              "unrelated_intervals"
+            ],
+            "expected": [
+              [
+                0,
+                1000
+              ],
+              [
+                1000,
+                3000
+              ]
+            ],
+            "operator": "equal"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
     },
     {
       "id": "reused-screen-off",
@@ -1597,7 +2172,106 @@
         "src-tauri/src/web_tests.rs",
         "src/ui/GoogleAccount.svelte",
         "src/ui/api.ts"
-      ]
+      ],
+      "native_flow": "screen_off",
+      "audit": {
+        "sources": [
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/screen-off-flow.mjs.source",
+            "sha256": "4856664c35d3ef02a17d455392a7e4832ac9eb72597bc1bb786052b21f942704"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/phone-query.py.source",
+            "sha256": "53ff68593ee4f5fd1614559a383bf586f170e73e1ae28a3acc6ba9d2723b88a8"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/sql-fixture.c.source",
+            "sha256": "caeb606974fbbdb7ee5b362553bbea64862f1729794e73dd48f00b648011a175"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/screen-off-flow.json",
+            "sha256": "3d0b0c99ab9064236737b1ba1dc100256e5a0ab5c5b68083cc88b84b8d5020f5"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/home-flow.json",
+            "sha256": "4c0c1d8296ee529816fb91ab68fd1c3c7c02b37ce46837e68af216118de38b9a"
+          }
+        ],
+        "actions": [
+          {
+            "id": "screen-off",
+            "source": "docs/evidence/lan-sync/diagnostics/screen-off-flow.mjs.source",
+            "excerpt": "await shell('input','keyevent','KEYCODE_SLEEP');asleep=true;"
+          },
+          {
+            "id": "rename-while-off",
+            "source": "docs/evidence/lan-sync/diagnostics/screen-off-flow.mjs.source",
+            "excerpt": "const started=Date.now();await page.getByRole('button',{name:'이름 바꾸기',exact:true}).click();"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "display-off",
+            "source": "docs/evidence/lan-sync/diagnostics/screen-off-flow.mjs.source",
+            "excerpt": "assert(/^  mScreenState=OFF\\s*$/m.test(display),'The display was not off');",
+            "output": "docs/evidence/lan-sync/machine/screen-off-flow.json",
+            "field": [
+              "display_state"
+            ],
+            "expected": "OFF",
+            "operator": "equal"
+          },
+          {
+            "id": "noninteractive",
+            "source": "docs/evidence/lan-sync/diagnostics/screen-off-flow.mjs.source",
+            "excerpt": "assert(power.includes('mHalInteractiveModeEnabled=false'),'Interactive mode remained enabled');",
+            "output": "docs/evidence/lan-sync/machine/screen-off-flow.json",
+            "field": [
+              "interactive_mode"
+            ],
+            "expected": false,
+            "operator": "equal"
+          },
+          {
+            "id": "foreground-service",
+            "source": "docs/evidence/lan-sync/diagnostics/screen-off-flow.mjs.source",
+            "excerpt": "assert(services.includes('dev.vto.overlay/.SyncService')&&services.includes('isForeground=true')&&services.includes('foregroundId=2002'));",
+            "output": "docs/evidence/lan-sync/machine/screen-off-flow.json",
+            "field": [
+              "connection_notification_id"
+            ],
+            "expected": 2002,
+            "operator": "equal"
+          },
+          {
+            "id": "delivery",
+            "source": "docs/evidence/lan-sync/diagnostics/screen-off-flow.mjs.source",
+            "excerpt": "assert(result.matches,'Native sync failed while the screen was off');await asleepNow();",
+            "output": "docs/evidence/lan-sync/machine/screen-off-flow.json",
+            "field": [
+              "changes",
+              0,
+              "delivery_ms"
+            ],
+            "expected": 2695,
+            "operator": "equal"
+          },
+          {
+            "id": "network",
+            "source": "docs/evidence/lan-sync/diagnostics/screen-off-flow.mjs.source",
+            "excerpt": "const addresses=await shell('ip','-4','addr','show');assert(addresses.includes('192.168.0.2/24')&&!addresses.includes('usb0:'));",
+            "output": "docs/evidence/lan-sync/machine/screen-off-flow.json",
+            "field": [
+              "usb_tether_interface_absent"
+            ],
+            "expected": true,
+            "operator": "equal"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
     },
     {
       "id": "reused-two-real-accounts",
@@ -1662,7 +2336,175 @@
         "src-tauri/src/web_tests.rs",
         "src/ui/GoogleAccount.svelte",
         "src/ui/api.ts"
-      ]
+      ],
+      "native_flow": "account_isolation",
+      "audit": {
+        "sources": [
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/account-two-windows.mjs.source",
+            "sha256": "e8c0409455114fc373e76636c394040e0d8611458fd26869e2ef83d8b6b57a6e"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/account-mismatch.mjs.source",
+            "sha256": "afbc7231a10edeeaecbda148d22aee756f41a95a8390a110b9008f96e971a486"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/account-two-phone.mjs.source",
+            "sha256": "35341f7d71bba0d432a8c992d489ca9b35e9518b286d33693bf1a44b72c7a8ce"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/account-two-transfer.mjs.source",
+            "sha256": "98d6c39198a177b4ac8b36585524003725447690431c00a06be0f8632818f118"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/account-restore.mjs.source",
+            "sha256": "6b08841b944387c86581633dbafbc05f44c573052b3cc147cf0736dacba61c35"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/account-restored-flow.mjs.source",
+            "sha256": "d4efdeb9b9ae7a0ba6d0d79dc2ba624965edf186f75322328ce6815f7c8fa63c"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/account-store-audit.py.source",
+            "sha256": "7b58f7c38a6587c80c9de643f2f83284ff435d113251461a8cf4c459a307727a"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/sql-fixture.c.source",
+            "sha256": "caeb606974fbbdb7ee5b362553bbea64862f1729794e73dd48f00b648011a175"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/account-two-windows.json",
+            "sha256": "514ca79a4f47eaeaddffe698311d16187d89bb9805fd7f021ea3d5c0d0e89a6e"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/account-mismatch.json",
+            "sha256": "003ece71e5a0153817b6880569d093f6cb004c8c5ff33b3dcaefc8089e08b599"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/account-two-phone.json",
+            "sha256": "b8b033956d68549832d7c8f89da7d3a2ff53d934d912270e5b24304b743faaa5"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/account-two-transfer.json",
+            "sha256": "6f8656504d25499e15b737ffce9e1b32c050d488d4d7f2ec1d74e1bd5eab6731"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/account-restore-windows.json",
+            "sha256": "c4463fdd21c8749a48c0254c70a2ebcb0559faa1afe3647045f4e0b622a60a19"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/account-restore-android.json",
+            "sha256": "72a3940d1e198bfcd28f15a1a96c3ee2eff5323d533975c3f8de349ffaa36147"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/account-restored-flow.json",
+            "sha256": "f6bc919f6e84ba9ac05e6e67355db2d6db21866db52feb30b2b7d7fb43c19126"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/account-store-audit.json",
+            "sha256": "6f9661143bcd10b32d86088561bdd5a871761e86d66580a6e80f6973bc1f9bb5"
+          }
+        ],
+        "actions": [
+          {
+            "id": "mismatched-account-marker",
+            "source": "docs/evidence/lan-sync/diagnostics/account-mismatch.mjs.source",
+            "excerpt": "await pc.p.getByRole('button',{name:'재생목록 만들기',exact:true}).click();"
+          },
+          {
+            "id": "queued-old-account-edit",
+            "source": "docs/evidence/lan-sync/diagnostics/account-mismatch.mjs.source",
+            "excerpt": "await phone.p.getByRole('button',{name:'이름 바꾸기',exact:true}).click();"
+          },
+          {
+            "id": "user-assisted-account-choice",
+            "source": "docs/evidence/lan-sync/diagnostics/account-two-phone.mjs.source",
+            "excerpt": "await p.getByRole('button',{name:'Google 계정으로 로그인',exact:true}).click();"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "different-accounts",
+            "source": "docs/evidence/lan-sync/diagnostics/account-mismatch.mjs.source",
+            "excerpt": "assert.equal(digest(a.email)===baseline.account1_digest,name==='android');",
+            "output": "docs/evidence/lan-sync/machine/account-mismatch.json",
+            "field": [
+              "different_verified_accounts"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "windows-isolation",
+            "source": "docs/evidence/lan-sync/diagnostics/account-mismatch.mjs.source",
+            "excerpt": "assert.equal(second.videos.length,0);assert.equal(second.playlists.length,1);assert.equal(second.playlists[0].name,marker);",
+            "output": "docs/evidence/lan-sync/machine/account-mismatch.json",
+            "field": [
+              "account_one_not_visible_in_account_two"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "android-isolation",
+            "source": "docs/evidence/lan-sync/diagnostics/account-mismatch.mjs.source",
+            "excerpt": "assert.equal(original.videos.length,2);assert.equal(original.playlists.length,2);assert(!original.playlists.some(p=>p.name===marker));",
+            "output": "docs/evidence/lan-sync/machine/account-mismatch.json",
+            "field": [
+              "account_two_not_visible_in_account_one"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "old-queue",
+            "source": "docs/evidence/lan-sync/diagnostics/account-mismatch.mjs.source",
+            "excerpt": "assert.equal(original.playlists.find(p=>p.id===list.id)?.name,isolated);",
+            "output": "docs/evidence/lan-sync/machine/account-mismatch.json",
+            "field": [
+              "old_account_changes_not_sent_to_new_account"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "matching-account",
+            "source": "docs/evidence/lan-sync/diagnostics/account-two-phone.mjs.source",
+            "excerpt": "assert.equal(library.playlists[0].id,mismatch.account_two_marker);assert.equal(library.playlists[0].name,mismatch.account_two_marker_name);",
+            "output": "docs/evidence/lan-sync/machine/account-two-phone.json",
+            "field": [
+              "account_two_marker_received"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "separate-stores",
+            "source": "docs/evidence/lan-sync/diagnostics/account-store-audit.py.source",
+            "excerpt": "assert db.execute(sql).fetchone()==(1,),'Windows account data was lost or mixed'",
+            "output": "docs/evidence/lan-sync/machine/account-store-audit.json",
+            "field": [
+              "no_cross_account_rows"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "restore-original",
+            "source": "docs/evidence/lan-sync/diagnostics/account-restore.mjs.source",
+            "excerpt": "assert.deepEqual(library.videos.map(v=>v.video_key).sort(),baseline.videos.map(v=>v.video_key).sort());",
+            "output": "docs/evidence/lan-sync/machine/account-restore-windows.json",
+            "field": [
+              "original_library_retained"
+            ],
+            "expected": true,
+            "operator": "equal"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
     },
     {
       "id": "reused-policy-and-retention",
@@ -1687,7 +2529,77 @@
       "reuse_reason": "The complete application input inventory is identical to the current candidate. These are earlier observations, not newly executed privacy navigation or an APK update in this repair.",
       "other_changed_application_inputs": [
         "src-tauri/README.md"
-      ]
+      ],
+      "audit": {
+        "sources": [
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/privacy-native.mjs.source",
+            "sha256": "2f019446e0b6cc5ed548474afc24ee81a94ec333d6728394bc8db6af6f0b02d7"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/observe-windows-policy.ps1.source",
+            "sha256": "2f96568be74e6a041104c611956ca1965b5660a65c10637ff5574903e745bfb3"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/observe-android-policy.py.source",
+            "sha256": "427099eb69a40bfe5725410b2ca016b13a2aba239c89b673a22fd8ec9e9d8d04"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/phone-privacy-retention.py.source",
+            "sha256": "a060e7773223950e855233720d4f02c04ff9c53e135b1f6b96bab79d29c5f752"
+          },
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/phone-privacy-baseline.py.source",
+            "sha256": "05018e51a44ab6e0a432cb0a6e10b64759446ac5bf4aa2fd6a8a36525465ca4c"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/windows-policy-native.json",
+            "sha256": "49a06615d1744a07c280deba26c7f461930a20419a23d037e7199418e1684741"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/android-policy-native.json",
+            "sha256": "7b585113c4524ea36eebd1fffaa5dc3cea7e7f8cb66b39b049da6fc596590f31"
+          },
+          {
+            "path": "docs/evidence/lan-sync/machine/phone-retention.json",
+            "sha256": "90635b53d3d3c56690fb039817bf52c169a5f151662e3451f8d3bef630d417f7"
+          }
+        ],
+        "actions": [
+          {
+            "id": "privacy-ui",
+            "source": "docs/evidence/lan-sync/diagnostics/privacy-native.mjs.source",
+            "excerpt": "await button.click();"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "policy-address-bar",
+            "source": "docs/evidence/lan-sync/diagnostics/privacy-native.mjs.source",
+            "excerpt": "assert.equal(external.external_browser_destination,policy);assert.equal(external.observed_in_address_bar,true);",
+            "output": "docs/evidence/lan-sync/machine/android-policy-native.json",
+            "field": [
+              "observed_in_address_bar"
+            ],
+            "expected": true,
+            "operator": "equal"
+          },
+          {
+            "id": "original-library-retained",
+            "source": "docs/evidence/lan-sync/diagnostics/phone-privacy-retention.py.source",
+            "excerpt": "assert hashlib.sha256(\"\\n\".join(rows).encode()).hexdigest()==expected, \"An original library table changed\"",
+            "output": "docs/evidence/lan-sync/machine/phone-retention.json",
+            "field": [
+              "original_library_rows_preserved"
+            ],
+            "expected": true,
+            "operator": "equal"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
     },
     {
       "id": "reused-public-pages",
@@ -1711,7 +2623,56 @@
       "reuse_reason": "The four published files are unchanged. Their anonymous HTTPS response hashes and live browser navigation are preserved; Google configuration is an owner report, not inferred from page availability.",
       "other_changed_application_inputs": [
         "src-tauri/README.md"
-      ]
+      ],
+      "audit": {
+        "sources": [
+          {
+            "path": "docs/evidence/lan-sync/diagnostics/check-live.mjs.source",
+            "sha256": "1234fccda0b4e3920d84d1e1249d2a3777d911233bfed748f4532300cd13c7c8"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "docs/evidence/lan-sync/machine/publication-receipt.json",
+            "sha256": "16669a84bd785f10d16842cad1abcd24a3f114e2105448e5f2b78a4cc546fda3"
+          }
+        ],
+        "actions": [
+          {
+            "id": "anonymous-get",
+            "source": "docs/evidence/lan-sync/diagnostics/check-live.mjs.source",
+            "excerpt": "const response=await fetch(url,{signal:AbortSignal.timeout(15000),redirect:'error'});"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "published-bytes",
+            "source": "docs/evidence/lan-sync/diagnostics/check-live.mjs.source",
+            "excerpt": "assert.equal(createHash('sha256').update(bytes).digest('hex'),asset.sha256,`${asset.name}: published bytes differ`);",
+            "output": "docs/evidence/lan-sync/machine/publication-receipt.json",
+            "field": [
+              "assets",
+              0,
+              "status"
+            ],
+            "expected": 200,
+            "operator": "equal"
+          }
+        ],
+        "provenance": "Sources and retained producer output are reused from the original recorded execution. Archival source views redact only the local home prefix and hardware serial and normalize line endings; they do not alter assertions. Source views are for audit, not commands to run against current user data."
+      }
+    }
+  ],
+  "audit_contract": "Every execution requires hashed diagnostic sources, retained machine output, inspectable actions and executable assertion bindings. Four required native flows have independent assertion coverage; kind coverage alone is insufficient. Earlier executions remain reused observations, not freshly performed Google sign-ins.",
+  "unavailable_attempts": [
+    {
+      "kind": "desktop",
+      "eligible_as_passing_evidence": false,
+      "execution_checkout": "a29d1577da533e4c7dcc267fa0d584f716a88fd8",
+      "command": "node scripts/verification/sync-native-evidence.mjs <compiled-revision> <receipt-path>",
+      "actual": "The probe refused before CDP attachment or app mutations because zero approved phones were connected. The subsequent ADB inventory confirms no connected device. No new native-flow pass is claimed in review round 2.",
+      "output": "docs/evidence/lan-sync/machine/round-two-adb-unavailable.log",
+      "sha256": "64b7402f33254c3fdbe6eff364e661cd1164f8a17f4e247d5f8445757f543162"
     }
   ]
 }

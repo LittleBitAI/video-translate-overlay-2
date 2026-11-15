@@ -1,0 +1,47 @@
+import ctypes
+from ctypes import wintypes
+import json
+from pathlib import Path
+import time
+import sys
+
+pid=int(sys.argv[1])
+kernel=ctypes.WinDLL("kernel32",use_last_error=True)
+user=ctypes.WinDLL("user32",use_last_error=True)
+kernel.OpenProcess.argtypes=[wintypes.DWORD,wintypes.BOOL,wintypes.DWORD]
+kernel.OpenProcess.restype=wintypes.HANDLE
+kernel.QueryFullProcessImageNameW.argtypes=[wintypes.HANDLE,wintypes.DWORD,wintypes.LPWSTR,ctypes.POINTER(wintypes.DWORD)]
+kernel.WaitForSingleObject.argtypes=[wintypes.HANDLE,wintypes.DWORD]
+kernel.WaitForSingleObject.restype=wintypes.DWORD
+kernel.GetExitCodeProcess.argtypes=[wintypes.HANDLE,ctypes.POINTER(wintypes.DWORD)]
+kernel.CloseHandle.argtypes=[wintypes.HANDLE]
+user.GetWindowThreadProcessId.argtypes=[wintypes.HWND,ctypes.POINTER(wintypes.DWORD)]
+user.IsWindowVisible.argtypes=[wintypes.HWND]
+user.PostMessageW.argtypes=[wintypes.HWND,wintypes.UINT,wintypes.WPARAM,wintypes.LPARAM]
+callback_type=ctypes.WINFUNCTYPE(wintypes.BOOL,wintypes.HWND,wintypes.LPARAM)
+user.EnumWindows.argtypes=[callback_type,wintypes.LPARAM]
+handle=kernel.OpenProcess(0x00100000|0x1000,False,pid)
+assert handle,"Owned native process missing"
+try:
+    buffer=ctypes.create_unicode_buffer(32768);length=wintypes.DWORD(len(buffer))
+    assert kernel.QueryFullProcessImageNameW(handle,0,buffer,ctypes.byref(length))
+    expected=Path(__file__).resolve().parents[2]/"target/debug/video-translate-overlay.exe"
+    assert Path(buffer.value).resolve()==expected.resolve(),"Native process ownership mismatch"
+    windows=[]
+    @callback_type
+    def collect(window,unused):
+        owner=wintypes.DWORD()
+        user.GetWindowThreadProcessId(window,ctypes.byref(owner))
+        if owner.value==pid and user.IsWindowVisible(window):windows.append(window)
+        return True
+    assert user.EnumWindows(collect,0)
+    assert windows,"No owned native windows to close"
+    started=time.monotonic()
+    for window in windows:assert user.PostMessageW(window,0x0010,0,0)
+    assert kernel.WaitForSingleObject(handle,15000)==0,"Native shutdown did not finish"
+    code=wintypes.DWORD();assert kernel.GetExitCodeProcess(handle,ctypes.byref(code))
+    assert code.value==0,"Native app did not exit cleanly"
+    receipt={"owned_pid":pid,"closed_windows":len(windows),"exit_code":code.value,"shutdown_ms":round((time.monotonic()-started)*1000)}
+    Path(__file__).with_name("windows-cost-repair-shutdown.json").write_text(json.dumps(receipt,indent=2)+"\n",encoding="utf-8")
+    print(json.dumps(receipt))
+finally:kernel.CloseHandle(handle)

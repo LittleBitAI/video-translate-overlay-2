@@ -1,0 +1,28 @@
+import {readFile,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import assert from 'node:assert/strict';
+import {chromium} from 'playwright';
+const base='https://littlebitai.github.io/video-translate-overlay-2/';
+const manifest=JSON.parse(await readFile('artifacts/branding/publication-manifest.json','utf8'));
+const receipt={source_commit:(await readFile('artifacts/branding/pages-commit.txt','utf8')).trim(),assets:[]};
+for(const asset of manifest){
+  const url=base+(asset.name==='index.html'?'':asset.name);
+  const response=await fetch(url,{signal:AbortSignal.timeout(15000),redirect:'error'});
+  assert.equal(response.status,200,url);assert.equal(response.headers.get('set-cookie'),null);
+  const bytes=Buffer.from(await response.arrayBuffer());
+  assert.equal(createHash('sha256').update(bytes).digest('hex'),asset.sha256,`${asset.name}: published bytes differ`);
+  receipt.assets.push({url,status:response.status,sha256:asset.sha256,anonymous:true});
+}
+const browser=await chromium.launch({headless:true});
+try{
+  const page=await browser.newPage({viewport:{width:384,height:854}});
+  await page.goto(base);await page.getByRole('navigation').getByRole('link',{name:'Privacy policy',exact:true}).click();
+  assert.equal(page.url(),base+'privacy.html');
+  await page.getByRole('heading',{level:1,name:'Video Translate Overlay privacy policy'}).waitFor();
+  await page.getByRole('navigation').getByRole('link',{name:'Home',exact:true}).click();assert.equal(page.url(),base);
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.screenshot({path:'artifacts/branding/published-phone.png',fullPage:true});
+  receipt.live_browser_navigation=true;
+}finally{await browser.close();}
+await writeFile('artifacts/branding/publication-receipt.json',JSON.stringify(receipt,null,2)+'\n');
+console.log(JSON.stringify({anonymous_assets_verified:receipt.assets.length,live_browser_navigation:true,source_commit:receipt.source_commit}));

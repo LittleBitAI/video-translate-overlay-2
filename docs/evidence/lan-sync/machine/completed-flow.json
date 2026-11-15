@@ -1,0 +1,65 @@
+{
+  "head": "fc0d072f78248e120db7a7582852add873814cec",
+  "checks": [
+    {
+      "device": "windows",
+      "fixture": "LAN saved windows",
+      "cost_krw": 12.5,
+      "intervals": [
+        [
+          0,
+          1000
+        ],
+        [
+          1000,
+          3000
+        ]
+      ]
+    },
+    {
+      "device": "windows",
+      "fixture": "LAN saved android",
+      "cost_krw": 18.5,
+      "intervals": [
+        [
+          0,
+          1000
+        ],
+        [
+          1000,
+          3000
+        ]
+      ]
+    },
+    {
+      "device": "android",
+      "fixture": "LAN saved windows",
+      "cost_krw": 12.5,
+      "intervals": [
+        [
+          0,
+          1000
+        ],
+        [
+          1000,
+          3000
+        ]
+      ]
+    },
+    {
+      "device": "android",
+      "fixture": "LAN saved android",
+      "cost_krw": 18.5,
+      "intervals": [
+        [
+          0,
+          1000
+        ],
+        [
+          1000,
+          3000
+        ]
+      ]
+    }
+  ]
+}

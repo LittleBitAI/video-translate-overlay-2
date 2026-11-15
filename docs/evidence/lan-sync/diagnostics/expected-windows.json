@@ -1,0 +1,31 @@
+{
+  "video": {
+    "key": "925492de70b4679854c3dd5f73952be7ce86d9b82e361ae2be463191586cb3bf",
+    "page_url": "http://192.168.0.3:8139/native-sync/windows",
+    "title": "LAN saved windows"
+  },
+  "duration_ms": 3000,
+  "source_language": "en",
+  "terms": [
+    {
+      "source": "attention",
+      "target": "어텐션"
+    }
+  ],
+  "model": "gemini-3.1-flash-lite",
+  "cost_krw": 12.5,
+  "cues": [
+    {
+      "start_ms": 0,
+      "end_ms": 1000,
+      "source_text": "windows original first",
+      "text_ko": "windows 저장 자막 첫 구간"
+    },
+    {
+      "start_ms": 1000,
+      "end_ms": 3000,
+      "source_text": "windows original second",
+      "text_ko": "windows 저장 자막 둘째 구간"
+    }
+  ]
+}

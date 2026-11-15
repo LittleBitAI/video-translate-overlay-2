@@ -1,0 +1,44 @@
+{
+  "source_revision": "c52830bf29506fc57810067cf6f1f5fba2621e09",
+  "observed_at": "2026-11-15T10:10:35.434Z",
+  "environment": {
+    "os": "10.0.26200",
+    "node": "v24.18.0",
+    "stand_ins": true,
+    "binary_sha256": "0eb2d95902bf35b179767102bc0167cf469db8b6d22bf109f192d845f70cb483",
+    "compiled_head": "c52830bf29506fc57810067cf6f1f5fba2621e09",
+    "owned_launcher_pid": 79424,
+    "owned_server_pid": 54624
+  },
+  "observations": [
+    {
+      "name": "actual live command serves its own current-head core",
+      "pass": true,
+      "actual": {
+        "compiled_head": "c52830bf29506fc57810067cf6f1f5fba2621e09",
+        "owned_process": true
+      }
+    },
+    {
+      "name": "isolated live data starts with an empty library",
+      "pass": true,
+      "actual": {
+        "status": 200,
+        "videos": 0
+      }
+    },
+    {
+      "name": "HTTP cannot invoke the native privacy action",
+      "pass": true,
+      "actual": {
+        "status": 403,
+        "error": "native_required"
+      }
+    },
+    {
+      "name": "owned live process tree stops and releases the API port",
+      "pass": true,
+      "actual": true
+    }
+  ]
+}

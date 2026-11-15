@@ -1,0 +1,266 @@
+[
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/playback-flow.mjs.source",
+    "sha256": "4d55979b38a8f8b0960da4c60b9557f486efa676bc39aeefaeef68788846ac4a",
+    "original_local_sha256": "4d55979b38a8f8b0960da4c60b9557f486efa676bc39aeefaeef68788846ac4a",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/offline-prepare.mjs.source",
+    "sha256": "39509ac2c7e5debda86272f27e68bc71268ad6c16f6254dce6f9acd3c2ac7222",
+    "original_local_sha256": "614a90f8f2390124f5864e8dae02ea34c56910384453dec6f6d1a7df5d631fa8",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/restart-flow.mjs.source",
+    "sha256": "22d3b8a4b70e107cf4ec364a356e49a84bd824c388c15b3cb12da4351656f027",
+    "original_local_sha256": "22d3b8a4b70e107cf4ec364a356e49a84bd824c388c15b3cb12da4351656f027",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/online-delete-flow.mjs.source",
+    "sha256": "dfc7c14cd3880dc5ea4a469effa4d43c7e379ccd12343b1d7ef3101ae28179a2",
+    "original_local_sha256": "dfc7c14cd3880dc5ea4a469effa4d43c7e379ccd12343b1d7ef3101ae28179a2",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/screen-off-flow.mjs.source",
+    "sha256": "4856664c35d3ef02a17d455392a7e4832ac9eb72597bc1bb786052b21f942704",
+    "original_local_sha256": "dcee090d7776303a168e397218733ec494c8acb3a6568cbce931b575b120f9ee",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/phone-query.py.source",
+    "sha256": "53ff68593ee4f5fd1614559a383bf586f170e73e1ae28a3acc6ba9d2723b88a8",
+    "original_local_sha256": "76e0a2efa8345f45726c0c6d6c6b2339f36506f8d738230e994d4f4ea6cf3218",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/sql-fixture.c.source",
+    "sha256": "caeb606974fbbdb7ee5b362553bbea64862f1729794e73dd48f00b648011a175",
+    "original_local_sha256": "caeb606974fbbdb7ee5b362553bbea64862f1729794e73dd48f00b648011a175",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/seed-completed.py.source",
+    "sha256": "611cb59ba51ffc287237ce4388f978619e181af8ed5f046a475f7189e0ee59d3",
+    "original_local_sha256": "6204f9f9f17cd2f380c2b857adbc298745cc3e65e0396673956eb982c5bc04c9",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/completed-flow.mjs.source",
+    "sha256": "ef2485e51b39d3d1a2c9639866567f5b1497fca73ae9730ad5fadb9679f8f617",
+    "original_local_sha256": "ef2485e51b39d3d1a2c9639866567f5b1497fca73ae9730ad5fadb9679f8f617",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/version-flow.mjs.source",
+    "sha256": "50635024b00a611260e2ab5b18d77b7fc5ed1e2f57d52092ae5d3e38ed85506b",
+    "original_local_sha256": "50635024b00a611260e2ab5b18d77b7fc5ed1e2f57d52092ae5d3e38ed85506b",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/close-windows.py.source",
+    "sha256": "1a534044eec23156ef28ff6115ee55ae164fd04c73f9ea28e291843345c9ec18",
+    "original_local_sha256": "cc935bc41947e8ed28187ea3a947c7c44a6c6f493fc5fa3eac0f6d31ba25af4d",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/account-two-windows.mjs.source",
+    "sha256": "e8c0409455114fc373e76636c394040e0d8611458fd26869e2ef83d8b6b57a6e",
+    "original_local_sha256": "e8c0409455114fc373e76636c394040e0d8611458fd26869e2ef83d8b6b57a6e",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/account-mismatch.mjs.source",
+    "sha256": "afbc7231a10edeeaecbda148d22aee756f41a95a8390a110b9008f96e971a486",
+    "original_local_sha256": "afbc7231a10edeeaecbda148d22aee756f41a95a8390a110b9008f96e971a486",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/account-two-phone.mjs.source",
+    "sha256": "35341f7d71bba0d432a8c992d489ca9b35e9518b286d33693bf1a44b72c7a8ce",
+    "original_local_sha256": "2f34225a2eff0d60b067760e5812bddaf488ef7bd3d319ace7e279a60f59c411",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/account-two-transfer.mjs.source",
+    "sha256": "98d6c39198a177b4ac8b36585524003725447690431c00a06be0f8632818f118",
+    "original_local_sha256": "98d6c39198a177b4ac8b36585524003725447690431c00a06be0f8632818f118",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/account-restore.mjs.source",
+    "sha256": "6b08841b944387c86581633dbafbc05f44c573052b3cc147cf0736dacba61c35",
+    "original_local_sha256": "6b08841b944387c86581633dbafbc05f44c573052b3cc147cf0736dacba61c35",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/account-restored-flow.mjs.source",
+    "sha256": "d4efdeb9b9ae7a0ba6d0d79dc2ba624965edf186f75322328ce6815f7c8fa63c",
+    "original_local_sha256": "d4efdeb9b9ae7a0ba6d0d79dc2ba624965edf186f75322328ce6815f7c8fa63c",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/account-store-audit.py.source",
+    "sha256": "7b58f7c38a6587c80c9de643f2f83284ff435d113251461a8cf4c459a307727a",
+    "original_local_sha256": "e829c63241bc58328d3f9c07cb7f7388d59b3f4e545538a08c0df73dce620a2f",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/phone-privacy-retention.py.source",
+    "sha256": "a060e7773223950e855233720d4f02c04ff9c53e135b1f6b96bab79d29c5f752",
+    "original_local_sha256": "24772009fa35d7f2f670986b6950512fc2a76500dac580c2f659f709258204f9",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/phone-privacy-baseline.py.source",
+    "sha256": "05018e51a44ab6e0a432cb0a6e10b64759446ac5bf4aa2fd6a8a36525465ca4c",
+    "original_local_sha256": "a1a8a5b5d5a41bc22e03a728cf5846a7626b6122defda327ce1baeab879d27f2",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/privacy-native.mjs.source",
+    "sha256": "2f019446e0b6cc5ed548474afc24ee81a94ec333d6728394bc8db6af6f0b02d7",
+    "original_local_sha256": "2f019446e0b6cc5ed548474afc24ee81a94ec333d6728394bc8db6af6f0b02d7",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/observe-windows-policy.ps1.source",
+    "sha256": "2f96568be74e6a041104c611956ca1965b5660a65c10637ff5574903e745bfb3",
+    "original_local_sha256": "2f96568be74e6a041104c611956ca1965b5660a65c10637ff5574903e745bfb3",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/observe-android-policy.py.source",
+    "sha256": "427099eb69a40bfe5725410b2ca016b13a2aba239c89b673a22fd8ec9e9d8d04",
+    "original_local_sha256": "165fc7692a301438611098c825b85c64467eaacfdcfc77bf56b53347635c3888",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  },
+  {
+    "path": "docs/evidence/lan-sync/diagnostics/check-live.mjs.source",
+    "sha256": "1234fccda0b4e3920d84d1e1249d2a3777d911233bfed748f4532300cd13c7c8",
+    "original_local_sha256": "1234fccda0b4e3920d84d1e1249d2a3777d911233bfed748f4532300cd13c7c8",
+    "normalization": [
+      "CRLF to LF",
+      "local home prefix to <USER_HOME>",
+      "device serial to <APPROVED_DEVICE>"
+    ],
+    "assertion_logic_changed": false
+  }
+]
