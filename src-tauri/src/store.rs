@@ -4,7 +4,7 @@ use crate::db::{Db, Row, Val};
 use crate::p;
 use std::path::Path;
 
-const SCHEMA: &str = "
+pub(crate) const SCHEMA: &str = "
 CREATE TABLE IF NOT EXISTS playlist (
   id TEXT PRIMARY KEY, name TEXT NOT NULL, position INTEGER NOT NULL
 );
@@ -142,6 +142,8 @@ pub struct Store {
 type R<T> = Result<T, String>;
 
 impl Store {
+    pub(crate) fn path(&self) -> &Path { &self.path }
+
     pub fn open(path: &Path) -> R<Store> {
         let db = Db::open(path)?;
         // Readers (the overlay polling a job) never wait on the worker's writes,

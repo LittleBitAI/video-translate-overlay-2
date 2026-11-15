@@ -15,18 +15,19 @@ task can be reported complete. See [Google registration](google-auth-setup.md).
 
 `src-tauri/src/sync.rs` implements the account-scoped journal and typed transfer
 format. The native account manager opens it after verified sign-in. Production
-library projection, discovery and encrypted peer transfers are not implemented
-yet; no sync listener opens. No existing user library is imported or changed.
+library projection is implemented as an offline storage component; account
+selection in the running library, discovery and encrypted peer transfers are
+not implemented yet. No sync listener opens. No existing user library has
+been imported or changed.
 
 The settings screen now starts a separate native Google sign-in: Windows uses
 the system browser with a temporary loopback callback, authorization code,
 PKCE S256, state and nonce; Android uses Credential Manager with a nonce and
 the registered Web audience. The core verifies Google's signature, issuer,
 audience, authorized party, expiry, nonce and verified email. The stable Google
-subject identifies the journal; email is only a display value. Windows builds
-and its isolated native settings screen have been observed; Android's Kotlin
-sign-in code compiles. Actual Google sign-in and device transfers still need
-native evidence.
+subject identifies the journal; email is only a display value. Successful
+Google sign-in and restoration after restart were observed on Windows and a
+physical Android phone at `31ced1f`; device transfers remain unimplemented.
 
 Windows seals the private session blob with user-scoped DPAPI. Android seals
 it with its own Keystore AES-GCM key, separate from Gemini credentials. Tokens
@@ -40,6 +41,19 @@ only without paid services or a linked billing account. The user will assist
 with two real accounts and physical devices during implementation.
 
 ## Data boundary
+
+The account's journal database also holds its materialized application tables.
+Incoming records, receive cursors and durable pending projection work commit in
+one SQLite transaction. The pre-account device database remains separate and
+unchanged; copying its completed data requires the selected import confirmation.
+Unfinished jobs are never imported. Original cues, glossaries and costs are
+copied into ready local rows without transcription or Gemini requests.
+
+Projection defers changes to a video while its local job is active. Confirmed
+deletion hides saved data before managed file cleanup, retaining the existing
+durable cleanup retry marker. An interrupted projection or cleanup remains
+pending after restart. Different completed versions stay in the journal;
+selection is deterministic and does not discard another completed response.
 
 Each account has a separate durable sync database under an SHA-256 digest of its
 Google subject and issuer. The subject must come from verified Google identity,
@@ -165,6 +179,16 @@ checks were deleted or skipped. The compiler still reports the existing
 `cfg(desktop)` warnings in `screens.rs`. The repository gate and final
 verification remain server-owned and pending.
 
+The projection addition passed `cargo test -p video-translate-overlay --lib
+sync:: -- --nocapture`: 14 passed. After adding the remaining projection
+regressions, `cargo test -p video-translate-overlay --lib sync::library:: --
+--nocapture` passed all 7 projection tests. They cover actual ready-library
+reads, transactional failure after cue insertion, deferred deletion, immutable
+legacy copying, unfinished-job exclusion, partial dependencies across restart,
+retry-queue fairness, concurrent completed versions and cleanup before fresh
+restoration. The audit retained all current tests; none were removed or skipped.
+These tests do not establish running account selection or network delivery.
+
 ## Focused authentication evidence
 
 These checks cover the identity component and its local boundaries. They do not
@@ -240,9 +264,38 @@ tests/ui/google-account.test.ts` passed 10 in Chromium. The cleanup audit
 retained current callback, signature, transport, registration and UI checks;
 none were removed or skipped.
 
-The corrected Windows build was attempted and intentionally failed its new
-missing-registration check: the selected Desktop JSON is not present locally.
-The earlier executable and APK receipts do not validate this correction. A new
-native build and successful user-assisted sign-in remain blocked on that local
-publisher file. Public OAuth availability, LAN implementation, physical-device
-acceptance and the server-owned gate remain unfinished.
+The first corrected Windows build failed its new missing-registration check.
+After the user saved the Desktop JSON in the ignored project directory, both
+native applications were rebuilt at `31ced1f`. A diagnostic with the configured
+registration and an intentionally invalid code returned `invalid_grant`,
+replacing the earlier missing-secret error. No diagnostic grant was redeemed.
+
+## Native authentication at 31ced1f
+
+The running Windows core and screen both identified `31ced1f4433c4506cb29f78b507b64d9687ce98d`.
+An isolated app/WebView profile completed user-assisted Google sign-in and
+restored `signed_in` after a complete process restart. Its executable SHA-256
+was `e1238bccac958f8d85ace03eda39f7dc83009cbe697a6bb9298d816976e8d40c`.
+
+The physical Samsung SM-G996N ran Android 15, API 35. The signed ARM64 debug APK
+was installed over the existing 0.1.7 app without uninstalling. Signature
+verification retained the existing certificate. Before first launch, a cold
+database inspection found no active jobs and three completed translations.
+The root database and sealed Gemini preference hashes stayed unchanged through
+sign-in. No existing-library import, transcription or Gemini call was requested.
+
+The installed core and screen both identified the same `31ced1f` revision.
+Credential Manager sign-in succeeded and the sealed session restored after
+force-stop and relaunch. A private comparison of the two journal directory
+digests confirmed the same verified Google subject on both devices. Status
+receipts contain state, generation and revision observations, without tokens
+or email addresses. The APK SHA-256 was
+`93e43938f17f9db5f9880574a40164dc0d151db1c43b8d27190ca97a0c1cf90e`.
+The publisher Desktop secret was absent from all 962 APK entries.
+
+Receipts and the pre-update APK backup remain under ignored
+`artifacts/google-auth-native-20261115a/` and
+`artifacts/google-auth-phone-20261115/`. These observations establish one-account
+native authentication and restart, not synchronization or public availability.
+Public OAuth configuration, two-account isolation, LAN transfers, Android
+background delivery and the server-owned gate remain unfinished.

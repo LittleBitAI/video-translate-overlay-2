@@ -351,6 +351,8 @@ impl Journal {
         db.exec("PRAGMA journal_mode=WAL")?;
         db.exec("BEGIN IMMEDIATE")?;
         db.exec(SCHEMA)?;
+        db.exec(crate::store::SCHEMA)?;
+        db.exec(library::SCHEMA)?;
         let mut random = [0u8; 16];
         getrandom::fill(&mut random).map_err(|e| e.to_string())?;
         let replica: String = random.iter().map(|b| format!("{b:02x}")).collect();
@@ -412,6 +414,7 @@ impl Journal {
                 return Err("sync item was deleted; fresh confirmation is required".into());
             }
             merge(db, &record)?;
+            library::project(db, 64)?;
             Ok(record)
         })
     }
@@ -482,6 +485,7 @@ impl Journal {
             if page.after != saved { return Err("sync cursor gap".into()); }
             let mut changed = false;
             for item in &page.records { changed |= merge(db, &item.record)?; }
+            library::project(db, 64)?;
             db.execute("INSERT INTO sync_cursor VALUES (?,?) ON CONFLICT(replica) DO UPDATE SET sequence=excluded.sequence", p![&page.replica, page.through])?;
             Ok(changed)
         })
@@ -610,6 +614,7 @@ fn merge(db: &Db, record: &Record) -> Result<bool> {
     db.execute("INSERT INTO sync_record (identity,video_key,playlist_id,clock,replica,sequence,body) VALUES (?,?,?,?,?,?,?)
         ON CONFLICT(identity) DO UPDATE SET clock=excluded.clock,replica=excluded.replica,sequence=excluded.sequence,body=excluded.body",
         p![identity, record.change.video_key(), record.change.playlist(), record.stamp.clock, &record.stamp.replica, sequence, body])?;
+    library::dirty(db, record)?;
     if matches!(
         record.change,
         Change::DeleteVideo { .. } | Change::DeletePlaylist { .. }
@@ -644,3 +649,6 @@ fn merge(db: &Db, record: &Record) -> Result<bool> {
 #[cfg(test)]
 #[path = "sync_tests.rs"]
 mod tests;
+
+#[path = "sync_store.rs"]
+mod library;
