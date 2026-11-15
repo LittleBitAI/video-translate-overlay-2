@@ -10,6 +10,14 @@ export const productionInput = name => !name.endsWith('.md') && (
   /^(?:src\/|src-tauri\/|\.cargo\/|\.config\/)/.test(name)
   || /^(?:Cargo\.(?:toml|lock)|package(?:-lock)?\.json|index\.html|vite(?:\.overlay)?\.config\.ts|\.gitattributes)$/.test(name));
 
+export function assertNoApplicationChanges(names) {
+  assert(!names.some(productionInput),'Uncommitted application inputs cannot supply current-head evidence');
+}
+export function assertCleanApplication() {
+  const names = [...git(['diff','--name-only','-z','HEAD']).split('\0'),...git(['ls-files','--others','--exclude-standard','-z']).split('\0')].filter(Boolean);
+  assertNoApplicationChanges(names);
+}
+
 // Git object identities cover file contents and the inventory, including added inputs.
 export function sourceSnapshot(revision, paths = null) {
   const files = git(['ls-tree','-r',revision]).split('\n').filter(Boolean).map(line => {
@@ -26,7 +34,7 @@ export function assertSameInputs(recorded,current) {
   assert.equal(current.sha256,recorded.sha256,'Evidence source digest differs');
 }
 
-export function validateCatalog(catalog, load, snapshot) {
+export function validateCatalog(catalog, load, snapshot, candidate = 'HEAD') {
   assert.equal(catalog.version,1);
   assert.match(catalog.reviewed_revision,/^[0-9a-f]{40}$/);
   const kinds = new Set();
@@ -41,7 +49,10 @@ export function validateCatalog(catalog, load, snapshot) {
     const receipt = JSON.parse(bytes);
     assert(receipt.observations?.length > 0,'Evidence has no observations');
     assert(receipt.observations.every(row => row.name && row.pass === true && row.actual !== undefined),'Missing or failed observation');
-    assertSameInputs(entry.inputs,snapshot(entry.paths ?? null));
+    const inputs = catalog.inventories[entry.inventory];
+    assert(inputs,'Missing source inventory');
+    assertSameInputs(inputs,snapshot(entry.source_revision,entry.paths ?? null));
+    assertSameInputs(inputs,snapshot(candidate,entry.paths ?? null));
     assert(entry.status !== 'reused' || entry.reuse_reason,'Reused evidence needs an impact explanation');
     kinds.add(entry.kind);
   }
@@ -50,8 +61,9 @@ export function validateCatalog(catalog, load, snapshot) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  assertCleanApplication();
   const revision = process.argv[2] ?? 'HEAD';
   const catalog = JSON.parse(readFileSync('docs/evidence/lan-sync/catalog.json','utf8'));
-  const kinds = validateCatalog(catalog, name => readFileSync(name), paths => sourceSnapshot(revision,paths));
+  const kinds = validateCatalog(catalog, name => readFileSync(name), sourceSnapshot, revision);
   console.log(`Sync evidence passed for ${git(['rev-parse',revision])}: ${kinds.join(', ')}; ${catalog.executions.length} inspectable executions`);
 }

@@ -1,0 +1,67 @@
+{
+  "source_revision": "5f899a2c72080208f84db666d83e119aa4fcd788",
+  "environment": {
+    "windows": "Windows desktop; isolated native application and WebView profiles",
+    "android": "Physical Galaxy S21+ SM-G996N; Android 15 API 35; ARM64",
+    "date": "2026-11-15",
+    "original_library_imported": false,
+    "paid_translation_requested": false,
+    "windows_executable_sha256": "a07588146b8cca5b8ea6afcb53a479a9fbf99ef5c0ee0ccccc55f9c532abb0f5",
+    "android_apk_sha256": "e64fc81d8d99045e5150ce8b828f6f36a94373face41caa18eeaf5e3d1d27fd7",
+    "core": "5f899a2c72080208f84db666d83e119aa4fcd788",
+    "screen": "5f899a2c72080208f84db666d83e119aa4fcd788"
+  },
+  "observations": [
+    {
+      "name": "different verified accounts remain isolated",
+      "pass": true,
+      "actual": {
+        "different_verified_accounts": true,
+        "account_one_not_visible_in_account_two": true,
+        "account_two_not_visible_in_account_one": true,
+        "old_account_changes_not_sent_to_new_account": true,
+        "observed_ms": 16089,
+        "states": {
+          "windows": [
+            "listening"
+          ],
+          "android": [
+            "account_mismatch"
+          ]
+        }
+      }
+    },
+    {
+      "name": "matching second account transfers in both directions",
+      "pass": true,
+      "actual": {
+        "head": "5f899a2c72080208f84db666d83e119aa4fcd788",
+        "second_real_account": true,
+        "first_account_rows_absent": true,
+        "changes": [
+          {
+            "source": "Android",
+            "name": "LAN second account Android 20261115",
+            "delivery_ms": 581
+          },
+          {
+            "source": "Windows",
+            "name": "LAN second account Windows 20261115",
+            "delivery_ms": 2356
+          }
+        ]
+      }
+    },
+    {
+      "name": "both native stores preserve account separation",
+      "pass": true,
+      "actual": {
+        "head": "5f899a2c72080208f84db666d83e119aa4fcd788",
+        "both_devices_have_two_distinct_account_stores": true,
+        "original_account_queued_change_preserved": true,
+        "second_account_marker_preserved_after_switching_away": true,
+        "no_cross_account_rows": true
+      }
+    }
+  ]
+}

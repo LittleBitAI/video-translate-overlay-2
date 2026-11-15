@@ -1,0 +1,105 @@
+{
+  "source_revision": "fc0d072f78248e120db7a7582852add873814cec",
+  "environment": {
+    "windows": "Windows desktop; isolated native application and WebView profiles",
+    "android": "Physical Galaxy S21+ SM-G996N; Android 15 API 35; ARM64",
+    "date": "2026-11-15",
+    "original_library_imported": false,
+    "paid_translation_requested": false,
+    "windows_executable_sha256": "a4f7a5e20f28048de59b4e89757757baf0891093a1c3521c6b8f436576cb6065",
+    "android_apk_sha256": "d62207ef970f28d65e6415b1a2756b46ab54a3e7fa74c38b93d7de4b9e0bf2df",
+    "core": "fc0d072f78248e120db7a7582852add873814cec",
+    "screen": "fc0d072f78248e120db7a7582852add873814cec"
+  },
+  "observations": [
+    {
+      "name": "windows completed fixture",
+      "pass": true,
+      "actual": {
+        "device": "windows",
+        "fixture": "LAN saved windows",
+        "cost_krw": 12.5,
+        "intervals": [
+          [
+            0,
+            1000
+          ],
+          [
+            1000,
+            3000
+          ]
+        ]
+      }
+    },
+    {
+      "name": "windows completed fixture",
+      "pass": true,
+      "actual": {
+        "device": "windows",
+        "fixture": "LAN saved android",
+        "cost_krw": 18.5,
+        "intervals": [
+          [
+            0,
+            1000
+          ],
+          [
+            1000,
+            3000
+          ]
+        ]
+      }
+    },
+    {
+      "name": "android completed fixture",
+      "pass": true,
+      "actual": {
+        "device": "android",
+        "fixture": "LAN saved windows",
+        "cost_krw": 12.5,
+        "intervals": [
+          [
+            0,
+            1000
+          ],
+          [
+            1000,
+            3000
+          ]
+        ]
+      }
+    },
+    {
+      "name": "android completed fixture",
+      "pass": true,
+      "actual": {
+        "device": "android",
+        "fixture": "LAN saved android",
+        "cost_krw": 18.5,
+        "intervals": [
+          [
+            0,
+            1000
+          ],
+          [
+            1000,
+            3000
+          ]
+        ]
+      }
+    },
+    {
+      "name": "retained versions and actual phone UI selection",
+      "pass": true,
+      "actual": {
+        "head": "fc0d072f78248e120db7a7582852add873814cec",
+        "retained_versions": 2,
+        "selected_original_cost_krw": 12.5,
+        "alternate_cost_krw": 23.5,
+        "phone_ui_selection_converged": true,
+        "original_cues_preserved": true
+      }
+    }
+  ],
+  "fixture_boundary": "Two synthetic completed responses replace transcription and paid translation. Real native peer transfer, projection, SQLite, API and UI are observed; no new speech processing is claimed."
+}

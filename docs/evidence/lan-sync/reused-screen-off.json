@@ -1,0 +1,62 @@
+{
+  "source_revision": "5f899a2c72080208f84db666d83e119aa4fcd788",
+  "environment": {
+    "windows": "Windows desktop; isolated native application and WebView profiles",
+    "android": "Physical Galaxy S21+ SM-G996N; Android 15 API 35; ARM64",
+    "date": "2026-11-15",
+    "original_library_imported": false,
+    "paid_translation_requested": false,
+    "windows_executable_sha256": "a07588146b8cca5b8ea6afcb53a479a9fbf99ef5c0ee0ccccc55f9c532abb0f5",
+    "android_apk_sha256": "e64fc81d8d99045e5150ce8b828f6f36a94373face41caa18eeaf5e3d1d27fd7",
+    "core": "5f899a2c72080208f84db666d83e119aa4fcd788",
+    "screen": "5f899a2c72080208f84db666d83e119aa4fcd788"
+  },
+  "observations": [
+    {
+      "name": "physical screen-off delivery over Ethernet and Wi-Fi",
+      "pass": true,
+      "actual": {
+        "head": "5f899a2c72080208f84db666d83e119aa4fcd788",
+        "pc_interface": "Ethernet",
+        "pc_ipv4": "192.168.0.3",
+        "phone_interface": "Wi-Fi",
+        "phone_ipv4": "192.168.0.2",
+        "usb_tether_interface_absent": true,
+        "screen_off_before_first_change_ms": 20527,
+        "changes": [
+          {
+            "playlist_id": "c09fca8f-1b56-4209-9d35-7fb8a8d4ba6d",
+            "name": "LAN screen off first 20261115",
+            "delivery_ms": 2695
+          },
+          {
+            "playlist_id": "c09fca8f-1b56-4209-9d35-7fb8a8d4ba6d",
+            "name": "LAN screen off second 20261115",
+            "delivery_ms": 702
+          }
+        ],
+        "foreground_service": true,
+        "connection_notification_id": 2002,
+        "screen_off_observed_ms": 35012,
+        "observed_without_webview_ipc": true,
+        "usb_charging": true,
+        "deep_doze_claimed": false,
+        "wakefulness": "Dozing",
+        "interactive_mode": false,
+        "display_state": "OFF"
+      }
+    },
+    {
+      "name": "Home background delivery",
+      "pass": true,
+      "actual": {
+        "head": "fc0d072f78248e120db7a7582852add873814cec",
+        "home_delivery_ms": 2123,
+        "observed_without_webview_ipc": true,
+        "foreground_service": true,
+        "usb_charging": true
+      }
+    }
+  ],
+  "limits": "35.012 seconds, USB charging, not deep device-idle. Home observation was at fc0d072; its SyncService and controller sources are unchanged. No force-stopped delivery or prolonged battery observation."
+}

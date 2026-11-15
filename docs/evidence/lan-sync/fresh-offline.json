@@ -1,0 +1,133 @@
+{
+  "source_revision": "c52830bf29506fc57810067cf6f1f5fba2621e09",
+  "environment": {
+    "os": "10.0.26200",
+    "node": "v24.18.0",
+    "rust": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "stand_ins": true
+  },
+  "observations": [
+    {
+      "name": "sync_channel::tests::framing_rejects_oversized_lengths_unknown_operations_fields_and_truncated_pages",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_discovery::tests::an_owned_listener_releases_its_exact_bound_address_when_dropped",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_discovery::tests::announcements_are_anonymous_and_resolved_addresses_cannot_escape_the_local_network",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_discovery::tests::ethernet_and_wifi_addresses_share_policy_without_using_adapter_names",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_discovery::tests::interface_selection_refuses_public_down_point_to_point_and_excessive_sets",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_discovery::tests::ipv6_private_networks_require_the_correct_prefix_and_link_local_interface_scope",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_discovery::tests::an_owned_discovery_daemon_acknowledges_shutdown_and_does_not_keep_a_live_handle",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_channel::tests::different_signed_google_subjects_with_the_same_email_cannot_transfer_any_library_data",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_channel::tests::an_unknown_certificate_cannot_enroll_using_an_expired_google_proof",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_channel::tests::enrolled_devices_reconnect_with_expired_google_proofs_but_expired_peer_receipts_require_google_again",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_runtime::tests::connection_ownership_caps_pending_workers_and_shutdown_closes_the_actual_socket",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_runtime::tests::retiring_a_network_lease_rejects_pending_attachment_without_reassigning_its_slot",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_runtime::tests::retries_back_off_to_a_fixed_bound_and_success_restarts_regular_automatic_exchange",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_tls::tests::a_copied_google_proof_does_not_authorize_a_different_tls_key_and_ciphertext_cannot_replay",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_tls::tests::expired_device_certificates_fail_and_sealed_key_roundtrips_keep_the_google_nonce",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_tls::tests::missing_client_keys_wrong_alpn_malformed_certificates_and_mismatched_private_keys_fail",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_tls::tests::mutual_tls_checks_both_device_keys_before_a_matching_google_identity_can_authorize",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_channel::tests::disconnect_after_one_committed_direction_reconnects_from_durable_cursors",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_channel::tests::sign_out_cancels_an_authenticated_connection_waiting_for_the_peer",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_channel::tests::real_tcp_tls_connections_transfer_completed_data_both_ways_and_converge_without_echo",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_runtime::tests::an_unsigned_native_controller_never_owns_a_peer_and_stops_on_its_own_thread",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_runtime::tests::a_refused_background_lease_prevents_discovery_and_releases_the_native_owner_on_shutdown",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_runtime::cleanup::tests::automatic_cleanup_removes_only_owned_files_and_handles_markers_without_visible_video_rows",
+      "pass": true,
+      "actual": "ok"
+    },
+    {
+      "name": "sync_runtime::cleanup::tests::active_jobs_defer_cleanup_and_failed_files_do_not_starve_other_deletions_or_cross_sign_out",
+      "pass": true,
+      "actual": "ok"
+    }
+  ],
+  "result": "24 passed; 0 failed; 0 ignored",
+  "observed_at": "2026-11-15T10:09:18.969Z"
+}

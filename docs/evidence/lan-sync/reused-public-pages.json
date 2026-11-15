@@ -1,0 +1,43 @@
+{
+  "source_revision": "ac67b9c110aa235af69647a27fffd89679030a02",
+  "environment": {
+    "anonymous": true,
+    "static_commit": "989a4ebcdf1e1a5bc28c16f9e87f693dcd17cc6b"
+  },
+  "observations": [
+    {
+      "name": "anonymous published assets and browser navigation",
+      "pass": true,
+      "actual": {
+        "source_commit": "989a4ebcdf1e1a5bc28c16f9e87f693dcd17cc6b",
+        "assets": [
+          {
+            "url": "https://littlebitai.github.io/video-translate-overlay-2/.nojekyll",
+            "status": 200,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "anonymous": true
+          },
+          {
+            "url": "https://littlebitai.github.io/video-translate-overlay-2/",
+            "status": 200,
+            "sha256": "1513861850a651fb2c0f5e7d8acee8421b7d85bf11a3658ac8050d7d773334af",
+            "anonymous": true
+          },
+          {
+            "url": "https://littlebitai.github.io/video-translate-overlay-2/privacy.html",
+            "status": 200,
+            "sha256": "fc23dac899fe2054b3f18b98dba70dea045348cb373efaf21baefdd6b6ff4fd1",
+            "anonymous": true
+          },
+          {
+            "url": "https://littlebitai.github.io/video-translate-overlay-2/style.css",
+            "status": 200,
+            "sha256": "9d902ea1e7195663341574f1ca7a3a4fb1c8034958b9e412acab053d6812ec06",
+            "anonymous": true
+          }
+        ],
+        "live_browser_navigation": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "source_revision": "ff30ca80e0acd1af7c0ec110705ae8dc5d94d881",
+  "environment": {
+    "windows": "Windows desktop; isolated native application and WebView profiles",
+    "android": "Physical Galaxy S21+ SM-G996N; Android 15 API 35; ARM64",
+    "date": "2026-11-15",
+    "original_library_imported": false,
+    "paid_translation_requested": false,
+    "windows_executable_sha256": "de72186bbfc1691697da60e4f4ab4bfa039072328d3e05e2d4a516345489e847",
+    "android_apk_sha256": "a223f624956fe674bd3a8bd85c596d2f2ba9f51704c224b6ba9e9fa0fbe05416",
+    "core": "ff30ca80e0acd1af7c0ec110705ae8dc5d94d881",
+    "screen": "ff30ca80e0acd1af7c0ec110705ae8dc5d94d881"
+  },
+  "observations": [
+    {
+      "name": "windows policy opens in actual external address bar",
+      "pass": true,
+      "actual": {
+        "device": "windows",
+        "head": "ff30ca80e0acd1af7c0ec110705ae8dc5d94d881",
+        "core_screen_match": true,
+        "account_restored_without_sign_in": true,
+        "fixed_policy_opened": true,
+        "video_pointer_unchanged": true,
+        "account_generation_unchanged": true,
+        "observed_in_address_bar": true,
+        "external_browser_destination": "https://littlebitai.github.io/video-translate-overlay-2/privacy.html"
+      }
+    },
+    {
+      "name": "android policy opens in actual external address bar",
+      "pass": true,
+      "actual": {
+        "device": "android",
+        "head": "ff30ca80e0acd1af7c0ec110705ae8dc5d94d881",
+        "core_screen_match": true,
+        "account_restored_without_sign_in": true,
+        "fixed_policy_opened": true,
+        "video_pointer_unchanged": true,
+        "account_generation_unchanged": true,
+        "external_browser_destination": "https://littlebitai.github.io/video-translate-overlay-2/privacy.html",
+        "observed_in_address_bar": true
+      }
+    },
+    {
+      "name": "original phone data retained after final APK update",
+      "pass": true,
+      "actual": {
+        "original_library_rows_preserved": true,
+        "gemini_sealed_credential_preserved": true,
+        "ready_jobs": 3,
+        "active_jobs": 0
+      }
+    }
+  ]
+}

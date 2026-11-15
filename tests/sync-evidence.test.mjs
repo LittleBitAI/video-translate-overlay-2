@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
-import {assertSameInputs,digest,productionInput,validateCatalog} from '../scripts/verification/sync-evidence.mjs';
+import {assertSameInputs,assertNoApplicationChanges,digest,productionInput,validateCatalog} from '../scripts/verification/sync-evidence.mjs';
 
 test('evidence requires all four kinds, observations and matching receipt and source contents', () => {
   const files = [['src/component.rs','a'.repeat(40)]];
   const inputs = {files,sha256:digest(JSON.stringify(files))};
   const bytes = Buffer.from(JSON.stringify({observations:[{name:'observed result',pass:true,actual:{count:1}}]}));
   const entry = kind => ({kind,status:'executed',command:'bounded check',environment:{platform:'test'},
-    source_revision:'b'.repeat(40),receipt:'docs/evidence/lan-sync/result.json',receipt_sha256:digest(bytes),inputs});
-  const valid = {version:1,reviewed_revision:'c'.repeat(40),executions:['api','browser','desktop','offline'].map(entry)};
+    source_revision:'b'.repeat(40),receipt:'docs/evidence/lan-sync/result.json',receipt_sha256:digest(bytes),inventory:'full'});
+  const valid = {version:1,reviewed_revision:'c'.repeat(40),inventories:{full:inputs},executions:['api','browser','desktop','offline'].map(entry)};
   assert.deepEqual(validateCatalog(valid,()=>bytes,()=>inputs),['api','browser','desktop','offline']);
   const cases = [
     ['missing evidence kind',c=>c.executions.pop(),()=>bytes,()=>inputs],
@@ -18,6 +18,8 @@ test('evidence requires all four kinds, observations and matching receipt and so
     ['failed observation',c=>c.executions.forEach(e=>e.receipt_sha256=digest('{"observations":[{"name":"result","pass":false,"actual":0}]}')),()=>Buffer.from('{"observations":[{"name":"result","pass":false,"actual":0}]}'),()=>inputs],
     ['changed source',()=>{},()=>bytes,()=>({files:[['src/component.rs','d'.repeat(40)]],sha256:'e'.repeat(64)})],
     ['unexplained reuse',c=>c.executions[0].status='reused',()=>bytes,()=>inputs],
+    ['missing source inventory',c=>delete c.inventories.full,()=>bytes,()=>inputs],
+    ['misattributed source revision',()=>{},()=>bytes,revision=>revision==='HEAD'?inputs:({files:[],sha256:digest('[]')})],
   ];
   for (const [name,change,load,snapshot] of cases) {
     const catalog = structuredClone(valid);change(catalog);
@@ -34,6 +36,13 @@ test('source equivalence includes additions, removals and content changes across
     }
   }
   for (const name of ['docs/design/backend.md','src-tauri/README.md','docs/evidence/lan-sync/catalog.json']) assert(!productionInput(name));
+});
+
+test('current-head evidence refuses dirty application inputs while permitting evidence and host metadata changes', () => {
+  for (const name of ['src/player.ts','src-tauri/src/component.rs','Cargo.lock','src-tauri/gen/android/app/build.gradle.kts']) {
+    assert.throws(()=>assertNoApplicationChanges([name]));
+  }
+  assert.doesNotThrow(()=>assertNoApplicationChanges(['docs/design/backend.md','docs/evidence/lan-sync/result.json','.wiki/graph.json','scripts/verification/sync-evidence.mjs']));
 });
 
 test('current lifecycle documentation describes integrated native ownership consistently', () => {

@@ -2,11 +2,13 @@ import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {readFileSync,writeFileSync} from 'node:fs';
 import {release} from 'node:os';
+import {isDeepStrictEqual} from 'node:util';
 import {chromium} from 'playwright';
-import {digest,sourceSnapshot,assertSameInputs} from './sync-evidence.mjs';
+import {digest,sourceSnapshot,assertSameInputs,assertCleanApplication} from './sync-evidence.mjs';
 
 const built = process.argv[2], output = process.argv[3];
 assert.match(built ?? '',/^[0-9a-f]{40}$/);assert(output);
+assertCleanApplication();
 assertSameInputs(sourceSnapshot(built),sourceSnapshot('HEAD'));
 const adb = process.env.VTO_ADB;assert(adb,'VTO_ADB must select the installed Android debugging tool');
 const phone = args => execFileSync(adb,args,{encoding:'utf8',windowsHide:true}).trim();
@@ -39,7 +41,7 @@ try {
     devices.push({name,page,read,account,initial});
     observations.push({name:`${name} native identity`,pass:true,actual:{core:built,screen:built,connection:account.connection.state,generation:account.generation,engine:browser.version()}});
   }
-  assert.equal(devices[0].account.email,devices[1].account.email);
+  assert(devices[0].account.email===devices[1].account.email,'Matching signed-in accounts are required');
   observations.push({name:'matching signed-in account',pass:true,actual:true});
   for(let i=0;i<2;i++) {
     const source=devices[i],target=devices[1-i],list=source.initial.playlists[i];
@@ -57,7 +59,7 @@ try {
       await wait(target.read,data=>data.playlists.some(p=>p.id===list.id&&p.name===list.name));
     }
   }
-  for(const device of devices)assert.deepEqual(await device.read(),device.initial,'Fixture state must be restored');
+  for(const device of devices)assert(isDeepStrictEqual(await device.read(),device.initial),'Fixture state must be restored');
   observations.push({name:'both fixture libraries restored after reversible UI changes',pass:true,actual:true});
   const receipt={observed_at:new Date().toISOString(),source_revision:built,environment,observations};
   writeFileSync(output,JSON.stringify(receipt,null,2)+'\n');

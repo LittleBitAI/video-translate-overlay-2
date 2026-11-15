@@ -1,0 +1,322 @@
+{
+  "source_revision": "c52830bf29506fc57810067cf6f1f5fba2621e09",
+  "environment": {
+    "os": "10.0.26200",
+    "node": "v24.18.0",
+    "rust": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "stand_ins": true,
+    "compiled_head": "c52830bf29506fc57810067cf6f1f5fba2621e09",
+    "owned_process_checked": true,
+    "server_sha256": "0eb2d95902bf35b179767102bc0167cf469db8b6d22bf109f192d845f70cb483"
+  },
+  "observations": [
+    {
+      "name": "reuse",
+      "pass": true,
+      "actual": {
+        "reused": true,
+        "cost_before": 12.5,
+        "cost_after": 12.5,
+        "cue_times_before": [
+          [
+            0,
+            2000
+          ],
+          [
+            2000,
+            5000
+          ]
+        ],
+        "cue_times_after": [
+          [
+            0,
+            2000
+          ],
+          [
+            2000,
+            5000
+          ]
+        ],
+        "entire_subtitle_response_equal": true
+      }
+    },
+    {
+      "name": "persistence-delete",
+      "pass": true,
+      "actual": {
+        "before_restart": [
+          {
+            "entries": [
+              "f1cf83abf7ca74fb7a5e29c258ad7a0a106479ccc5819c38a590d1571835f983"
+            ],
+            "id": "9ee61633-6cd2-4372-8fae-a04f4ee0f5bd",
+            "name": "One"
+          },
+          {
+            "entries": [
+              "f1cf83abf7ca74fb7a5e29c258ad7a0a106479ccc5819c38a590d1571835f983"
+            ],
+            "id": "069be923-9dbe-47bc-8300-51b437c11273",
+            "name": "Two"
+          }
+        ],
+        "after_restart": [
+          {
+            "entries": [
+              "f1cf83abf7ca74fb7a5e29c258ad7a0a106479ccc5819c38a590d1571835f983"
+            ],
+            "id": "9ee61633-6cd2-4372-8fae-a04f4ee0f5bd",
+            "name": "One"
+          },
+          {
+            "entries": [
+              "f1cf83abf7ca74fb7a5e29c258ad7a0a106479ccc5819c38a590d1571835f983"
+            ],
+            "id": "069be923-9dbe-47bc-8300-51b437c11273",
+            "name": "Two"
+          }
+        ],
+        "cancellation_status": 400,
+        "saved_video_present_after_cancel": true,
+        "after_delete": {
+          "playlists": [
+            {
+              "entries": [],
+              "id": "9ee61633-6cd2-4372-8fae-a04f4ee0f5bd",
+              "name": "One"
+            },
+            {
+              "entries": [],
+              "id": "069be923-9dbe-47bc-8300-51b437c11273",
+              "name": "Two"
+            }
+          ],
+          "videos": [
+            {
+              "active": false,
+              "deleting": false,
+              "duration_ms": 0,
+              "page_url": "http://127.0.0.1:8137/other.mp4",
+              "saved": true,
+              "title": "Unrelated systems",
+              "versions": [],
+              "video_key": "21a330e2215ea33e2f83de0152369c65a4b77a6b8e28240ad6d768cf1643c917"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "no-automatic-translation",
+      "pass": true,
+      "actual": {
+        "page_url": "https://lectures.example.org/untranslated",
+        "open_status": 200,
+        "job_lookup_status": 404,
+        "job_lookup_response": {
+          "error": "no_job",
+          "message": "이 영상의 작업이 없습니다.",
+          "status": 404
+        }
+      }
+    },
+    {
+      "name": "playlist-retention",
+      "pass": true,
+      "actual": {
+        "remaining_playlists": [
+          {
+            "entries": [
+              "ba0bf93426bb4ff154b5ec4ce29b2eca01eb1f6f69a9eb0fa685f0f5a0127638"
+            ],
+            "id": "9ee61633-6cd2-4372-8fae-a04f4ee0f5bd",
+            "name": "One"
+          }
+        ],
+        "remaining_videos": [
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "https://lectures.example.org/untranslated",
+            "saved": false,
+            "title": "Manual",
+            "versions": [],
+            "video_key": "ba0bf93426bb4ff154b5ec4ce29b2eca01eb1f6f69a9eb0fa685f0f5a0127638"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8137/other.mp4",
+            "saved": true,
+            "title": "Unrelated systems",
+            "versions": [],
+            "video_key": "21a330e2215ea33e2f83de0152369c65a4b77a6b8e28240ad6d768cf1643c917"
+          }
+        ],
+        "cue_times_before": [
+          [
+            0,
+            2000
+          ],
+          [
+            2000,
+            5000
+          ]
+        ],
+        "cue_times_after": [
+          [
+            0,
+            2000
+          ],
+          [
+            2000,
+            5000
+          ]
+        ],
+        "entire_subtitle_response_equal": true
+      }
+    }
+  ],
+  "observed_at": "2026-11-15T10:06:34.449Z",
+  "requests": [
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8136/library/data",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8136/videos/f1cf83abf7ca74fb7a5e29c258ad7a0a106479ccc5819c38a590d1571835f983/subtitles",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8136/jobs?page_url=http%3A%2F%2F127.0.0.1%3A8137%2Fsaved.mp4",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8136/browser/open",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8136/jobs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8136/videos/f1cf83abf7ca74fb7a5e29c258ad7a0a106479ccc5819c38a590d1571835f983/subtitles",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8136/jobs?page_url=http%3A%2F%2F127.0.0.1%3A8137%2Fsaved.mp4",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8136/library/data",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8136/library/data",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8136/library/data",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8136/library/data",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8136/library/data",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8136/library/data",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8136/library/data",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8136/library/data",
+      "status": 400
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8136/library/data",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8136/library/data",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8136/library/data",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8136/library/data",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8136/browser/open",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8136/jobs?page_url=https%3A%2F%2Flectures.example.org%2Funtranslated",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8136/videos/21a330e2215ea33e2f83de0152369c65a4b77a6b8e28240ad6d768cf1643c917/subtitles",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8136/library/data",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8136/library/data",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8136/library/data",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8136/videos/21a330e2215ea33e2f83de0152369c65a4b77a6b8e28240ad6d768cf1643c917/subtitles",
+      "status": 200
+    }
+  ],
+  "actions": [],
+  "launch_environment": {
+    "WIKI_VERIFICATION_HEAD": "c52830bf29506fc57810067cf6f1f5fba2621e09",
+    "WIKI_VERIFICATION_ENVIRONMENT": "Windows-11-local-isolated",
+    "WIKI_VERIFICATION_SCOPE": "review-round-1-library-api",
+    "WIKI_VERIFICATION_ARTIFACTS": "Fresh isolated attempt directory (private absolute path omitted)"
+  }
+}
