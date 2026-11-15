@@ -32,9 +32,15 @@ library projection and account selection are connected to the library APIs.
 Discovery and encrypted peer transfers are now connected to a native controller.
 Only native app setup starts it; development HTTP and contract hosts do not open
 the sync listener. One-account native flows passed at `fc0d072`; screen-off
-Ethernet/Wi-Fi delivery and two-account isolation passed at `5f899a2`. Public
-OAuth publishing configuration remains pending. No existing user library has
-been imported or changed.
+Ethernet/Wi-Fi delivery and two-account isolation passed at `5f899a2`. The owner
+confirmed Google's External audience is `In production` after the approved
+public branding configuration. The public homepage and privacy policy are live,
+and native settings privacy access passed on both platforms at `ff30ca8`; see
+[registration and final native evidence](google-auth-setup.md#native-privacy-access-at-ff30ca8).
+The physical phone's three original completed translations and sealed Gemini
+credential remained unchanged after the final APK update. No existing user
+library has been imported. The server-owned repository gate and final
+verification remain pending.
 
 The settings screen now starts a separate native Google sign-in: Windows uses
 the system browser with a temporary loopback callback, authorization code,

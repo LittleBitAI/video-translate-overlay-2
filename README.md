@@ -77,7 +77,8 @@ position synchronization. Opening a saved video may resume it once where the
 player permits seeking; user input takes priority over a delayed saved position.
 Native transfer, playback, restart, deletion, Home and screen-off delivery, and
 two-account isolation checks passed on Windows and a physical Android phone.
-Public OAuth publishing configuration and the server-owned gate remain pending; see
+The owner confirmed Google's public production configuration after completing
+the approved branding fields. The server-owned gate remains pending; see
 [implementation status](docs/design/local-network-sync.md).
 
 The [app homepage](https://littlebitai.github.io/video-translate-overlay-2/) and

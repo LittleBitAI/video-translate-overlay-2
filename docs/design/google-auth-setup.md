@@ -31,7 +31,8 @@ The owner selected the following project and supplied all three client IDs on
 User-assisted sign-in and restoration after restart succeeded on Windows and
 the physical Android phone at `31ced1f`; see the
 [native authentication evidence](local-network-sync.md#native-authentication-at-31ced1f).
-Public audience and branding configuration remain unverified.
+The owner later confirmed the External audience is `In production` after
+completing the approved branding fields; see Public availability below.
 
 | Registration | Owner-supplied value |
 | --- | --- |
@@ -42,8 +43,9 @@ Public audience and branding configuration remain unverified.
 | Android Web audience client ID | `1072382283165-3e4i7184unnrqunbr212i42hbg8fpics.apps.googleusercontent.com` |
 
 The CLI required reauthentication when inspecting this project. No cloud
-settings were changed; billing, audience, and published branding remain
-unverified. Do not enable or link billing for registration, or disable an
+settings were changed by that inspection. The later publishing status is an
+owner observation, not an authenticated CLI inspection. Do not enable or link
+billing for registration, or disable an
 existing billing configuration without first establishing what depends on it.
 
 The project owner performs these steps in the
@@ -89,16 +91,17 @@ make registration work.
 
 ## Public availability
 
-On 2026-11-15 the owner reported `External` and `Testing` on the selected
-project's Audience page. This is an owner observation, not an independently
-authenticated console inspection. The project has not been reported as
-`In production`. Two different real accounts subsequently authenticated on both
-native platforms and passed the [account-isolation flows](local-network-sync.md#two-real-google-accounts-at-5f899a2).
-Any approved change to the project's publishing state remains required.
+On 2026-11-15 the owner initially reported `External` and `Testing` on the
+selected project's Audience page. After approving publication and entering the
+approved branding fields below, the owner explicitly reported `In production`.
+These are owner observations, not an independently authenticated console
+inspection. Two different real accounts authenticated on both native platforms
+and passed the [account-isolation flows](local-network-sync.md#two-real-google-accounts-at-5f899a2)
+using the same clients and identity scopes. No owner-only account allowlist is
+implemented in the app.
 
 Testing with two named test users alone does not demonstrate ordinary-account
-access. Before completion, inspect the actual External audience, requested
-scopes, publishing and branding state, and test an account outside any test-user
+access. The public configuration must also permit accounts outside a test-user
 list. Google's current [app-state overview](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview)
 documents an exception: External apps requesting only basic identity scopes
 can admit accounts outside that list even while in Testing. Do not infer an
@@ -124,8 +127,8 @@ The prepared production change is limited to this existing project's publishing
 status, from `Testing` to `In production`, retaining its existing clients and
 basic identity scopes. It does not publish an APK, installer or GitHub Release.
 The owner approved this exact change on 2026-11-15 by selecting
-`Publish Google sign-in`. Approval does not establish that Google has applied
-the change; the resulting status has not yet been reported. No connected
+`Publish Google sign-in`. The later explicit `In production` report establishes
+the owner-observed result, separately from that approval. No connected
 Google Cloud management tool is available in this implementation session, and
 the host blocked launching the console link. The project owner completes the
 confirmation in the existing Google console session.
@@ -172,9 +175,11 @@ Google's [branding requirements](https://support.google.com/cloud/answer/1554904
 require a public homepage on an owned verified domain, a matching privacy-policy
 link on that same domain, and a monitored support address visible to users.
 GitHub Pages is [available for public repositories on GitHub Free](https://docs.github.com/en/pages/quickstart).
-Google domain ownership verification and the actual resulting
-branding/publishing states must still be observed. An accessible Pages URL is
-not evidence that Google has accepted or verified that domain.
+The owner subsequently confirmed production publishing after configuring the
+approved fields. This records the accepted publishing state and required console
+configuration as reported by the owner; it does not claim an independently
+inspected Search Console ownership record or a Google verified-brand badge.
+An accessible Pages URL alone would not establish Google's acceptance.
 
 ### Published static pages and in-app privacy access
 
@@ -232,16 +237,35 @@ passed. The 488,660,407-byte debug APK has SHA-256
 Its packaged stripped core matches the fresh output, all 962 entries exclude
 the publisher Desktop secret, and its certificate retains SHA-256
 `fa6da2233c2062b48baf20b3562eacacce774da80f2e4bb3d20ec3a6a527ec28`.
-ADB then reported no connected phone. The pre-update backup stopped at its
-first read and no installation was attempted. The new Android policy action
-therefore remains an installed-device acceptance requirement; earlier native
-LAN/account evidence remains identified by its earlier build.
+ADB initially reported no connected phone. That pre-update backup stopped at
+its first read and no installation was attempted. After the owner reconnected
+the phone, a new complete backup retained the installed APK, original library,
+both account databases and sealed Gemini credential before `adb install -r -t`
+updated the physical Galaxy S21+ without uninstalling it.
+
+`node artifacts/branding/privacy-native.mjs android` then passed: the running
+core and screen both identified `ff30ca8`, the original account restored without
+sign-in, and the actual settings button opened the exact policy URL observed in
+Chrome's address bar. The account generation and last-opened video remained
+unchanged. `python artifacts/native-sync-20261115/phone-privacy-retention.py final`
+reported all original library rows and the sealed Gemini credential preserved,
+with 3 ready jobs and 0 active jobs. The native foreground sync service was
+present after the update. Private receipts are
+`artifacts/branding/android-policy-native.json` and
+`artifacts/native-sync-20261115/phone-after-privacy-update/retention.json`.
+Documentation-only descendants reuse this evidence while application and test
+sources remain unchanged; they do not identify a newly stamped native build.
+The final read-only `node artifacts/branding/final-native-health.mjs` check
+confirmed both running cores and screens identify `ff30ca8`, both restored the
+original account, and both report `connected` after the Android update and
+privacy action. It checks source equivalence before reusing native build evidence.
 
 The free static website and its approved public contact are the only added
 hosting scope. No website endpoint receives app authentication or library
-transfers, and no paid domain or synchronization service is authorized. Google
-branding/domain verification and the final production publishing status remain
-pending owner observations. No repository gate or final verification was run.
+transfers, and no paid domain or synchronization service is authorized. The
+owner-confirmed production publishing status follows the required branding
+configuration. No repository gate or final verification was run; those checks
+remain server-owned.
 
 If Google requests a home page, privacy policy, domain ownership, or brand
 verification, prepare the exact text and destinations before publication.
@@ -299,5 +323,7 @@ deletion after reconnection, account switching, and restart recovery. The
 [native evidence](local-network-sync.md#native-one-account-flows-at-fc0d072)
 records one-account transfers, playback, deletion, Home delivery and restart
 recovery. Later observations at `5f899a2` cover screen-off Ethernet/Wi-Fi delivery
-and two-account isolation on both native platforms. Public OAuth publishing
-configuration remains pending. The full task and repository gate remain required.
+and two-account isolation on both native platforms. The final privacy action
+passed on both platforms at `ff30ca8`, and the owner confirmed public production
+configuration. The server-owned repository gate and final verification remain
+pending; the focused checks are not a claim that either passed.
