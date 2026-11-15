@@ -44,6 +44,13 @@ class KeyArgs {
 class DownloadArgs { var url: String = "" }
 
 @InvokeArg
+class SyncArgs {
+    var owner: String = ""
+    var generation: Long = 0
+    var enabled: Boolean = false
+}
+
+@InvokeArg
 class UpdateArgs {
     var version: String = ""
     var summary: String = ""
@@ -69,6 +76,14 @@ class WatchArgs {
 
 @TauriPlugin
 class VtoPlugin(private val activity: Activity) : Plugin(activity) {
+    @Command fun registerSync(invoke: Invoke) = guard(invoke) {
+        SyncService.register(activity, invoke.parseArgs(SyncArgs::class.java).owner)
+        invoke.resolve()
+    }
+    @Command fun syncBackground(invoke: Invoke) = guard(invoke) {
+        val args = invoke.parseArgs(SyncArgs::class.java)
+        invoke.resolve(JSObject().put("active", SyncService.set(activity, args.owner, args.generation, args.enabled)))
+    }
     private val google by lazy { GoogleAccount(activity) }
     @Command fun googleSignIn(invoke: Invoke) = google.signIn(invoke)
     @Command fun googleCancel(invoke: Invoke) = google.cancel(invoke)

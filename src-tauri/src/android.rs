@@ -24,6 +24,12 @@ pub fn plugin() -> TauriPlugin<Wry> {
 }
 
 impl Mobile {
+    pub fn register_sync(&self, owner: &str) -> Result<(), String> {
+        self.call("registerSync", json!({"owner":owner})).map(drop)
+    }
+    pub fn sync_background(&self, owner: &str, generation: u64, enabled: bool) -> Result<bool, String> {
+        Ok(self.call("syncBackground", json!({"owner":owner,"generation":generation,"enabled":enabled}))?["active"].as_bool().unwrap_or(false))
+    }
     pub fn update_notice(&self, update: &crate::updates::Update) -> Result<bool, String> {
         Ok(self.call("updateNotice", serde_json::to_value(update).map_err(|e| e.to_string())?)?["download"].as_bool().unwrap_or(false))
     }

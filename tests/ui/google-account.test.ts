@@ -7,6 +7,39 @@ type Account = { generation: number; state: string; email: string | null; error:
 const signedOut = (generation = 7): Account => ({ generation, state: 'signed_out', email: null, error: null, sync_ready: false });
 const settings = { key_set: true, key_masked: '••••WXYZ', translation_model: 'gemini-3.1-flash-lite' };
 
+test('a new-peer authentication request offers native sign-in renewal without discarding the displayed account', async () => {
+  let account = {...signedOut(21), state:'signed_in', email:'one@example.org', connection:{state:'authentication_required', last_success:null}};
+  const calls = native((command, args) => {
+    if (command === 'get_google_account') return account;
+    expect(command).toBe('google_sign_in');
+    expect(args).toEqual({generation:21});
+    return account = {...account, generation:22, state:'signing_in'};
+  });
+  const root = open('/preferences');
+  await vi.waitFor(() => expect(text(root)).toContain('새 기기에 계정을 확인하려면'));
+  expect(text(root)).toContain('one@example.org');
+  expect(calls.some(call => call.command === 'google_sign_in')).toBe(false);
+  button(root, 'Google 로그인 갱신').click();
+  await vi.waitFor(() => expect(text(root)).toContain('Google 화면에서 로그인을 완료해 주세요'));
+  expect(calls.filter(call => call.command === 'google_sign_in')).toHaveLength(1);
+});
+
+test('connection recovery updates automatically and an unrelated account event retires the displayed identity', async () => {
+  let state = 'interrupted';
+  native(command => {
+    expect(command).toBe('get_google_account');
+    return {...signedOut(25), state:'signed_in', email:'one@example.org', sync_ready:state === 'connected',
+      connection:{state, last_success:state === 'connected' ? 1800000000 : null}};
+  });
+  const root = open('/preferences');
+  await vi.waitFor(() => expect(text(root)).toContain('저장한 변경을 유지하며 자동으로 다시 시도합니다'));
+  state = 'connected';
+  await vi.waitFor(() => expect(text(root)).toContain('최근 동기화를 완료했습니다'));
+  window.dispatchEvent(new CustomEvent('vto-account-changed', {detail:26}));
+  await vi.waitFor(() => expect(text(root)).not.toContain('one@example.org'));
+  expect(button(root, '계정 상태 다시 불러오기')).toBeTruthy();
+});
+
 function native(handler: (command: string, args: any) => unknown | Promise<unknown>) {
   const calls: { command: string; args: any }[] = [];
   vi.stubGlobal('__TAURI_INTERNALS__', { invoke: async (command: string, args: any) => {
@@ -117,7 +150,8 @@ test('expired authentication and failed re-queries show recovery without claimin
     return { ...signedOut(), state: 'expired', error: 'Google authentication expired' };
   });
   const root = open('/preferences');
-  await vi.waitFor(() => expect(text(root)).toContain('Google 로그인이 만료됐습니다'));
+  await vi.waitFor(() => expect(text(root)).toContain('기기의 Google 연결이 만료됐습니다'));
+  expect(text(root)).toContain('저장한 보관함은 계속 열 수 있습니다');
   button(root, 'Google 계정으로 로그인').click();
   await vi.waitFor(() => expect(text(root)).toContain('Google 계정 상태를 확인하지 못했습니다'));
   button(root, '계정 상태 다시 불러오기').click();

@@ -81,6 +81,7 @@ fn ethernet_and_wifi_addresses_share_policy_without_using_adapter_names() {
         "[::ffff:192.168.0.2]:49152",
     ] {
         assert!(!pc.allows(peer.parse().unwrap()), "{peer}");
+        assert!(matches!(pc.connect(peer.parse().unwrap()), Err(Failure::Unavailable)), "connect must reject {peer} before opening a socket");
     }
     assert_eq!(
         pc.bind_address(49152),

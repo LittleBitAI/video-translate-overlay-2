@@ -79,7 +79,7 @@ fn account_error(error: crate::google_auth::AuthError) -> ApiError {
 
 #[tauri::command(async, rename_all = "snake_case")]
 pub async fn get_google_account(core: Shared<'_>) -> ApiResult {
-    serde_json::to_value(core.account.status().map_err(account_error)?).map_err(|_| api::err(500, "internal", "계정 상태를 불러오지 못했습니다."))
+    api::get_google_account(&core)
 }
 
 #[tauri::command(async, rename_all = "snake_case")]

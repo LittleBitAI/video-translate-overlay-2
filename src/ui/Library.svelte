@@ -101,9 +101,10 @@
     channel = new BroadcastChannel('vto-library');
     channel.onmessage = refresh;
     window.addEventListener('vto-video-deleted', refresh);
+    window.addEventListener('vto-library-changed', refresh);
     window.addEventListener('vto-account-changed', accountChanged);
     load();
-    return () => { channel.close(); window.removeEventListener('vto-video-deleted', refresh); window.removeEventListener('vto-account-changed', accountChanged); };
+    return () => { channel.close(); window.removeEventListener('vto-video-deleted', refresh); window.removeEventListener('vto-library-changed', refresh); window.removeEventListener('vto-account-changed', accountChanged); };
   });
   onDestroy(() => { retired = true; generation++; });
 </script>

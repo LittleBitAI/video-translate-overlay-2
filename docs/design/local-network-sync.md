@@ -27,8 +27,9 @@ task can be reported complete. See [Google registration](google-auth-setup.md).
 `src-tauri/src/sync.rs` implements the account-scoped journal and typed transfer
 format. The native account manager opens it after verified sign-in. Production
 library projection and account selection are connected to the library APIs.
-Discovery and encrypted peer transfers are not connected to a native network
-worker yet. No sync listener opens. No existing user library has
+Discovery and encrypted peer transfers are now connected to a native controller.
+Only native app setup starts it; development HTTP and contract hosts do not open
+the sync listener. Current native-device acceptance remains pending. No existing user library has
 been imported or changed.
 
 The settings screen now starts a separate native Google sign-in: Windows uses
@@ -38,7 +39,7 @@ the registered Web audience. The core verifies Google's signature, issuer,
 audience, authorized party, expiry, nonce and verified email. The stable Google
 subject identifies the journal; email is only a display value. Successful
 Google sign-in and restoration after restart were observed on Windows and a
-physical Android phone at `31ced1f`; device transfers remain unimplemented.
+physical Android phone at `31ced1f`; that evidence predates the native controller.
 
 Windows seals the private session blob with user-scoped DPAPI. Android seals
 it with its own Keystore AES-GCM key, separate from Gemini credentials. Tokens
@@ -88,6 +89,58 @@ Account cancellation prevents further page reads, writes and journal commits.
 The worker must discard a channel after any failed exchange. Discovery, native
 listener ownership and Android lifecycle integration remain separate unfinished
 work.
+
+`sync_runtime.rs` creates one controller in native setup and hands only a weak
+core reference to its owner thread. Each verified account/network lease owns its
+DNS-SD daemon, nonblocking Windows listeners and cancellation flag. Android
+discovers Windows advertisements and initiates connections; each authenticated
+connection exchanges one page in both directions. Successful peers are checked
+again after two seconds, without an address entry or manual sync control. Failed
+attempts back off from two to thirty-two seconds. Interface changes replace the
+lease; old account or network outcomes cannot update its replacement.
+
+There are at most four pending or connected workers, sixteen discovered peers,
+and sixty-four recent incoming source addresses. Incoming sources are throttled
+per address. An outbound socket is bound to its selected local interface address
+before connecting, and its actual local and peer addresses are checked. Public,
+loopback, multicast and out-of-prefix targets fail before a connection opens.
+Each worker owns its socket; the controller holds only a shutdown clone while
+it runs. Retiring a lease shuts down those sockets, and worker guards release
+their slots. Completed worker threads are joined. On app exit, the UI requests
+stop and a background shutdown thread waits for the controller, discovery
+acknowledgement and remaining workers before allowing exit. Dropping the native
+controller also signals stop and shuts down registered sockets.
+
+Native status contains a connection state, account generation and optional last
+success time, without peer addresses, device names or account identifiers.
+Discovery, listener, authentication, account mismatch, interrupted transfer and
+background-service failures have distinct recovery text. The search message
+groups PC unavailability, blocked discovery, firewall and network isolation;
+it does not claim to diagnose which one occurred. A recent authenticated page
+exchange is required before `sync_ready` is true. A peer needing a fresh Google
+proof can request explicit sign-in renewal without erasing the local library.
+
+Android uses a separate non-exported `SyncService`, with an ongoing notification
+and a multicast lock. Its native controller registers a random ownership token;
+retired controllers and account generations cannot restart or stop a replacement
+service. Service creation requires a visible activity and enabled notifications.
+If those conditions fail, the Rust controller closes its lease and reports
+background pause. Returning to the activity retries the requested service and
+automatic discovery. Sign-out, credential expiry and controller shutdown release
+the service and multicast lock. It uses `START_NOT_STICKY`; a killed process
+does not claim delivery until the app is reopened.
+
+The `connectedDevice` type and `FOREGROUND_SERVICE_CONNECTED_DEVICE` permission
+cover network interaction with an external device; the normal
+`CHANGE_WIFI_MULTICAST_STATE` permission supplies its documented prerequisite.
+See [Android foreground service types](https://developer.android.com/develop/background-work/services/fgs/service-types#connected-device).
+This service holds no permanent CPU wake lock. Android suspension may delay
+delivery, and actual screen-off latency remains an acceptance requirement.
+The translation job's existing service and wake-lock policy are unchanged.
+
+Automatic cleanup of remote video-deletion markers, playback integration and
+native transfer acceptance remain unfinished. The controller's existence and
+offline protocol tests are not evidence that those flows work on devices.
 
 `sync_discovery.rs` selects operational private IPv4, IPv6 ULA and scoped
 link-local interfaces. Point-to-point and public addresses are excluded.
@@ -365,6 +418,25 @@ video-translate-overlay --lib sync::library:: -- --nocapture` then passed all
 restoration; existing completed-version, active-job and consent checks remain.
 
 ## Focused authentication evidence
+
+The native-controller addition passed `cargo test -p video-translate-overlay
+--lib sync_ -- --nocapture`: 22 tests across discovery, TLS, protocol and runtime
+ownership. The five runtime cases cover bounded pending workers, shutdown of an
+actual socket, refusal to attach after lease retirement, bounded retry timing,
+signed-out controller shutdown and refused Android background ownership (some
+checks share a case). The existing discovery table now also checks the outbound
+connection refusal boundary. These tests use loopback or refused interfaces;
+they do not start an authenticated listener on the user's LAN.
+
+The Windows app `cargo check` passed with `--features app`. Android
+`:app:compileArm64DebugKotlin -x rustBuildArm64Debug --console=plain` passed with
+the existing JDK 17 and SDK, including the final service timeout hook. These are
+compilation checks, not installed-app acceptance. The focused Google account and
+account-library Chromium files passed 16 tests, including automatic recovery
+status, explicit new-peer reauthentication and retirement of a displayed account.
+The expiry-copy assertion now checks retained local access as well as sign-in
+recovery. The audit retained every affected check and added no skips or expected
+failures. Native build, two-account and background evidence remain pending.
 
 Account-library integration passed all 14 `account::` tests, including production
 API isolation, named import consent, retained original cue intervals and cost,

@@ -8,6 +8,7 @@
     email: string | null;
     error: string | null;
     sync_ready: boolean;
+    connection?: { state: string; last_success: number | null };
   };
 
   const native = inApp();
@@ -20,6 +21,20 @@
   let confirming = $state(false);
   let generation = 0;
   let polling = false;
+  const connectionText: Record<string, string> = {
+    listening:'PC에서 연결을 기다립니다. 휴대폰에서 같은 Google 계정으로 로그인하면 자동으로 연결합니다.',
+    searching:'PC 앱을 켜고 같은 네트워크에 연결해 주세요. PC가 유선이고 휴대폰이 Wi-Fi여도 연결할 수 있습니다. 연결되지 않으면 Windows 방화벽의 비공개 네트워크 허용과 공유기의 게스트망·기기간 차단 설정을 확인해 주세요.',
+    connected:'최근 동기화를 완료했습니다. 두 기기의 보관함을 계속 자동으로 확인합니다.',
+    no_private_network:'연결할 로컬 네트워크가 없습니다. PC와 휴대폰을 같은 네트워크에 연결해 주세요.',
+    discovery_unavailable:'주변 PC를 찾지 못했습니다. 같은 네트워크인지 확인하고, 공유기의 기기간 차단과 방화벽 설정을 확인해 주세요. 자동으로 다시 시도합니다.',
+    listener_unavailable:'PC에서 기기 연결을 열지 못했습니다. 방화벽의 비공개 네트워크 허용과 네트워크 상태를 확인해 주세요. 자동으로 다시 시도합니다.',
+    background_paused:'백그라운드 연결을 유지하지 못했습니다. 앱의 알림 권한과 백그라운드 설정을 확인하고 앱 화면으로 돌아와 주세요. 저장한 변경은 유지합니다.',
+    authentication_required:'새 기기에 계정을 확인하려면 Google 로그인 갱신이 필요합니다. PC와 휴대폰에서 같은 계정으로 다시 로그인해 주세요. 저장한 보관함은 유지합니다.',
+    interrupted:'기기 연결이 끊겼습니다. PC와 네트워크 상태를 확인해 주세요. 저장한 변경을 유지하며 자동으로 다시 시도합니다.',
+    account_mismatch:'다른 Google 계정의 기기와는 연결하지 않았습니다. PC와 휴대폰의 Google 앱 계정을 확인해 주세요.',
+    rejected:'유효한 기기 연결을 확인하지 못해 데이터를 보내지 않았습니다. 두 기기의 앱과 Google 앱 계정을 확인해 주세요. 자동으로 다시 시도합니다.',
+    stopped:'기기간 연결을 중지했습니다. 앱을 다시 열면 연결을 확인합니다.',
+  };
 
   function valid(value: any): value is Account {
     return Number.isSafeInteger(value?.generation) && value.generation >= 0
@@ -49,7 +64,7 @@
   }
 
   async function poll() {
-    if (polling || sending || !account || !['loading', 'signing_in'].includes(account.state) || needsReload) return;
+    if (polling || sending || !account || !['loading', 'signing_in', 'signed_in'].includes(account.state) || needsReload) return;
     const screen = generation;
     const owner = account.generation;
     polling = true;
@@ -93,8 +108,14 @@
     if (!native) return;
     // Arm the status watcher before any sign-in can start its native worker.
     const timer = window.setInterval(poll, 500);
+    const changed = (event: Event) => {
+      if (sending || !account || (event as CustomEvent).detail === account.generation) return;
+      generation++; account = null; confirming = false; polling = false;
+      failure = '다른 화면에서 계정 상태가 바뀌었습니다. 다시 불러와 주세요.'; needsReload = true;
+    };
+    window.addEventListener('vto-account-changed', changed);
     load();
-    return () => window.clearInterval(timer);
+    return () => { window.clearInterval(timer); window.removeEventListener('vto-account-changed', changed); };
   });
   onDestroy(() => generation++);
 </script>
@@ -109,7 +130,12 @@
   {:else}
     {#if account?.state === 'signed_in'}
       <p class="mt-2 break-words text-base" role="status">연결한 Google 계정: <bdi>{account.email}</bdi></p>
-      {#if !account.sync_ready}
+      {#if account.connection && connectionText[account.connection.state]}
+        <p class="mt-2 text-sm text-ink/70" role="status">{connectionText[account.connection.state]}</p>
+        {#if account.connection.state === 'authentication_required'}
+          <button type="button" class="{outline} mt-4" disabled={sending || needsReload} onclick={() => change('sign-in')}>Google 로그인 갱신</button>
+        {/if}
+      {:else if !account.sync_ready}
         <p class="mt-1 text-sm text-ink/70">Google 계정은 연결됐습니다. 기기간 동기화는 아직 연결되지 않았습니다.</p>
       {/if}
     {:else if account?.state === 'signing_in'}
@@ -117,7 +143,7 @@
     {:else if account?.state === 'loading'}
       <p class="mt-2 text-sm text-ink/70" role="status">저장한 Google 계정을 확인하는 중입니다.</p>
     {:else if account?.state === 'expired'}
-      <p class="mt-2 text-sm text-accent" role="status">Google 로그인이 만료됐습니다. 다시 로그인해 주세요.</p>
+      <p class="mt-2 text-sm text-accent" role="status">기기의 Google 연결이 만료됐습니다. 다시 로그인해 주세요. 이 계정의 저장한 보관함은 계속 열 수 있습니다.</p>
     {:else if account?.error === 'Google Desktop registration is missing or invalid'}
       <p class="mt-2 text-sm text-accent" role="status">앱 제공자가 Google 로그인 등록 정보를 수정해야 합니다. 수정된 앱에서 다시 시도해 주세요.</p>
     {:else if account?.state === 'unavailable' || account?.error}

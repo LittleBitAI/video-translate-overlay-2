@@ -201,6 +201,16 @@ pub fn get_settings(core: &Core) -> ApiResult {
     }))
 }
 
+pub fn get_google_account(core: &Core) -> ApiResult {
+    let mut status = core.account.status().map_err(|_| err(503, "auth_unavailable", "계정 상태를 확인하지 못했습니다."))?;
+    let connection = core.sync.get(status.generation);
+    status.sync_ready = status.state == crate::account::AuthState::SignedIn
+        && connection.as_ref().is_some_and(|snapshot| snapshot.state == crate::sync_runtime::ConnectionState::Connected);
+    let mut result = serde_json::to_value(status).map_err(|_| err(500, "internal", "계정 상태를 불러오지 못했습니다."))?;
+    if let Some(connection) = connection { result["connection"] = json!(connection); }
+    Ok(result)
+}
+
 pub fn put_api_key(core: &Core, api_key: &str) -> ApiResult {
     let key = api_key.trim();
     if !(20..=200).contains(&key.len()) || !key.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_') {

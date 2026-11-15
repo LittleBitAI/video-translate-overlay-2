@@ -71,8 +71,10 @@ account. The original data, cue times and recorded costs remain intact. It does
 not copy unfinished jobs, Gemini credentials or YouTube cookies. A job already
 started on this device continues in its original library after account changes.
 The selected device sign-in lasts at most thirty days; expiry stops transfers
-while preserving local account-library access. Automatic LAN delivery is still
-under implementation; see [implementation status](docs/design/local-network-sync.md).
+while preserving local account-library access. The development app now starts
+an automatic LAN controller. Native transfer and background acceptance, remote
+deletion cleanup and playback integration remain unfinished; see
+[implementation status](docs/design/local-network-sync.md).
 
 ## 처리 방식과 지원 범위
 

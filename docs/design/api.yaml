@@ -11,7 +11,7 @@
         "operationId": "P15",
         "summary": "Native app Google account status, separate from YouTube. App screens only. Never return tokens, subject, nonce, paths or credentials.",
         "responses": {
-          "200": {"description": "generation, state (unsupported/loading/signed_out/signing_in/signed_in/expired/unavailable), email or null, fixed error or null, and sync_ready. Identity alone does not imply an established sync connection."},
+          "200": {"description": "generation, state (unsupported/loading/signed_out/signing_in/signed_in/expired/unavailable), email or null, fixed error or null, sync_ready, and optional connection (generation, fixed state, last_success timestamp or null). Connection states distinguish private-network, discovery, listener, authentication, account mismatch, background and transport recovery. No endpoint or peer identity is returned. Only a recent authenticated page exchange sets sync_ready; identity alone does not."},
           "503": {"description": "Account status unavailable"}
         }
       }

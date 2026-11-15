@@ -57,6 +57,21 @@ impl Network {
         }
     }
 
+    pub fn connect(&self, peer: SocketAddr) -> Result<TcpStream> {
+        if !self.allows(peer) { return Err(Failure::Unavailable); }
+        let socket = socket2::Socket::new(socket2::Domain::for_address(peer), socket2::Type::STREAM, Some(socket2::Protocol::TCP))
+            .map_err(|_| Failure::Unavailable)?;
+        socket.bind(&self.bind_address(0).into()).map_err(|_| Failure::Unavailable)?;
+        socket.connect_timeout(&peer.into(), Duration::from_secs(1)).map_err(|_| Failure::Unavailable)?;
+        let tcp: TcpStream = socket.into();
+        if tcp.local_addr().map_err(|_| Failure::Unavailable)?.ip() != self.ip
+            || tcp.peer_addr().map_err(|_| Failure::Unavailable)? != peer {
+            return Err(Failure::Unavailable);
+        }
+        tcp.set_nodelay(true).map_err(|_| Failure::Unavailable)?;
+        Ok(tcp)
+    }
+
     pub fn allows(&self, peer: SocketAddr) -> bool {
         if !private(self.ip) || !private(peer.ip()) || peer.ip() == self.ip {
             return false;

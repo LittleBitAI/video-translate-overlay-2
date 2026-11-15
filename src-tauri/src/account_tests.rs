@@ -87,6 +87,16 @@ fn configured(profile: &Profile) -> (Arc<Manager>, Arc<Native>) {
     (manager, native)
 }
 
+pub(crate) fn signed_in_manager(root: &std::path::Path, subject: &str) -> Manager {
+    let manager = Manager::with_test_verifier(root.into());
+    let native = Arc::new(Native::default());
+    *native.subject.lock().unwrap() = subject.into();
+    manager.configure(native).unwrap();
+    manager.restore().unwrap();
+    manager.sign_in(manager.status().unwrap().generation).unwrap();
+    manager
+}
+
 #[test]
 fn production_library_requests_select_the_account_and_copy_legacy_data_only_with_current_consent() {
     use crate::api::{library_request, video_key};

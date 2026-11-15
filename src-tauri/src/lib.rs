@@ -30,6 +30,7 @@ pub mod sync;
 mod sync_tls;
 mod sync_channel;
 mod sync_discovery;
+mod sync_runtime;
 pub mod updates;
 pub mod web;
 #[cfg(feature = "whisper")]
@@ -72,6 +73,7 @@ pub trait KeyStore: Send + Sync {
 
 /// The in-app webview that shows video sites.
 pub trait Browser: Send + Sync {
+    fn refresh_library(&self) -> Result<(), String> { Ok(()) }
     fn invalidate_account(&self, _generation: u64) -> Result<(), String> { Ok(()) }
     fn open_download(&self, _url: &str) -> Result<(), String> { Err("external downloads are unavailable".into()) }
     /// Drops cached subtitles in open views before permanent cleanup starts.
@@ -84,6 +86,8 @@ pub trait Browser: Send + Sync {
 
 /// The notification shade.
 pub trait Notifier: Send + Sync {
+    fn register_sync(&self, _owner: &str) -> Result<(), String> { Ok(()) }
+    fn sync_background(&self, _owner: &str, _generation: u64, _enabled: bool) -> Result<bool, String> { Ok(true) }
     /// The ongoing notice of a running job: `shown`, `updated` or `hidden`.
     fn ongoing(&self, job_id: &str, state: &str, title: &str, percent: i64);
     /// Called when 영상감지 is pressed, before the media check, while the app is
@@ -122,6 +126,7 @@ pub const GEMINI_BASE_URL: &str = "https://generativelanguage.googleapis.com";
 
 /// Everything the commands and the worker share.
 pub struct Core {
+    pub(crate) sync: sync_runtime::StatusStore,
     pub account: account::Manager,
     pub updates: updates::Checker,
     pub cfg: Config,
@@ -138,7 +143,7 @@ impl Core {
         std::fs::create_dir_all(cfg.data_dir.join("audio")).map_err(|e| format!("data folder: {e}"))?;
         let store = store::Store::open(&cfg.data_dir.join("app.sqlite3"))?;
         let account = account::Manager::new(cfg.data_dir.clone());
-        let core = Arc::new(Core { cfg, store, svc, account, updates: updates::Checker::default(), wake: (Mutex::new(false), Condvar::new()), create_lock: Mutex::new(()) });
+        let core = Arc::new(Core { cfg, store, svc, account, sync: Default::default(), updates: updates::Checker::default(), wake: (Mutex::new(false), Condvar::new()), create_lock: Mutex::new(()) });
         let worker = core.clone();
         std::thread::Builder::new().name("jobs".into()).spawn(move || pipeline::run_worker(worker)).map_err(|e| e.to_string())?;
         Ok(core)

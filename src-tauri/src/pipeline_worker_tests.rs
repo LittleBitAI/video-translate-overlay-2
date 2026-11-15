@@ -175,6 +175,7 @@ fn a_bug_fails_the_job_instead_of_leaving_it_running() {
 
 pub(crate) fn idle_core(dir: &Path, endpoint: &str) -> Core {
     Core {
+        sync: Default::default(),
         account: crate::account::Manager::new(dir.into()),
         updates: Default::default(),
         cfg: Config { data_dir: dir.into(), gemini_base_url: endpoint.into(), allow_loopback_media: true },

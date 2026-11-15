@@ -151,10 +151,7 @@ fn content_type(f: &Path) -> &'static str {
 pub fn call(core: &Core, cmd: &str, a: &Value) -> ApiResult {
     let s = |k: &str| a[k].as_str().unwrap_or_default().to_string();
     match cmd {
-        "get_google_account" => {
-            let status = core.account.status().map_err(|_| err(503, "auth_unavailable", "계정 상태를 확인하지 못했습니다."))?;
-            serde_json::to_value(status).map_err(|_| err(500, "internal", "계정 상태를 불러오지 못했습니다."))
-        }
+        "get_google_account" => api::get_google_account(core),
         "google_sign_in" | "google_sign_out" => Err(err(403, "native_required", "Google 계정은 Windows 또는 Android 앱에서 연결해 주세요.")),
         "check_updates" => core.updates.check(&core.cfg.data_dir, a["manual"].as_bool().unwrap_or(false)),
         "dismiss_update" => core.updates.dismiss(&core.cfg.data_dir, &s("version")),

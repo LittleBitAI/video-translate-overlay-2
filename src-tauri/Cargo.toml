@@ -68,6 +68,7 @@ x509-parser = { version = "0.18", default-features = false }
 # Standards-based discovery and explicit private-interface selection.
 mdns-sd = { version = "0.21", default-features = false }
 if-addrs = "0.15"
+socket2 = "0.6"
 webpki-roots = "1"
 # Decoding where Media Foundation is not there (Android); built everywhere so its tests run on Windows too.
 symphonia = { version = "0.5", default-features = false, features = ["aac", "isomp4", "mkv", "mp3", "pcm", "vorbis"] }

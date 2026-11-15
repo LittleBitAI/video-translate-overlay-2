@@ -29,6 +29,12 @@ const SITE: &str = if cfg!(mobile) { "main" } else { "site" };
 struct TauriBrowser(Handle);
 
 impl Browser for TauriBrowser {
+    fn refresh_library(&self) -> Result<(), String> {
+        for window in app(&self.0)?.webview_windows().values() {
+            window.eval("window.dispatchEvent(new Event('vto-library-changed'))").map_err(|e| e.to_string())?;
+        }
+        Ok(())
+    }
     fn invalidate_account(&self, generation: u64) -> Result<(), String> {
         for window in app(&self.0)?.webview_windows().values() {
             window.eval(format!("window.dispatchEvent(new CustomEvent('vto-account-changed',{{detail:{generation}}}))"))
@@ -96,6 +102,14 @@ impl TauriNotifier {
 }
 
 impl Notifier for TauriNotifier {
+    #[cfg(target_os = "android")]
+    fn register_sync(&self, owner: &str) -> Result<(), String> {
+        app(&self.0)?.state::<crate::android::Mobile>().register_sync(owner)
+    }
+    #[cfg(target_os = "android")]
+    fn sync_background(&self, owner: &str, generation: u64, enabled: bool) -> Result<bool, String> {
+        app(&self.0)?.state::<crate::android::Mobile>().sync_background(owner, generation, enabled)
+    }
     fn ongoing(&self, job_id: &str, state: &str, title: &str, percent: i64) {
         let title = if self.current_generation(job_id).is_some() { title } else { "진행 중인 자막 작업" };
         // Android: the foreground service's ongoing notification carries the progress.
@@ -354,7 +368,12 @@ pub fn run() {
             tauri::async_runtime::spawn_blocking(move || {
                 if let Err(error) = restore_core.account.restore() { vto::log(error.to_string()); }
             });
-            app.manage(core);
+            app.manage(core.clone());
+            #[cfg(any(windows, target_os = "android"))]
+            match crate::sync_runtime::Runtime::start(&core, cfg!(windows)) {
+                Ok(runtime) => { app.manage(runtime); },
+                Err(_) => vto::log("native sync controller could not start"),
+            }
             // The one window is also the site window on Android.
             crate::screens::show_main(&*app, cfg!(mobile).then_some(OVERLAY_JS))?;
             #[cfg(target_os = "android")]
@@ -394,6 +413,19 @@ pub fn run() {
         .build(ctx)
         .expect("start the app")
         .run(|app, event| {
+            if let tauri::RunEvent::ExitRequested { api, code, .. } = &event {
+                if let Some(core) = app.try_state::<Arc<Core>>() { core.account.shutdown(); }
+                if let Some(runtime) = app.try_state::<crate::sync_runtime::Runtime>() {
+                    if let Some(worker) = runtime.stop() {
+                        api.prevent_exit();
+                        let quitting = app.clone(); let code = code.unwrap_or(0);
+                        if std::thread::Builder::new().name("sync-shutdown".into()).spawn(move || {
+                            if worker.join().is_err() { vto::log("native sync controller panicked during shutdown"); }
+                            quitting.exit(code);
+                        }).is_err() { app.exit(code); }
+                    }
+                }
+            }
             if matches!(event, tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit) {
                 if let Some(core) = app.try_state::<Arc<Core>>() { core.account.shutdown(); }
             }
