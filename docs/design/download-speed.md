@@ -14,11 +14,17 @@ speed.
   the byte the previous one ended, stay within the asked range and its
   `Content-Length`, and carry the complete length, `ETag` and `Last-Modified`
   of the first piece. Pieces are joined only when the first one names a single
-  revision of the file: a strong `ETag`, or a `Last-Modified` date. YouTube's
-  audio sends `Last-Modified` and no `ETag` (observed on the measured URL:
-  `Last-Modified: Fri, 13 Sep 2024 08:50:31 GMT` on every range). With no
-  validator, or only a weak `ETag`, two equal-length revisions would look
-  alike, so the file is taken in one whole-file response instead.
+  revision of the file. That takes a strong `ETag`, or a `Last-Modified`
+  that the same response's `Date` puts at least one second in the past
+  (RFC 9110 8.8.2.2). HTTP dates count whole seconds, so two revisions made
+  within one second can share a `Last-Modified`. Once a second has passed,
+  any later change carries a later date. YouTube's audio sends
+  `Last-Modified` and `Date` and no `ETag`. On every range of the measured
+  URL: `Last-Modified: Fri, 13 Sep 2024 08:50:31 GMT`, with `Date` that day,
+  e.g. `Mon, 16 Nov 2026 00:41:20 GMT`. With no validator, only a weak
+  `ETag`, or a `Last-Modified` that is too recent, undated or not in HTTP's
+  preferred date form, two equal-length revisions could look alike. Such a
+  file is taken in one whole-file response instead.
   A piece that drops is asked for again from the byte it reached; three failures in a row fail the attempt, which the worker then
   retries from the start as before. A server that answers the first range with
   200 sends the whole file in that one response, read as before. One request
@@ -178,9 +184,9 @@ about 30 minutes longer, roughly 90 minutes instead of 60.
 - One phone and one home Wi-Fi network, in two sessions. The harness measured
   one lecture; the in-app runs used two. Mobile data, other sites and HLS were
   not measured.
-- No server without a strong `ETag` or `Last-Modified` was measured. Such a
-  server now gets one whole-file request, as before this change, so its speed
-  is unchanged.
+- No server without a strong `ETag` or a dated `Last-Modified` was measured.
+  Such a server now gets one whole-file request, as before this change, so its
+  speed is unchanged.
 - The harness runs as the shell user, not inside the app process; the in-app
   run above uses the app itself and agrees with it.
 - YouTube's pacing of whole-file requests and its answers to ranges are

@@ -36,8 +36,10 @@ pinned in `src-tauri/src/whisper.rs`.
 - The signed audio URL came from the app's own YouTube WebView session, through
   the overlay's player request. On that URL each ranged answer carried
   `Last-Modified: Fri, 13 Sep 2024 08:50:31 GMT` and
-  `Content-Range: bytes a-b/58064373`, with no `ETag`, so the ranged path
-  applies under the revision rule of `c632ca1`.
+  `Content-Range: bytes a-b/58064373`, with no `ETag`. A URL issued the same
+  way on 2026-11-16 answered its first two 10 MiB ranges with that
+  `Last-Modified` and `Date: Mon, 16 Nov 2026 00:41:20 GMT`. So the ranged
+  path applies under the dated revision rule of the current head too.
 
 ## Files
 

@@ -863,7 +863,7 @@ fn download_file(
         }
         let (a, b, size) = r.content_range.as_deref().and_then(content_range).ok_or_else(|| format!("{url}: 206 without a usable Content-Range"))?;
         let identity = (size, r.etag.clone(), r.last_modified.clone());
-        if first.is_none() && !identifies_revision(&identity) {
+        if first.is_none() && !identifies_revision(&identity, r.date.as_deref()) {
             // Pieces of two equal-length revisions would look alike: take the file in one response instead.
             drop(r);
             let r = get(url, None)?;
@@ -910,10 +910,35 @@ fn download_file(
 }
 
 /// Whether a piece's validators name one revision of the file, so later pieces
-/// can be checked against it: a strong `ETag`, or a `Last-Modified` date
-/// (YouTube's audio sends only this). A weak `ETag` alone does not.
-fn identifies_revision((_, etag, modified): &(u64, Option<String>, Option<String>)) -> bool {
-    etag.as_deref().is_some_and(|e| !e.starts_with("W/")) || modified.is_some()
+/// can be checked against it: a strong `ETag`, or a `Last-Modified` that the
+/// same response's `Date` places at least one second in the past (RFC 9110
+/// 8.8.2.2). A change within that second would carry the same date; a change
+/// after it carries a later one. YouTube's audio sends only `Last-Modified`
+/// and `Date`. A weak `ETag`, or a date that is missing, unreadable or too
+/// recent, does not name a revision.
+fn identifies_revision((_, etag, modified): &(u64, Option<String>, Option<String>), date: Option<&str>) -> bool {
+    let strong_etag = etag.as_deref().is_some_and(|e| !e.starts_with("W/"));
+    let strong_date = match (modified.as_deref().and_then(http_date), date.and_then(http_date)) {
+        (Some(m), Some(d)) => d >= m + 1,
+        _ => false,
+    };
+    strong_etag || strong_date
+}
+
+/// An HTTP date in its preferred form (`Sun, 06 Nov 1994 08:49:37 GMT`) as
+/// Unix seconds; any other form is `None`.
+pub(crate) fn http_date(v: &str) -> Option<i64> {
+    let p: Vec<&str> = v.split(' ').collect();
+    let [wd, day, mon, year, hms, "GMT"] = p[..] else { return None };
+    const MONTHS: [&str; 12] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    let month = time::Month::try_from(MONTHS.iter().position(|m| *m == mon)? as u8 + 1).ok()?;
+    let num = |s: &str, n: usize| (s.len() == n && s.bytes().all(|b| b.is_ascii_digit())).then(|| s.parse::<u16>().ok()).flatten();
+    let [h, m, s] = hms.split(':').collect::<Vec<_>>()[..] else { return None };
+    let date = time::Date::from_calendar_date(num(year, 4)? as i32, month, num(day, 2)? as u8).ok()?;
+    let t = time::Time::from_hms(num(h, 2)? as u8, num(m, 2)? as u8, num(s, 2)? as u8).ok()?;
+    let at = time::PrimitiveDateTime::new(date, t).assume_utc();
+    // The weekday has to agree with the date, as the format requires.
+    (wd == format!("{},", &at.weekday().to_string()[..3])).then(|| at.unix_timestamp())
 }
 
 /// The whole file from one response, checked against its Content-Length.

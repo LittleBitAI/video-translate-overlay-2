@@ -19,7 +19,8 @@ enum Answer {
 
 /// A strong validator naming one revision.
 const V1: &str = "ETag: \"v1\"\r\n";
-const MODIFIED: &str = "Last-Modified: Fri, 13 Sep 2024 08:50:31 GMT\r\n";
+/// A `Last-Modified` the response's `Date` puts years in the past: strong.
+const MODIFIED: &str = "Last-Modified: Fri, 13 Sep 2024 08:50:31 GMT\r\nDate: Sun, 15 Nov 2026 21:16:57 GMT\r\n";
 
 type Seen = Arc<Mutex<Vec<Option<String>>>>;
 
@@ -122,33 +123,67 @@ fn a_dropped_piece_resumes_from_the_byte_it_reached() {
     assert_eq!(ranges, ["0-9999", "10000-19999", "14000-23999", "24000-33999"]);
 }
 
-/// Ranges are joined only under validators that name one revision: a strong
-/// `ETag` or a `Last-Modified`. Otherwise (no validator, or only a weak
-/// `ETag`) the file comes from one whole-file response, never a mix of two
-/// equal-length revisions.
+/// The rule: ranges are joined only under validators that name one revision,
+/// a strong `ETag` or a `Last-Modified` at least one second before the same
+/// response's `Date`. Every other form takes the file from one whole-file
+/// response, so equal-length revisions changed within one second, or served
+/// without a usable date, are never mixed.
 #[test]
 fn pieces_are_joined_only_under_a_validator_that_names_one_revision() {
     let (old, new) = (file(25_000), file(25_000).iter().map(|b| b ^ 0xff).collect::<Vec<u8>>());
-    let weak_and_modified = "ETag: W/\"v1\"\r\nLast-Modified: Fri, 13 Sep 2024 08:50:31 GMT\r\n";
-    for (validators, ranged) in [(V1, true), (MODIFIED, true), (weak_and_modified, true), ("ETag: W/\"v1\"\r\n", false), ("", false)] {
-        // The first request is answered from one revision, every later one from another.
-        let (url, seen) = serve_revisions(vec![old.clone(), new.clone()], move |_| Answer::Range { validators, cut: None });
-        let got = fetch(&url, 10_000).unwrap();
-        let seen = seen.lock().unwrap().clone();
+    let forms: [(&'static str, bool); 13] = [
+        (V1, true),
+        (MODIFIED, true),
+        ("Last-Modified: Fri, 13 Sep 2024 08:50:31 GMT\r\nDate: Fri, 13 Sep 2024 08:50:32 GMT\r\n", true),
+        ("ETag: W/\"v1\"\r\nLast-Modified: Fri, 13 Sep 2024 08:50:31 GMT\r\nDate: Sun, 15 Nov 2026 21:16:57 GMT\r\n", true),
+        // Changed within the second the date names: both revisions carry the same date.
+        ("Last-Modified: Fri, 13 Sep 2024 08:50:31 GMT\r\nDate: Fri, 13 Sep 2024 08:50:31 GMT\r\n", false),
+        ("Last-Modified: Fri, 13 Sep 2024 08:50:31 GMT\r\nDate: Fri, 13 Sep 2024 08:50:30 GMT\r\n", false),
+        ("Last-Modified: Fri, 13 Sep 2024 08:50:31 GMT\r\n", false),
+        ("Last-Modified: Fri, 13 Sep 2024 08:50:31 GMT\r\nDate: soon\r\n", false),
+        ("Last-Modified: Friday, 13-Sep-24 08:50:31 GMT\r\nDate: Sun, 15 Nov 2026 21:16:57 GMT\r\n", false),
+        ("ETag: W/\"v1\"\r\nLast-Modified: Fri, 13 Sep 2024 08:50:31 GMT\r\nDate: Fri, 13 Sep 2024 08:50:31 GMT\r\n", false),
+        ("ETag: W/\"v1\"\r\n", false),
+        ("Date: Sun, 15 Nov 2026 21:16:57 GMT\r\n", false),
+        ("", false),
+    ];
+    for (validators, ranged) in forms {
         if ranged {
-            // This server claims one revision throughout, so the ranged path is taken.
-            assert_eq!(seen.len(), 3, "{validators:?}");
-            assert!(seen.iter().all(Option::is_some), "{validators:?}");
+            // A server whose validator names one revision serves that revision throughout.
+            let (url, seen) = serve(old.clone(), move |_| Answer::Range { validators, cut: None });
+            assert_eq!(fetch(&url, 10_000).unwrap(), old, "{validators:?}");
+            let seen = seen.lock().unwrap().clone();
+            assert!(seen.len() == 3 && seen.iter().all(Option::is_some), "{validators:?}: not ranged: {seen:?}");
         } else {
-            assert_eq!(got, new, "{validators:?}: pieces of two revisions were joined");
-            assert_eq!(seen, [Some("0-9999".to_string()), None], "{validators:?}");
+            // The first request is answered from one revision, every later one from another.
+            let (url, seen) = serve_revisions(vec![old.clone(), new.clone()], move |_| Answer::Range { validators, cut: None });
+            assert_eq!(fetch(&url, 10_000).unwrap(), new, "{validators:?}: pieces of two revisions were joined");
+            assert_eq!(*seen.lock().unwrap(), [Some("0-9999".to_string()), None], "{validators:?}");
         }
     }
 }
 
 #[test]
+fn http_dates_are_read_only_in_their_preferred_form() {
+    assert_eq!(http_date("Fri, 13 Sep 2024 08:50:31 GMT"), Some(1_726_217_431));
+    assert_eq!(http_date("Sun, 15 Nov 2026 21:16:57 GMT"), Some(1_794_777_417));
+    for bad in [
+        "Sat, 13 Sep 2024 08:50:31 GMT",
+        "Fri, 13 Sep 2024 08:50:31 UTC",
+        "Friday, 13-Sep-24 08:50:31 GMT",
+        "Fri Sep 13 08:50:31 2024",
+        "Fri, 31 Sep 2024 08:50:31 GMT",
+        "Fri, 13 Sep 2024 24:00:00 GMT",
+        "Fri, 3 Sep 2024 08:50:31 GMT",
+        "",
+    ] {
+        assert_eq!(http_date(bad), None, "{bad}");
+    }
+}
+
+#[test]
 fn pieces_that_do_not_continue_the_same_file_fail_the_download() {
-    let later_modified = "Last-Modified: Sat, 14 Sep 2024 08:50:31 GMT\r\n";
+    let later_modified = "Last-Modified: Sat, 14 Sep 2024 08:50:31 GMT\r\nDate: Sun, 15 Nov 2026 21:16:57 GMT\r\n";
     for (first, later) in [(V1, "ETag: \"v2\"\r\n"), (MODIFIED, later_modified)] {
         let changed = serve(file(25_000), move |n| Answer::Range { validators: if n == 0 { first } else { later }, cut: None }).0;
         assert!(fetch(&changed, 10_000).unwrap_err().contains("changed"), "{later:?}");
