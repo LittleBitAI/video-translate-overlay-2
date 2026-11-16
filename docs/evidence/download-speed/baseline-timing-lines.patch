@@ -19,7 +19,7 @@ index 12f6377..9a9b455 100644
 --- a/src-tauri/src/lib.rs
 +++ b/src-tauri/src/lib.rs
 @@ -168,4 +168,16 @@ impl Core {
- 
+
  pub fn log(msg: impl AsRef<str>) {
      eprintln!("[vto] {}", msg.as_ref());
 +    // An app's stderr goes nowhere on Android; logcat (tag `vto`) is where its log is read.
