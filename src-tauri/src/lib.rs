@@ -63,6 +63,10 @@ pub trait Transcriber: Send + Sync {
         false
     }
     /// `pcm` is 16 kHz mono; `progress` receives 0.0..=1.0 as the model works.
+    /// Loads the model into memory ahead of the first [`Transcriber::transcribe`].
+    fn load(&self) -> Result<(), String> {
+        Ok(())
+    }
     fn transcribe(&self, pcm: &[f32], progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String>;
     /// The language the model heard, when it knows.
     fn language(&self) -> Option<String> {

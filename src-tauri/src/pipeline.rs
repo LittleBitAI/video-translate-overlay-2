@@ -239,7 +239,14 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
     let t = std::time::Instant::now();
     let pcm = audio::decode_file(path.as_ref()).map_err(|e| format!("decode: {e}"))?;
     log(format!("timing job {} decode ms={} samples={}", job.id, t.elapsed().as_millis(), pcm.len()));
+    let t = std::time::Instant::now();
     let regions = audio::speech_regions(&pcm);
+    let speech_ms: i64 = regions.iter().map(|r| r.end_ms() - r.start_ms()).sum();
+    log(format!("timing job {} vad ms={} regions={} speech_ms={speech_ms} from={}", job.id, t.elapsed().as_millis(), regions.len(), job.written_regions));
+    let t = std::time::Instant::now();
+    cx.core.svc.transcriber.load().map_err(|e| format!("model: {e}"))?;
+    log(format!("timing job {} model-load ms={}", job.id, t.elapsed().as_millis()));
+    let (mut infer_ms, mut infer_audio_ms, writing) = (0u128, 0i64, std::time::Instant::now());
     let total: usize = regions.iter().map(|r| r.end - r.start).sum::<usize>().max(1);
     let mut done: usize = regions.iter().take(job.written_regions as usize).map(|r| r.end - r.start).sum();
     let mut last = Stage::new(Stage::WRITING);
@@ -247,27 +254,22 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
     for (i, r) in regions.iter().enumerate().skip(job.written_regions as usize) {
         let len = r.end - r.start;
         let samples: Vec<f32> = pcm[r.start..r.end].iter().map(|&s| s as f32 / 32768.0).collect();
+        let t = std::time::Instant::now();
         let segs = cx
             .core
             .svc
             .transcriber
             .transcribe(&samples, &mut |p| cx.percent(&job.id, ((done as f64 + p.clamp(0.0, 1.0) as f64 * len as f64) * 100.0 / total as f64) as i64, &mut last))
             .map_err(|e| format!("model: {e}"))?;
-        let mut cues = Vec::new();
-        for s in segs {
-            let text = s.text.trim().to_string();
-            let start = (r.start_ms() + s.start_ms).max(prev_end);
-            let end = (r.start_ms() + s.end_ms).min(r.end_ms());
-            if text.is_empty() || end <= start {
-                continue;
-            }
-            prev_end = end;
-            cues.push((start, end, text));
-        }
+        let ms = t.elapsed().as_millis();
+        (infer_ms, infer_audio_ms) = (infer_ms + ms, infer_audio_ms + r.end_ms() - r.start_ms());
+        log(format!("timing job {} region i={i} start_ms={} audio_ms={} ms={ms} segs={}", job.id, r.start_ms(), r.end_ms() - r.start_ms(), segs.len()));
+        let cues = region_cues(r, segs, &mut prev_end);
         cx.store.save_region(&job.id, &job.video_key, i as i64, &cues).map_err(|e| e.to_string())?;
         done += len;
         cx.percent(&job.id, (done * 100 / total) as i64, &mut last);
     }
+    log(format!("timing job {} infer ms={infer_ms} audio_ms={infer_audio_ms} wall_ms={}", job.id, writing.elapsed().as_millis()));
     if cx.store.cues(&job.video_key)?.is_empty() {
         return Err("no_speech".into());
     }
@@ -278,6 +280,23 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
     cx.store.end_writing(&job.id)?;
     drop_audio(cx.store, &job.id, &path);
     Ok(())
+}
+
+/// The cues of one written region on the source timeline: each segment moved
+/// by the region's start, kept inside the region and after the previous cue.
+pub fn region_cues(r: &audio::Region, segs: Vec<crate::Segment>, prev_end: &mut i64) -> Vec<(i64, i64, String)> {
+    let mut cues = Vec::new();
+    for s in segs {
+        let text = s.text.trim().to_string();
+        let start = (r.start_ms() + s.start_ms).max(*prev_end);
+        let end = (r.start_ms() + s.end_ms).min(r.end_ms());
+        if text.is_empty() || end <= start {
+            continue;
+        }
+        *prev_end = end;
+        cues.push((start, end, text));
+    }
+    cues
 }
 
 /// Deletes a job's audio file, and only then forgets its path: a process
@@ -364,6 +383,7 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
         Some(g) => g,
         None => {
             let transcript: Vec<String> = cues.iter().map(|c| c.source_text.clone()).collect();
+            let glossary_started = std::time::Instant::now();
             let order = gemini::glossary_order(&video.title, &transcript);
             // Every batch carries the glossary (A6, R9): a reply that is not one is
             // asked for again, and a job that gets none fails instead of translating
@@ -376,6 +396,7 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
                 }
                 log(format!("job {job_id}: the glossary reply has no term list"));
             }
+            log(format!("timing job {job_id} glossary ms={} cues={}", glossary_started.elapsed().as_millis(), transcript.len()));
             let g = g.ok_or_else(|| "glossary_failed".to_string())?;
             store.set_terms(&video_key, &Value::from(g.clone()).to_string())?;
             g
@@ -385,10 +406,12 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
     let total = cues.len() as i64;
     let mut last = Stage::new(Stage::TRANSLATING);
     let mut stalls = 0;
+    let (translating, mut calls) = (std::time::Instant::now(), 0usize);
     loop {
         let todo: Vec<(i64, String)> = store.translation_cues(&job)?.into_iter().filter(|c| c.text_ko.is_none()).map(|c| (c.seq, c.source_text)).collect();
         cx.percent(job_id, (total - todo.len() as i64) * 100 / total, &mut last);
         if todo.is_empty() {
+            log(format!("timing job {job_id} translate ms={} cues={total} calls={calls}", translating.elapsed().as_millis()));
             return Ok(());
         }
         let mut progressed = false;
@@ -397,6 +420,7 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
             if let Some(previous) = cues.iter().rev().find(|c| c.seq < batch[0].0) {
                 order["context_before"] = Value::String(previous.source_text.clone());
             }
+            calls += 1;
             let Some(reply) = call(&order)? else { continue };
             let ko = gemini::parse_translations(&reply, batch);
             progressed |= !ko.is_empty();

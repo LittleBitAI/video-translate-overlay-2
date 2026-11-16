@@ -116,6 +116,10 @@ impl Transcriber for Whisper {
         self.fetch && !std::fs::metadata(&self.path).is_ok_and(|m| m.len() == MODEL_BYTES)
     }
 
+    fn load(&self) -> Result<(), String> {
+        self.state().map(|_| ())
+    }
+
     fn transcribe(&self, pcm: &[f32], progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String> {
         let mut state_guard = self.state()?;
         let state = state_guard.as_mut().unwrap();
