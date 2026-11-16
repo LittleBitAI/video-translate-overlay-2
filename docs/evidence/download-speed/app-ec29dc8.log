@@ -1,0 +1,15 @@
+# Session 1 in-app run (APK 363bc2bf..., core d49b6d88...); logcat -v epoch, only the app's vto lines and ActivityManager start/stop lines for dev.vto.overlay; URLs replaced
+1794746495.815  1401  1493 I ActivityManager: Start proc 26729:dev.vto.overlay/u0a1011 for next-top-activity {dev.vto.overlay/dev.vto.overlay.MainActivity}
+1794746601.658 26729 27489 I vto     : timing job 273b86d3-e579-489c-affd-c4763995ad61 create-resolve ms=119 hint=true ok=true
+1794746601.835 26729 27489 I vto     : job 273b86d3-e579-489c-affd-c4763995ad61 created for zjkBMFhNj_g
+1794746601.839 26729 26777 I vto     : timing job 273b86d3-e579-489c-affd-c4763995ad61 resolve ms=0 hint=true reused=true try=0 ok=true
+1794746611.280 26729 26777 I vto     : timing job 273b86d3-e579-489c-affd-c4763995ad61 model ms=9440 fetched=true
+1794746612.462  1401  4759 I ActivityManager: Force stopping dev.vto.overlay appid=11011 user=0: from pid 28156
+1794746612.463  1401  4759 I ActivityManager: Killing 26729:dev.vto.overlay/u0a1011 (adj 0): stop dev.vto.overlay due to from pid 28156
+1794746615.638  1401  1493 I ActivityManager: Start proc 28224:dev.vto.overlay/u0a1011 for next-top-activity {dev.vto.overlay/dev.vto.overlay.MainActivity}
+1794746616.116 28224 28267 I vto     : resuming job 273b86d3-e579-489c-affd-c4763995ad61 at downloading
+1794746616.234 28224 28267 I vto     : timing job 273b86d3-e579-489c-affd-c4763995ad61 resolve ms=54 hint=true reused=false try=0 ok=true
+1794746616.234 28224 28267 I vto     : timing job 273b86d3-e579-489c-affd-c4763995ad61 model ms=0 fetched=false
+1794746622.704 28224 28267 I vto     : timing job 273b86d3-e579-489c-affd-c4763995ad61 transfer ms=6314 bytes=58064373 try=0 ok=true
+1794746631.009 28224 28267 I vto     : timing job 273b86d3-e579-489c-affd-c4763995ad61 decode ms=8299 samples=57403814
+1794750183.462 28224 28267 I vto     : job 273b86d3-e579-489c-affd-c4763995ad61 ready

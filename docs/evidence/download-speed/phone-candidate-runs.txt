@@ -1,0 +1,13 @@
+# Harness 38e9604196a668d2fcc2bb212d98e9a0cf5a26bedc8ea4d471d4b249c6624019: candidate transfer code of session 1, before ec29dc8 was committed (its source is not in Git); flags --reuse
+== candidate run 1
+timing step=address-check ms=7 ok=true
+timing step=create-resolve ms=81 ok=true
+timing step=transfer ms=62160 bytes=58064373 ok=true
+timing step=file sha256=a1fadc741fa289c8664bae7c221ffc3ab4b70c6c0a17be41bd9cf9810fd6583c
+timing step=decode ms=11171 samples=57403814 duration_ms=3587738 first_sound_ms=64 pcm_sha256=f04512f563bf3129af412b23e35f6dfe5d1f735eaefcb8e1ab807c2836d88fad
+== candidate run 2
+timing step=address-check ms=3 ok=true
+timing step=create-resolve ms=69 ok=true
+timing step=transfer ms=6178 bytes=58064373 ok=true
+timing step=file sha256=a1fadc741fa289c8664bae7c221ffc3ab4b70c6c0a17be41bd9cf9810fd6583c
+timing step=decode ms=12117 samples=57403814 duration_ms=3587738 first_sound_ms=64 pcm_sha256=f04512f563bf3129af412b23e35f6dfe5d1f735eaefcb8e1ab807c2836d88fad

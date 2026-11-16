@@ -1,0 +1,99 @@
+# Focused offline checks at c632ca1 (Windows 11 PC, 2026-11-16)
+
+## cd src-tauri && cargo test --lib -- media:: pipeline:: youtube:: api::
+test api::key_tests::the_mask_keeps_four_characters_and_never_splits_one ... ok
+test api::tests::ids_and_titles_follow_the_entity_rules ... ok
+test api::tests::video_keys_follow_the_video_not_the_url_form ... ok
+test api::tests::youtube_sign_in_return_addresses_are_limited_to_youtube ... ok
+test media::audio_group_tests::renditions_are_picked_as_players_pick_them ... ok
+test media::audio_group_tests::the_default_rendition_is_taken_not_the_first ... ok
+test media::audio_group_tests::a_variant_with_no_audio_group_plays_its_own_audio ... ok
+test media::audio_group_tests::the_group_of_the_chosen_variant_is_the_one_used ... ok
+test media::discontinuity_tests::sections_start_after_the_init_section_and_count_only_segments ... ok
+test media::dns_tests::a_name_that_does_not_resolve_is_refused_before_any_request ... ok
+test media::dns_tests::a_real_https_file_is_probed_through_the_pin ... ignored, needs the network
+test media::dns_tests::every_checked_url_carries_the_address_its_request_is_pinned_to ... ok
+test media::hls_aes_tests::a_key_on_the_private_network_is_refused_as_any_url_there_is ... ok
+test media::hls_aes_tests::a_key_that_cannot_be_had_or_does_not_fit_is_refused_before_a_job ... ok
+test media::discontinuity_tests::a_section_after_a_discontinuity_plays_where_the_playlist_puts_it ... ok
+test media::hls_aes_tests::an_fmp4_playlist_decrypts_its_init_sections_and_segments_with_the_tags_iv ... ok
+test media::hls_aes_tests::encrypted_byte_ranges_and_a_key_that_ends_decrypt_piece_by_piece ... ok
+test media::hls_init_tests::an_encrypted_init_section_is_refused_as_drm ... ok
+test media::hls_init_tests::an_encrypted_init_section_of_a_later_section_is_refused_too ... ok
+test media::hls_init_tests::an_init_section_at_an_offset_is_checked_there_when_range_is_ignored ... ok
+test media::hls_aes_tests::ts_segments_decrypt_with_their_media_sequence_numbers ... ok
+test media::hls_pieces_tests::a_playlist_whose_segments_do_not_answer_is_refused ... ok
+test media::hls_start_tests::a_playlist_with_no_sound_track_is_refused_before_a_job ... ok
+test api::hold_tests::a_refused_check_lets_the_hold_go ... ok
+test api::hold_tests::a_refused_hold_refuses_the_job_before_any_check ... ok
+test media::hls_start_tests::an_fmp4_rendition_stamped_from_ten_seconds_plays_from_zero ... ok
+test media::not_audio_tests::an_image_or_a_document_is_refused_before_a_job ... ok
+test media::probe_tests::a_redirected_playlist_resolves_against_where_it_landed ... ok
+test media::ranged_tests::a_server_that_ignores_range_gives_the_whole_file_in_one_answer ... ok
+test media::ranged_tests::content_range_is_read_strictly ... ok
+test media::norange_tests::moov_after_a_large_mdat_is_checked_without_range_support ... ok
+test media::probe_tests::protected_mp4_files_are_refused_before_a_job ... ok
+test media::ranged_tests::ranges_are_fetched_in_order_and_joined_exactly ... ok
+test media::ranged_tests::pieces_that_do_not_continue_the_same_file_fail_the_download ... ok
+test media::tests::byte_ranges_are_kept_and_continue_from_the_previous_one ... ok
+test media::tests::hls_refusals_name_their_reason ... ok
+test media::tests::private_addresses_are_refused_wherever_they_appear ... ok
+test media::tests::vod_hls_lists_absolute_segments ... ok
+test media::ranged_tests::pieces_are_joined_only_under_a_validator_that_names_one_revision ... ok
+test media::tests::a_long_vod_playlist_is_not_mistaken_for_live ... ok
+test api::tests::privacy_opener_uses_only_the_fixed_public_page_and_preserves_account_and_video_state ... ok
+test media::tracks_tests::an_init_section_switch_starts_a_section_and_a_repeat_does_not ... ok
+test media::webm_drm_tests::an_encrypted_webm_is_refused_before_a_job ... ok
+test api::duration_tests::a_youtube_job_keeps_the_streams_length_not_the_players ... ok
+test media::tracks_tests::a_file_with_no_sound_track_is_refused_before_a_job ... ok
+test api::hold_tests::the_service_is_held_before_the_media_check ... ok
+test media::tracks_tests::a_section_that_does_not_decode_fails_the_whole_file ... ok
+test media::tracks_tests::a_section_with_its_own_init_section_is_decoded_after_that_one ... ok
+test media::ranged_tests::a_dropped_piece_resumes_from_the_byte_it_reached ... ok
+test pipeline::tests::every_stop_maps_to_one_of_the_five_reasons ... ok
+test pipeline::audio_tests::a_failed_delete_keeps_the_path_for_the_next_try ... ok
+test pipeline::cost_tests::a_resumed_job_over_its_limit_makes_no_more_calls ... ok
+test pipeline::download_tests::the_first_attempt_uses_the_probed_source_and_reports_the_model_fetch ... ok
+test pipeline::audio_tests::audio_left_after_writing_is_deleted_on_the_next_round ... ok
+test pipeline::glossary_tests::a_job_with_no_glossary_fails_before_any_batch ... ok
+test pipeline::glossary_tests::an_unusable_glossary_reply_is_asked_for_again ... ok
+test pipeline::worker_tests::a_bug_fails_the_job_instead_of_leaving_it_running ... ok
+test youtube::live_tests::a_live_broadcast_with_audio_is_still_refused ... ok
+test youtube::live_tests::a_recorded_lecture_gives_its_audio ... ok
+test youtube::tests::aac_audio_is_preferred ... ok
+test youtube::tests::browser_hint_requires_recorded_youtube_audio ... ok
+test pipeline::worker_tests::every_ten_percent_step_passed_is_reported_once ... ok
+test pipeline::worker_tests::a_job_resumed_before_its_notice_went_out_notifies_once ... ok
+test pipeline::worker_tests::a_job_in_an_unselected_account_resumes_in_that_database_and_publishes_its_completed_result ... ok
+test pipeline::worker_tests::retranslation_resumes_partial_work_and_publishes_only_a_complete_set ... ok
+test api::duration_tests::resumed_youtube_source_refreshes_unavailable_hints_but_preserves_refusals ... ok
+test pipeline::worker_tests::transient_retries_are_independent_for_glossary_and_each_cue ... ok
+test pipeline::worker_tests::failed_retranslation_preserves_completed_subtitles_for_every_stop ... ok
+test result: ok. 67 passed; 0 failed; 1 ignored; 0 measured; 148 filtered out; finished in 159.35s
+
+## cargo build --workspace --bin vto-contract-host; VTO_CONTRACT_HOST=target/debug/vto-contract-host.exe cargo test -p vto-contract-tests --test jobs
+test test_undownloadable_video_shows_reason ... ok
+test test_detect_button_starts_downloading_job ... ok
+test test_job_without_key_asks_for_key ... ok
+test test_subtitles_refused_until_ready ... ok
+test test_repeat_detect_reuses_saved_subtitles ... ok
+test test_other_site_media_follows_same_stages ... ok
+test test_write_finishes_offline_on_device ... ok
+test test_write_percent_and_ongoing_notice ... ok
+test test_job_advances_in_background_and_resumes ... ok
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 30.48s
+
+## npx vitest run tests/overlay/overlay.test.ts -t "speech model"
+✓ the downloading stage names the speech model while it is fetched, then the audio
+Tests  1 passed | 33 skipped (34)
+
+## npx vitest run -c vitest.ui.config.ts tests/ui/watch.test.ts -t "speech model"
+Tests  1 passed | 12 skipped (13)
+
+## The same two new tests against the code before the fix
+## (git stash push src-tauri/src/media.rs src-tauri/src/pipeline.rs; cargo test --lib -- media::ranged_tests pipeline::download_tests; git stash pop)
+test media::ranged_tests::pieces_are_joined_only_under_a_validator_that_names_one_revision ... FAILED
+test pipeline::download_tests::the_first_attempt_uses_the_probed_source_and_reports_the_model_fetch ... FAILED
+assertion `left == right` failed: "ETag: W/\"v1\"\r\n": pieces of two revisions were joined
+panicked at src-tauri\src\pipeline_download_tests.rs:62:5 (P7 does not say the model is being fetched before its first byte)
+test result: FAILED. 5 passed; 2 failed; 0 ignored; 0 measured; 209 filtered out

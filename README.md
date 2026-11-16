@@ -123,7 +123,9 @@ the model, unit prices and per-hour limit are unchanged.
 
 ## Faster audio downloads
 
-The development build receives a video's audio file in 10 MiB pieces. YouTube
+The development build receives a video's audio file in 10 MiB pieces when the
+server marks which version of the file it is sending; otherwise it receives the
+file in one piece, as before. YouTube
 sends a single whole-file request at only about twice the playback speed. On a
 Galaxy S21+ over home Wi-Fi, a one-hour lecture's audio previously took about
 30 minutes and now usually takes seconds to about a minute. The audio file
