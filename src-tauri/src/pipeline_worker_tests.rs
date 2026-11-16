@@ -189,6 +189,7 @@ pub(crate) fn idle_core(dir: &Path, endpoint: &str) -> Core {
         },
         wake: Default::default(),
         create_lock: Default::default(),
+        running: Default::default(),
     }
 }
 

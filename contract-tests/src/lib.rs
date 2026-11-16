@@ -747,8 +747,11 @@ pub struct App {
 
 impl App {
     pub fn new(opts: Options) -> App {
+        // Tests of one process can read the same clock tick: the counter keeps their folders apart.
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let n = NEXT.fetch_add(1, Ordering::Relaxed);
         let nanos = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
-        let dir = std::env::temp_dir().join(format!("vto-contract-{}-{nanos}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("vto-contract-{}-{nanos}-{n}", std::process::id()));
         fs::create_dir_all(dir.join("data")).unwrap();
         App {
             dir,

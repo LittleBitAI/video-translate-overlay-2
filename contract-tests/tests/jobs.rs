@@ -59,12 +59,13 @@ fn test_job_advances_in_background_and_resumes() {
     assert_eq!(r.status, 200, "POST /jobs: {r:?}");
     let job_id = r.str("job_id");
 
-    let seen = app.poll_job(TALK, 20, 60, |b| b["stage"] == "writing");
+    // Observed from the first written percent: the decode before it is not the write's progress.
+    let seen = app.poll_job(TALK, 20, 60, |b| b["stage"] == "writing" && b["percent"].as_i64() > Some(0));
     let before = progress(seen.last().unwrap());
-    sleep_ms(1_500); // no command is called meanwhile
+    sleep_ms(3_000); // no command is called meanwhile
     let mid = app.job(TALK);
     let after = progress(&mid.body);
-    assert!(after > before, "no progress without the screen: {before:?} then {after:?}");
+    assert!(after > before, "no progress without the screen: {before:?} then {after:?}\n{}", String::from_utf8_lossy(&app.logs()));
     assert_eq!(mid.body["stage"], "writing", "write ended too soon to test a restart: {mid:?}");
 
     app.restart();
@@ -98,9 +99,10 @@ fn test_subtitles_refused_until_ready() {
     assert!(j.body["percent"].is_i64(), "{j:?}");
     assert!(j.body["account_generation"].is_u64(), "the public ownership counter must be an integer: {j:?}");
     let allowed = [
-        "job_id", "video_key", "title", "stage", "percent", "failure_reason",
+        "job_id", "video_key", "title", "stage", "percent", "preparing_model", "failure_reason",
         "input_amount", "output_amount", "cost_krw", "notified", "account_generation",
     ];
+    assert_eq!(j.body["preparing_model"], false, "writing is not model preparation: {j:?}");
     for k in j.body.as_object().expect("GET /jobs body is an object").keys() {
         assert!(allowed.contains(&k.as_str()), "GET /jobs leaks `{k}` while writing: {j:?}");
     }

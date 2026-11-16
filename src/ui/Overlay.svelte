@@ -5,8 +5,10 @@
     writing: 'write 중',
     translating: '번역 중',
   };
+  /** The downloading stage while it fetches the speech model, once per device. */
+  export const MODEL_STAGE = '음성 인식 모델 준비 중';
 
-  export type Job = { stage: string; percent: number; cost_krw: number; failure_reason: string | null; video_key: string };
+  export type Job = { stage: string; percent: number; cost_krw: number; failure_reason: string | null; video_key: string; preparing_model?: boolean };
 
   /** Why a job stopped (P7's `failure_reason`). */
   export const STOPPED: Record<string, string> = {
@@ -213,7 +215,7 @@
   {#if look === 'checking'}
     <div class="h-6"></div>
   {:else if active && job}
-    {@render progress(STAGE[job.stage], job.percent, job.cost_krw)}
+    {@render progress(job.preparing_model ? MODEL_STAGE : STAGE[job.stage], job.percent, job.cost_krw)}
   {:else if subs === 'loading' && job}
     <!-- The job is done; only its subtitles are on their way (there is no stage or percent left to show). -->
     <div data-feature="job-progress" role="status" class="{box} w-full sm:w-56">

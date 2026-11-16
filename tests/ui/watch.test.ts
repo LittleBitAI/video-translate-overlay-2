@@ -163,6 +163,15 @@ test('a running job shows its stage, percent and cost each second, then its subt
   expect(calls.at(-1)!.path).toBe('/videos/vk/subtitles');
 });
 
+test('the downloading stage names the speech model while it is fetched, then the audio download', async () => {
+  const job = (preparing_model: boolean) => ({ job_id: 'j', video_key: 'vk', stage: 'downloading', percent: 20, cost_krw: 0, failure_reason: null, preparing_model });
+  const looks = [job(false)];
+  api((c) => (c.path === '/browser' ? [200, { url: FILE, job: job(true) }] : [200, looks.shift() ?? job(false)]));
+  const s1 = open('/');
+  await vi.waitFor(() => expect(text(s1)).toMatch(/진행 상태 ?음성 인식 모델 준비 중 ?20%/));
+  await vi.waitFor(() => expect(text(s1)).toMatch(/진행 상태 ?내려받는 중 ?20%/), { timeout: 3_000 });
+});
+
 test('a job that stopped shows why and offers 영상감지 again', async () => {
   api(c => c.path === '/browser'
     ? [200, { url: FILE, job: { job_id: 'j', video_key: 'vk', stage: 'failed', percent: 30, cost_krw: 1, failure_reason: 'no_speech' } }]

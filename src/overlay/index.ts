@@ -31,6 +31,7 @@ const STAGE_KO: Record<string, string> = {
   ready: '자막 준비 완료',
   failed: '작업 실패',
 };
+const MODEL_KO = '음성 인식 모델 준비 중(처음 한 번)';
 
 // The five `failure_reason` values (E2), plus the 428 reply's missing key.
 const FAILURE_KO: Record<string, string> = {
@@ -261,7 +262,8 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
       say(`${STAGE_KO.failed}: ${FAILURE_KO[j.failure_reason] ?? j.failure_reason ?? ''}`);
     } else {
       button.disabled = true;
-      say(`${STAGE_KO[j.stage] ?? j.stage} ${j.percent ?? 0}%`);
+      // The download stage fetches the speech model first, once per device (A4).
+      say(`${j.preparing_model ? MODEL_KO : STAGE_KO[j.stage] ?? j.stage} ${j.percent ?? 0}%`);
       if (!timer) timer = setInterval(poll, POLL_MS);
     }
   };

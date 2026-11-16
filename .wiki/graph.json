@@ -10,6 +10,11 @@
   },
   {
    "a": "README.md",
+   "b": "docs/design/download-speed.md",
+   "kind": "link"
+  },
+  {
+   "a": "README.md",
    "b": "docs/design/frontend.md",
    "kind": "link"
   },
@@ -31,6 +36,11 @@
   {
    "a": "docs/design/backend.md",
    "b": "docs/design/local-network-sync.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/design/download-speed.md",
+   "b": "docs/evidence/download-speed/README.md",
    "kind": "link"
   },
   {
@@ -61,6 +71,11 @@
   {
    "a": "docs/design/local-network-sync.md",
    "b": "docs/design/google-auth-setup.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/evidence/download-speed/README.md",
+   "b": "docs/design/download-speed.md",
    "kind": "link"
   },
   {
@@ -165,8 +180,8 @@
   "docs/design/library-verification.md"
  ],
  "counts": {
-  "docs": 13,
-  "linked": 8,
+  "docs": 15,
+  "linked": 10,
   "read": 3,
   "orphans": 2,
   "pages": 7,

@@ -136,6 +136,7 @@ fn resumed_youtube_source_refreshes_unavailable_hints_but_preserves_refusals() {
             },
             wake: Default::default(),
             create_lock: Default::default(),
+            running: Default::default(),
         };
         let resumed = core.store.job("j").unwrap().unwrap();
         assert!(youtube::browser_audio_url(resumed.media_url.as_deref().unwrap()).is_some());

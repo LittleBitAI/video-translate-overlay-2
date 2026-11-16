@@ -1,0 +1,19 @@
+# Harness 3becb121ed69e1a6fcdc18508960e56e5889163934152b4441f8eaf5950ae89d (c632ca1), --pieces n: n 10 MiB ranges at once, one connection each; the app was writing another job meanwhile
+== pieces n=1 2026-11-15T22:49:43Z
+timing step=piece index=0 first_byte_ms=139 ms=1193 bytes=10485760
+timing step=pieces n=1 ms=1194
+== pieces n=4 2026-11-15T22:49:44Z
+timing step=piece index=0 first_byte_ms=50 ms=3590 bytes=10485760
+timing step=piece index=1 first_byte_ms=50 ms=3599 bytes=10485760
+timing step=piece index=2 first_byte_ms=70 ms=3953 bytes=10485760
+timing step=piece index=3 first_byte_ms=77 ms=3241 bytes=10485760
+timing step=pieces n=4 ms=3954
+== pieces n=1 2026-11-15T22:49:48Z
+timing step=piece index=0 first_byte_ms=40 ms=1028 bytes=10485760
+timing step=pieces n=1 ms=1029
+== pieces n=4 2026-11-15T22:49:49Z
+timing step=piece index=0 first_byte_ms=41 ms=3105 bytes=10485760
+timing step=piece index=1 first_byte_ms=39 ms=3913 bytes=10485760
+timing step=piece index=2 first_byte_ms=39 ms=3638 bytes=10485760
+timing step=piece index=3 first_byte_ms=41 ms=3677 bytes=10485760
+timing step=pieces n=4 ms=3914

@@ -1,0 +1,12 @@
+{
+  "build": {"exe_sha256": "2f26bdb959a52986a001532eef020f4f6dc8922f84034ecce7c65fb3b28a8d30", "build_head": "b1524675c22d481f29a545a4f6a8c9c7ee889b95", "os": "Windows 11 Home 10.0.26200"},
+  "video": "zjkBMFhNj_g",
+  "press": {"pressed_at": "2026-11-16T00:58:13.280Z", "pressed_at_ms": 1794790693280,
+    "seen": [[117, "작업을 만드는 중…", "작업을 만드는 중…"], [239, "오디오 내려받는 중", "오디오 내려받는 중 0%"], [466, "음성 인식 모델 준비 중(처음 한 번)", "음성 인식 모델 준비 중(처음 한 번) 0%"], [51461, "오디오 내려받는 중", "오디오 내려받는 중 50%"], [58489, "말을 글로 옮기는 중", "말을 글로 옮기는 중 0%"]]},
+  "p7_before_restart": {"at": "2026-11-16T01:00:34.185Z", "stage": "writing", "percent": 0, "preparing_model": false},
+  "p7_after_restart": {"at": "2026-11-16T01:01:18.972Z", "stage": "writing", "percent": 0, "preparing_model": false, "failure_reason": null},
+  "files": {
+    "audio": {"bytes": 58064373, "sha256": "a1fadc741fa289c8664bae7c221ffc3ab4b70c6c0a17be41bd9cf9810fd6583c"},
+    "model": {"name": "ggml-large-v3-turbo-q5_0.bin", "bytes": 574041195, "sha256": "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2"}
+  }
+}

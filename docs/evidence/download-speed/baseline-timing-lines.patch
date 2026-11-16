@@ -1,0 +1,85 @@
+diff --git a/src-tauri/src/api.rs b/src-tauri/src/api.rs
+index a2f47cc..796565a 100644
+--- a/src-tauri/src/api.rs
++++ b/src-tauri/src/api.rs
+@@ -336,7 +336,10 @@ fn create_job_in(library: &crate::library_scope::Library<'_>, page_url: &str, me
+         return Err(err(409, "background_refused", "휴대폰이 백그라운드 작업을 막아 시작하지 않았습니다. 앱 화면에서 다시 눌러 주세요."));
+     }
+     let created = (|| -> Result<(), ApiError> {
+-        let source = resolve_source(core, &page, media_url)?;
++        let t = std::time::Instant::now();
++        let source = resolve_source(core, &page, media_url);
++        log(format!("timing job {id} create-resolve ms={} hint={} ok={}", t.elapsed().as_millis(), media_url.is_some_and(|m| !m.trim().is_empty()), source.is_ok()));
++        let source = source?;
+         // The player's length is an ad's if one was playing when the button was
+         // pressed; YouTube's stream carries the lecture's own (R18).
+         let duration_ms = match &source {
+diff --git a/src-tauri/src/lib.rs b/src-tauri/src/lib.rs
+index 12f6377..9a9b455 100644
+--- a/src-tauri/src/lib.rs
++++ b/src-tauri/src/lib.rs
+@@ -168,4 +168,16 @@ impl Core {
+
+ pub fn log(msg: impl AsRef<str>) {
+     eprintln!("[vto] {}", msg.as_ref());
++    // An app's stderr goes nowhere on Android; logcat (tag `vto`) is where its log is read.
++    #[cfg(target_os = "android")]
++    {
++        #[link(name = "log")]
++        extern "C" {
++            fn __android_log_write(prio: i32, tag: *const std::ffi::c_char, text: *const std::ffi::c_char) -> i32;
++        }
++        if let Ok(text) = std::ffi::CString::new(msg.as_ref().replace('\0', " ")) {
++            // 4 = ANDROID_LOG_INFO.
++            unsafe { __android_log_write(4, c"vto".as_ptr(), text.as_ptr()) };
++        }
++    }
+ }
+diff --git a/src-tauri/src/pipeline.rs b/src-tauri/src/pipeline.rs
+index d0e5bcf..3a6895f 100644
+--- a/src-tauri/src/pipeline.rs
++++ b/src-tauri/src/pipeline.rs
+@@ -166,7 +166,9 @@ fn download(cx: &Ctx, job: &Job) -> Result<(), Stop> {
+     let mut tries = 0;
+     loop {
+         let hint = if tries > 0 && crate::youtube::is_youtube(&page) { None } else { job.media_url.as_deref() };
++        let t = std::time::Instant::now();
+         let src = api::resolve_source(cx.core, &page, hint).map_err(|r| r.code.to_string());
++        log(format!("timing job {} resolve ms={} hint={} try={tries} ok={}", job.id, t.elapsed().as_millis(), hint.is_some(), src.is_ok()));
+         let src = match src {
+             Ok(s) => s,
+             Err(code) if code == "unreachable" && tries < 3 => {
+@@ -179,16 +181,22 @@ fn download(cx: &Ctx, job: &Job) -> Result<(), Stop> {
+         // The on-device model is fetched here the first time (A4); its share of
+         // the stage is the first half when it has to come down.
+         let mut last = Stage::new(Stage::DOWNLOADING);
++        let t = std::time::Instant::now();
+         let fetched = cx
+             .core
+             .svc
+             .transcriber
+             .prepare(&cx.core.cfg.data_dir, &mut |p| cx.percent(&job.id, (p.clamp(0.0, 1.0) * 50.0) as i64, &mut last))
+             .map_err(|e| format!("model: {e}"))?;
++        log(format!("timing job {} model ms={} fetched={fetched}", job.id, t.elapsed().as_millis()));
+         let (base, span) = if fetched { (50, 50) } else { (0, 100) };
+         let dest = cx.core.cfg.data_dir.join("audio").join(format!("{}.{}", job.id, src.ext()));
+         cx.store.set_audio(&job.id, Some(&dest.to_string_lossy()))?;
+-        match media::download(&src, &dest, cx.core.cfg.allow_loopback_media, &mut |p| cx.percent(&job.id, base + p * span / 100, &mut last)) {
++        let t = std::time::Instant::now();
++        let got = media::download(&src, &dest, cx.core.cfg.allow_loopback_media, &mut |p| cx.percent(&job.id, base + p * span / 100, &mut last));
++        let bytes = std::fs::metadata(&dest).map_or(0, |m| m.len());
++        log(format!("timing job {} transfer ms={} bytes={bytes} try={tries} ok={}", job.id, t.elapsed().as_millis(), got.is_ok()));
++        match got {
+             Ok(()) => return Ok(()),
+             Err(e) if tries < 3 => {
+                 tries += 1;
+@@ -213,7 +221,9 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
+     // A job resumed here after a restart never passed through downloading in
+     // this process: make sure the model is on the device (normally a size check).
+     cx.core.svc.transcriber.prepare(&cx.core.cfg.data_dir, &mut |_| {}).map_err(|e| format!("model: {e}"))?;
++    let t = std::time::Instant::now();
+     let pcm = audio::decode_file(path.as_ref()).map_err(|e| format!("decode: {e}"))?;
++    log(format!("timing job {} decode ms={} samples={}", job.id, t.elapsed().as_millis(), pcm.len()));
+     let regions = audio::speech_regions(&pcm);
+     let total: usize = regions.iter().map(|r| r.end - r.start).sum::<usize>().max(1);
+     let mut done: usize = regions.iter().take(job.written_regions as usize).map(|r| r.end - r.start).sum();

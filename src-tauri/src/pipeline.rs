@@ -166,7 +166,15 @@ fn download(cx: &Ctx, job: &Job) -> Result<(), Stop> {
     let mut tries = 0;
     loop {
         let hint = if tries > 0 && crate::youtube::is_youtube(&page) { None } else { job.media_url.as_deref() };
-        let src = api::resolve_source(cx.core, &page, hint).map_err(|r| r.code.to_string());
+        let t = std::time::Instant::now();
+        // The source P6 probed for this job, on the first attempt; a retry or a resumed job probes afresh.
+        let handed = cx.core.running.probed.lock().unwrap_or_else(|p| p.into_inner()).take().filter(|(id, _)| tries == 0 && *id == job.id);
+        let reused = handed.is_some();
+        let src = match handed {
+            Some((_, src)) => Ok(src),
+            None => api::resolve_source(cx.core, &page, hint).map_err(|r| r.code.to_string()),
+        };
+        log(format!("timing job {} resolve ms={} hint={} reused={reused} try={tries} ok={}", job.id, t.elapsed().as_millis(), hint.is_some(), src.is_ok()));
         let src = match src {
             Ok(s) => s,
             Err(code) if code == "unreachable" && tries < 3 => {
@@ -179,16 +187,18 @@ fn download(cx: &Ctx, job: &Job) -> Result<(), Stop> {
         // The on-device model is fetched here the first time (A4); its share of
         // the stage is the first half when it has to come down.
         let mut last = Stage::new(Stage::DOWNLOADING);
-        let fetched = cx
-            .core
-            .svc
-            .transcriber
-            .prepare(&cx.core.cfg.data_dir, &mut |p| cx.percent(&job.id, (p.clamp(0.0, 1.0) * 50.0) as i64, &mut last))
-            .map_err(|e| format!("model: {e}"))?;
+        let t = std::time::Instant::now();
+        let fetched = prepare_model(cx, job, &mut |p| cx.percent(&job.id, (p.clamp(0.0, 1.0) * 50.0) as i64, &mut last));
+        let fetched = fetched.map_err(|e| format!("model: {e}"))?;
+        log(format!("timing job {} model ms={} fetched={fetched}", job.id, t.elapsed().as_millis()));
         let (base, span) = if fetched { (50, 50) } else { (0, 100) };
         let dest = cx.core.cfg.data_dir.join("audio").join(format!("{}.{}", job.id, src.ext()));
         cx.store.set_audio(&job.id, Some(&dest.to_string_lossy()))?;
-        match media::download(&src, &dest, cx.core.cfg.allow_loopback_media, &mut |p| cx.percent(&job.id, base + p * span / 100, &mut last)) {
+        let t = std::time::Instant::now();
+        let got = media::download(&src, &dest, cx.core.cfg.allow_loopback_media, &mut |p| cx.percent(&job.id, base + p * span / 100, &mut last));
+        let bytes = std::fs::metadata(&dest).map_or(0, |m| m.len());
+        log(format!("timing job {} transfer ms={} bytes={bytes} try={tries} ok={}", job.id, t.elapsed().as_millis(), got.is_ok()));
+        match got {
             Ok(()) => return Ok(()),
             Err(e) if tries < 3 => {
                 tries += 1;
@@ -203,6 +213,19 @@ fn download(cx: &Ctx, job: &Job) -> Result<(), Stop> {
     }
 }
 
+/// The model's `prepare` for `job`. When it will fetch, P7 reports model
+/// preparation from before the fetch connects, through its waits and retries,
+/// until it ends either way.
+fn prepare_model(cx: &Ctx, job: &Job, progress: &mut dyn FnMut(f32)) -> Result<bool, String> {
+    let preparing = &cx.core.running.preparing_model;
+    if cx.core.svc.transcriber.needs_fetch() {
+        *preparing.lock().unwrap_or_else(|p| p.into_inner()) = Some(job.id.clone());
+    }
+    let got = cx.core.svc.transcriber.prepare(&cx.core.cfg.data_dir, progress);
+    *preparing.lock().unwrap_or_else(|p| p.into_inner()) = None;
+    got
+}
+
 /// Writes the speech regions not yet written, then moves the job to
 /// translating. Stages never go back (E2), so a lost audio file fails the job.
 fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
@@ -212,8 +235,10 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
     };
     // A job resumed here after a restart never passed through downloading in
     // this process: make sure the model is on the device (normally a size check).
-    cx.core.svc.transcriber.prepare(&cx.core.cfg.data_dir, &mut |_| {}).map_err(|e| format!("model: {e}"))?;
+    prepare_model(cx, job, &mut |_| {}).map_err(|e| format!("model: {e}"))?;
+    let t = std::time::Instant::now();
     let pcm = audio::decode_file(path.as_ref()).map_err(|e| format!("decode: {e}"))?;
+    log(format!("timing job {} decode ms={} samples={}", job.id, t.elapsed().as_millis(), pcm.len()));
     let regions = audio::speech_regions(&pcm);
     let total: usize = regions.iter().map(|r| r.end - r.start).sum::<usize>().max(1);
     let mut done: usize = regions.iter().take(job.written_regions as usize).map(|r| r.end - r.start).sum();
@@ -393,6 +418,10 @@ pub(crate) mod worker_tests;
 #[cfg(test)]
 #[path = "pipeline_audio_tests.rs"]
 mod audio_tests;
+
+#[cfg(test)]
+#[path = "pipeline_download_tests.rs"]
+mod download_tests;
 
 #[cfg(test)]
 #[path = "pipeline_cost_tests.rs"]

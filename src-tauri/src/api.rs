@@ -335,8 +335,11 @@ fn create_job_in(library: &crate::library_scope::Library<'_>, page_url: &str, me
         log(format!("background work refused: {e}"));
         return Err(err(409, "background_refused", "휴대폰이 백그라운드 작업을 막아 시작하지 않았습니다. 앱 화면에서 다시 눌러 주세요."));
     }
-    let created = (|| -> Result<(), ApiError> {
-        let source = resolve_source(core, &page, media_url)?;
+    let created = (|| -> Result<media::Source, ApiError> {
+        let t = std::time::Instant::now();
+        let source = resolve_source(core, &page, media_url);
+        log(format!("timing job {id} create-resolve ms={} hint={} ok={}", t.elapsed().as_millis(), media_url.is_some_and(|m| !m.trim().is_empty()), source.is_ok()));
+        let source = source?;
         // The player's length is an ad's if one was playing when the button was
         // pressed; YouTube's stream carries the lecture's own (R18).
         let duration_ms = match &source {
@@ -350,12 +353,18 @@ fn create_job_in(library: &crate::library_scope::Library<'_>, page_url: &str, me
                     .unwrap_or_else(|| err(409,"cleanup_pending","다른 기기에서 영상을 삭제했습니다. 보관함을 다시 불러와 주세요."))
             } else { detail.into() })?;
         Ok(())
-        })
+        })?;
+        Ok(source)
     })();
-    if let Err(e) = created {
-        core.svc.notifier.ongoing(&id, "hidden", &title, 0);
-        return Err(e);
-    }
+    let source = match created {
+        Ok(source) => source,
+        Err(e) => {
+            core.svc.notifier.ongoing(&id, "hidden", &title, 0);
+            return Err(e);
+        }
+    };
+    // Checked moments ago under the same policy: the worker's first attempt need not ask again.
+    *core.running.probed.lock().unwrap_or_else(|p| p.into_inner()) = Some((id.clone(), source));
     core.svc.notifier.ongoing(&id, "shown", &title, 0);
     log(format!("job {id} created for {key}"));
     core.wake_worker();
@@ -424,6 +433,8 @@ fn get_job_in(library: &crate::library_scope::Library<'_>, page_url: &str) -> Ap
         "title": title,
         "stage": job.stage,
         "percent": job.percent,
+        // The download stage's first part, fetching the speech model on first use (A4).
+        "preparing_model": library.core.running.preparing_model.lock().unwrap_or_else(|p| p.into_inner()).as_deref() == Some(job.id.as_str()),
         "failure_reason": job.failure_reason,
         "input_amount": job.input_amount,
         "output_amount": job.output_amount,
