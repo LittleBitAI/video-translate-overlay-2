@@ -29,13 +29,20 @@ Git. [`data/`](data/) holds what the tables below come from:
 `python -I scripts/reproduce.py` recomputes every scored claim from those
 files and fails on any mismatch: the word error rates, the overlap table,
 both restart checks, the cold and warm passes, and the final run's stage
-times, window counts, thermal and cpuset samples. On the files committed
-with it, it prints 38 `ok` lines and no `FAIL`. `scripts/` also holds the
+times, window counts, thermal and cpuset samples, and the desktop app run's
+windows, restart, subtitles and requests. On the files committed with it, it
+prints 42 `ok` lines and no `FAIL`. `scripts/` also holds the
 scripts that made the runs (`start-run.sh`, `until-ready.sh`,
 `restart.sh`, `writing-only.sh`, `thermal-poll.sh`, `reference.sh`,
 `cues-from-db.py`, `spot.py`, with the press script `press-confirm.js` and
-`cdp.mjs`). Local paths and the signed-in account's folder are taken from
-environment variables there.
+`cdp.mjs`; for the desktop app `desktop-run.sh`, `desktop-watch.js` and
+`gemini-stand-in.py`; for the receipts `focused-checks.sh`). Local paths and
+the signed-in account's folder are taken from environment variables there.
+
+[`receipts/`](receipts/) holds one file per focused check: the command, its
+exit status, the commit and the Git tree ids of the directories that decide
+the result, rustc and OS, and the check's test lines
+([below](#focused-check-receipts)).
 
 ### Build identities
 
@@ -52,7 +59,8 @@ SHA-256 of what ran:
 | PC harness, looping-window check (phone decoding) | 41f5014 | `dc89cc01ef3bed2e04a8a738ab463f3e6e3acf417982f024d002df5f45dcc46d` |
 | lecture audio (m4a) | — | `a1fadc741fa289c8664bae7c221ffc3ab4b70c6c0a17be41bd9cf9810fd6583c` |
 | phone model `ggml-base-q5_1.bin` | — | `422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898` |
-| reference model `ggml-large-v3-turbo-q5_0.bin` | — | `394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2` |
+| reference model `ggml-large-v3-turbo-q5_0.bin` (also the desktop app's model) | — | `394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2` |
+| Windows debug app, desktop run | dd4a8c2 | `0b314a96c734e4f1f9afb30ddf256166b9f6b2b19b6c247609e10af913302a9c` |
 
 ### From the measured build to the current branch
 
@@ -70,6 +78,12 @@ changes what was measured:
   most 366.58 KRW, and 366.58 + 8 × 10.48 = 450.43 KRW, under its
   996.59 KRW limit. So all eight requests were admitted exactly as before.
 - The opt-in whisper benchmark compiles again. It is a test only.
+- Opening the app's store no longer writes its settings row when the row is
+  there (f7bbf49). Every request opens the store, and that write waited for
+  the worker's commits; a commit stalled past the 30 s busy timeout made the
+  overlay's poll answer 500. It changes no job, window, cue or request; the
+  phone runs' polls never failed. The desktop run below is at dd4a8c2, after
+  it. Later commits change only the evidence and its scripts.
 
 ## Baseline (commit eb9b394, plan 1)
 
@@ -311,3 +325,76 @@ and screen state. The trial build was not kept: `mediaProcessing` brings
 Android's six-hours-a-day limit and no gain. One window that spanned turning
 the screen off and on and the lock screen took 282 s. It was not repeated in
 3 minutes with the screen off.
+
+## Desktop app run (Windows, commit dd4a8c2)
+
+Windows 11 Home 10.0.26200 on the PC. The debug app
+(`cargo build -p video-translate-overlay --features app --bin
+video-translate-overlay`, SHA-256 `0b314a96…`; the running app reported
+`window.__WIKI_NATIVE_BUILD_HEAD__` = `dd4a8c2259b4…`) ran with its own data
+folder and WebView2 profile and no Google account, so it shared nothing with
+an installed copy and synced with nothing (`scripts/desktop-run.sh`). A dummy
+key was stored through the app's bridge; `scripts/gemini-stand-in.py` answered
+it on loopback, 1.2 s per reply. Google's Gemini was not contacted and
+nothing was billed. The model was the cached `ggml-large-v3-turbo-q5_0.bin`.
+The video was YouTube `h6fcK_fRYaI` (8:06, narration over music), opened
+signed out in the app's site window. The detect button was pressed in the
+overlay (`scripts/desktop-watch.js`). The job was force-stopped while
+writing and the app relaunched; the job and its folder were deleted after the
+run.
+
+| Time after the press | Observation | Source |
+| ---: | --- | --- |
+| 0.3 s | Overlay `오디오 내려받는 중 0%` | overlay file |
+| 1.3 s | Overlay `말을 글로 옮기는 중 0%`; audio 7,867,183 bytes in 1,035 ms, decoded 7,777,012 samples | overlay file, log |
+| about 7 s | Plan 2, 20 windows, 502,960 ms of speech, from window 0; model loaded in 1,398 ms | log |
+| 271.2 s | Four windows written (26-87 s each); the store held 21 committed cues to 96.6 s and the cues of window 3 that reach into window 4's overlap. App force-stopped (`taskkill /F`) | log, store, overlay file |
+| 276.7 s | Relaunched with the same folders; log `resuming job … at writing`; plan 2, 20 windows, from window 4 | log |
+| 324.1 s | Page reopened: overlay `말을 글로 옮기는 중 20%`, bridge `writing`, no failure | overlay file |
+| 1,120.8 s | Bridge `translating`; the remaining 16 windows took 837.6 s wall | overlay file, log |
+| 1,197.0 s | Bridge `ready`, 100 %; log `job … ready`. Subtitles: 92 cues, 1.92-473.4 s, ordered without overlap, all in Korean | overlay file, log |
+
+- Of the 20 windows, 11 begin 3 s before the previous one ends: this
+  narration has no 200 ms pause near those limits, so the cut went through
+  speech with the overlap. The forced stop fell after such a window, so the
+  resume used the held cues. No window was written twice.
+- Translation: one glossary request and 92 one-cue requests, each with the
+  4,096-token output cap; up to 8 were open at once. It took 72.4 s. The
+  stand-in's log shows pauses of up to 5.9 s between requests while the
+  unoptimized debug build wrote to its store; the phone's release build
+  translated 856 cues in 132.6 s.
+- The overlay's status line went empty at 374 s after the reopening while
+  the bridge still answered `writing`; the job was not affected.
+
+Files: [`desktop-dd4a8c2-app.txt`](data/observations/desktop-dd4a8c2-app.txt)
+(the app's stderr with the build and setup above it),
+[`desktop-dd4a8c2-overlay.json`](data/observations/desktop-dd4a8c2-overlay.json)
+(the overlay's status texts and the bridge's stages before and after the
+restart, the store at the kill, the subtitles' shape) and
+[`desktop-dd4a8c2-gemini.jsonl`](data/observations/desktop-dd4a8c2-gemini.jsonl)
+(one line per request: times, task, cues, how many open at once, output cap;
+no text). `reproduce.py` checks the windows, the resume, the subtitles and the
+requests.
+
+## Focused-check receipts
+
+`sh scripts/focused-checks.sh` refuses to run with uncommitted changes in
+`src-tauri`, `contract-tests`, `src`, `tests` or this folder's `scripts` and
+`data`, and writes [`receipts/`](receipts/). Each receipt names the commit and
+those directories' tree ids; committing the receipts changes none of them, so
+`git rev-parse HEAD:src-tauri` (and the others) shows whether a receipt still
+describes a later commit.
+
+RECEIPTS_TABLE
+
+The contract translation tests failed in an earlier receipt run (3 of 5,
+then 3 of 8 repeated runs) while the PC's search indexer and antivirus kept
+its disk busy: GET /jobs answered 500 with `database is locked` on the
+settings row. Opening the store wrote that row on every request; it now
+writes it only when missing (f7bbf49). The store test
+`opening_a_current_file_does_not_wait_for_a_writer` fails on the old schema
+(`database is locked: INSERT OR IGNORE INTO setting`, after the 30 s busy
+timeout) and passes now. Under an artificial load of continuous synced 1.5 GB
+writes, every disk access stalled about 2 s and polls could still exceed the
+test harness's 60 s answer limit; that load is far beyond the indexer's and
+is not a test condition.

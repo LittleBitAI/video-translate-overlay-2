@@ -13,10 +13,12 @@
   const page_url = location.href;
   const t0 = Date.now();
   const run = window.__vtoRun = { page_url, started_at: new Date(t0).toISOString(), started_at_ms: t0, pressed: window.__vtoPress !== false, status: [], stages: [] };
+  // Library commands carry the account generation; as in the overlay, get_job's
+  // refusal without one names it.
   let gen;
   const ask = async (cmd, args) => {
     try { return await call(cmd, { ...args, account_generation: gen }); } catch (e) {
-      if (Number.isSafeInteger(e?.account_generation) && e.account_generation !== gen) { gen = e.account_generation; return call(cmd, { ...args, account_generation: gen }); }
+      if (Number.isSafeInteger(e?.account_generation) && e.account_generation !== gen) { gen = e.account_generation; return ask(cmd, args); }
       return { error: e?.error ?? String(e) };
     }
   };
@@ -24,7 +26,7 @@
   if (run.pressed) find('detect').click();
   (async () => {
     let was = '';
-    for (let i = 0; ; i++) {
+    for (let i = 0; window.__vtoRun === run; i++) {
       await new Promise((r) => setTimeout(r, 250));
       const s = find('status')?.textContent?.trim() ?? '';
       if (!run.status.length || run.status[run.status.length - 1][1] !== s) run.status.push([Date.now() - t0, s]);

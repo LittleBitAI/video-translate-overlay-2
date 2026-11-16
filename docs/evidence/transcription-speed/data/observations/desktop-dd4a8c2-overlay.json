@@ -1,0 +1,177 @@
+{
+ "build": {
+  "exe_sha256": "0b314a96c734e4f1f9afb30ddf256166b9f6b2b19b6c247609e10af913302a9c",
+  "build_head": "dd4a8c2259b40ee270b04a01f2f2118564b91726",
+  "os": "Windows 11 Home 10.0.26200"
+ },
+ "video": "h6fcK_fRYaI",
+ "duration_s": 486.021,
+ "press": {
+  "page_url": "https://www.youtube.com/watch?app=desktop&v=h6fcK_fRYaI",
+  "started_at": "2026-11-16T22:55:45.513Z",
+  "started_at_ms": 1794869745513,
+  "pressed": true,
+  "status": [
+   [
+    269,
+    "오디오 내려받는 중 0%"
+   ],
+   [
+    540,
+    "오디오 내려받는 중 2%"
+   ],
+   [
+    1320,
+    "말을 글로 옮기는 중 0%"
+   ]
+  ],
+  "stages": [
+   {
+    "ms": 273,
+    "error": "get_google_account not allowed on window \"site\", webview \"site\", URL: https://www.youtube.com/\n\nallowed on: [windows: \"main\", URL: local]\n\nreferenced by: capability: main, permission: allow-get-google-account"
+   }
+  ],
+  "last": {
+   "ms": 36217
+  }
+ },
+ "before_kill": {
+  "page_url": "https://www.youtube.com/watch?app=desktop&v=h6fcK_fRYaI",
+  "started_at": "2026-11-16T22:56:23.286Z",
+  "started_at_ms": 1794869783286,
+  "pressed": false,
+  "status": [
+   [
+    265,
+    "말을 글로 옮기는 중 0%"
+   ],
+   [
+    43775,
+    "말을 글로 옮기는 중 4%"
+   ],
+   [
+    103649,
+    "말을 글로 옮기는 중 9%"
+   ],
+   [
+    129715,
+    "말을 글로 옮기는 중 14%"
+   ],
+   [
+    217697,
+    "말을 글로 옮기는 중 20%"
+   ]
+  ],
+  "stages": [
+   {
+    "ms": 273,
+    "stage": "writing",
+    "percent": 0,
+    "preparing_model": false,
+    "failure_reason": null
+   }
+  ],
+  "last": {
+   "ms": 230884,
+   "stage": "writing",
+   "percent": 20,
+   "cost_krw": 0
+  }
+ },
+ "store_at_kill": {
+  "stage": "writing",
+  "written_regions": 4,
+  "plan": 2,
+  "held_cues_saved": true,
+  "committed_cues": 21,
+  "last_committed_end_ms": 96600
+ },
+ "after_restart": {
+  "page_url": "https://www.youtube.com/watch?app=desktop&v=h6fcK_fRYaI",
+  "started_at": "2026-11-16T23:01:09.621Z",
+  "started_at_ms": 1794870069621,
+  "pressed": false,
+  "status": [
+   [
+    266,
+    "말을 글로 옮기는 중 20%"
+   ],
+   [
+    132277,
+    "말을 글로 옮기는 중 25%"
+   ],
+   [
+    159129,
+    "말을 글로 옮기는 중 30%"
+   ],
+   [
+    184000,
+    "말을 글로 옮기는 중 35%"
+   ],
+   [
+    238649,
+    "말을 글로 옮기는 중 40%"
+   ],
+   [
+    262923,
+    "말을 글로 옮기는 중 44%"
+   ],
+   [
+    297398,
+    "말을 글로 옮기는 중 50%"
+   ],
+   [
+    345574,
+    "말을 글로 옮기는 중 55%"
+   ],
+   [
+    372026,
+    "말을 글로 옮기는 중 61%"
+   ],
+   [
+    374299,
+    ""
+   ]
+  ],
+  "stages": [
+   {
+    "ms": 276,
+    "stage": "writing",
+    "percent": 20,
+    "preparing_model": false,
+    "failure_reason": null
+   },
+   {
+    "ms": 796702,
+    "stage": "translating",
+    "percent": 0,
+    "preparing_model": false,
+    "failure_reason": null
+   },
+   {
+    "ms": 872911,
+    "stage": "ready",
+    "percent": 100,
+    "preparing_model": false,
+    "failure_reason": null
+   }
+  ],
+  "last": {
+   "ms": 872911,
+   "stage": "ready",
+   "percent": 100,
+   "cost_krw": 17.01357500000001
+  },
+  "subtitles": {
+   "cues": 92,
+   "first_ms": 1920,
+   "last_ms": 473400,
+   "ordered_without_overlap": true,
+   "korean": 92
+  },
+  "done": {
+   "ms": 872928,
+   "stage": "ready"
+  }
+ }
+}

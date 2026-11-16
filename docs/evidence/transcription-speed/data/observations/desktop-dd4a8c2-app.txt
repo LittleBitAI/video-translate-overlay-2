@@ -1,0 +1,42 @@
+# Windows 11 Home 10.0.26200; debug app video-translate-overlay.exe SHA-256 0b314a96c734e4f1f9afb30ddf256166b9f6b2b19b6c247609e10af913302a9c built from dd4a8c2 (window.__WIKI_NATIVE_BUILD_HEAD__ = dd4a8c2259b40ee270b04a01f2f2118564b91726)
+# Own data folder and WebView2 profile, no Google account; Gemini answered by scripts/gemini-stand-in.py on loopback; model ggml-large-v3-turbo-q5_0.bin SHA-256 394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2 (VTO_WHISPER_MODEL); the app's stderr
+# 2026-11-16T22:53:49.060Z launched
+[vto] api key stored (…abcd)
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 create-resolve ms=103 hint=true ok=true
+[vto] job 0acafa36-301e-4a8b-a261-b7f25b681947 created for h6fcK_fRYaI
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 resolve ms=0 hint=true reused=true try=0 ok=true
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 model ms=0 fetched=false
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 transfer ms=1035 bytes=7867183 try=0 ok=true
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 decode ms=5426 samples=7777012
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 vad ms=240 plan=2 regions=20 speech_ms=502960 from=0
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 model-load ms=1398
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=0 start_ms=1920 audio_ms=22760 ms=72574 segs=6
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=1 start_ms=25280 audio_ms=25080 ms=60125 segs=3
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=2 start_ms=47360 audio_ms=27480 ms=26132 segs=10
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=3 start_ms=75280 audio_ms=27780 ms=87244 segs=4
+# 2026-11-16T23:00:16.689Z force-stopped (taskkill /F)
+# 2026-11-16T23:00:22.175Z relaunched with the same folders
+[vto] resuming job 0acafa36-301e-4a8b-a261-b7f25b681947 at writing
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 decode ms=5198 samples=7777012
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 vad ms=264 plan=2 regions=20 speech_ms=502960 from=4
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 model-load ms=444
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=4 start_ms=100060 audio_ms=26660 ms=173376 segs=8
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=5 start_ms=123720 audio_ms=25400 ms=15867 segs=3
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=6 start_ms=146120 audio_ms=24980 ms=24788 segs=7
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=7 start_ms=171100 audio_ms=21600 ms=53574 segs=6
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=8 start_ms=189700 audio_ms=22920 ms=23953 segs=4
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=9 start_ms=209620 audio_ms=29240 ms=34533 segs=6
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=10 start_ms=238860 audio_ms=24020 ms=45440 segs=5
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=11 start_ms=263380 audio_ms=29840 ms=26607 segs=8
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=12 start_ms=293220 audio_ms=26680 ms=33644 segs=4
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=13 start_ms=316900 audio_ms=24600 ms=96850 segs=3
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=14 start_ms=338500 audio_ms=21920 ms=69071 segs=3
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=15 start_ms=357420 audio_ms=29580 ms=28315 segs=6
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=16 start_ms=387000 audio_ms=26080 ms=38265 segs=3
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=17 start_ms=413080 audio_ms=29720 ms=123816 segs=11
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=18 start_ms=439800 audio_ms=23320 ms=17432 segs=1
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 region i=19 start_ms=460120 audio_ms=13300 ms=14245 segs=1
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 infer ms=819776 audio_ms=399860 wall_ms=837576
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 glossary ms=1484 cues=92
+[vto] timing job 0acafa36-301e-4a8b-a261-b7f25b681947 translate ms=72394 cues=92 calls=92 in_flight=8
+[vto] job 0acafa36-301e-4a8b-a261-b7f25b681947 ready

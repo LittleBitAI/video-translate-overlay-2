@@ -110,4 +110,18 @@ bt = [l for l in log('bg-base3-thermal').splitlines() if l.startswith('t=')]
 claim('baseline background thermal samples, at status 0, highest status',
       (len(bt), sum(' status=0 ' in l for l in bt), max(int(re.search(r'status=(\d+)', l).group(1)) for l in bt)), (127, 123, 1))
 
+dl = log('desktop-dd4a8c2-app')
+dw = [tuple(map(int, m)) for m in re.findall(r'region i=(\d+) start_ms=(\d+) audio_ms=(\d+) ms=\d+', dl)]
+claim('desktop windows written, distinct, cut through speech with 3 s shared',
+      (len(dw), len({w[0] for w in dw}), sum(b[1] - a[1] - a[2] == -3000 for a, b in zip(dw, dw[1:]))), (20, 20, 11))
+claim('desktop job resumed after the forced stop at window 4, then ready',
+      ('resuming job' in dl, bool(re.search(r'plan=2 regions=20 speech_ms=\d+ from=4', dl)), dl.rstrip().endswith('ready')), (True, True, True))
+dr = json.load(open(O('desktop-dd4a8c2-overlay').replace('.txt', '.json'), encoding='utf-8'))['after_restart']
+claim('desktop subtitles: cues, ordered without overlap, in Korean',
+      (dr['subtitles']['cues'], dr['subtitles']['ordered_without_overlap'], dr['subtitles']['korean']), (92, True, 92))
+dg = [json.loads(l) for l in open(O('desktop-dd4a8c2-gemini').replace('.txt', '.jsonl'), encoding='utf-8')]
+claim('desktop translation requests, most at once, output caps, cues per request',
+      (len(dg), max(r['open_at_once'] for r in dg), sorted({r['max_output_tokens'] for r in dg}),
+       sorted({r['segments'] for r in dg if r['task'] == 'translate'})), (93, 8, [4096], [1]))
+
 sys.exit(1 if failed else 0)

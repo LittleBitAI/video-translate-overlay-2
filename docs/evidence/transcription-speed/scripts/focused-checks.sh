@@ -34,7 +34,7 @@ receipt() { # name, command...
     echo "rustc: $(rustc --version)"
     echo "os: $(uname -s) $(uname -r)"
     echo "--- output (test, result and failure lines) ---"
-    grep -E "^test |test result|panicked|^(ok|FAIL) |Running |error(\[|:)| (✓|×|✗) |Test Files|Tests  " "$OUT/.$name.log" \
+    grep -E "^test |test result|panicked|^(ok|FAIL) |Running |[Ee]rror|FAIL| (✓|×|✗) |Test Files|Tests  " "$OUT/.$name.log" \
       | sed -e 's/\x1b\[[0-9;]*m//g' -e "s#$root#<repo>#g" -e "s#$(cygpath -m "$root" 2>/dev/null || echo "$root")#<repo>#g" \
             -e "s#$HOME#<home>#g" -e 's#C:\\Users\\[^\\]*#<home>#g' -e 's#C:/Users/[^/]*#<home>#g' -e 's#[[:space:]]*$##'
   } > "$f"
