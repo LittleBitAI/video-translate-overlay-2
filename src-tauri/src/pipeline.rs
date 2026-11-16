@@ -3,10 +3,11 @@
 
 use crate::gemini::{self, Client};
 use crate::store::{Job, Store};
-use crate::{api, audio, log, media, Core};
+use crate::{api, audio, log, media, stitch, Core};
 use serde_json::Value;
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::{Arc, Condvar, Mutex};
 use std::time::Duration;
 
 /// Why a job stopped for good; becomes `failure_reason`.
@@ -240,9 +241,9 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
     let pcm = audio::decode_file(path.as_ref()).map_err(|e| format!("decode: {e}"))?;
     log(format!("timing job {} decode ms={} samples={}", job.id, t.elapsed().as_millis(), pcm.len()));
     let t = std::time::Instant::now();
-    let regions = audio::speech_regions(&pcm);
+    let regions = audio::plan(job.plan, &pcm);
     let speech_ms: i64 = regions.iter().map(|r| r.end_ms() - r.start_ms()).sum();
-    log(format!("timing job {} vad ms={} regions={} speech_ms={speech_ms} from={}", job.id, t.elapsed().as_millis(), regions.len(), job.written_regions));
+    log(format!("timing job {} vad ms={} plan={} regions={} speech_ms={speech_ms} from={}", job.id, t.elapsed().as_millis(), job.plan, regions.len(), job.written_regions));
     let t = std::time::Instant::now();
     cx.core.svc.transcriber.load().map_err(|e| format!("model: {e}"))?;
     log(format!("timing job {} model-load ms={}", job.id, t.elapsed().as_millis()));
@@ -251,6 +252,10 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
     let mut done: usize = regions.iter().take(job.written_regions as usize).map(|r| r.end - r.start).sum();
     let mut last = Stage::new(Stage::WRITING);
     let mut prev_end = cx.store.last_cue_end(&job.video_key).map_err(|e| e.to_string())?;
+    let mut held: Vec<stitch::Piece> = match job.held.as_deref() {
+        Some(h) => serde_json::from_str(h).map_err(|e| format!("held cues: {e}"))?,
+        None => Vec::new(),
+    };
     for (i, r) in regions.iter().enumerate().skip(job.written_regions as usize) {
         let len = r.end - r.start;
         let samples: Vec<f32> = pcm[r.start..r.end].iter().map(|&s| s as f32 / 32768.0).collect();
@@ -264,8 +269,11 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
         let ms = t.elapsed().as_millis();
         (infer_ms, infer_audio_ms) = (infer_ms + ms, infer_audio_ms + r.end_ms() - r.start_ms());
         log(format!("timing job {} region i={i} start_ms={} audio_ms={} ms={ms} segs={}", job.id, r.start_ms(), r.end_ms() - r.start_ms(), segs.len()));
-        let cues = region_cues(r, segs, &mut prev_end);
-        cx.store.save_region(&job.id, &job.video_key, i as i64, &cues).map_err(|e| e.to_string())?;
+        let prev = i.checked_sub(1).map(|p| &regions[p]);
+        let cues;
+        (cues, held) = stitch::window_cues(r, segs, std::mem::take(&mut held), prev, regions.get(i + 1), &mut prev_end);
+        let kept = (!held.is_empty()).then(|| serde_json::to_string(&held).unwrap());
+        cx.store.save_region(&job.id, &job.video_key, i as i64, &cues, kept.as_deref()).map_err(|e| e.to_string())?;
         done += len;
         cx.percent(&job.id, (done * 100 / total) as i64, &mut last);
     }
@@ -280,23 +288,6 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
     cx.store.end_writing(&job.id)?;
     drop_audio(cx.store, &job.id, &path);
     Ok(())
-}
-
-/// The cues of one written region on the source timeline: each segment moved
-/// by the region's start, kept inside the region and after the previous cue.
-pub fn region_cues(r: &audio::Region, segs: Vec<crate::Segment>, prev_end: &mut i64) -> Vec<(i64, i64, String)> {
-    let mut cues = Vec::new();
-    for s in segs {
-        let text = s.text.trim().to_string();
-        let start = (r.start_ms() + s.start_ms).max(*prev_end);
-        let end = (r.start_ms() + s.end_ms).min(r.end_ms());
-        if text.is_empty() || end <= start {
-            continue;
-        }
-        *prev_end = end;
-        cues.push((start, end, text));
-    }
-    cues
 }
 
 /// Deletes a job's audio file, and only then forgets its path: a process
@@ -323,6 +314,17 @@ fn sweep_audio(store: &Store) {
 /// How often the glossary is asked for before the job fails without one.
 const GLOSSARY_TRIES: usize = 3;
 
+/// Translation requests waiting for replies at once. Each is still one cue
+/// with only what came before it (A6), so running them side by side changes
+/// no request and no reply; only the waiting overlaps.
+const IN_FLIGHT: usize = 8;
+
+/// The calls under way and the dearest one so far, in KRW.
+struct Ledger {
+    in_flight: usize,
+    dearest: f64,
+}
+
 fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
     let store = cx.store;
     let job = store.job(job_id)?.ok_or("job vanished")?;
@@ -336,18 +338,40 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
     let client = Client { base_url: cx.core.cfg.gemini_base_url.clone(), key, model };
     let limit = gemini::limit_krw(store.video(&video_key)?.map(|v| v.duration_ms).unwrap_or(0));
 
+    // The worker's connection holds one transaction at a time, so every store
+    // access of the calls below (the limit, usage, translations, progress) is
+    // made holding `ledger`; only the requests themselves run side by side.
+    let ledger = Mutex::new(Ledger { in_flight: 0, dearest: 0.0 });
+    let settled = Condvar::new();
+
     // Every call is billed, so usage is added and the limit checked after each
     // one, and before each one too: a job resumed after a kill may already be
     // over the limit with its failure not yet recorded (A6: no call past it).
+    // A call starts only while what is spent, with every call in flight costed
+    // as the dearest call so far, stays under the limit; until a cost is known,
+    // one call at a time.
     let call = |order: &Value| -> Result<Option<Value>, Stop> {
         let mut attempts = 0u32;
         loop {
-            let spent = store.job(job_id)?.ok_or("job vanished")?.cost_krw;
-            if spent >= limit {
-                log(format!("job {job_id}: cost {spent:.2} KRW already at the limit {limit:.2}"));
-                return Err("cost_limit".into());
+            let mut l = ledger.lock().unwrap();
+            loop {
+                let spent = store.job(job_id)?.ok_or("job vanished")?.cost_krw;
+                if spent >= limit {
+                    log(format!("job {job_id}: cost {spent:.2} KRW already at the limit {limit:.2}"));
+                    return Err("cost_limit".into());
+                }
+                if l.in_flight == 0 || (l.dearest > 0.0 && spent + (l.in_flight + 1) as f64 * l.dearest < limit) {
+                    break;
+                }
+                l = settled.wait(l).unwrap();
             }
-            let (reply, usage) = match client.order(order) {
+            l.in_flight += 1;
+            drop(l);
+            let got = client.order(order);
+            let mut l = ledger.lock().unwrap();
+            l.in_flight -= 1;
+            settled.notify_all();
+            let (reply, usage) = match got {
                 Ok((v, u)) => (Some(v), u),
                 Err(gemini::Error::Reply(e, u)) => {
                     log(format!("job {job_id}: unusable reply: {e}"));
@@ -365,11 +389,13 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
                     }
                     let wait = (1u64 << attempts.min(5)).min(30);
                     log(format!("job {job_id}: Gemini failed ({e}), retry in {wait}s"));
+                    drop(l);
                     std::thread::sleep(Duration::from_secs(wait));
                     continue;
                 }
             };
             let j = store.add_usage(job_id, usage.input, usage.output, gemini::cost_krw)?;
+            l.dearest = l.dearest.max(gemini::cost_krw(usage.input, usage.output));
             if j.cost_krw > limit {
                 log(format!("job {job_id}: cost {:.2} KRW passed the limit {limit:.2}", j.cost_krw));
                 return Err("cost_limit".into());
@@ -404,31 +430,50 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
     };
 
     let total = cues.len() as i64;
-    let mut last = Stage::new(Stage::TRANSLATING);
+    let last = Mutex::new(Stage::new(Stage::TRANSLATING));
     let mut stalls = 0;
-    let (translating, mut calls) = (std::time::Instant::now(), 0usize);
+    let (translating, calls) = (std::time::Instant::now(), AtomicUsize::new(0));
     loop {
         let todo: Vec<(i64, String)> = store.translation_cues(&job)?.into_iter().filter(|c| c.text_ko.is_none()).map(|c| (c.seq, c.source_text)).collect();
-        cx.percent(job_id, (total - todo.len() as i64) * 100 / total, &mut last);
+        cx.percent(job_id, (total - todo.len() as i64) * 100 / total, &mut last.lock().unwrap());
         if todo.is_empty() {
-            log(format!("timing job {job_id} translate ms={} cues={total} calls={calls}", translating.elapsed().as_millis()));
+            log(format!("timing job {job_id} translate ms={} cues={total} calls={} in_flight={IN_FLIGHT}", translating.elapsed().as_millis(), calls.load(Ordering::Relaxed)));
             return Ok(());
         }
-        let mut progressed = false;
-        for batch in todo.chunks(gemini::BATCH) {
+        let (batches, progressed, stop) = (Mutex::new(todo.chunks(gemini::BATCH)), AtomicBool::new(false), Mutex::new(None::<Stop>));
+        // One request per batch, as before; IN_FLIGHT of them waiting for replies at once.
+        let one = |batch: &[(i64, String)]| -> Result<(), Stop> {
             let mut order = gemini::translate_order(&glossary, batch);
             if let Some(previous) = cues.iter().rev().find(|c| c.seq < batch[0].0) {
                 order["context_before"] = Value::String(previous.source_text.clone());
             }
-            calls += 1;
-            let Some(reply) = call(&order)? else { continue };
+            calls.fetch_add(1, Ordering::Relaxed);
+            let Some(reply) = call(&order)? else { return Ok(()) };
             let ko = gemini::parse_translations(&reply, batch);
-            progressed |= !ko.is_empty();
+            let _held = ledger.lock().unwrap();
+            if !ko.is_empty() {
+                progressed.store(true, Ordering::Relaxed);
+            }
             store.set_translations(job_id, &ko)?;
             let left = store.translation_cues(&job)?.iter().filter(|c| c.text_ko.is_none()).count() as i64;
-            cx.percent(job_id, (total - left) * 100 / total, &mut last);
+            cx.percent(job_id, (total - left) * 100 / total, &mut last.lock().unwrap());
+            Ok(())
+        };
+        std::thread::scope(|s| {
+            for _ in 0..IN_FLIGHT {
+                s.spawn(|| loop {
+                    let next = if stop.lock().unwrap().is_some() { None } else { batches.lock().unwrap().next() };
+                    let Some(batch) = next else { return };
+                    if let Err(e) = one(batch) {
+                        stop.lock().unwrap().get_or_insert(e);
+                    }
+                });
+            }
+        });
+        if let Some(e) = stop.into_inner().unwrap() {
+            return Err(e);
         }
-        stalls = if progressed { 0 } else { stalls + 1 };
+        stalls = if progressed.into_inner() { 0 } else { stalls + 1 };
         if stalls >= 2 {
             return Err("translation_incomplete".into());
         }
@@ -442,6 +487,14 @@ pub(crate) mod worker_tests;
 #[cfg(test)]
 #[path = "pipeline_audio_tests.rs"]
 mod audio_tests;
+
+#[cfg(test)]
+#[path = "pipeline_boundary_tests.rs"]
+mod boundary_tests;
+
+#[cfg(test)]
+#[path = "pipeline_translate_tests.rs"]
+mod translate_tests;
 
 #[cfg(test)]
 #[path = "pipeline_download_tests.rs"]

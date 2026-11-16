@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS job (
   failure_reason TEXT,
   audio_path TEXT,
   written_regions INTEGER NOT NULL DEFAULT 0,
+  plan INTEGER NOT NULL DEFAULT 1,
+  held TEXT,
   translation_model TEXT NOT NULL,
   input_amount INTEGER NOT NULL DEFAULT 0,
   output_amount INTEGER NOT NULL DEFAULT 0,
@@ -90,6 +92,10 @@ pub struct Job {
     pub failure_reason: Option<String>,
     pub audio_path: Option<String>,
     pub written_regions: i64,
+    /// The segmentation plan the job writes under ([`crate::audio::plan`]); 1 for jobs made before plans had numbers.
+    pub plan: i64,
+    /// The cues of the last written window that reach into the next one's overlap, not yet committed (JSON).
+    pub held: Option<String>,
     pub translation_model: String,
     pub input_amount: i64,
     pub output_amount: i64,
@@ -98,7 +104,7 @@ pub struct Job {
 }
 
 const JOB_COLS: &str = "id, video_key, media_url, stage, percent, failure_reason, audio_path, written_regions, \
-    translation_model, input_amount, output_amount, cost_krw, notified_at";
+    translation_model, input_amount, output_amount, cost_krw, notified_at, plan, held";
 
 fn job(r: &Row) -> Job {
     Job {
@@ -115,6 +121,8 @@ fn job(r: &Row) -> Job {
         output_amount: r[10].int(),
         cost_krw: r[11].real(),
         notified: r[12] != Val::Null,
+        plan: r[13].int(),
+        held: r[14].opt_text(),
     }
 }
 
@@ -137,6 +145,17 @@ pub struct Cue {
     pub text_ko: Option<String>,
 }
 
+/// Adds the job columns a file made by an older build lacks; its jobs keep plan 1.
+fn add_job_columns(db: &Db) -> R<()> {
+    let have: Vec<String> = db.query("SELECT name FROM pragma_table_info('job')", p![])?.iter().map(|r| r[0].text()).collect();
+    for (name, decl) in [("plan", "plan INTEGER NOT NULL DEFAULT 1"), ("held", "held TEXT")] {
+        if !have.iter().any(|h| h == name) {
+            db.exec(&format!("ALTER TABLE job ADD COLUMN {decl}"))?;
+        }
+    }
+    Ok(())
+}
+
 pub struct Store {
     db: Db,
     path: std::path::PathBuf,
@@ -153,6 +172,7 @@ impl Store {
         // even when a slow disk stalls a commit. The mode stays with the file.
         db.exec("PRAGMA journal_mode=WAL")?;
         db.exec(SCHEMA)?;
+        add_job_columns(&db)?;
         Ok(Store { db, path: path.to_path_buf() })
     }
 
@@ -232,10 +252,10 @@ impl Store {
             db.execute("UPDATE video SET terms=NULL, source_language=NULL WHERE video_key=?", p![key])?;
             db.execute(
                 &format!(
-                    "INSERT INTO job (id, video_key, media_url, stage, translation_model, created_at, updated_at)
-                     VALUES (?,?,?,'downloading',?,{NOW},{NOW})"
+                    "INSERT INTO job (id, video_key, media_url, stage, translation_model, plan, created_at, updated_at)
+                     VALUES (?,?,?,'downloading',?,?,{NOW},{NOW})"
                 ),
-                p![id, key, media_url, model],
+                p![id, key, media_url, model, crate::audio::PLAN],
             )?;
             db.execute("DELETE FROM deleted_video WHERE video_key=?", p![key])?;
             crate::sync::local::capture_job(&db, id, key)?;
@@ -405,8 +425,9 @@ impl Store {
 
     // ------------------------------------------------------------ cues
 
-    /// Stores the cues of one written region and moves the resume point past it, atomically.
-    pub fn save_region(&self, job_id: &str, video_key: &str, region: i64, cues: &[(i64, i64, String)]) -> R<()> {
+    /// Stores the cues of one written region and moves the resume point past it,
+    /// with the cues `held` for the next window's overlap, atomically.
+    pub fn save_region(&self, job_id: &str, video_key: &str, region: i64, cues: &[(i64, i64, String)], held: Option<&str>) -> R<()> {
         self.db.exec("BEGIN IMMEDIATE")?;
         let r = (|| {
             // seq counts from 0 in start_ms order (E3).
@@ -417,7 +438,7 @@ impl Store {
                     p![video_key, next + i as i64, *a, *b, text],
                 )?;
             }
-            self.db.execute(&format!("UPDATE job SET written_regions=?, updated_at={NOW} WHERE id=?"), p![region + 1, job_id])?;
+            self.db.execute(&format!("UPDATE job SET written_regions=?, held=?, updated_at={NOW} WHERE id=?"), p![region + 1, held, job_id])?;
             Ok(())
         })();
         self.db.exec(if r.is_ok() { "COMMIT" } else { "ROLLBACK" })?;
@@ -524,8 +545,8 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let s = Store::open(&dir.join("t.sqlite3")).unwrap();
         s.create_job("j", "v", "https://a.example/x", "other", "T", 1000, None, "m").unwrap();
-        s.save_region("j", "v", 0, &[(0, 10, "a".into()), (10, 20, "b".into())]).unwrap();
-        s.save_region("j", "v", 1, &[(30, 40, "c".into())]).unwrap();
+        s.save_region("j", "v", 0, &[(0, 10, "a".into()), (10, 20, "b".into())], None).unwrap();
+        s.save_region("j", "v", 1, &[(30, 40, "c".into())], None).unwrap();
         let seqs: Vec<i64> = s.cues("v").unwrap().iter().map(|c| c.seq).collect();
         assert_eq!(seqs, [0, 1, 2], "seq counts from 0 (E3)");
         assert_eq!(s.job("j").unwrap().unwrap().written_regions, 2);
@@ -543,6 +564,35 @@ mod tests {
         s.mark_notified("j").unwrap();
         assert!(s.job("j").unwrap().unwrap().notified);
         drop(s);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_job_from_a_file_without_plans_keeps_plan_one_and_new_jobs_get_the_current_plan() {
+        let dir = std::env::temp_dir().join(format!("vto-store-plan-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("t.sqlite3");
+        let s = Store::open(&path).unwrap();
+        s.create_job("old", "v", "https://a.example/x", "other", "T", 1000, None, "m").unwrap();
+        s.save_region("old", "v", 0, &[(0, 10, "a".into())], None).unwrap();
+        drop(s);
+        // The file as an older build left it: no plan or held columns.
+        let db = Db::open(&path).unwrap();
+        db.exec("ALTER TABLE job DROP COLUMN plan; ALTER TABLE job DROP COLUMN held").unwrap();
+        drop(db);
+
+        let s = Store::open(&path).unwrap();
+        let old = s.job("old").unwrap().unwrap();
+        assert_eq!((old.plan, old.held, old.written_regions), (1, None, 1));
+        s.save_region("old", "v", 1, &[(20, 30, "b".into())], Some("[]")).unwrap();
+        assert_eq!(s.job("old").unwrap().unwrap().held.as_deref(), Some("[]"));
+        s.fail("old", "download_failed").unwrap();
+        s.create_job("new", "w", "https://a.example/y", "other", "T", 1000, None, "m").unwrap();
+        assert_eq!(s.job("new").unwrap().unwrap().plan, crate::audio::PLAN);
+        drop(s);
+        // Opening again changes nothing.
+        assert_eq!(Store::open(&path).unwrap().job("old").unwrap().unwrap().plan, 1);
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

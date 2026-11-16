@@ -24,6 +24,7 @@ pub mod media;
 pub mod pipeline;
 pub mod platform;
 pub mod screens;
+pub mod stitch;
 pub mod store;
 mod library_scope;
 pub mod sync;
@@ -48,6 +49,17 @@ use std::time::Duration;
 pub struct Segment {
     pub start_ms: i64,
     pub end_ms: i64,
+    pub text: String,
+    /// The segment's words in order, timed the same way, when the model gives
+    /// them; their texts joined are `text`. Empty: the segment is one unit.
+    pub words: Vec<Word>,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct Word {
+    pub start_ms: i64,
+    pub end_ms: i64,
+    /// With the whitespace that comes before it.
     pub text: String,
 }
 

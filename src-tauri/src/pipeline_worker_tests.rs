@@ -84,7 +84,7 @@ fn start(dir: &std::path::Path, shade: &Shade, broken_keys: bool) -> Arc<Core> {
 fn translated_but_not_notified(dir: &std::path::Path) {
     let s = Store::open(&dir.join("app.sqlite3")).unwrap();
     s.create_job("j", "v", "https://a.example/talk", "other", "Talk", 1000, None, "m").unwrap();
-    s.save_region("j", "v", 0, &[(0, 900, "hello".into())]).unwrap();
+    s.save_region("j", "v", 0, &[(0, 900, "hello".into())], None).unwrap();
     s.end_writing("j").unwrap();
     s.set_terms("v", "[]").unwrap();
     s.set_translations("j", &[(0, "안녕하세요".into())]).unwrap();
@@ -140,7 +140,7 @@ fn a_job_in_an_unselected_account_resumes_in_that_database_and_publishes_its_com
     let page = "https://lectures.example.org/prior-account";
     let key = api::video_key(&url::Url::parse(page).unwrap());
     store.create_job("owned-job", &key, page, "other", "Prior account lecture", 5000, None, "m").unwrap();
-    store.save_region("owned-job", &key, 0, &[(123, 2345, "original".into())]).unwrap();
+    store.save_region("owned-job", &key, 0, &[(123, 2345, "original".into())], None).unwrap();
     store.end_writing("owned-job").unwrap();
     store.set_terms(&key, "[]").unwrap();
     store.set_translations("owned-job", &[(0, "saved translation".into())]).unwrap();
@@ -232,7 +232,7 @@ fn saved_subtitles(core: &Core) -> Value {
     let key = api::video_key(&url::Url::parse(SAVED_PAGE).unwrap());
     let s = &core.store;
     s.create_job("original", &key, SAVED_PAGE, "other", "Saved speech", 3_600_000, None, "m").unwrap();
-    s.save_region("original", &key, 0, &[(0, 900, "first".into()), (1000, 1900, "second".into())]).unwrap();
+    s.save_region("original", &key, 0, &[(0, 900, "first".into()), (1000, 1900, "second".into())], None).unwrap();
     s.set_terms(&key, "[]").unwrap();
     s.set_translations("original", &[(0, "original first".into()), (1, "original second".into())]).unwrap();
     s.add_usage("original", 10, 10, gemini::cost_krw).unwrap();
@@ -337,7 +337,7 @@ fn transient_retries_are_independent_for_glossary_and_each_cue() {
     let s = &core.store;
     s.create_job("j", "v", SAVED_PAGE, "other", "Lecture", 3_600_000, None, "m").unwrap();
     let cues: Vec<_> = (0..9).map(|i| (i * 1000, i * 1000 + 900, format!("cue {i}"))).collect();
-    s.save_region("j", "v", 0, &cues).unwrap();
+    s.save_region("j", "v", 0, &cues, None).unwrap();
     s.end_writing("j").unwrap();
     run_job(&core, s, s.job("j").unwrap().unwrap());
     assert_eq!(s.job("j").unwrap().unwrap().stage, "ready");

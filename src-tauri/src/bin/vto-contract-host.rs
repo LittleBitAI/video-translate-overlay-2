@@ -157,7 +157,7 @@ impl Transcriber for FakeWhisper {
         let mut segs = Vec::new();
         for (a, b) in &runs {
             let text = if self.lines.is_empty() { String::new() } else { self.lines[self.next.fetch_add(1, Ordering::SeqCst) % self.lines.len()].clone() };
-            segs.push(Segment { start_ms: (*a * 10) as i64, end_ms: (*b * 10) as i64, text });
+            segs.push(Segment { start_ms: (*a * 10) as i64, end_ms: (*b * 10) as i64, text, words: Vec::new() });
         }
         // The hallucination: every unvoiced stretch of 2 s or more.
         let mut i = 0;
@@ -171,7 +171,7 @@ impl Transcriber for FakeWhisper {
                 i += 1;
             }
             if i - start >= 200 {
-                segs.push(Segment { start_ms: (start * 10) as i64, end_ms: (i * 10) as i64, text: "Thank you for watching.".into() });
+                segs.push(Segment { start_ms: (start * 10) as i64, end_ms: (i * 10) as i64, text: "Thank you for watching.".into(), words: Vec::new() });
             }
         }
         segs.sort_by_key(|s| s.start_ms);

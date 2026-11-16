@@ -2,11 +2,12 @@
 //! speech-region planning, model loading and inference per region. Run on the
 //! phone under `adb shell`, or on the PC for the large-model reference:
 //!
-//! `transcribe_timing <audio> <model> <out.json> [--passes N] [--limit-s S]`
+//! `transcribe_timing <audio> <model> <out.json> [--passes N] [--limit-s S] [--plan P]`
 //!
 //! Pass 1 runs in a fresh process (cold: the model is loaded first); later
 //! passes reuse the loaded model (warm). `--limit-s` writes only the regions
-//! that start before S seconds. Thermal readings come from the host
+//! that start before S seconds; `--plan` picks the segmentation plan (the
+//! current one by default, 1 for the windows of jobs made before plans). Thermal readings come from the host
 //! (`dumpsys thermalservice`), which the shell user may read.
 //!
 //! The JSON keeps every pass's region timings and cues on the source timeline,
@@ -23,11 +24,12 @@ fn arg<T: std::str::FromStr>(args: &[String], name: &str) -> Option<T> {
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let (Some(audio), Some(model), Some(out)) = (args.get(1), args.get(2), args.get(3)) else {
-        eprintln!("usage: transcribe_timing <audio> <model> <out.json> [--passes N] [--limit-s S]");
+        eprintln!("usage: transcribe_timing <audio> <model> <out.json> [--passes N] [--limit-s S] [--plan P]");
         std::process::exit(2);
     };
     let passes: usize = arg(&args, "--passes").unwrap_or(1);
     let limit_ms: i64 = arg::<i64>(&args, "--limit-s").map_or(i64::MAX, |s| s * 1000);
+    let plan_no: i64 = arg(&args, "--plan").unwrap_or(vto::audio::PLAN);
 
     let t = Instant::now();
     let pcm = vto::audio::decode_file(audio.as_ref()).expect("decode");
@@ -35,11 +37,12 @@ fn main() {
     println!("timing step=decode ms={decode_ms} samples={}", pcm.len());
 
     let t = Instant::now();
-    let plan = vto::audio::speech_regions(&pcm);
+    let plan = vto::audio::plan(plan_no, &pcm);
     let vad_ms = t.elapsed().as_millis();
     let regions: Vec<_> = plan.into_iter().filter(|r| r.start_ms() < limit_ms).collect();
     let speech_ms: i64 = regions.iter().map(|r| r.end_ms() - r.start_ms()).sum();
-    println!("timing step=vad ms={vad_ms} regions={} speech_ms={speech_ms}", regions.len());
+    let shared = regions.windows(2).filter(|w| w[1].start < w[0].end).count();
+    println!("timing step=vad ms={vad_ms} plan={plan_no} regions={} overlaps={shared} speech_ms={speech_ms}", regions.len());
 
     let whisper = vto::whisper::Whisper::new(std::path::Path::new("."), Some(model.into()));
     let t = Instant::now();
@@ -51,7 +54,7 @@ fn main() {
     for pass in 1..=passes {
         whisper.prepare(std::path::Path::new("."), &mut |_| {}).expect("prepare");
         let started = Instant::now();
-        let (mut prev_end, mut cues, mut timed) = (0i64, Vec::<Value>::new(), Vec::<Value>::new());
+        let (mut prev_end, mut cues, mut timed, mut held) = (0i64, Vec::<Value>::new(), Vec::<Value>::new(), Vec::new());
         for (i, r) in regions.iter().enumerate() {
             let samples: Vec<f32> = pcm[r.start..r.end].iter().map(|&s| s as f32 / 32768.0).collect();
             let t = Instant::now();
@@ -60,7 +63,11 @@ fn main() {
             let audio_ms = r.end_ms() - r.start_ms();
             println!("timing step=region pass={pass} i={i} start_ms={} audio_ms={audio_ms} ms={ms} segs={}", r.start_ms(), segs.len());
             timed.push(json!({"i": i, "start_ms": r.start_ms(), "end_ms": r.end_ms(), "ms": ms as u64}));
-            for (start, end, text) in vto::pipeline::region_cues(r, segs, &mut prev_end) {
+            let words: Vec<Value> = segs.iter().flat_map(|s| &s.words).map(|w| json!([w.start_ms + r.start_ms(), w.end_ms + r.start_ms(), w.text])).collect();
+            timed.last_mut().unwrap()["words"] = Value::from(words);
+            let committed;
+            (committed, held) = vto::stitch::window_cues(r, segs, std::mem::take(&mut held), i.checked_sub(1).map(|p| &regions[p]), regions.get(i + 1), &mut prev_end);
+            for (start, end, text) in committed {
                 cues.push(json!({"region": i, "start_ms": start, "end_ms": end, "text": text}));
             }
         }
@@ -71,7 +78,7 @@ fn main() {
     let report = json!({
         "audio": audio, "model": model, "samples": pcm.len(), "audio_ms": pcm.len() as i64 * 1000 / vto::audio::RATE as i64,
         "decode_ms": decode_ms as u64, "vad_ms": vad_ms as u64, "load_ms": load_ms as u64, "speech_ms": speech_ms,
-        "language": whisper.language(), "runs": runs,
+        "plan": plan_no, "language": whisper.language(), "runs": runs,
     });
     std::fs::write(out, serde_json::to_vec_pretty(&report).unwrap()).expect("write report");
 }

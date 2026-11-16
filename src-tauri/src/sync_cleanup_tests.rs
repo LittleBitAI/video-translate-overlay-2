@@ -30,7 +30,7 @@ fn automatic_cleanup_removes_only_owned_files_and_handles_markers_without_visibl
     let remote = Journal::open(&remote_profile.0, &VerifiedIdentity::fixture("cleanup-account")).unwrap();
     let saved = key("saved"); let active = key("active");
     store.create_job("saved-job", &saved, "https://lectures.example.org/saved", "other", "Saved lecture", 5000, None, "m").unwrap();
-    store.save_region("saved-job", &saved, 0, &[(123,2345,"original".into())]).unwrap();
+    store.save_region("saved-job", &saved, 0, &[(123,2345,"original".into())], None).unwrap();
     store.set_translations("saved-job", &[(0,"translated".into())]).unwrap();
     store.set_terms(&saved, "[]").unwrap(); store.finish("saved-job").unwrap();
     store.create_playlist("topic", "Topic").unwrap();

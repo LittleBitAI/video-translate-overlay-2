@@ -2,14 +2,14 @@
 //! on desktop. Model downloads are checked against a pinned SHA-256.
 
 use crate::http::{self, Request};
-use crate::{Segment, Transcriber};
+use crate::{Segment, Transcriber, Word};
 use sha2::{Digest, Sha256};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperState};
+use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperSegment, WhisperState};
 
 pub const MODEL_FILE: &str = if cfg!(target_os = "android") { "ggml-base-q5_1.bin" } else { "ggml-large-v3-turbo-q5_0.bin" };
 pub const MODEL_URL: &str = if cfg!(target_os = "android") {
@@ -30,8 +30,9 @@ pub struct Whisper {
     path: PathBuf,
     /// Whether `prepare` may fetch the file (false for `VTO_WHISPER_MODEL`).
     fetch: bool,
-    // A state owns its model context and reusable compute buffers.
-    state: Mutex<Option<WhisperState>>,
+    // A state owns its model context and reusable compute buffers; with the
+    // model's first special token (end of text), below which tokens are text.
+    state: Mutex<Option<(WhisperState, i32)>>,
     language: Mutex<Option<String>>,
     mobile: bool,
 }
@@ -45,12 +46,13 @@ impl Whisper {
         Whisper { path, fetch, state: Mutex::new(None), language: Mutex::new(None), mobile: cfg!(target_os = "android") }
     }
 
-    fn state(&self) -> Result<std::sync::MutexGuard<'_, Option<WhisperState>>, String> {
+    fn state(&self) -> Result<std::sync::MutexGuard<'_, Option<(WhisperState, i32)>>, String> {
         let mut state = self.state.lock().unwrap();
         if state.is_none() {
             let c = WhisperContext::new_with_params(&self.path, WhisperContextParameters::default())
                 .map_err(|e| format!("cannot load {}: {e}", self.path.display()))?;
-            *state = Some(c.create_state().map_err(|e| e.to_string())?);
+            let eot = c.token_eot();
+            *state = Some((c.create_state().map_err(|e| e.to_string())?, eot));
         }
         Ok(state)
     }
@@ -122,7 +124,8 @@ impl Transcriber for Whisper {
 
     fn transcribe(&self, pcm: &[f32], progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String> {
         let mut state_guard = self.state()?;
-        let state = state_guard.as_mut().unwrap();
+        let (state, eot) = state_guard.as_mut().unwrap();
+        let eot = *eot;
         // Keep the detected language across windows, without carrying text into another job.
         let known = self.language.lock().unwrap().clone();
         let mut params = inference_params(self.mobile);
@@ -134,6 +137,8 @@ impl Transcriber for Whisper {
         params.set_print_realtime(false);
         params.set_print_special(false);
         params.set_print_timestamps(false);
+        // Word times, for reconciling two windows that both heard a cut (decoding is unchanged).
+        params.set_token_timestamps(true);
         let percent = Arc::new(AtomicI32::new(0));
         let seen = percent.clone();
         params.set_progress_callback_safe(move |p: i32| seen.store(p, Ordering::Relaxed));
@@ -156,6 +161,7 @@ impl Transcriber for Whisper {
                 start_ms: (s.start_timestamp() * 10).clamp(0, duration_ms),
                 end_ms: (s.end_timestamp() * 10).clamp(0, duration_ms),
                 text: s.to_str_lossy().map(|t| t.into_owned()).unwrap_or_default(),
+                words: words(&s, eot, duration_ms),
             })
             .filter(|s| s.end_ms > s.start_ms && !s.text.trim().is_empty())
             .collect();
@@ -166,6 +172,31 @@ impl Transcriber for Whisper {
     fn language(&self) -> Option<String> {
         self.language.lock().unwrap().clone()
     }
+}
+
+/// A segment's words from its tokens: a word starts at a token that begins
+/// with whitespace, or with a kana or CJK ideograph (written without spaces);
+/// special tokens (from end of text up) are left out.
+fn words(s: &WhisperSegment, eot: i32, duration_ms: i64) -> Vec<Word> {
+    let mut out: Vec<(i64, i64, Vec<u8>)> = Vec::new();
+    for i in 0..s.n_tokens() {
+        let Some(t) = s.get_token(i) else { continue };
+        let Ok(bytes) = t.to_bytes() else { continue };
+        if t.token_id() >= eot || bytes.is_empty() {
+            continue;
+        }
+        let d = t.token_data();
+        let (t0, t1) = ((d.t0 * 10).clamp(0, duration_ms), (d.t1 * 10).clamp(0, duration_ms));
+        let cjk = std::str::from_utf8(bytes).ok().and_then(|x| x.chars().next()).is_some_and(|c| ('\u{3040}'..='\u{30ff}').contains(&c) || ('\u{3400}'..='\u{9fff}').contains(&c));
+        match out.last_mut() {
+            Some(w) if !(bytes[0].is_ascii_whitespace() || cjk) => {
+                w.1 = w.1.max(t1);
+                w.2.extend_from_slice(bytes);
+            }
+            _ => out.push((t0, t1.max(t0), bytes.to_vec())),
+        }
+    }
+    out.into_iter().map(|(a, b, t)| Word { start_ms: a, end_ms: b, text: String::from_utf8_lossy(&t).into_owned() }).collect()
 }
 
 fn inference_params(mobile: bool) -> FullParams<'static, 'static> {
