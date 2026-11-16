@@ -1,0 +1,57 @@
+check: evidence-reproduce
+command: python -I docs/evidence/transcription-speed/scripts/reproduce.py
+exit: 0
+started: 2026-11-16T23:23:30Z
+finished: 2026-11-16T23:23:42Z
+commit: fa3bf8db91be718c4e73337401786b57216d50fe
+tree src-tauri: 65ab4e6b8f3d069031aa4741cc917c96a639721b
+tree contract-tests: cc98f6533efe777405160da8241f3957b8295a37
+tree src: 957be1d6b8663e3d33ad79f872cf7a0f0b0b2f5d
+tree tests: f7e92b469b042d26540e97dc74d37ea59a6c9d28
+tree docs/evidence/transcription-speed/scripts: 8c58a13a5dad69f878f07390e3ca89fa76bca72b
+tree docs/evidence/transcription-speed/data: 93d1570ce51017699333201a97a4ed6e094e7063
+rustc: rustc 1.98.1 (48a229cea 2026-09-01)
+os: MINGW64_NT-10.0-26200 3.4.6.x86_64
+--- output (test, result and failure lines) ---
+ok   plan 1 cuts through speech: 60
+ok   harness-baseline-cold overall: 5.40 %
+ok   harness-baseline-cold within 4 s of plan 1 cuts: 13.43 %
+ok   bg-base3-cues overall: 5.40 %
+ok   bg-base3-cues within 4 s of plan 1 cuts: 13.43 %
+ok   pc-base-plan2 overall: 5.85 %
+ok   pc-base-plan2 within 4 s of plan 1 cuts: 12.16 %
+ok   pc-retry-plan2 overall: 5.39 %
+ok   pc-retry-plan2 within 4 s of plan 1 cuts: 12.16 %
+ok   tx-final-cues overall: 5.79 %
+ok   tx-final-cues within 4 s of plan 1 cuts: 11.97 %
+ok   tx-final3-cues overall: 5.33 %
+ok   tx-final3-cues within 4 s of plan 1 cuts: 11.97 %
+ok   background baseline cues equal the harness baseline cues: True
+ok   forced cuts: 71
+ok   tune-forced-0 errors within 2 s of the 71 cuts: 41
+ok   seg-forced-1000 errors within 2 s of the 71 cuts: 85
+ok   seg-forced-2000 errors within 2 s of the 71 cuts: 51
+ok   seg-forced-3000 errors within 2 s of the 71 cuts: 41
+ok   seg-forced-4000 errors within 2 s of the 71 cuts: 40
+ok   final cues: 856
+ok   final cues ordered and not overlapping: True
+ok   old job: cues at the kill unchanged after resuming: (44, True, 93, True)
+ok   old job: cues at the kill equal the baseline harness: True
+ok   new job: resumed cues equal the uninterrupted paid run: (64, True, 118, True)
+ok   old job resumed on its own plan: True
+ok   new job resumed on its own plan: True
+ok   cold and warm inference ms: [(1, False, 105207), (2, True, 119260)]
+ok   cold and warm passes wrote the same cues: True
+ok   final writing wall ms: 2322092
+ok   final translation ms, calls, in flight: ('132572', '856', '856', '8')
+ok   final transfer, decode, vad, model load ms: [11414, 4178, 48, 129]
+ok   final windows, over 30 s, slowest ms: (140, 2, 71681)
+ok   final thermal samples all status 0: (82, True)
+ok   final cpuset samples in /moderate: (40, 41)
+ok   baseline background writing wall ms: 3623989
+ok   baseline background windows, over 30 s: (190, 11)
+ok   baseline background thermal samples, at status 0, highest status: (127, 123, 1)
+ok   desktop windows written, distinct, cut through speech with 3 s shared: (20, 20, 11)
+ok   desktop job resumed after the forced stop at window 4, then ready: (True, True, True)
+ok   desktop subtitles: cues, ordered without overlap, in Korean: (92, True, 92)
+ok   desktop translation requests, most at once, output caps, cues per request: (93, 8, [4096], [1])

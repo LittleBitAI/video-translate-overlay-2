@@ -1,0 +1,99 @@
+check: rust-unit-audio-pipeline-stitch-gemini-store
+command: cargo test --manifest-path src-tauri/Cargo.toml --lib -- audio pipeline stitch gemini store
+exit: 0
+started: 2026-11-16T23:19:19Z
+finished: 2026-11-16T23:22:30Z
+commit: fa3bf8db91be718c4e73337401786b57216d50fe
+tree src-tauri: 65ab4e6b8f3d069031aa4741cc917c96a639721b
+tree contract-tests: cc98f6533efe777405160da8241f3957b8295a37
+tree src: 957be1d6b8663e3d33ad79f872cf7a0f0b0b2f5d
+tree tests: f7e92b469b042d26540e97dc74d37ea59a6c9d28
+tree docs/evidence/transcription-speed/scripts: 8c58a13a5dad69f878f07390e3ca89fa76bca72b
+tree docs/evidence/transcription-speed/data: 93d1570ce51017699333201a97a4ed6e094e7063
+rustc: rustc 1.98.1 (48a229cea 2026-09-01)
+os: MINGW64_NT-10.0-26200 3.4.6.x86_64
+--- output (test, result and failure lines) ---
+     Running unittests src\lib.rs (target\debug\deps\vto-fc7dacfd209107a7.exe)
+test audio::decode_container_gap_tests::an_mp4_track_that_starts_late_starts_late ... ok
+test audio::decode_gap_tests::a_gap_in_ts_audio_is_kept ... ok
+test audio::decode_container_gap_tests::an_mp4_edit_that_trims_the_start_moves_the_speech_with_it ... ok
+test audio::decode_limits_tests::a_wav_at_one_hertz_is_refused_not_multiplied ... ok
+test audio::decode_container_gap_tests::an_mp4_media_edit_ends_where_its_length_does ... ok
+test audio::decode_container_gap_tests::an_mp4_edit_list_that_skips_a_part_is_played_through ... ok
+test audio::decode_limits_tests::a_wav_header_claiming_a_huge_fmt_chunk_is_not_allocated ... ok
+test audio::decode_tests::a_real_hls_segment_decodes ... ok
+test audio::decode_container_gap_tests::a_gap_in_mp4_and_webm_audio_is_kept ... ok
+test audio::plan_tests::a_long_span_after_a_short_pause_starts_in_the_room_left ... ok
+test audio::decode_tests::junk_is_an_error_not_a_panic ... ok
+test audio::plan_tests::quiet_speech_gets_windows_and_silence_none ... ok
+test audio::decode_tests::every_download_format_decodes_to_the_tone ... ok
+test audio::plan_tests::long_speech_is_cut_at_the_latest_pause_before_the_limit_without_overlap ... ok
+test audio::plan_tests::spans_apart_by_short_pauses_share_a_window_and_long_silence_ends_it ... ok
+test audio::quiet_and_cut_tests::a_quiet_steady_hum_and_digital_silence_are_not_speech ... ok
+test audio::plan_tests::speech_with_no_pause_overlaps_the_next_window_by_the_overlap ... ok
+test account::tests::a_historical_native_receipt_restores_after_its_google_proof_expires_without_extending_that_proof ... ok
+test audio::quiet_and_cut_tests::a_streamed_wav_is_read_to_its_end ... ok
+test audio::quiet_and_cut_tests::quiet_speech_is_found ... ok
+test audio::tests::regions_skip_silence_and_keep_source_times ... ok
+test account::tests::sealed_device_enrollment_restores_without_google_and_expiry_cannot_be_extended ... ok
+test audio::tests::stereo_wav_is_downmixed_and_resampled ... ok
+test audio::tests::long_speech_is_cut_into_model_windows ... ok
+test audio::quiet_and_cut_tests::a_wav_cut_short_of_its_data_size_fails ... ok
+test decode::fmp4_direct_tests::a_late_audio_track_of_a_downloaded_file_stays_late ... ok
+test audio::decode_tests::it_agrees_with_media_foundation ... ok
+test decode::fmp4_lead_tests::audio_led_by_its_tfdt_starts_where_players_play_it ... ok
+test decode::fmp4_lead_tests::audio_led_by_an_edit_list_starts_where_players_play_it ... ok
+test gemini::tests::an_hour_of_budget_is_a_thousand_won ... ok
+test gemini::tests::glossary_is_deduplicated_and_sorted ... ok
+test gemini::tests::missing_duplicate_or_foreign_ids_never_fill_subtitle_slots ... ok
+test gemini::tests::replies_are_matched_by_id_only ... ok
+test media::audio_group_tests::renditions_are_picked_as_players_pick_them ... ok
+test gemini::key_tests::another_400_is_not_blamed_on_the_key ... ok
+test gemini::key_tests::a_400_that_names_the_key_is_a_refused_key ... ok
+test media::not_audio_tests::an_image_or_a_document_is_refused_before_a_job ... ok
+test media::audio_group_tests::the_default_rendition_is_taken_not_the_first ... ok
+test media::audio_group_tests::a_variant_with_no_audio_group_plays_its_own_audio ... ok
+test media::audio_group_tests::the_group_of_the_chosen_variant_is_the_one_used ... ok
+test pipeline::audio_tests::a_failed_delete_keeps_the_path_for_the_next_try ... ok
+test audio::plan_tests::a_short_pause_after_any_fill_of_a_window_plans_bounded_windows_over_all_speech ... ok
+test pipeline::audio_tests::audio_left_after_writing_is_deleted_on_the_next_round ... ok
+test pipeline::cost_tests::a_resumed_job_over_its_limit_makes_no_more_calls ... ok
+test pipeline::tests::every_stop_maps_to_one_of_the_six_reasons ... ok
+test pipeline::download_tests::the_first_attempt_uses_the_probed_source_and_reports_the_model_fetch ... ok
+test pipeline::glossary_tests::a_job_with_no_glossary_fails_before_any_batch ... ok
+test pipeline::boundary_tests::every_spoken_word_is_written_once_in_order_and_in_time ... ok
+test pipeline::glossary_tests::an_unusable_glossary_reply_is_asked_for_again ... ok
+test audio::decode_limits_tests::a_timestamp_a_thousand_hours_ahead_stops_at_the_cap ... ok
+test pipeline::worker_tests::a_bug_fails_the_job_instead_of_leaving_it_running ... ok
+test pipeline::boundary_tests::a_write_killed_after_a_held_boundary_resumes_to_the_same_cues ... ok
+test pipeline::boundary_tests::a_job_made_before_plans_resumes_on_its_own_windows ... ok
+test pipeline::worker_tests::a_job_resumed_before_its_notice_went_out_notifies_once ... ok
+test pipeline::worker_tests::every_ten_percent_step_passed_is_reported_once ... ok
+test stitch::tests::a_loop_on_a_sound_is_cut_and_said_repetition_and_numbers_stay ... ok
+test stitch::tests::a_side_that_heard_nothing_in_the_overlap_gives_way_to_the_other ... ok
+test stitch::tests::a_word_cut_by_the_window_edge_appears_once_and_the_split_sentence_is_one_cue ... ok
+test stitch::tests::cues_move_to_the_source_timeline_inside_their_window ... ok
+test stitch::tests::natural_repetition_across_the_cut_keeps_every_spoken_repeat ... ok
+test stitch::tests::segments_without_words_are_reconciled_as_whole_units ... ok
+test stitch::tests::without_a_common_word_the_overlap_is_shared_at_its_middle ... ok
+test pipeline::worker_tests::a_job_in_an_unselected_account_resumes_in_that_database_and_publishes_its_completed_result ... ok
+test pipeline::worker_tests::retranslation_resumes_partial_work_and_publishes_only_a_complete_set ... ok
+test pipeline::translate_tests::cues_are_translated_one_per_request_with_requests_overlapping ... ok
+test pipeline::translate_tests::the_limit_stops_new_requests_while_others_are_in_flight ... ok
+test store::tests::a_late_sign_in_does_not_replace_the_newer_opened_url ... ok
+test store::tests::opening_a_current_file_does_not_wait_for_a_writer ... ok
+test store::tests::a_job_from_a_file_without_plans_keeps_plan_one_and_new_jobs_get_the_current_plan ... ok
+test store::library_tests::legacy_completed_rows_keep_timing_and_deletion_removes_all_owned_rows ... ok
+test youtube::live_tests::a_live_broadcast_with_audio_is_still_refused ... ok
+test youtube::live_tests::a_recorded_lecture_gives_its_audio ... ok
+test youtube::tests::aac_audio_is_preferred ... ok
+test youtube::tests::browser_hint_requires_recorded_youtube_audio ... ok
+test store::tests::region_save_is_atomic_and_percent_never_drops ... ok
+test store::wal_tests::reads_do_not_wait_for_an_open_write ... ok
+test pipeline::worker_tests::transient_retries_are_independent_for_glossary_and_each_cue ... ok
+test store::library_tests::deletion_only_clears_the_browser_url_it_inspected ... ok
+test pipeline::translate_tests::calls_side_by_side_never_spend_past_the_limit_by_more_than_one_call ... ok
+test sync::library::tests::legacy_import_is_a_copy_is_idempotent_and_cannot_assign_another_accounts_store ... ok
+test pipeline::worker_tests::failed_retranslation_preserves_completed_subtitles_for_every_stop has been running for over 60 seconds
+test pipeline::worker_tests::failed_retranslation_preserves_completed_subtitles_for_every_stop ... ok
+test result: ok. 81 passed; 0 failed; 0 ignored; 0 measured; 157 filtered out; finished in 170.26s

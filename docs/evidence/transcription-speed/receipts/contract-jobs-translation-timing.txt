@@ -1,0 +1,37 @@
+check: contract-jobs-translation-timing
+command: cargo test --manifest-path contract-tests/Cargo.toml --test jobs --test translation --test write_and_timing
+exit: 0
+started: 2026-11-16T23:22:49Z
+finished: 2026-11-16T23:23:29Z
+commit: fa3bf8db91be718c4e73337401786b57216d50fe
+tree src-tauri: 65ab4e6b8f3d069031aa4741cc917c96a639721b
+tree contract-tests: cc98f6533efe777405160da8241f3957b8295a37
+tree src: 957be1d6b8663e3d33ad79f872cf7a0f0b0b2f5d
+tree tests: f7e92b469b042d26540e97dc74d37ea59a6c9d28
+tree docs/evidence/transcription-speed/scripts: 8c58a13a5dad69f878f07390e3ca89fa76bca72b
+tree docs/evidence/transcription-speed/data: 93d1570ce51017699333201a97a4ed6e094e7063
+rustc: rustc 1.98.1 (48a229cea 2026-09-01)
+os: MINGW64_NT-10.0-26200 3.4.6.x86_64
+--- output (test, result and failure lines) ---
+     Running tests\jobs.rs (target\debug\deps\jobs-d2b4b95d967b4622.exe)
+test test_undownloadable_video_shows_reason ... ok
+test test_job_without_key_asks_for_key ... ok
+test test_detect_button_starts_downloading_job ... ok
+test test_subtitles_refused_until_ready ... ok
+test test_repeat_detect_reuses_saved_subtitles ... ok
+test test_other_site_media_follows_same_stages ... ok
+test test_write_finishes_offline_on_device ... ok
+test test_write_percent_and_ongoing_notice ... ok
+test test_job_advances_in_background_and_resumes ... ok
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 18.15s
+     Running tests\translation.rs (target\debug\deps\translation-a6f8ad5c5002aaef.exe)
+test retranslation_keeps_saved_source_times_and_the_cost_already_spent ... ok
+test test_translation_makes_korean_cues ... ok
+test test_cost_limit_stops_translation ... ok
+test test_terms_stay_consistent_across_batches ... ok
+test test_one_hour_lecture_costs_under_budget ... ok
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 19.22s
+     Running tests\write_and_timing.rs (target\debug\deps\write_and_timing-b383e3545d2b2c86.exe)
+test test_silent_span_has_no_cue ... ok
+test test_cue_times_match_source_after_silence_trim ... ok
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.80s

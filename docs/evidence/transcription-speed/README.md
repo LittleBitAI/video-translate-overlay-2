@@ -385,7 +385,20 @@ those directories' tree ids; committing the receipts changes none of them, so
 `git rev-parse HEAD:src-tauri` (and the others) shows whether a receipt still
 describes a later commit.
 
-RECEIPTS_TABLE
+At commit fa3bf8d (`src-tauri` tree `65ab4e6b…`, `contract-tests`
+`cc98f653…`, `src` `957be1d6…`, `tests` `f7e92b46…`), rustc 1.98.1, on the
+PC above:
+
+| Receipt | What it runs | Exit | Passed |
+|---|---|---|---|
+| [`rust-unit-audio-pipeline-stitch-gemini-store`](receipts/rust-unit-audio-pipeline-stitch-gemini-store.txt) | the planner, stitching, pipeline, cost, Gemini and store unit tests | 0 | 81 |
+| [`rust-whisper-feature-builds`](receipts/rust-whisper-feature-builds.txt) | the library with the on-device model compiled in (`--no-run`) | 0 | builds |
+| [`contract-jobs-translation-timing`](receipts/contract-jobs-translation-timing.txt) | the contract suites for jobs, translation, and writing and timing (300 ms fixture) against the rebuilt host | 0 | 9 + 5 + 2 |
+| [`evidence-reproduce`](receipts/evidence-reproduce.txt) | `reproduce.py` on `data/` | 0 | 42 `ok` |
+| [`overlay-unsupported-cpu-notice`](receipts/overlay-unsupported-cpu-notice.txt) | the overlay's tests in Chromium | 0 | 35 |
+| [`screen-unsupported-cpu-notice`](receipts/screen-unsupported-cpu-notice.txt) | the watch screen's tests | 0 | 14 |
+
+These are focused checks, not the repository gate, which the server runs.
 
 The contract translation tests failed in an earlier receipt run (3 of 5,
 then 3 of 8 repeated runs) while the PC's search indexer and antivirus kept
