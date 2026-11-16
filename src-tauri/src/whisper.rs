@@ -138,50 +138,65 @@ impl Transcriber for Whisper {
         let eot = *eot;
         // Keep the detected language across windows, without carrying text into another job.
         let known = self.language.lock().unwrap().clone();
-        let mut params = inference_params(self.mobile);
-        params.set_language(Some(known.as_deref().unwrap_or("auto")));
-        params.set_no_context(true);
-        params.set_suppress_blank(true);
-        params.set_suppress_nst(true);
-        params.set_print_progress(false);
-        params.set_print_realtime(false);
-        params.set_print_special(false);
-        params.set_print_timestamps(false);
-        // Word times, for reconciling two windows that both heard a cut (decoding is unchanged).
-        params.set_token_timestamps(true);
-        let percent = Arc::new(AtomicI32::new(0));
-        let seen = percent.clone();
-        params.set_progress_callback_safe(move |p: i32| seen.store(p, Ordering::Relaxed));
-        let result = std::thread::scope(|s| {
-            let run = s.spawn(|| state.full(params, pcm).map(|_| ()));
-            while !run.is_finished() {
-                progress(percent.load(Ordering::Relaxed) as f32 / 100.0);
-                std::thread::sleep(Duration::from_millis(250));
-            }
-            run.join().map_err(|_| "whisper.cpp panicked".to_string())
-        })?;
-        result.map_err(|e| e.to_string())?;
+        let segs = decode(state, eot, known.as_deref(), inference_params(self.mobile), pcm, progress)?;
         if known.is_none() {
             *self.language.lock().unwrap() = whisper_rs::get_lang_str(state.full_lang_id_from_state()).map(String::from);
         }
-        let duration_ms = (pcm.len() * 1000 / crate::audio::RATE) as i64;
-        let segs = state
-            .as_iter()
-            .map(|s| Segment {
-                start_ms: (s.start_timestamp() * 10).clamp(0, duration_ms),
-                end_ms: (s.end_timestamp() * 10).clamp(0, duration_ms),
-                text: s.to_str_lossy().map(|t| t.into_owned()).unwrap_or_default(),
-                words: words(&s, eot, duration_ms),
-            })
-            .filter(|s| s.end_ms > s.start_ms && !s.text.trim().is_empty())
-            .collect();
-        progress(1.0);
+        // Greedy decoding with no temperature retries can loop on a rhythmic
+        // sound and lose the speech after it (36:52 of the lecture: "chon" 104
+        // times over 22 s). Such a window alone is decoded again with whisper's
+        // temperature fallback, which retries a looping part. whisper.cpp seeds
+        // its sampling on every call, so the retry gives the same text each time.
+        if self.mobile && segs.iter().any(|s| crate::stitch::collapse_repeats(&s.text) != s.text) {
+            let mut params = inference_params(true);
+            params.set_temperature_inc(0.2);
+            return decode(state, eot, self.language().as_deref(), params, pcm, progress);
+        }
         Ok(segs)
     }
 
     fn language(&self) -> Option<String> {
         self.language.lock().unwrap().clone()
     }
+}
+
+/// One window decoded with `params`, as segments on the window's clock.
+fn decode<'a>(state: &mut WhisperState, eot: i32, known: Option<&'a str>, mut params: FullParams<'a, 'a>, pcm: &[f32], progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String> {
+    params.set_language(Some(known.unwrap_or("auto")));
+    params.set_no_context(true);
+    params.set_suppress_blank(true);
+    params.set_suppress_nst(true);
+    params.set_print_progress(false);
+    params.set_print_realtime(false);
+    params.set_print_special(false);
+    params.set_print_timestamps(false);
+    // Word times, for reconciling two windows that both heard a cut (decoding is unchanged).
+    params.set_token_timestamps(true);
+    let percent = Arc::new(AtomicI32::new(0));
+    let seen = percent.clone();
+    params.set_progress_callback_safe(move |p: i32| seen.store(p, Ordering::Relaxed));
+    let result = std::thread::scope(|s| {
+        let run = s.spawn(|| state.full(params, pcm).map(|_| ()));
+        while !run.is_finished() {
+            progress(percent.load(Ordering::Relaxed) as f32 / 100.0);
+            std::thread::sleep(Duration::from_millis(250));
+        }
+        run.join().map_err(|_| "whisper.cpp panicked".to_string())
+    })?;
+    result.map_err(|e| e.to_string())?;
+    let duration_ms = (pcm.len() * 1000 / crate::audio::RATE) as i64;
+    let segs = state
+        .as_iter()
+        .map(|s| Segment {
+            start_ms: (s.start_timestamp() * 10).clamp(0, duration_ms),
+            end_ms: (s.end_timestamp() * 10).clamp(0, duration_ms),
+            text: s.to_str_lossy().map(|t| t.into_owned()).unwrap_or_default(),
+            words: words(&s, eot, duration_ms),
+        })
+        .filter(|s| s.end_ms > s.start_ms && !s.text.trim().is_empty())
+        .collect();
+    progress(1.0);
+    Ok(segs)
 }
 
 /// Android's speech engine is built for ARMv8.2 with dot product and half
