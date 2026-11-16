@@ -1,0 +1,75 @@
+# Focused offline checks at b152467 (Windows 11 Home 10.0.26200 PC, 2026-11-16)
+
+## cd src-tauri && cargo test --lib -- media:: http:: pipeline::download_tests
+test http::chunked_tests::chunks_stream_and_trailers_are_skipped ... ok
+test http::chunked_tests::malformed_framing_is_an_error_not_the_end ... ok
+test http::chunked_tests::a_huge_chunk_size_is_an_error_not_a_panic_or_an_allocation ... ok
+test http::head_limits_tests::a_header_line_with_no_end_is_refused ... ok
+test http::head_limits_tests::an_endless_status_line_is_refused ... ok
+test http::portable_tests::https_verifies_the_certificate_name ... ignored, needs the network
+test http::pin_tests::https_goes_to_the_pinned_address_and_asks_for_its_name ... ok
+test http::pin_tests::plain_http_goes_to_the_pinned_address_with_its_name ... ok
+test http::tests::connection_info_addresses_are_read ... ok
+test http::portable_tests::a_server_that_does_not_speak_tls_fails_the_request ... ok
+test http::portable_tests::redirects_are_followed_only_when_asked_and_chunks_are_joined ... ok
+test media::audio_group_tests::renditions_are_picked_as_players_pick_them ... ok
+test http::head_limits_tests::a_head_of_endless_short_headers_is_refused ... ok
+test http::head_limits_tests::endless_chunked_trailers_are_refused ... ok
+test media::discontinuity_tests::sections_start_after_the_init_section_and_count_only_segments ... ok
+test http::length_tests::a_cut_hls_segment_fails_the_download ... ok
+test http::length_tests::a_body_cut_short_of_its_length_is_an_error ... ok
+test http::tests::a_pinned_request_carries_its_host_name_and_reports_the_peer ... ok
+test media::dns_tests::a_real_https_file_is_probed_through_the_pin ... ignored, needs the network
+test media::hls_aes_tests::a_key_on_the_private_network_is_refused_as_any_url_there_is ... ok
+test media::dns_tests::a_name_that_does_not_resolve_is_refused_before_any_request ... ok
+test media::audio_group_tests::a_variant_with_no_audio_group_plays_its_own_audio ... ok
+test media::audio_group_tests::the_group_of_the_chosen_variant_is_the_one_used ... ok
+test media::audio_group_tests::the_default_rendition_is_taken_not_the_first ... ok
+test media::dns_tests::every_checked_url_carries_the_address_its_request_is_pinned_to ... ok
+test media::hls_init_tests::an_encrypted_init_section_is_refused_as_drm ... ok
+test media::discontinuity_tests::a_section_after_a_discontinuity_plays_where_the_playlist_puts_it ... ok
+test media::hls_init_tests::an_encrypted_init_section_of_a_later_section_is_refused_too ... ok
+test media::hls_aes_tests::a_key_that_cannot_be_had_or_does_not_fit_is_refused_before_a_job ... ok
+test media::hls_pieces_tests::a_playlist_whose_segments_do_not_answer_is_refused ... ok
+test media::hls_start_tests::an_fmp4_rendition_stamped_from_ten_seconds_plays_from_zero ... ok
+test media::hls_init_tests::an_init_section_at_an_offset_is_checked_there_when_range_is_ignored ... ok
+test media::not_audio_tests::an_image_or_a_document_is_refused_before_a_job ... ok
+test media::hls_start_tests::a_playlist_with_no_sound_track_is_refused_before_a_job ... ok
+test media::ranged_tests::a_server_that_ignores_range_gives_the_whole_file_in_one_answer ... ok
+test media::ranged_tests::content_range_is_read_strictly ... ok
+test media::ranged_tests::http_dates_are_read_only_in_their_preferred_form ... ok
+test media::probe_tests::a_redirected_playlist_resolves_against_where_it_landed ... ok
+test media::probe_tests::protected_mp4_files_are_refused_before_a_job ... ok
+test media::ranged_tests::ranges_are_fetched_in_order_and_joined_exactly ... ok
+test media::norange_tests::moov_after_a_large_mdat_is_checked_without_range_support ... ok
+test media::ranged_tests::pieces_that_do_not_continue_the_same_file_fail_the_download ... ok
+test media::tests::byte_ranges_are_kept_and_continue_from_the_previous_one ... ok
+test media::tests::hls_refusals_name_their_reason ... ok
+test media::tests::a_long_vod_playlist_is_not_mistaken_for_live ... ok
+test media::tests::private_addresses_are_refused_wherever_they_appear ... ok
+test media::tests::vod_hls_lists_absolute_segments ... ok
+test media::hls_aes_tests::ts_segments_decrypt_with_their_media_sequence_numbers ... ok
+test media::hls_aes_tests::encrypted_byte_ranges_and_a_key_that_ends_decrypt_piece_by_piece ... ok
+test media::tracks_tests::an_init_section_switch_starts_a_section_and_a_repeat_does_not ... ok
+test media::hls_aes_tests::an_fmp4_playlist_decrypts_its_init_sections_and_segments_with_the_tags_iv ... ok
+test media::webm_drm_tests::an_encrypted_webm_is_refused_before_a_job ... ok
+test media::ranged_tests::pieces_are_joined_only_under_a_validator_that_names_one_revision ... ok
+test media::tracks_tests::a_file_with_no_sound_track_is_refused_before_a_job ... ok
+test media::tracks_tests::a_section_that_does_not_decode_fails_the_whole_file ... ok
+test media::tracks_tests::a_section_with_its_own_init_section_is_decoded_after_that_one ... ok
+test media::ranged_tests::a_dropped_piece_resumes_from_the_byte_it_reached ... ok
+test pipeline::download_tests::the_first_attempt_uses_the_probed_source_and_reports_the_model_fetch ... ok
+test result: ok. 56 passed; 0 failed; 2 ignored; 0 measured; 159 filtered out; finished in 4.88s
+
+## The same ranged tests with identifies_revision accepting any parsable Last-Modified (the round-1 rule), then restored
+## cd src-tauri && cargo test --lib -- media::ranged_tests
+test media::ranged_tests::content_range_is_read_strictly ... ok
+test media::ranged_tests::http_dates_are_read_only_in_their_preferred_form ... ok
+test media::ranged_tests::a_server_that_ignores_range_gives_the_whole_file_in_one_answer ... ok
+test media::ranged_tests::ranges_are_fetched_in_order_and_joined_exactly ... ok
+test media::ranged_tests::pieces_that_do_not_continue_the_same_file_fail_the_download ... ok
+test media::ranged_tests::pieces_are_joined_only_under_a_validator_that_names_one_revision ... FAILED
+test media::ranged_tests::a_dropped_piece_resumes_from_the_byte_it_reached ... ok
+thread 'media::ranged_tests::pieces_are_joined_only_under_a_validator_that_names_one_revision' (71184) panicked at src-tauri\src\media_ranged_tests.rs:160:13:
+assertion `left == right` failed: "Last-Modified: Fri, 13 Sep 2024 08:50:31 GMT\r\nDate: Fri, 13 Sep 2024 08:50:31 GMT\r\n": pieces of two revisions were joined
+test result: FAILED. 6 passed; 1 failed; 0 ignored; 0 measured; 210 filtered out; finished in 1.04s

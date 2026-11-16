@@ -1,0 +1,11 @@
+# Windows 11 Home 10.0.26200, debug app video-translate-overlay.exe SHA-256 2f26bdb959a52986a001532eef020f4f6dc8922f84034ecce7c65fb3b28a8d30 built from b152467 (window.__WIKI_NATIVE_BUILD_HEAD__ = b1524675c22d481f29a545a4f6a8c9c7ee889b95)
+# Isolated data folder (VTO_APP_DATA_DIR) and WebView2 profile under artifacts/; Gemini answered by a loopback stand-in; stderr of the app, launched 2026-11-16T00:56:49Z
+[vto] api key stored (…cdef)
+[vto] timing job 4b82753c-0032-4cfc-99e1-6224a30df8de create-resolve ms=80 hint=true ok=true
+[vto] job 4b82753c-0032-4cfc-99e1-6224a30df8de created for zjkBMFhNj_g
+[vto] timing job 4b82753c-0032-4cfc-99e1-6224a30df8de resolve ms=0 hint=true reused=true try=0 ok=true
+[vto] timing job 4b82753c-0032-4cfc-99e1-6224a30df8de model ms=51153 fetched=true
+[vto] timing job 4b82753c-0032-4cfc-99e1-6224a30df8de transfer ms=6718 bytes=58064373 try=0 ok=true
+[vto] timing job 4b82753c-0032-4cfc-99e1-6224a30df8de decode ms=41399 samples=57403814
+# 2026-11-16T01:00:50.899Z process force-stopped (taskkill /F) during writing; relaunched 01:00:55.807Z with the same folders
+[vto] resuming job 4b82753c-0032-4cfc-99e1-6224a30df8de at writing
