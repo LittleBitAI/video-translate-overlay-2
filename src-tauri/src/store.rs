@@ -67,7 +67,6 @@ CREATE TABLE IF NOT EXISTS retranslation_cue (
   text_ko TEXT,
   PRIMARY KEY (job_id, seq)
 );
-INSERT OR IGNORE INTO setting (id) VALUES (1);
 -- The page the in-app browser was last sent to (P9).
 CREATE TABLE IF NOT EXISTS browser (
   id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -172,6 +171,12 @@ impl Store {
         // even when a slow disk stalls a commit. The mode stays with the file.
         db.exec("PRAGMA journal_mode=WAL")?;
         db.exec(SCHEMA)?;
+        // Every request opens the file, so opening a current one must not write:
+        // a write waits for the worker's commit, and a disk that stalls a commit
+        // past the busy timeout would fail the overlay's poll.
+        if db.query_one("SELECT 1 FROM setting WHERE id=1", p![])?.is_none() {
+            db.exec("INSERT OR IGNORE INTO setting (id) VALUES (1)")?;
+        }
         add_job_columns(&db)?;
         Ok(Store { db, path: path.to_path_buf() })
     }
@@ -564,6 +569,25 @@ mod tests {
         s.mark_notified("j").unwrap();
         assert!(s.job("j").unwrap().unwrap().notified);
         drop(s);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn opening_a_current_file_does_not_wait_for_a_writer() {
+        let dir = std::env::temp_dir().join(format!("vto-store-open-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("t.sqlite3");
+        drop(Store::open(&path).unwrap());
+        // The worker in the middle of a commit that a slow disk stalls.
+        let writer = Db::open(&path).unwrap();
+        writer.exec("BEGIN IMMEDIATE").unwrap();
+        let started = std::time::Instant::now();
+        let s = Store::open(&path).unwrap();
+        assert!(s.job("none").unwrap().is_none());
+        assert!(started.elapsed() < std::time::Duration::from_secs(5), "opening waited {:?} for the writer", started.elapsed());
+        writer.exec("ROLLBACK").unwrap();
+        drop((s, writer));
         let _ = std::fs::remove_dir_all(&dir);
     }
 
