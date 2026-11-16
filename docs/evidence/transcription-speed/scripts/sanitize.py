@@ -75,8 +75,9 @@ def main():
         keep = [l for l in lines if l.startswith('timing ')]
         open(os.path.join(out, 'observations', name + '-timing.txt'), 'w', encoding='utf-8', newline='\n').write('\n'.join(keep) + '\n')
     for name in POLLS:
-        text = open(os.path.join(raw, name + '.txt'), encoding='utf-8', errors='replace').read()
-        open(os.path.join(out, 'observations', name + '.txt'), 'w', encoding='utf-8', newline='\n').write(text.replace('\r', ''))
+        # A sample taken while the phone was unplugged reads empty: its time is kept, without the trailing space.
+        lines = open(os.path.join(raw, name + '.txt'), encoding='utf-8', errors='replace').read().splitlines()
+        open(os.path.join(out, 'observations', name + '.txt'), 'w', encoding='utf-8', newline='\n').write(''.join(l.rstrip() + '\n' for l in lines))
 
 
 if __name__ == '__main__':
