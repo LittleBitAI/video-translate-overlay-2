@@ -252,6 +252,9 @@ pub fn speech_windows(pcm: &[i16]) -> Vec<Region> {
 /// forced through speech (`pauses` false), as if nobody paused: how the timing
 /// harness tunes [`OVERLAP`]. Jobs only use [`speech_windows`].
 pub fn speech_windows_tuned(pcm: &[i16], overlap: usize, pauses: bool) -> Vec<Region> {
+    // At most the search for a pause: a cut then always lies inside the window
+    // and the next window starts after this one does.
+    let overlap = overlap.min(SEARCH);
     let Some((rms, threshold, spans)) = speech_spans(pcm) else { return Vec::new() };
     let mut out: Vec<Region> = Vec::new();
     let mut open: Option<Region> = None; // the window being filled
@@ -262,8 +265,10 @@ pub fn speech_windows_tuned(pcm: &[i16], overlap: usize, pauses: bool) -> Vec<Re
                 open = Some(Region { start: w.start, end: e });
                 continue;
             }
-            // A span that must be cut anyway may start in the room this window has left.
-            if s - w.end <= MAX_GAP && e - s > MAX_REGION && w.start + MAX_REGION - s >= SEARCH {
+            // A span that must be cut anyway may start in the room this window has
+            // left, if that room holds a whole search for a pause (added, not
+            // subtracted: the span may start past the window's limit).
+            if s - w.end <= MAX_GAP && e - s > MAX_REGION && w.start + MAX_REGION >= s + SEARCH {
                 start = w.start;
             } else {
                 out.push(w);

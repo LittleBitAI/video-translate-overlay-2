@@ -74,6 +74,33 @@ fn a_long_span_after_a_short_pause_starts_in_the_room_left() {
 }
 
 #[test]
+fn a_short_pause_after_any_fill_of_a_window_plans_bounded_windows_over_all_speech() {
+    // A first span filling the window up to (and past) its limit, a pause short
+    // enough to join, then a span too long for one window.
+    for first_end in [20_000, 25_000, 29_000, 30_000, 30_500, 31_000] {
+        for gap in [300, 800, 1_200] {
+            let spans = [(1_000, first_end), (first_end + gap, first_end + gap + 40_000)];
+            let pcm = talk(first_end + gap + 42_000, &spans, 8_000);
+            let w = speech_windows(&pcm);
+            let case = format!("first span to {first_end} ms, pause {gap} ms: {:?}", ms(&w));
+            assert!(w.iter().all(|r| r.start < r.end && r.end - r.start <= MAX_REGION), "{case}");
+            assert!(w.windows(2).all(|p| p[0].start < p[1].start && p[0].end <= p[1].end && p[1].start <= p[0].end + MAX_GAP), "{case}");
+            for &(a, b) in &spans {
+                let heard = |t: usize| w.iter().any(|r| (r.start_ms() as usize..r.end_ms() as usize).contains(&t));
+                assert!((a..b).step_by(100).all(heard), "speech in {a}..{b} left out; {case}");
+            }
+        }
+    }
+    // The tuning harness's overlap, however long, is bounded by the search for a pause.
+    let pcm = talk(75_000, &[(1_000, 74_000)], 8_000);
+    for overlap_s in [0, 3, 10, 20, 60] {
+        let w = speech_windows_tuned(&pcm, overlap_s * RATE, false);
+        assert!(w.iter().all(|r| r.start < r.end && r.end - r.start <= MAX_REGION), "overlap {overlap_s} s: {:?}", ms(&w));
+        assert!(w.windows(2).all(|p| p[0].start < p[1].start), "overlap {overlap_s} s: {:?}", ms(&w));
+    }
+}
+
+#[test]
 fn quiet_speech_gets_windows_and_silence_none() {
     let spans = [(1_000, 3_000), (4_000, 6_000)];
     let quiet = talk(10_000, &spans, 600);
