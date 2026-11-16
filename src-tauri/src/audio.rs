@@ -232,7 +232,10 @@ const PAUSE_FRAMES: usize = 10; // 200 ms
 /// How far back from a window's limit a cut through a long span is looked for.
 const SEARCH: usize = 10 * RATE;
 /// Speech both windows hear when a span must be cut where nobody pauses.
-pub const OVERLAP: usize = 2 * RATE;
+/// Tuned on the lecture with every cut forced (docs/design/transcription-speed.md):
+/// 3 s left 41 errors within 2 s of 71 cuts, as no overlap did; 1 s left 85,
+/// 2 s 51, 4 s 40 with more audio to write.
+pub const OVERLAP: usize = 3 * RATE;
 
 /// Plan 2: windows as full as the model takes, on the source timeline. Speech
 /// spans separated by short pauses share a window (the encoder costs the same
@@ -242,6 +245,13 @@ pub const OVERLAP: usize = 2 * RATE;
 /// quietest point, for the boundary words to be reconciled from both sides.
 /// Deterministic for given audio, like plan 1.
 pub fn speech_windows(pcm: &[i16]) -> Vec<Region> {
+    speech_windows_tuned(pcm, OVERLAP, true)
+}
+
+/// [`speech_windows`] with another overlap, or with every cut inside a span
+/// forced through speech (`pauses` false), as if nobody paused: how the timing
+/// harness tunes [`OVERLAP`]. Jobs only use [`speech_windows`].
+pub fn speech_windows_tuned(pcm: &[i16], overlap: usize, pauses: bool) -> Vec<Region> {
     let Some((rms, threshold, spans)) = speech_spans(pcm) else { return Vec::new() };
     let mut out: Vec<Region> = Vec::new();
     let mut open: Option<Region> = None; // the window being filled
@@ -260,7 +270,7 @@ pub fn speech_windows(pcm: &[i16]) -> Vec<Region> {
             }
         }
         while e - start > MAX_REGION {
-            let (end, next) = cut(&rms, threshold, start, s);
+            let (end, next) = cut(&rms, threshold, start, s, overlap, pauses);
             out.push(Region { start, end });
             start = next;
         }
@@ -273,21 +283,21 @@ pub fn speech_windows(pcm: &[i16]) -> Vec<Region> {
 /// Where a window from `start` ends inside the span that began at `span`, and
 /// where the next starts: the middle of the latest pause of [`PAUSE_FRAMES`] in
 /// the last [`SEARCH`] before the limit; else around the quietest 200 ms there,
-/// overlapping by [`OVERLAP`].
-fn cut(rms: &[f32], threshold: f32, start: usize, span: usize) -> (usize, usize) {
+/// overlapping by `overlap`.
+fn cut(rms: &[f32], threshold: f32, start: usize, span: usize, overlap: usize, pauses: bool) -> (usize, usize) {
     let hi = (start + MAX_REGION) / FRAME;
     let lo = ((start + MAX_REGION - SEARCH) / FRAME).max(span / FRAME + 1);
     let quiet = |f: usize| rms[f..f + PAUSE_FRAMES].iter().all(|&v| v < threshold);
-    if let Some(f) = (lo..hi - PAUSE_FRAMES).rev().find(|&f| quiet(f)) {
+    if let Some(f) = (lo..hi - PAUSE_FRAMES).rev().find(|&f| pauses && quiet(f)) {
         let at = (f + PAUSE_FRAMES / 2) * FRAME;
         return (at, at);
     }
-    let lo = lo.max(start / FRAME + OVERLAP / FRAME);
-    let hi = hi - OVERLAP / 2 / FRAME - PAUSE_FRAMES;
+    let lo = lo.max(start / FRAME + overlap / FRAME);
+    let hi = hi - overlap / 2 / FRAME - PAUSE_FRAMES;
     let level = |f: usize| rms[f..f + PAUSE_FRAMES].iter().sum::<f32>();
     let f = (lo..hi).min_by(|&x, &y| level(x).total_cmp(&level(y)).then(y.cmp(&x))).unwrap_or(hi);
     let at = (f + PAUSE_FRAMES / 2) * FRAME;
-    (at + OVERLAP / 2, at - OVERLAP / 2)
+    (at + overlap / 2, at - overlap / 2)
 }
 
 /// The frame levels, the speech threshold, and the speech spans in samples

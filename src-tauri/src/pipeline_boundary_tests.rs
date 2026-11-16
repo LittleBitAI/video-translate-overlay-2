@@ -77,7 +77,10 @@ const SPANS: [(usize, usize, i32); 3] = [(500, 75_500, LOUD), (76_500, 82_500, L
 /// of `plan` overlap, a word said three times and two technical terms.
 fn lecture(plan: i64) -> (Vec<i16>, Vec<i16>, Script) {
     let raw = talk(106_000, &SPANS);
-    let file = std::env::temp_dir().join(format!("vto-boundary-lecture-{plan}-{}.wav", std::process::id()));
+    // One file per call: tests run side by side, and one must not read a file another is rewriting.
+    static CALLS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let call = CALLS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let file = std::env::temp_dir().join(format!("vto-boundary-lecture-{plan}-{}-{call}.wav", std::process::id()));
     std::fs::write(&file, wav(&raw)).unwrap();
     let pcm = audio::decode_file(&file).unwrap();
     let _ = std::fs::remove_file(&file);
