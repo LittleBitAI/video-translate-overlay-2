@@ -59,12 +59,13 @@ fn test_job_advances_in_background_and_resumes() {
     assert_eq!(r.status, 200, "POST /jobs: {r:?}");
     let job_id = r.str("job_id");
 
-    let seen = app.poll_job(TALK, 20, 60, |b| b["stage"] == "writing");
+    // Observed from the first written percent: the decode before it is not the write's progress.
+    let seen = app.poll_job(TALK, 20, 60, |b| b["stage"] == "writing" && b["percent"].as_i64() > Some(0));
     let before = progress(seen.last().unwrap());
-    sleep_ms(1_500); // no command is called meanwhile
+    sleep_ms(3_000); // no command is called meanwhile
     let mid = app.job(TALK);
     let after = progress(&mid.body);
-    assert!(after > before, "no progress without the screen: {before:?} then {after:?}");
+    assert!(after > before, "no progress without the screen: {before:?} then {after:?}\n{}", String::from_utf8_lossy(&app.logs()));
     assert_eq!(mid.body["stage"], "writing", "write ended too soon to test a restart: {mid:?}");
 
     app.restart();
