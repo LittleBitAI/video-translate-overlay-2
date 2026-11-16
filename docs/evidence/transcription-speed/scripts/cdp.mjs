@@ -1,7 +1,8 @@
 // Minimal CDP client: node cdp.mjs <port> <navigate-url|-> [js-expression]
+// CDP_PAGE (optional) picks the first page whose URL contains it.
 const [port, nav, expr] = process.argv.slice(2);
 const pages = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
-const page = pages.find(p => p.type === 'page');
+const page = pages.find(p => p.type === 'page' && p.url.includes(process.env.CDP_PAGE ?? ''));
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 let id = 0; const waits = new Map();
 ws.onmessage = (m) => { const d = JSON.parse(m.data); if (d.id && waits.has(d.id)) { waits.get(d.id)(d); waits.delete(d.id); } };

@@ -43,7 +43,7 @@ receipt() { # name, command...
 }
 
 cargo build --workspace --bin vto-contract-host > /dev/null 2>&1 || { echo "contract host build failed"; exit 1; }
-receipt rust-unit-audio-pipeline-stitch-gemini cargo test --manifest-path src-tauri/Cargo.toml --lib -- audio pipeline stitch gemini
+receipt rust-unit-audio-pipeline-stitch-gemini-store cargo test --manifest-path src-tauri/Cargo.toml --lib -- audio pipeline stitch gemini store
 receipt rust-whisper-feature-builds cargo test --manifest-path src-tauri/Cargo.toml --lib --features whisper --no-run
 export VTO_CONTRACT_HOST="$host"
 receipt contract-jobs-translation-timing cargo test --manifest-path contract-tests/Cargo.toml --test jobs --test translation --test write_and_timing
