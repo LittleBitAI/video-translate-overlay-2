@@ -57,7 +57,7 @@ pub fn window_cues(
     };
     let mut cues = Vec::new();
     for p in ps {
-        let text = p.text();
+        let text = collapse_repeats(&p.text());
         let start = p.start_ms.max(*prev_end);
         if text.is_empty() || p.end_ms <= start {
             continue;
@@ -66,6 +66,42 @@ pub fn window_cues(
         cues.push((start, p.end_ms, text));
     }
     (cues, held)
+}
+
+/// How many times in a row a unit may repeat in a committed cue.
+const MAX_REPEATS: usize = 8;
+
+/// `text` with every unit of 1-20 characters that holds a letter and repeats
+/// more than `MAX_REPEATS` times in a row cut to `MAX_REPEATS` copies. On a
+/// rhythmic sound the model can loop ("chon chon chon…" 104 times at 36:52 of
+/// the lecture, where the speaker said "chunk" 7 times), and such a cue made
+/// every translation request run past its timeout. Digits alone are never cut.
+pub fn collapse_repeats(text: &str) -> String {
+    let c: Vec<char> = text.chars().collect();
+    let (mut out, mut i) = (String::new(), 0);
+    'next: while i < c.len() {
+        for l in 1..=20.min(c.len() - i) {
+            let unit = &c[i..i + l];
+            if !unit.iter().any(|ch| ch.is_alphabetic()) {
+                continue;
+            }
+            let n = 1 + (1..).take_while(|k| c.get(i + k * l..i + (k + 1) * l) == Some(unit)).count();
+            if n > MAX_REPEATS {
+                // A loop often ends on a part of its unit ("chon chon chon"
+                // repeats "chon " and ends on "chon"): that part ends the last copy.
+                let end = i + n * l;
+                let q = (0..l).take_while(|&k| c.get(end + k) == Some(&unit[k])).count();
+                let q = if unit[..q].iter().any(|ch| ch.is_alphabetic()) { q } else { 0 };
+                out.extend(unit.iter().cycle().take(MAX_REPEATS * l - if q > 0 { l } else { 0 }));
+                out.extend(&unit[..q]);
+                i = end + q;
+                continue 'next;
+            }
+        }
+        out.push(c[i]);
+        i += 1;
+    }
+    out
 }
 
 /// The segments of window `r` on the source timeline, kept inside it.

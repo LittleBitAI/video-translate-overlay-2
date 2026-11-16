@@ -79,6 +79,11 @@ impl Client {
             "generationConfig": {
                 "responseMimeType": "application/json",
                 "temperature": 0.2,
+                // A reply that loops stops here and still comes back, with its
+                // usage, well inside the 120 s timeout; one that ran past the
+                // timeout was billed but never counted. The glossary, the
+                // longest reply, is about 1,000 tokens.
+                "maxOutputTokens": 4096,
                 // ponytail: minimal thinking keeps output tokens (billed) low; raise it if quality needs it.
                 "thinkingConfig": {"thinkingLevel": "minimal"}
             }

@@ -104,3 +104,18 @@ fn segments_without_words_are_reconciled_as_whole_units() {
     let sb = vec![one(0, 1_800, "Second sentence."), one(2_000, 5_000, "Third sentence.")];
     assert_eq!(texts(&two(a, sa, b, sb)), ["first sentence.", "Second sentence.", "Third sentence."]);
 }
+
+#[test]
+fn a_loop_on_a_sound_is_cut_and_said_repetition_and_numbers_stay() {
+    for said in ["it is very very very good", "they just go chunk chunk chunk chunk chunk chunk chunk and", "in 1999 it cost 1000000000000 dollars"] {
+        assert_eq!(collapse_repeats(said), said);
+    }
+    let spaced = format!("they just go{} and", " chon".repeat(100));
+    assert_eq!(collapse_repeats(&spaced), format!("they just go{} and", " chon".repeat(8)));
+    assert_eq!(collapse_repeats(&format!("go {}.", "chon".repeat(110))), format!("go {}.", "chon".repeat(8)));
+    // Applied to what a window commits.
+    let r = region(0, 10_000);
+    let words: Vec<(i64, i64, &str)> = (0..40).map(|k| (k * 200, k * 200 + 150, "chon")).collect();
+    let (cues, _) = window_cues(&r, vec![seg(&words)], Vec::new(), None, None, &mut 0);
+    assert_eq!(texts(&cues), [vec!["chon"; 8].join(" ")]);
+}
