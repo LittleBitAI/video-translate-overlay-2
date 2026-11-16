@@ -2,12 +2,13 @@
 //! speech-region planning, model loading and inference per region. Run on the
 //! phone under `adb shell`, or on the PC for the large-model reference:
 //!
-//! `transcribe_timing <audio> <model> <out.json> [--passes N] [--limit-s S] [--plan P]`
+//! `transcribe_timing <audio> <model> <out.json> [--passes N] [--limit-s S] [--plan P] [--mobile]`
 //!
 //! Pass 1 runs in a fresh process (cold: the model is loaded first); later
 //! passes reuse the loaded model (warm). `--limit-s` writes only the regions
 //! that start before S seconds; `--plan` picks the segmentation plan (the
-//! current one by default, 1 for the windows of jobs made before plans). Thermal readings come from the host
+//! current one by default, 1 for the windows of jobs made before plans);
+//! `--mobile` decodes as the phone does, on any OS. Thermal readings come from the host
 //! (`dumpsys thermalservice`), which the shell user may read.
 //!
 //! The JSON keeps every pass's region timings and cues on the source timeline,
@@ -24,7 +25,7 @@ fn arg<T: std::str::FromStr>(args: &[String], name: &str) -> Option<T> {
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let (Some(audio), Some(model), Some(out)) = (args.get(1), args.get(2), args.get(3)) else {
-        eprintln!("usage: transcribe_timing <audio> <model> <out.json> [--passes N] [--limit-s S] [--plan P]");
+        eprintln!("usage: transcribe_timing <audio> <model> <out.json> [--passes N] [--limit-s S] [--plan P] [--mobile]");
         std::process::exit(2);
     };
     let passes: usize = arg(&args, "--passes").unwrap_or(1);
@@ -44,7 +45,10 @@ fn main() {
     let shared = regions.windows(2).filter(|w| w[1].start < w[0].end).count();
     println!("timing step=vad ms={vad_ms} plan={plan_no} regions={} overlaps={shared} speech_ms={speech_ms}", regions.len());
 
-    let whisper = vto::whisper::Whisper::new(std::path::Path::new("."), Some(model.into()));
+    let mut whisper = vto::whisper::Whisper::new(std::path::Path::new("."), Some(model.into()));
+    if args.iter().any(|a| a == "--mobile") {
+        whisper = whisper.with_mobile_params();
+    }
     let t = Instant::now();
     whisper.load().expect("model load");
     let load_ms = t.elapsed().as_millis();

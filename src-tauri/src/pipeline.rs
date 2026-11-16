@@ -147,11 +147,17 @@ fn give_up(core: &Core, store: &Store, job_id: &str, title: &str, detail: &str) 
     core.svc.notifier.ongoing(job_id, "hidden", title, 0);
 }
 
-/// The `failure_reason` stored for a stop: one of the five values E2 allows.
+/// What a transcriber's `prepare` returns on a device whose CPU cannot run
+/// its speech engine (the Android build needs ARMv8.2 dot product and half
+/// precision); also that job's `failure_reason`.
+pub const UNSUPPORTED_CPU: &str = "unsupported_cpu";
+
+/// The `failure_reason` stored for a stop: one of the six values E2 allows.
 /// `detail` is the internal cause (logged); `stage` is where the job stopped.
 pub fn failure_reason(detail: &str, stage: &str) -> &'static str {
     match detail {
         "cost_limit" => "cost_limit",
+        UNSUPPORTED_CPU => UNSUPPORTED_CPU,
         "key_rejected" | "no_key" => "key_rejected",
         "no_speech" => "no_speech",
         _ if stage == "translating" => "translate_failed",
@@ -190,7 +196,7 @@ fn download(cx: &Ctx, job: &Job) -> Result<(), Stop> {
         let mut last = Stage::new(Stage::DOWNLOADING);
         let t = std::time::Instant::now();
         let fetched = prepare_model(cx, job, &mut |p| cx.percent(&job.id, (p.clamp(0.0, 1.0) * 50.0) as i64, &mut last));
-        let fetched = fetched.map_err(|e| format!("model: {e}"))?;
+        let fetched = fetched?;
         log(format!("timing job {} model ms={} fetched={fetched}", job.id, t.elapsed().as_millis()));
         let (base, span) = if fetched { (50, 50) } else { (0, 100) };
         let dest = cx.core.cfg.data_dir.join("audio").join(format!("{}.{}", job.id, src.ext()));
@@ -224,7 +230,7 @@ fn prepare_model(cx: &Ctx, job: &Job, progress: &mut dyn FnMut(f32)) -> Result<b
     }
     let got = cx.core.svc.transcriber.prepare(&cx.core.cfg.data_dir, progress);
     *preparing.lock().unwrap_or_else(|p| p.into_inner()) = None;
-    got
+    got.map_err(|e| if e == UNSUPPORTED_CPU { e } else { format!("model: {e}") })
 }
 
 /// Writes the speech regions not yet written, then moves the job to
@@ -236,7 +242,7 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
     };
     // A job resumed here after a restart never passed through downloading in
     // this process: make sure the model is on the device (normally a size check).
-    prepare_model(cx, job, &mut |_| {}).map_err(|e| format!("model: {e}"))?;
+    prepare_model(cx, job, &mut |_| {})?;
     let t = std::time::Instant::now();
     let pcm = audio::decode_file(path.as_ref()).map_err(|e| format!("decode: {e}"))?;
     log(format!("timing job {} decode ms={} samples={}", job.id, t.elapsed().as_millis(), pcm.len()));
@@ -513,7 +519,7 @@ mod tests {
     use super::failure_reason;
 
     #[test]
-    fn every_stop_maps_to_one_of_the_five_reasons() {
+    fn every_stop_maps_to_one_of_the_six_reasons() {
         let cases = [
             ("cost_limit", "translating", "cost_limit"),
             ("no_key", "translating", "key_rejected"),
@@ -523,6 +529,8 @@ mod tests {
             ("translation_incomplete", "translating", "translate_failed"),
             ("unreachable", "downloading", "download_failed"),
             ("model: file missing", "downloading", "download_failed"),
+            ("unsupported_cpu", "downloading", "unsupported_cpu"),
+            ("unsupported_cpu", "writing", "unsupported_cpu"),
             ("decode: bad header", "writing", "download_failed"),
         ];
         for (detail, stage, want) in cases {

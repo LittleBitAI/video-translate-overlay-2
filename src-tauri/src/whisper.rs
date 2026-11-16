@@ -46,6 +46,13 @@ impl Whisper {
         Whisper { path, fetch, state: Mutex::new(None), language: Mutex::new(None), mobile: cfg!(target_os = "android") }
     }
 
+    /// The phone's decoding (greedy, no temperature retries, at most 4 threads)
+    /// on any OS: the timing harness compares plans with the phone's output on the PC.
+    pub fn with_mobile_params(mut self) -> Self {
+        self.mobile = true;
+        self
+    }
+
     fn state(&self) -> Result<std::sync::MutexGuard<'_, Option<(WhisperState, i32)>>, String> {
         let mut state = self.state.lock().unwrap();
         if state.is_none() {
@@ -95,6 +102,9 @@ impl Transcriber for Whisper {
         // The start of a job's downloading or writing: its language is detected
         // afresh on the first window it writes.
         *self.language.lock().unwrap() = None;
+        if !cpu_runs_model() {
+            return Err(crate::pipeline::UNSUPPORTED_CPU.into());
+        }
         if !self.fetch {
             return if self.path.is_file() { Ok(false) } else { Err(format!("model file missing: {}", self.path.display())) };
         }
@@ -172,6 +182,19 @@ impl Transcriber for Whisper {
     fn language(&self) -> Option<String> {
         self.language.lock().unwrap().clone()
     }
+}
+
+/// Android's speech engine is built for ARMv8.2 with dot product and half
+/// precision (`src-tauri/android/whisper.toolchain.cmake`): about 30 % faster
+/// on a Galaxy S21+, and a CPU without them would stop at the first one.
+#[cfg(all(target_os = "android", target_arch = "aarch64"))]
+fn cpu_runs_model() -> bool {
+    std::arch::is_aarch64_feature_detected!("dotprod") && std::arch::is_aarch64_feature_detected!("fp16")
+}
+
+#[cfg(not(all(target_os = "android", target_arch = "aarch64")))]
+fn cpu_runs_model() -> bool {
+    true
 }
 
 /// A segment's words from its tokens: a word starts at a token that begins
