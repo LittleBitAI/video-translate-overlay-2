@@ -9,8 +9,67 @@ for every run. Model: `ggml-base-q5_1.bin` (SHA-256 `422f1ae4…`), greedy, no
 temperature retries. Thermal status and temperatures were polled every 30 s
 from the host (`dumpsys thermalservice`).
 
-Raw logs, reports and thermal polls are kept outside Git under
-`artifacts/tx-speed/`.
+## What is published and how to check it
+
+The raw phone logs, the app's store copies and the transcripts stay outside
+Git. [`data/`](data/) holds what the tables below come from:
+
+- `data/observations/`: the app's own timing lines from each phone log (the
+  `I/vto` lines with `timing job`, `created` and `ready`; other apps' lines
+  are left out), the phone harness's timing lines, and the thermal and
+  cpuset polls exactly as recorded.
+- `data/transcripts/`: every transcript the evidence scores: the large
+  reference, each build's cues, the restart snapshots, the forced-cut runs
+  and the cold/warm passes. Window and cue times are kept as recorded. Each
+  word is replaced by a keyed hash of its normalized form
+  (`scripts/sanitize.py`). Equal words keep equal hashes, so the word error
+  rates come out the same. The key was random and is gone: the lecture is
+  someone else's talk, and its text cannot be rebuilt from these files.
+
+`python -I scripts/reproduce.py` recomputes every scored claim from those
+files and fails on any mismatch: the word error rates, the overlap table,
+both restart checks, the cold and warm passes, and the final run's stage
+times, window counts, thermal and cpuset samples. On the files committed
+with it, it prints 38 `ok` lines and no `FAIL`. `scripts/` also holds the
+scripts that made the runs (`start-run.sh`, `until-ready.sh`,
+`restart.sh`, `writing-only.sh`, `thermal-poll.sh`, `reference.sh`,
+`cues-from-db.py`, `spot.py`, with the press script `press-confirm.js` and
+`cdp.mjs`). Local paths and the signed-in account's folder are taken from
+environment variables there.
+
+### Build identities
+
+SHA-256 of what ran:
+
+| What | Source | SHA-256 |
+|---|---|---|
+| APK, baseline in the app | eb9b394 | `69131e8ed0ca8de4b64532964378c2d3b33488b3db5e290ba1f92fc7a12330fe` |
+| APK, first final build (stopped) | b2c8b5e | `2cf038171d9bf02297ac15ddfa0d0c50a227babcf4e0abd1da121de0dfad62a5` |
+| APK, final in the app and both restart checks | 41f5014 | `1f1523b41fb97c0ce08adae676b18636166d2fc0cbad5206d9779e34e96989b7` |
+| its `libvto.so` (650 `sdot` instructions) | 41f5014 | `6e432e904edaa417139e3f9693c58319c6d1b3fdadcbb8cdaa020ce668a7156c` |
+| APK installed before and after the task | c632ca1 | `c4783432ddcbc4cd9a6012960b303d81bc03b5acdd7b58c690fabd278cebb03c` |
+| phone harness, cold/warm passes (650 `sdot`) | 41f5014 | `b9a7f0d73b1050a9d905859214d3d0313b51395a7dabba31df204c437d740434` |
+| PC harness, looping-window check (phone decoding) | 41f5014 | `dc89cc01ef3bed2e04a8a738ab463f3e6e3acf417982f024d002df5f45dcc46d` |
+| lecture audio (m4a) | — | `a1fadc741fa289c8664bae7c221ffc3ab4b70c6c0a17be41bd9cf9810fd6583c` |
+| phone model `ggml-base-q5_1.bin` | — | `422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898` |
+| reference model `ggml-large-v3-turbo-q5_0.bin` | — | `394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2` |
+
+### From the measured build to the current branch
+
+The runs used 41f5014. Later commits change three things, and none of them
+changes what was measured:
+
+- The window planner checks the room left in a window before subtracting
+  (a pause just past a full window made it wrap around). For this lecture,
+  the current planner gives the same 140 windows, start and end, as the
+  phone's log of the final run.
+- A translation request now starts beside others only if, with every request
+  in flight costed at the most it could bill, the limit still holds. The most
+  one request of the final run could bill (its glossary, its two longest cues,
+  the system text, and 4,096 output tokens) is 10.48 KRW. The run spent at
+  most 366.58 KRW, and 366.58 + 8 × 10.48 = 450.43 KRW, under its
+  996.59 KRW limit. So all eight requests were admitted exactly as before.
+- The opt-in whisper benchmark compiles again. It is a test only.
 
 ## Baseline (commit eb9b394, plan 1)
 
@@ -69,10 +128,11 @@ stopped the app after the last window, before the glossary request.
 | decode | 22,920 ms |
 | speech regions | 178 ms, 190 regions |
 | model load | 394 ms |
-| writing, 190 windows | 3,621,330 ms (60.4 min); median window 16.3 s, 11 over 30 s |
+| writing, 190 windows | 3,623,989 ms wall (60.4 min; 3,621,330 ms in the model); median window 16.3 s, 11 over 30 s |
 
-All 190 windows ran in `/moderate` (CPUs 0-2) and the `background` CPU
-group. Window 140 took 243 s when another app (Toss) started; in the
+The app's cpuset read `/moderate` (CPUs 0-2) and its CPU group
+`background` whenever it was sampled during this run. Those samples were not
+kept as a file, unlike the final run's. Window 140 took 243 s when another app (Toss) started; in the
 harness the same window takes 7.3 s. Thermal: status 0 for 123 of 127
 samples, at most 1; AP peaked at 42.4 °C, skin at 38.0 °C; battery 41 % to
 37 % on USB.
