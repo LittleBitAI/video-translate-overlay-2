@@ -7,16 +7,23 @@ use serde_json::json;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-/// A Gemini that answers every connection on its own thread after `delay_ms`,
-/// keeping each order it got and the most it was answering at once. Every
-/// reply bills `input` prompt tokens.
-fn gemini(delay_ms: u64, input: i64, orders: Arc<Mutex<Vec<Value>>>, most: Arc<AtomicUsize>) -> String {
+/// How the fake answers its `n`th call (from 0): after how many ms, billing
+/// how many prompt and output tokens.
+type Bill = Arc<dyn Fn(usize) -> (u64, i64, i64) + Send + Sync>;
+
+fn flat(delay_ms: u64, input: i64) -> Bill {
+    Arc::new(move |_| (delay_ms, input, 1))
+}
+
+/// A Gemini that answers every connection on its own thread as `bill` says,
+/// keeping each order it got and the most it was answering at once.
+fn gemini(bill: Bill, orders: Arc<Mutex<Vec<Value>>>, most: Arc<AtomicUsize>) -> String {
     let server = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let at = server.local_addr().unwrap();
-    let now = Arc::new(AtomicUsize::new(0));
+    let (now, arrived) = (Arc::new(AtomicUsize::new(0)), Arc::new(AtomicUsize::new(0)));
     std::thread::spawn(move || {
         for stream in server.incoming() {
-            let (orders, most, now) = (orders.clone(), most.clone(), now.clone());
+            let (orders, most, now, arrived, bill) = (orders.clone(), most.clone(), now.clone(), arrived.clone(), bill.clone());
             std::thread::spawn(move || {
                 let mut stream = stream.unwrap();
                 let mut r = BufReader::new(stream.try_clone().unwrap());
@@ -35,6 +42,7 @@ fn gemini(delay_ms: u64, input: i64, orders: Arc<Mutex<Vec<Value>>>, most: Arc<A
                 r.read_exact(&mut body).unwrap();
                 let body: Value = serde_json::from_slice(&body).unwrap();
                 let order: Value = serde_json::from_str(body["contents"][0]["parts"][0]["text"].as_str().unwrap()).unwrap();
+                let (delay_ms, input, output) = bill(arrived.fetch_add(1, Ordering::SeqCst));
                 most.fetch_max(now.fetch_add(1, Ordering::SeqCst) + 1, Ordering::SeqCst);
                 std::thread::sleep(Duration::from_millis(delay_ms));
                 now.fetch_sub(1, Ordering::SeqCst);
@@ -47,7 +55,7 @@ fn gemini(delay_ms: u64, input: i64, orders: Arc<Mutex<Vec<Value>>>, most: Arc<A
                 orders.lock().unwrap().push(order);
                 let body = json!({
                     "candidates": [{"content": {"parts": [{"text": text.to_string()}]}}],
-                    "usageMetadata": {"promptTokenCount": input, "candidatesTokenCount": 1}
+                    "usageMetadata": {"promptTokenCount": input, "candidatesTokenCount": output}
                 })
                 .to_string();
                 let head = format!("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", body.len());
@@ -78,7 +86,7 @@ fn written(core: &Core, n: i64) {
 #[test]
 fn cues_are_translated_one_per_request_with_requests_overlapping() {
     let (orders, most) = (Arc::new(Mutex::new(Vec::new())), Arc::new(AtomicUsize::new(0)));
-    let core = super::worker_tests::idle_core(&dir("overlap"), &gemini(150, 10, orders.clone(), most.clone()));
+    let core = super::worker_tests::idle_core(&dir("overlap"), &gemini(flat(150, 10), orders.clone(), most.clone()));
     written(&core, 24);
     run_job(&core, &core.store, core.store.job("j").unwrap().unwrap());
 
@@ -108,7 +116,7 @@ fn cues_are_translated_one_per_request_with_requests_overlapping() {
 fn the_limit_stops_new_requests_while_others_are_in_flight() {
     // 100,000 prompt tokens a call: 36.25 KRW, so the 1,000 KRW limit holds 27 calls.
     let (orders, most) = (Arc::new(Mutex::new(Vec::new())), Arc::new(AtomicUsize::new(0)));
-    let core = super::worker_tests::idle_core(&dir("limit"), &gemini(50, 100_000, orders.clone(), most.clone()));
+    let core = super::worker_tests::idle_core(&dir("limit"), &gemini(flat(50, 100_000), orders.clone(), most.clone()));
     written(&core, 60);
     run_job(&core, &core.store, core.store.job("j").unwrap().unwrap());
 
@@ -119,4 +127,34 @@ fn the_limit_stops_new_requests_while_others_are_in_flight() {
     assert!(job.cost_krw <= 1_000.0 + call + 1e-6, "spent {} KRW", job.cost_krw);
     assert_eq!(orders.lock().unwrap().len(), (job.cost_krw / call).round() as usize, "a call was not metered");
     assert!(most.load(Ordering::SeqCst) >= 2, "the requests never overlapped");
+}
+
+#[test]
+fn calls_side_by_side_never_spend_past_the_limit_by_more_than_one_call() {
+    // Whatever a call bills (within the output cap), spending stops at most one
+    // call past the limit, as one at a time did: a call that is cheap first must
+    // not let dearer ones start together past it.
+    let dear = |output: i64| -> Bill { Arc::new(move |n| if n == 0 { (0, 1_000, 1) } else { (200, 1_000, output) }) };
+    let cases: Vec<(&str, f64, Bill)> = vec![
+        ("cheap first, then 2,000 output tokens each", 990.0, dear(2_000)),
+        ("cheap first, then the output cap each", 960.0, dear(gemini::MAX_OUTPUT_TOKENS)),
+        ("every call dearer than the one before", 950.0, Arc::new(|n| (100, 1_000, (200 * n as i64).min(gemini::MAX_OUTPUT_TOKENS)))),
+        ("the output cap from the start", 900.0, Arc::new(|_| (100, 1_000, gemini::MAX_OUTPUT_TOKENS))),
+    ];
+    for (i, (name, spent, bill)) in cases.into_iter().enumerate() {
+        let (orders, most) = (Arc::new(Mutex::new(Vec::new())), Arc::new(AtomicUsize::new(0)));
+        let core = super::worker_tests::idle_core(&dir(&format!("bound{i}")), &gemini(bill.clone(), orders.clone(), most));
+        written(&core, 40);
+        core.store.set_terms("v", r#"[{"source":"attention","target":"어텐션"}]"#).unwrap();
+        core.store.add_usage("j", 0, 0, |_, _| spent).unwrap();
+        run_job(&core, &core.store, core.store.job("j").unwrap().unwrap());
+
+        let job = core.store.job("j").unwrap().unwrap();
+        assert_eq!((job.stage.as_str(), job.failure_reason.as_deref()), ("failed", Some("cost_limit")), "{name}");
+        let calls = orders.lock().unwrap().len();
+        let billed: Vec<f64> = (0..calls).map(|n| { let (_, a, b) = bill(n); gemini::cost_krw(a, b) }).collect();
+        let dearest = billed.iter().cloned().fold(0.0, f64::max);
+        assert!(job.cost_krw <= 1_000.0 + dearest + 1e-6, "{name}: spent {} KRW in {calls} calls", job.cost_krw);
+        assert!((job.cost_krw - spent - billed.iter().sum::<f64>()).abs() < 1e-6, "{name}: a call was not metered");
+    }
 }

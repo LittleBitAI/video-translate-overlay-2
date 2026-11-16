@@ -325,9 +325,11 @@ const GLOSSARY_TRIES: usize = 3;
 /// no request and no reply; only the waiting overlaps.
 const IN_FLIGHT: usize = 8;
 
-/// The calls under way and the dearest one so far, in KRW.
+/// The calls under way, what they may cost at most together, and the dearest
+/// call so far, in KRW.
 struct Ledger {
     in_flight: usize,
+    reserved: f64,
     dearest: f64,
 }
 
@@ -347,35 +349,41 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
     // The worker's connection holds one transaction at a time, so every store
     // access of the calls below (the limit, usage, translations, progress) is
     // made holding `ledger`; only the requests themselves run side by side.
-    let ledger = Mutex::new(Ledger { in_flight: 0, dearest: 0.0 });
+    let ledger = Mutex::new(Ledger { in_flight: 0, reserved: 0.0, dearest: 0.0 });
     let settled = Condvar::new();
 
     // Every call is billed, so usage is added and the limit checked after each
     // one, and before each one too: a job resumed after a kill may already be
     // over the limit with its failure not yet recorded (A6: no call past it).
-    // A call starts only while what is spent, with every call in flight costed
-    // as the dearest call so far, stays under the limit; until a cost is known,
-    // one call at a time.
+    // A call alone starts while anything is left, as one at a time did. Beside
+    // others it starts only while what is spent, with every call in flight
+    // costed at the most it can bill (its prompt's bytes and the output cap,
+    // or the dearest call so far if that is more), stays under the limit. So
+    // only a call that started alone can cross the limit, by its own cost.
     let call = |order: &Value| -> Result<Option<Value>, Stop> {
         let mut attempts = 0u32;
         loop {
             let mut l = ledger.lock().unwrap();
+            let reserve = gemini::max_cost_krw(order).max(l.dearest);
             loop {
                 let spent = store.job(job_id)?.ok_or("job vanished")?.cost_krw;
                 if spent >= limit {
                     log(format!("job {job_id}: cost {spent:.2} KRW already at the limit {limit:.2}"));
                     return Err("cost_limit".into());
                 }
-                if l.in_flight == 0 || (l.dearest > 0.0 && spent + (l.in_flight + 1) as f64 * l.dearest < limit) {
+                if l.in_flight == 0 || spent + l.reserved + reserve.max(l.dearest) < limit {
                     break;
                 }
                 l = settled.wait(l).unwrap();
             }
+            let reserve = reserve.max(l.dearest);
             l.in_flight += 1;
+            l.reserved += reserve;
             drop(l);
             let got = client.order(order);
             let mut l = ledger.lock().unwrap();
             l.in_flight -= 1;
+            l.reserved = if l.in_flight == 0 { 0.0 } else { l.reserved - reserve };
             settled.notify_all();
             let (reply, usage) = match got {
                 Ok((v, u)) => (Some(v), u),

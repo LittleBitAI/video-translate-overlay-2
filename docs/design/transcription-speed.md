@@ -169,10 +169,15 @@ what it held, and writes the same cues as an uninterrupted run.
 ## Translation
 
 Each cue is still its own request, with the glossary and only the cue before
-it as context. Up to 8 requests wait for replies at once. A request starts
-only while the amount spent, plus every request in flight costed as the
-dearest request so far, stays under the job's limit. Until one cost is known,
-requests go one at a time. At most one request can cross the limit, as before.
+it as context. Up to 8 requests wait for replies at once. A request alone
+starts while anything is left under the job's limit, as when they went one at
+a time. A request beside others starts only if the amount spent, plus every
+request in flight costed at the most it can bill, stays under the limit. The
+most a request can bill is its prompt counted as one token per byte (no token
+is shorter) and the 4,096-token reply cap, or the dearest request so far if
+that is more. So only a request that started alone can cross the limit, by
+its own cost, as before. Costing in-flight requests at the dearest one seen
+was not enough: a cheap first reply let eight dear ones start together.
 The store is accessed under one lock, because the worker's connection holds one
 transaction at a time.
 
