@@ -1,11 +1,21 @@
 {
-  "at": "2026-11-17T15:26:59.723Z",
-  "reviewedHead": "8e53d39bf066e0c92d8011f351a5ac46115dcd00",
+  "at": "2026-11-17T21:38:20.960Z",
+  "reviewedHead": "31b5d9ebe5fb26005909b520e3513aff5751cf41",
   "producerHead": "be8b00b36acd794630d6a3f9d782778d40e9a776",
   "environment": {
     "os": "Windows 11 Home",
     "release": "10.0.26200",
     "node": "v24.18.0"
+  },
+  "maintenanceComparison": {
+    "fromHead": "5ce5fede78aba38a6ed2da3729a965bf4be27a06",
+    "toHead": "31b5d9ebe5fb26005909b520e3513aff5751cf41",
+    "changedPaths": [
+      ".wiki/corpus.json",
+      ".wiki/graph.json"
+    ],
+    "changedIncludedPaths": [],
+    "result": "PASS: the two excluded wiki index changes preserve the execution-input digest"
   },
   "sourceComparison": {
     "producer": {
@@ -18,7 +28,7 @@
       ]
     },
     "reviewed": {
-      "head": "8e53d39bf066e0c92d8011f351a5ac46115dcd00",
+      "head": "31b5d9ebe5fb26005909b520e3513aff5751cf41",
       "inputTreeSha256": "7abea7747ccdebebd32604bb7cdc5b3b16740648aba80ea7bf2b52a17264860d",
       "exclusions": [
         ".wiki/",
@@ -28,6 +38,8 @@
     },
     "changedIncludedPaths": [],
     "changedExcludedPaths": [
+      ".wiki/corpus.json",
+      ".wiki/graph.json",
       "docs/evidence/fullscreen-subtitles/README.md",
       "docs/evidence/fullscreen-subtitles/review-1/attempt-1/audit-failure.json",
       "docs/evidence/fullscreen-subtitles/review-1/attempt-1/browser-1280x720.png",
@@ -49,6 +61,7 @@
       "docs/evidence/fullscreen-subtitles/review-1/attempt-1/runtime.log",
       "docs/evidence/fullscreen-subtitles/review-1/attempt-1/source-binding.json",
       "docs/evidence/fullscreen-subtitles/review-1/audit.log",
+      "docs/evidence/fullscreen-subtitles/review-1/binding-reviewed-head.log",
       "docs/evidence/fullscreen-subtitles/review-1/browser-1280x720.png",
       "docs/evidence/fullscreen-subtitles/review-1/browser-1920x1080.png",
       "docs/evidence/fullscreen-subtitles/review-1/browser-384x854.png",
@@ -67,6 +80,7 @@
       "docs/evidence/fullscreen-subtitles/review-1/native-resized-long.png",
       "docs/evidence/fullscreen-subtitles/review-1/native-restored-short.png",
       "docs/evidence/fullscreen-subtitles/review-1/native-seek-back.png",
+      "docs/evidence/fullscreen-subtitles/review-1/reviewed-head.json",
       "docs/evidence/fullscreen-subtitles/review-1/runtime.json",
       "docs/evidence/fullscreen-subtitles/review-1/runtime.log",
       "docs/evidence/fullscreen-subtitles/review-1/source-binding.json"
@@ -93,22 +107,22 @@
         "sha256": "4eddb4486fcd499f67e3e128a4937e1f422cca85fa93f48ac394892d9205b390"
       }
     },
-    "reason": "All tracked application, test, build, fixture and verifier inputs have identical digests; changes are confined to the declared evidence outputs and acceptance prose."
+    "reason": "Application, test, build, fixture and verifier inputs have identical digests at the producer, pre-maintenance candidate and merge-maintenance HEAD. Runtime scenarios and 84 renderer tests are reused."
   },
   "freshChecks": [
     {
       "command": "node --test scripts/verification/subtitle-binding.test.mjs",
       "exitCode": 0,
       "log": "binding-reviewed-head.log",
-      "sha256": "e093a9c344aa7ae60c67a8edccda38210f3fa5aa0b9cdd22d7e10319f922cb81",
-      "result": "3 tests passed; missing and mismatched source bindings rejected across the recorded property table."
+      "sha256": "d1064b9dc769afb4a710172948ac4d8ff726603d830c829d77d6a864507ac720",
+      "result": "3 tests passed; changed or incomplete bindings refused across the property table."
     },
     {
       "command": "node scripts/verification/subtitle-evidence-audit.mjs",
       "exitCode": 0,
       "log": "audit.log",
-      "sha256": "a74643e5832893c53cdc128dcc74631fbd8efea5fa06d401e824cd43ef7994df",
-      "result": "PASS: runtime, API, browser, desktop and offline evidence bound to HEAD 8e53d39bf066e0c92d8011f351a5ac46115dcd00; producer be8b00b36acd794630d6a3f9d782778d40e9a776; 10 capture hashes verified"
+      "sha256": "66e7ad85e14e81c5f36f52606d8a8b9916a421ef154ca9950932ba62e728b259",
+      "result": "PASS: runtime, API, browser, desktop and offline evidence bound to HEAD 31b5d9ebe5fb26005909b520e3513aff5751cf41; producer be8b00b36acd794630d6a3f9d782778d40e9a776; 10 capture hashes verified"
     }
   ]
 }

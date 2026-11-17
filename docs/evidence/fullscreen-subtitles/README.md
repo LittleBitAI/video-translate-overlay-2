@@ -192,10 +192,11 @@ publication remain outside these focused runs.
 
 The previous retained audit log named only the producer's own revision. A later
 console audit had compared the evidence with the candidate, but that output was
-not committed. This packet now retains an actual audit execution for reviewed
-commit `8e53d39bf066e0c92d8011f351a5ac46115dcd00` in `review-1/audit.log`.
-`review-1/source-binding.json` names that reviewed commit and explicitly marks
-the runtime and offline runs as reused from `be8b00b`.
+not committed. Round 2 retained an actual audit execution for reviewed commit
+`8e53d39bf066e0c92d8011f351a5ac46115dcd00`. That record remains in Git history.
+The current `review-1/audit.log` and `review-1/source-binding.json` identify the
+latest reviewed candidate described below and explicitly mark the runtime and
+offline runs as reused from `be8b00b`.
 
 `review-1/reviewed-head.json` retains the execution time, current environment,
 producer and candidate input digests, the exact excluded changes, reused build
@@ -212,3 +213,27 @@ committed log records the reviewed candidate; the post-commit report records
 the new evidence-only commit. This avoids claiming that a committed file can
 contain its own future commit identifier. No application or verifier source
 changed in this round, and final verification remains server-owned.
+
+## Review round 4: bind the merge-maintenance candidate
+
+Merge maintenance advanced the candidate from `5ce5fed` to
+`31b5d9ebe5fb26005909b520e3513aff5751cf41`. The exact diff contains only
+`.wiki/corpus.json` and `.wiki/graph.json`. Both are excluded by the existing
+source-binding policy; no application, test, fixture, build or verifier input
+changed. The previous retained audit still named the round 2 candidate, so it
+did not record the comparison with this maintenance commit.
+
+The current retained audit now names `31b5d9e`. `review-1/reviewed-head.json`
+records an actual successful execution at that commit, the two changed paths,
+identical input digests, environment, reused executable identities, and fresh
+audit/test-log hashes. All three binding tests passed again. Runtime, API,
+browser, desktop and 84 renderer-test observations remain explicitly reused
+from `be8b00b`; user readability acceptance is also reused. The earlier gate
+result is only an owner report for its original revision.
+
+The same binding policy applies to the collector, native core, native screen,
+browser core, browser screen and offline test producer. Maintenance commits
+require a new recorded comparison even when their inputs are excluded. After
+this evidence-only commit, the implementation audits its final HEAD and returns
+a matching completion report. No application or verifier code changed, no
+runtime scenarios were repeated, and final verification remains server-owned.
