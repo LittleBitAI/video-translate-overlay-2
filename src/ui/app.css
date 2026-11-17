@@ -23,8 +23,14 @@
     background: var(--color-surface);
     color: var(--color-ink);
     color-scheme: dark;
-    /* A scrollbar appearing (edit mode, a long list) must not shift the layout sideways. */
-    scrollbar-gutter: stable;
+  }
+  /* In the wide layout a scrollbar appearing (edit mode, a long list) must not shift the
+     rail and grid sideways. Phones scroll with overlay bars, and a reserved gutter would
+     only narrow the one-column layout. */
+  @media (min-width: 768px) {
+    html {
+      scrollbar-gutter: stable;
+    }
   }
   body {
     min-height: 100dvh;
