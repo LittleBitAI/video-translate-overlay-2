@@ -193,15 +193,16 @@
  "orphans": [
   "docs/design/library-acceptance.md",
   "docs/design/library-verification.md",
-  "docs/evidence/library-rail/README.md"
+  "docs/evidence/library-rail/README.md",
+  "docs/releases/0.1.8.md"
  ],
  "counts": {
-  "docs": 18,
+  "docs": 19,
   "linked": 12,
   "read": 3,
-  "orphans": 3,
+  "orphans": 4,
   "pages": 7,
-  "decisions": 9,
-  "injectable_decisions": 1
+  "decisions": 12,
+  "injectable_decisions": 2
  }
 }
