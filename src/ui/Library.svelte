@@ -47,7 +47,8 @@
   const listed = $derived(open === null ? [] : playlist ? members(playlist) : videos);
   const visible = $derived(listed.filter(v => `${v.title} ${v.page_url}`.toLocaleLowerCase().includes(search.toLocaleLowerCase())));
   const button = 'min-h-11 rounded-lg border border-ink/30 px-4 py-2 text-base disabled:opacity-40';
-  const input = 'min-h-11 min-w-0 rounded-lg border border-ink/30 bg-ink/5 px-4 py-2 text-base';
+  // An explicit placeholder colour: Android's WebView draws Tailwind's default currentcolor mix as transparent.
+  const input = 'min-h-11 min-w-0 rounded-lg border border-ink/30 bg-ink/5 px-4 py-2 text-base placeholder:text-ink/50';
 
   async function load() {
     refreshPending = false;
