@@ -30,6 +30,16 @@
   },
   {
    "a": "README.md",
+   "b": "docs/design/transcription-speed.md",
+   "kind": "link"
+  },
+  {
+   "a": "README.md",
+   "b": "docs/releases/0.1.8.md",
+   "kind": "link"
+  },
+  {
+   "a": "README.md",
    "b": "docs/releases/procedure.md",
    "kind": "link"
   },
@@ -193,14 +203,13 @@
  "orphans": [
   "docs/design/library-acceptance.md",
   "docs/design/library-verification.md",
-  "docs/evidence/library-rail/README.md",
-  "docs/releases/0.1.8.md"
+  "docs/evidence/library-rail/README.md"
  ],
  "counts": {
   "docs": 19,
-  "linked": 12,
+  "linked": 13,
   "read": 3,
-  "orphans": 4,
+  "orphans": 3,
   "pages": 7,
   "decisions": 12,
   "injectable_decisions": 2
