@@ -44,7 +44,8 @@ export async function capture(page,out,prefix,binding={}) {
     // Wait for the stage's position-dependent fit after navigation or header changes.
     await page.waitForFunction(() => {
       const stage = document.querySelector('.video-stage');
-      return innerWidth < 768 || !stage || stage.getBoundingClientRect().bottom <= innerHeight;
+      return innerWidth < 768 || !stage || (getComputedStyle(stage).getPropertyValue('--stage-top').trim()
+        && stage.getBoundingClientRect().bottom <= innerHeight);
     });
     const r=await measure(page);
     const [width,height]=r.viewport;

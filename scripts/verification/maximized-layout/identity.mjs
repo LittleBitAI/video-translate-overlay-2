@@ -17,7 +17,10 @@ export const environment = {
   rust:execFileSync('rustc', ['--version'], {encoding:'utf8'}).trim(),
 };
 export function inventory(out) {
-  const tree = git(['ls-tree', '-r', 'HEAD', '--', ...scope]);
+  const tree = git(['ls-tree', '-r', 'HEAD']).split('\n').filter(line => {
+    const path = line.split('\t')[1];
+    return !path.startsWith('.wiki/') && !path.startsWith('docs/evidence/maximized-layout/');
+  }).join('\n');
   const inputs = tree.split('\n').map(line => {
     const [metadata, path] = line.split('\t');
     return {path, blob:metadata.split(' ')[2]};
