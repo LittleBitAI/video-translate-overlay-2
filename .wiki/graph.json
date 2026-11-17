@@ -213,13 +213,14 @@
  "orphans": [
   "docs/design/library-acceptance.md",
   "docs/design/library-verification.md",
+  "docs/evidence/fullscreen-subtitles/README.md",
   "docs/evidence/library-rail/README.md"
  ],
  "counts": {
-  "docs": 20,
+  "docs": 21,
   "linked": 14,
   "read": 3,
-  "orphans": 3,
+  "orphans": 4,
   "pages": 7,
   "decisions": 12,
   "injectable_decisions": 2
