@@ -1,0 +1,63 @@
+18:31:14 /moderate mWakefulness=Awake
+18:32:15 /moderate mWakefulness=Awake
+18:33:15 /moderate mWakefulness=Awake
+18:34:17 /moderate mWakefulness=Awake
+18:35:17 /moderate mWakefulness=Awake
+18:36:18 /moderate mWakefulness=Awake
+18:37:19 /moderate mWakefulness=Awake
+18:38:19 /moderate mWakefulness=Awake
+18:39:21 /moderate mWakefulness=Awake
+18:40:22 /moderate mWakefulness=Awake
+18:41:23 /moderate mWakefulness=Awake
+18:42:27 /moderate mWakefulness=Awake
+18:43:28 /moderate mWakefulness=Awake
+18:44:29 /moderate mWakefulness=Awake
+18:45:29 /moderate mWakefulness=Awake
+18:46:30
+18:47:30
+18:48:30
+18:49:31
+18:50:31
+18:51:31
+18:52:31
+18:53:31
+18:54:32 /moderate mWakefulness=Awake
+18:55:42 /moderate mWakefulness=Awake
+18:56:54 /moderate mWakefulness=Awake
+18:58:01 /moderate mWakefulness=Awake
+18:59:02 /moderate mWakefulness=Awake
+19:00:03 /moderate mWakefulness=Awake
+19:01:03 /moderate mWakefulness=Awake
+19:02:04 /moderate mWakefulness=Dozing
+19:03:04 /moderate mWakefulness=Dozing
+19:04:05 /moderate mWakefulness=Dozing
+19:05:06 /moderate mWakefulness=Dozing
+19:06:06 /moderate mWakefulness=Dozing
+19:07:07 /moderate mWakefulness=Dozing
+19:08:08 /moderate mWakefulness=Dozing
+19:09:08 /moderate mWakefulness=Dozing
+19:10:09 /moderate mWakefulness=Dozing
+19:11:10 /moderate mWakefulness=Dozing
+19:12:10 /moderate mWakefulness=Dozing
+19:13:12 /moderate mWakefulness=Dozing
+19:14:20 /moderate mWakefulness=Dozing
+19:15:30 /moderate mWakefulness=Dozing
+19:16:30 /moderate mWakefulness=Dozing
+19:17:33 /moderate mWakefulness=Dozing
+19:18:35 /moderate mWakefulness=Dozing
+19:19:36 /moderate mWakefulness=Dozing
+19:20:37 /moderate mWakefulness=Dozing
+19:21:37 /moderate mWakefulness=Dozing
+19:22:39 /moderate mWakefulness=Dozing
+19:23:40 /moderate mWakefulness=Dozing
+19:24:40 /moderate mWakefulness=Dozing
+19:25:41 /moderate mWakefulness=Dozing
+19:26:41 /moderate mWakefulness=Dozing
+19:27:42 /moderate mWakefulness=Dozing
+19:28:42 /moderate mWakefulness=Dozing
+19:29:43 /moderate mWakefulness=Dozing
+19:30:44 /moderate mWakefulness=Dozing
+19:31:45  mWakefulness=Dozing
+19:32:46  mWakefulness=Dozing
+19:33:46  mWakefulness=Dozing
+19:34:57  mWakefulness=Dozing

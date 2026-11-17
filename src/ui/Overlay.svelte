@@ -14,6 +14,7 @@
   export const STOPPED: Record<string, string> = {
     download_failed: '오디오를 내려받거나 읽지 못했습니다.',
     no_speech: '영상에서 말소리를 찾지 못했습니다.',
+    unsupported_cpu: '이 휴대폰의 CPU로는 기기 안에서 말을 글로 옮길 수 없습니다.',
     key_rejected: 'Gemini가 개인키를 받아 주지 않았습니다. 설정에서 개인키를 확인해 주세요.',
     cost_limit: '비용 한도(1시간에 1,000원 안팎)를 넘어 번역을 멈췄습니다.',
     translate_failed: '번역하지 못했습니다. 잠시 뒤에 영상감지를 다시 눌러 주세요.',

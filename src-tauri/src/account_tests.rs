@@ -112,7 +112,7 @@ fn production_library_requests_select_the_account_and_copy_legacy_data_only_with
     let url = "https://lectures.example.org/saved";
     let key = video_key(&url::Url::parse(url).unwrap());
     core.store.create_job("legacy", &key, url, "other", "Existing lecture", 5000, None, "original-model").unwrap();
-    core.store.save_region("legacy", &key, 0, &[(123, 2345, "original".into())]).unwrap();
+    core.store.save_region("legacy", &key, 0, &[(123, 2345, "original".into())], None).unwrap();
     core.store.set_translations("legacy", &[(0, "translated".into())]).unwrap();
     core.store.set_terms(&key, "[]").unwrap();
     core.store.add_usage("legacy", 12, 4, |_, _| 12.5).unwrap();
@@ -177,7 +177,7 @@ fn playback_requests_are_account_scoped_durable_and_leave_completed_subtitles_un
     let url = "https://lectures.example.org/playback";
     let key = video_key(&url::Url::parse(url).unwrap());
     store.create_job("saved", &key, url, "other", "Saved", 60000, None, "original-model").unwrap();
-    store.save_region("saved", &key, 0, &[(123, 2345, "original".into())]).unwrap();
+    store.save_region("saved", &key, 0, &[(123, 2345, "original".into())], None).unwrap();
     store.set_translations("saved", &[(0, "translated".into())]).unwrap();
     store.set_terms(&key, "[]").unwrap();
     store.add_usage("saved", 12, 4, |_, _| 12.5).unwrap();

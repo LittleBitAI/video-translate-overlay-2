@@ -202,16 +202,118 @@ const PAD: usize = RATE / 5; // 200 ms of context on each side
 const MAX_REGION: usize = 30 * RATE; // what the model takes at once
 const MIN_LEVEL: f32 = 1e-4; // -80 dBFS: below it a frame is silence however quiet the file
 
-/// Speech spans with silence cut out, so the model never sees long silence
-/// (where Whisper-style models invent text). Deterministic for given audio,
-/// which lets an interrupted write resume at the same span boundaries.
+/// The segmentation plan a new job records: [`speech_windows`]. Jobs made
+/// before it carry plan 1, [`speech_regions`]. A plan never changes once a job
+/// has written under it; a different cut is a new number here.
+pub const PLAN: i64 = 2;
+
+/// The windows of `plan` for `pcm`: where the model is run, in order.
+pub fn plan(plan: i64, pcm: &[i16]) -> Vec<Region> {
+    if plan == 1 { speech_regions(pcm) } else { speech_windows(pcm) }
+}
+
+/// Plan 1: speech spans with silence cut out, so the model never sees long
+/// silence (where Whisper-style models invent text). Deterministic for given
+/// audio, which lets an interrupted write resume at the same span boundaries.
 pub fn speech_regions(pcm: &[i16]) -> Vec<Region> {
+    let Some((rms, _, spans)) = speech_spans(pcm) else { return Vec::new() };
+    let mut out = Vec::new();
+    for (start, end) in spans {
+        split_long(&rms, start, end, &mut out);
+    }
+    out
+}
+
+/// Silence inside one window of [`speech_windows`] is at most this (padding
+/// included): a pause, never the long silence the model would fill with text.
+const MAX_GAP: usize = 3 * RATE / 2;
+/// A pause this long (all frames under the speech threshold) is a safe cut.
+const PAUSE_FRAMES: usize = 10; // 200 ms
+/// How far back from a window's limit a cut through a long span is looked for.
+const SEARCH: usize = 10 * RATE;
+/// Speech both windows hear when a span must be cut where nobody pauses.
+/// Tuned on the lecture with every cut forced (docs/design/transcription-speed.md):
+/// 3 s left 41 errors within 2 s of 71 cuts, as no overlap did; 1 s left 85,
+/// 2 s 51, 4 s 40 with more audio to write.
+pub const OVERLAP: usize = 3 * RATE;
+
+/// Plan 2: windows as full as the model takes, on the source timeline. Speech
+/// spans separated by short pauses share a window (the encoder costs the same
+/// for 5 s as for 30 s); longer silence ends one. A span too long for one
+/// window is cut at the latest sustained pause near the window's limit, and
+/// only where it has none do the two windows overlap by [`OVERLAP`] around the
+/// quietest point, for the boundary words to be reconciled from both sides.
+/// Deterministic for given audio, like plan 1.
+pub fn speech_windows(pcm: &[i16]) -> Vec<Region> {
+    speech_windows_tuned(pcm, OVERLAP, true)
+}
+
+/// [`speech_windows`] with another overlap, or with every cut inside a span
+/// forced through speech (`pauses` false), as if nobody paused: how the timing
+/// harness tunes [`OVERLAP`]. Jobs only use [`speech_windows`].
+pub fn speech_windows_tuned(pcm: &[i16], overlap: usize, pauses: bool) -> Vec<Region> {
+    // At most the search for a pause: a cut then always lies inside the window
+    // and the next window starts after this one does.
+    let overlap = overlap.min(SEARCH);
+    let Some((rms, threshold, spans)) = speech_spans(pcm) else { return Vec::new() };
+    let mut out: Vec<Region> = Vec::new();
+    let mut open: Option<Region> = None; // the window being filled
+    for (s, e) in spans {
+        let mut start = s;
+        if let Some(w) = open.take() {
+            if s - w.end <= MAX_GAP && e - w.start <= MAX_REGION {
+                open = Some(Region { start: w.start, end: e });
+                continue;
+            }
+            // A span that must be cut anyway may start in the room this window has
+            // left, if that room holds a whole search for a pause (added, not
+            // subtracted: the span may start past the window's limit).
+            if s - w.end <= MAX_GAP && e - s > MAX_REGION && w.start + MAX_REGION >= s + SEARCH {
+                start = w.start;
+            } else {
+                out.push(w);
+            }
+        }
+        while e - start > MAX_REGION {
+            let (end, next) = cut(&rms, threshold, start, s, overlap, pauses);
+            out.push(Region { start, end });
+            start = next;
+        }
+        open = Some(Region { start, end: e });
+    }
+    out.extend(open);
+    out
+}
+
+/// Where a window from `start` ends inside the span that began at `span`, and
+/// where the next starts: the middle of the latest pause of [`PAUSE_FRAMES`] in
+/// the last [`SEARCH`] before the limit; else around the quietest 200 ms there,
+/// overlapping by `overlap`.
+fn cut(rms: &[f32], threshold: f32, start: usize, span: usize, overlap: usize, pauses: bool) -> (usize, usize) {
+    let hi = (start + MAX_REGION) / FRAME;
+    let lo = ((start + MAX_REGION - SEARCH) / FRAME).max(span / FRAME + 1);
+    let quiet = |f: usize| rms[f..f + PAUSE_FRAMES].iter().all(|&v| v < threshold);
+    if let Some(f) = (lo..hi - PAUSE_FRAMES).rev().find(|&f| pauses && quiet(f)) {
+        let at = (f + PAUSE_FRAMES / 2) * FRAME;
+        return (at, at);
+    }
+    let lo = lo.max(start / FRAME + overlap / FRAME);
+    let hi = hi - overlap / 2 / FRAME - PAUSE_FRAMES;
+    let level = |f: usize| rms[f..f + PAUSE_FRAMES].iter().sum::<f32>();
+    let f = (lo..hi).min_by(|&x, &y| level(x).total_cmp(&level(y)).then(y.cmp(&x))).unwrap_or(hi);
+    let at = (f + PAUSE_FRAMES / 2) * FRAME;
+    (at + overlap / 2, at - overlap / 2)
+}
+
+/// The frame levels, the speech threshold, and the speech spans in samples
+/// (200 ms of context on each side, never overlapping); `None` for no audio.
+fn speech_spans(pcm: &[i16]) -> Option<(Vec<f32>, f32, Vec<(usize, usize)>)> {
     let rms: Vec<f32> = pcm
         .chunks(FRAME)
         .map(|f| (f.iter().map(|&s| (s as f32 / 32768.0).powi(2)).sum::<f32>() / f.len() as f32).sqrt())
         .collect();
     if rms.is_empty() {
-        return Vec::new();
+        return None;
     }
     let mut sorted = rms.clone();
     sorted.sort_by(|a, b| a.total_cmp(b));
@@ -235,13 +337,13 @@ pub fn speech_regions(pcm: &[i16]) -> Vec<Region> {
             _ => spans.push((i, i + 1)),
         }
     }
-    let mut out = Vec::new();
+    let mut out: Vec<(usize, usize)> = Vec::new();
     for (a, b) in spans.into_iter().filter(|(a, b)| b - a >= MIN_FRAMES) {
-        let start = (a * FRAME).saturating_sub(PAD).max(out.last().map_or(0, |r: &Region| r.end));
+        let start = (a * FRAME).saturating_sub(PAD).max(out.last().map_or(0, |r| r.1));
         let end = (b * FRAME + PAD).min(pcm.len());
-        split_long(&rms, start, end, &mut out);
+        out.push((start, end));
     }
-    out
+    Some((rms, threshold, out))
 }
 
 /// Cuts spans longer than the model's window at the quietest frame of their last 10 s.
@@ -330,6 +432,10 @@ mod decode_limits_tests;
 #[cfg(test)]
 #[path = "audio_quiet_and_cut_tests.rs"]
 mod quiet_and_cut_tests;
+
+#[cfg(test)]
+#[path = "audio_plan_tests.rs"]
+mod plan_tests;
 
 #[cfg(test)]
 mod tests {

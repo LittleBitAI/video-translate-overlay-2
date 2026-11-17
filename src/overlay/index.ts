@@ -33,10 +33,11 @@ const STAGE_KO: Record<string, string> = {
 };
 const MODEL_KO = '음성 인식 모델 준비 중(처음 한 번)';
 
-// The five `failure_reason` values (E2), plus the 428 reply's missing key.
+// The six `failure_reason` values (E2), plus the 428 reply's missing key.
 const FAILURE_KO: Record<string, string> = {
   download_failed: '오디오를 내려받거나 읽지 못했습니다.',
   no_speech: '영상에서 말소리를 찾지 못했습니다.',
+  unsupported_cpu: '이 휴대폰의 CPU로는 기기 안에서 말을 글로 옮길 수 없습니다.',
   key_rejected: 'Gemini가 API 키를 받아 주지 않았습니다.',
   cost_limit: '비용 한도(1시간에 1,000원)를 넘어 번역을 멈췄습니다.',
   translate_failed: '번역하지 못했습니다. 네트워크를 확인하고 다시 눌러 주세요.',

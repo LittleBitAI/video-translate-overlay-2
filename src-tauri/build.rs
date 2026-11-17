@@ -43,6 +43,15 @@ fn main() {
             println!("cargo:rerun-if-changed={path}");
         }
     }
+    // whisper-rs-sys tests the host OS, not the target, and asks for advapi32 even
+    // on Android when built on Windows (the app, or the `whisper` feature alone).
+    // Nothing uses it there: give the linker an empty one.
+    if std::env::var("TARGET").unwrap().contains("android") {
+        let stub = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("stub");
+        std::fs::create_dir_all(&stub).unwrap();
+        std::fs::write(stub.join("libadvapi32.a"), b"!<arch>\n").unwrap();
+        println!("cargo:rustc-link-search=native={}", stub.display());
+    }
     #[cfg(feature = "app")]
     app();
 }
@@ -65,15 +74,6 @@ fn app() {
             .status()
             .expect("run node (npm ci first)");
         assert!(status.success(), "building {what} failed");
-    }
-
-    // whisper-rs-sys tests the host OS, not the target, and asks for advapi32 even
-    // on Android when built on Windows. Nothing uses it there: give the linker an empty one.
-    if std::env::var("TARGET").unwrap().contains("android") {
-        let stub = PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("stub");
-        std::fs::create_dir_all(&stub).unwrap();
-        std::fs::write(stub.join("libadvapi32.a"), b"!<arch>\n").unwrap();
-        println!("cargo:rustc-link-search=native={}", stub.display());
     }
 
     // The same commands commands::COMMANDS registers, as `allow-<command>` permissions.

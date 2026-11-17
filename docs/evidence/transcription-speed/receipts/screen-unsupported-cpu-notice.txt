@@ -1,0 +1,17 @@
+check: screen-unsupported-cpu-notice
+command: npx vitest run -c vitest.ui.config.ts tests/ui/watch.test.ts
+exit: 0
+started: 2026-11-16T23:24:15Z
+finished: 2026-11-16T23:24:29Z
+commit: fa3bf8db91be718c4e73337401786b57216d50fe
+tree src-tauri: 65ab4e6b8f3d069031aa4741cc917c96a639721b
+tree contract-tests: cc98f6533efe777405160da8241f3957b8295a37
+tree src: 957be1d6b8663e3d33ad79f872cf7a0f0b0b2f5d
+tree tests: f7e92b469b042d26540e97dc74d37ea59a6c9d28
+tree docs/evidence/transcription-speed/scripts: 8c58a13a5dad69f878f07390e3ca89fa76bca72b
+tree docs/evidence/transcription-speed/data: 93d1570ce51017699333201a97a4ed6e094e7063
+rustc: rustc 1.98.1 (48a229cea 2026-09-01)
+os: MINGW64_NT-10.0-26200 3.4.6.x86_64
+--- output (test, result and failure lines) ---
+ Test Files  1 passed (1)
+      Tests  14 passed (14)

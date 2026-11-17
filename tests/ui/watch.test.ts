@@ -172,12 +172,15 @@ test('the downloading stage names the speech model while it is fetched, then the
   await vi.waitFor(() => expect(text(s1)).toMatch(/진행 상태 ?내려받는 중 ?20%/), { timeout: 3_000 });
 });
 
-test('a job that stopped shows why and offers 영상감지 again', async () => {
+test.each([
+  ['no_speech', '영상에서 말소리를 찾지 못했습니다.'],
+  ['unsupported_cpu', '이 휴대폰의 CPU로는 기기 안에서 말을 글로 옮길 수 없습니다.'],
+])('a job that stopped (%s) shows why and offers 영상감지 again', async (reason, why) => {
   api(c => c.path === '/browser'
-    ? [200, { url: FILE, job: { job_id: 'j', video_key: 'vk', stage: 'failed', percent: 30, cost_krw: 1, failure_reason: 'no_speech' } }]
+    ? [200, { url: FILE, job: { job_id: 'j', video_key: 'vk', stage: 'failed', percent: 30, cost_krw: 1, failure_reason: reason } }]
     : [409, { error: 'not_ready' }]);
   const s1 = open('/');
-  await vi.waitFor(() => expect(text(s1)).toContain('작업이 멈췄습니다. 영상에서 말소리를 찾지 못했습니다.'));
+  await vi.waitFor(() => expect(text(s1)).toContain(`작업이 멈췄습니다. ${why}`));
   expect(features(s1)).toEqual(['detect-video', 'job-progress', 'open-site', 'watch-subtitles']);
 });
 

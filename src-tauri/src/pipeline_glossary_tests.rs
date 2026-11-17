@@ -106,7 +106,7 @@ fn run(name: &str, bad: usize) -> (Job, Asked) {
     {
         let s = Store::open(&dir.join("app.sqlite3")).unwrap();
         s.create_job("j", "v", "https://a.example/talk", "other", "Talk", 3_600_000, None, "m").unwrap();
-        s.save_region("j", "v", 0, &[(0, 900, "hello".into()), (1000, 1900, "attention".into())]).unwrap();
+        s.save_region("j", "v", 0, &[(0, 900, "hello".into()), (1000, 1900, "attention".into())], None).unwrap();
         s.end_writing("j").unwrap();
     }
     let asked = Arc::new(Mutex::new(Asked::default()));

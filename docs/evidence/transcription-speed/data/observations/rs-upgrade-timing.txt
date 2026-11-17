@@ -1,0 +1,28 @@
+11-16 21:26:00.049 I/vto     (20127): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a create-resolve ms=123 hint=true ok=true
+11-16 21:26:00.119 I/vto     (20127): job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a created for zjkBMFhNj_g
+11-16 21:26:00.129 I/vto     (20127): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a resolve ms=0 hint=true reused=true try=0 ok=true
+11-16 21:26:00.131 I/vto     (20127): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a model ms=2 fetched=false
+11-16 21:26:07.197 I/vto     (20127): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a transfer ms=7059 bytes=58064373 try=0 ok=true
+11-16 21:26:11.377 I/vto     (20127): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a decode ms=4176 samples=57403814
+11-16 21:26:11.427 I/vto     (20127): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a vad ms=49 regions=190 speech_ms=3496678 from=0
+11-16 21:26:11.606 I/vto     (20127): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a model-load ms=179
+11-16 21:26:19.369 I/vto     (20127): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a region i=0 start_ms=0 audio_ms=22600 ms=7762 segs=5
+11-16 21:26:23.876 I/vto     (20127): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a region i=1 start_ms=22600 audio_ms=25820 ms=4504 segs=3
+11-16 21:26:28.633 I/vto     (20127): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a region i=2 start_ms=48420 audio_ms=27320 ms=4755 segs=5
+11-16 21:30:08.043 I/vto     (20127): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a region i=3 start_ms=75740 audio_ms=15060 ms=219407 segs=6
+11-16 21:30:23.332 I/vto     (20127): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a region i=4 start_ms=91620 audio_ms=17180 ms=15276 segs=4
+11-16 21:30:38.110 I/vto     (20127): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a region i=5 start_ms=109220 audio_ms=15160 ms=14768 segs=4
+11-16 21:30:54.399 I/vto     (20127): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a region i=6 start_ms=124980 audio_ms=23000 ms=16276 segs=5
+11-16 21:31:11.441 I/vto     (20127): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a region i=7 start_ms=147980 audio_ms=29460 ms=17029 segs=9
+11-16 21:31:26.216 I/vto     (20127): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a region i=8 start_ms=177440 audio_ms=12120 ms=14766 segs=3
+11-16 21:31:54.428 I/vto     (24142): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a decode ms=5340 samples=57403814
+11-16 21:31:54.481 I/vto     (24142): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a vad ms=53 plan=1 regions=190 speech_ms=3496678 from=9
+11-16 21:31:54.877 I/vto     (24142): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a model-load ms=396
+11-16 21:31:59.640 I/vto     (24142): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a region i=9 start_ms=190040 audio_ms=13940 ms=4761 segs=3
+11-16 21:32:02.670 I/vto     (24142): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a region i=10 start_ms=204740 audio_ms=22080 ms=3014 segs=7
+11-16 21:32:06.441 I/vto     (24142): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a region i=11 start_ms=227600 audio_ms=27740 ms=3764 segs=12
+11-16 21:32:49.492 I/vto     (24142): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a region i=12 start_ms=255340 audio_ms=29580 ms=43044 segs=8
+11-16 21:33:02.518 I/vto     (24142): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a region i=13 start_ms=285380 audio_ms=18380 ms=13017 segs=6
+11-16 21:33:13.291 I/vto     (24142): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a region i=14 start_ms=304220 audio_ms=3160 ms=10763 segs=1
+11-16 21:33:27.577 I/vto     (24142): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a region i=15 start_ms=308040 audio_ms=29180 ms=14276 segs=5
+11-16 21:33:42.148 I/vto     (24142): timing job 0a0d1f65-c579-4fcb-a07d-6e2c1b9f641a region i=16 start_ms=337220 audio_ms=27100 ms=14561 segs=7

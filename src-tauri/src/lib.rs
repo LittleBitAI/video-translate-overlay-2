@@ -24,6 +24,7 @@ pub mod media;
 pub mod pipeline;
 pub mod platform;
 pub mod screens;
+pub mod stitch;
 pub mod store;
 mod library_scope;
 pub mod sync;
@@ -49,6 +50,17 @@ pub struct Segment {
     pub start_ms: i64,
     pub end_ms: i64,
     pub text: String,
+    /// The segment's words in order, timed the same way, when the model gives
+    /// them; their texts joined are `text`. Empty: the segment is one unit.
+    pub words: Vec<Word>,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct Word {
+    pub start_ms: i64,
+    pub end_ms: i64,
+    /// With the whitespace that comes before it.
+    pub text: String,
 }
 
 /// The on-device speech model (whisper.cpp in the app).
@@ -63,6 +75,10 @@ pub trait Transcriber: Send + Sync {
         false
     }
     /// `pcm` is 16 kHz mono; `progress` receives 0.0..=1.0 as the model works.
+    /// Loads the model into memory ahead of the first [`Transcriber::transcribe`].
+    fn load(&self) -> Result<(), String> {
+        Ok(())
+    }
     fn transcribe(&self, pcm: &[f32], progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String>;
     /// The language the model heard, when it knows.
     fn language(&self) -> Option<String> {

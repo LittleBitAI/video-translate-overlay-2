@@ -39,6 +39,11 @@
    "kind": "link"
   },
   {
+   "a": "docs/design/backend.md",
+   "b": "docs/design/transcription-speed.md",
+   "kind": "link"
+  },
+  {
    "a": "docs/design/download-speed.md",
    "b": "docs/evidence/download-speed/README.md",
    "kind": "link"
@@ -71,6 +76,11 @@
   {
    "a": "docs/design/local-network-sync.md",
    "b": "docs/design/google-auth-setup.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/design/transcription-speed.md",
+   "b": "docs/evidence/transcription-speed/README.md",
    "kind": "link"
   },
   {
@@ -180,8 +190,8 @@
   "docs/design/library-verification.md"
  ],
  "counts": {
-  "docs": 15,
-  "linked": 10,
+  "docs": 17,
+  "linked": 12,
   "read": 3,
   "orphans": 2,
   "pages": 7,

@@ -87,7 +87,7 @@ fn compare_mobile_models_on_technical_speech() {
         let mut params = WhisperContextParameters::default();
         params.flash_attn(flash);
         let ctx = WhisperContext::new_with_params(&w.path, params).unwrap();
-        *w.state.lock().unwrap() = Some(ctx.create_state().unwrap());
+        *w.state.lock().unwrap() = Some((ctx.create_state().unwrap(), ctx.token_eot()));
         drop(ctx);
         let load_ms = load.elapsed().as_millis();
         let mut runs = Vec::new();

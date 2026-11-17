@@ -38,11 +38,14 @@ if ($Platform -in @('both', 'android')) {
     $signer = Join-Path $tools 'apksigner.bat'
     $align = Join-Path $tools 'zipalign.exe'
     $buildLog = Join-Path $output 'android-build.log'
+    $targetRoot = if ($env:CARGO_TARGET_DIR) { $env:CARGO_TARGET_DIR } else { Join-Path $PWD 'target' }
+    # whisper-rs-sys builds whisper.cpp once per target directory and never sees a
+    # changed src-tauri/android/whisper.toolchain.cmake, so a release builds it afresh.
+    Run 'cargo' @('clean', '-p', 'whisper-rs-sys', '--release', '--target', 'aarch64-linux-android')
     & cargo tauri android build --apk --target aarch64 --features app 2>&1 | Tee-Object -FilePath $buildLog
     if ($LASTEXITCODE -ne 0) {
         # Windows without Developer Mode cannot create Tauri's JNI symlink.
         if (!(Select-String -LiteralPath $buildLog -Pattern 'symbolic|symlink|1314' -Quiet)) { throw "Android build failed; see $buildLog" }
-        $targetRoot = if ($env:CARGO_TARGET_DIR) { $env:CARGO_TARGET_DIR } else { Join-Path $PWD 'target' }
         $jni = 'src-tauri/gen/android/app/src/main/jniLibs/arm64-v8a'
         New-Item -ItemType Directory -Force -Path $jni | Out-Null
         Copy-Item -LiteralPath (Join-Path $targetRoot 'aarch64-linux-android/release/libvto.so') -Destination "$jni/libvto.so" -Force
@@ -50,6 +53,9 @@ if ($Platform -in @('both', 'android')) {
         Push-Location src-tauri/gen/android
         try { Run './gradlew.bat' @('assembleArm64Release', '-x', 'rustBuildArm64Release') } finally { Pop-Location }
     }
+    # The speech engine must be the ARMv8.2 dot-product build that cpu_runs_model (src/whisper.rs) admits.
+    $objdump = Join-Path $env:NDK_HOME 'toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-objdump.exe'
+    if (!(& $objdump -d (Join-Path $targetRoot 'aarch64-linux-android/release/libvto.so') | Select-String -Pattern '\bsdot\b' -Quiet)) { throw 'libvto.so lacks the dot-product speech engine' }
     $unsigned = 'src-tauri/gen/android/app/build/outputs/apk/arm64/release/app-arm64-release-unsigned.apk'
     $aligned = Join-Path $output 'aligned.apk'
     Run $align @('-f', '-p', '4', $unsigned, $aligned)

@@ -5,6 +5,10 @@
 
 if("$ENV{TARGET}" MATCHES "^aarch64")
   set(ANDROID_ABI arm64-v8a)
+  # ARMv8.2 dot product and half precision: about 30 % faster inference on a
+  # Galaxy S21+ (docs/design/transcription-speed.md). A phone without them is
+  # refused before the model loads (`cpu_runs_model` in src/whisper.rs).
+  set(GGML_CPU_ARM_ARCH "armv8.2-a+dotprod+fp16" CACHE STRING "" FORCE)
 elseif("$ENV{TARGET}" MATCHES "^x86_64")
   set(ANDROID_ABI x86_64)
 elseif("$ENV{TARGET}" MATCHES "^i686")

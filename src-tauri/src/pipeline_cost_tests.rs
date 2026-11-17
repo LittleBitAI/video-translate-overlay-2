@@ -80,7 +80,7 @@ fn a_resumed_job_over_its_limit_makes_no_more_calls() {
         // An hour's lecture (a 1,000 KRW limit) that has spent 1,450 KRW, cues still untranslated.
         let s = Store::open(&dir.join("app.sqlite3")).unwrap();
         s.create_job("j", "v", "https://a.example/talk", "other", "Talk", 3_600_000, None, "m").unwrap();
-        s.save_region("j", "v", 0, &[(0, 900, "hello".into()), (1000, 1900, "attention".into())]).unwrap();
+        s.save_region("j", "v", 0, &[(0, 900, "hello".into()), (1000, 1900, "attention".into())], None).unwrap();
         s.end_writing("j").unwrap();
         s.add_usage("j", 1, 1, |_, _| 1_450.0).unwrap();
     }

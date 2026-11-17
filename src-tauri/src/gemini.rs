@@ -17,6 +17,19 @@ pub fn cost_krw(input: i64, output: i64) -> f64 {
     (input as f64 * INPUT_USD_PER_MILLION + output as f64 * OUTPUT_USD_PER_MILLION) / 1e6 * KRW_PER_USD
 }
 
+/// The most output tokens (thinking included) one reply may bill. A reply that
+/// loops stops here and still comes back, with its usage, well inside the
+/// 120 s timeout; one that ran past the timeout was billed but never counted.
+/// The glossary, the longest reply, is about 1,000 tokens.
+pub const MAX_OUTPUT_TOKENS: i64 = 4096;
+
+/// The most `order` can cost: no token is shorter than one UTF-8 byte, so the
+/// prompt (system text, the order, a margin for the turn's markers) bills at
+/// most its bytes, and the reply at most [`MAX_OUTPUT_TOKENS`].
+pub fn max_cost_krw(order: &Value) -> f64 {
+    cost_krw((SYSTEM.len() + order.to_string().len() + 64) as i64, MAX_OUTPUT_TOKENS)
+}
+
 pub fn limit_krw(duration_ms: i64) -> f64 {
     duration_ms.max(0) as f64 / 3_600_000.0 * KRW_PER_HOUR
 }
@@ -79,6 +92,7 @@ impl Client {
             "generationConfig": {
                 "responseMimeType": "application/json",
                 "temperature": 0.2,
+                "maxOutputTokens": MAX_OUTPUT_TOKENS,
                 // ponytail: minimal thinking keeps output tokens (billed) low; raise it if quality needs it.
                 "thinkingConfig": {"thinkingLevel": "minimal"}
             }

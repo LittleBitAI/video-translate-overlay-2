@@ -474,14 +474,19 @@ test.each(['retry', 'reopen'])('completed subtitles remain available after retra
   }
 });
 
-test.each([409, 404, 500])('a failed job without readable saved subtitles still offers detection: %i', async (status) => {
+test.each([
+  [409, 'no_speech', '영상에서 말소리를 찾지 못했습니다.'],
+  [404, 'no_speech', '영상에서 말소리를 찾지 못했습니다.'],
+  [500, 'no_speech', '영상에서 말소리를 찾지 못했습니다.'],
+  [409, 'unsupported_cpu', '이 휴대폰의 CPU로는 기기 안에서 말을 글로 옮길 수 없습니다.'],
+])('a failed job without readable saved subtitles still offers detection: %i %s', async (status, reason, why) => {
   const p = makePlayer(MAIN_MS / 1000);
   const backend = fakeBackend((c) => route(c) === 'GET /jobs'
-    ? { status: 200, body: { ...job('failed', 0), failure_reason: 'no_speech' } }
+    ? { status: 200, body: { ...job('failed', 0), failure_reason: reason } }
     : { status, body: { message: 'Subtitles unavailable' } });
   await mountOverlay({ video: p.video, pageUrl: YT, title: TITLE, mediaUrl: null, request: backend.request });
   await subtitlesLoaded(backend);
-  await expect.poll(() => deepAll('[data-vto="status"]')[0]?.textContent).toContain('영상에서 말소리를 찾지 못했습니다.');
+  await expect.poll(() => deepAll('[data-vto="status"]')[0]?.textContent).toContain(why);
   expect(shownSubtitle()).toBe('');
   const detect = deepAll('[data-vto="detect"]')[0] as HTMLButtonElement;
   expect(detect.textContent).toBe('영상감지');

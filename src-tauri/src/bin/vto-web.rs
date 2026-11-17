@@ -138,7 +138,7 @@ mod stand_in {
         fn transcribe(&self, pcm: &[f32], progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String> {
             progress(1.0);
             let text = LINES[self.0.fetch_add(1, Ordering::SeqCst) % LINES.len()].0.to_string();
-            Ok(vec![Segment { start_ms: 0, end_ms: (pcm.len() as i64) * 1000 / 16_000, text }])
+            Ok(vec![Segment { start_ms: 0, end_ms: (pcm.len() as i64) * 1000 / 16_000, text, words: Vec::new() }])
         }
         fn language(&self) -> Option<String> {
             Some("en".into())

@@ -1,0 +1,29 @@
+11-16 21:37:52.264 I/vto     (27474): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 create-resolve ms=134 hint=true ok=true
+11-16 21:37:52.528 I/vto     (27474): job 762e437f-9cf9-423d-b08e-f23ff08ae733 created for zjkBMFhNj_g
+11-16 21:37:52.607 I/vto     (27474): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 resolve ms=0 hint=true reused=true try=0 ok=true
+11-16 21:37:52.615 I/vto     (27474): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 model ms=7 fetched=false
+11-16 21:37:59.480 I/vto     (27474): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 transfer ms=6859 bytes=58064373 try=0 ok=true
+11-16 21:38:03.592 I/vto     (27474): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 decode ms=4108 samples=57403814
+11-16 21:38:03.644 I/vto     (27474): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 vad ms=51 plan=2 regions=140 speech_ms=3532998 from=0
+11-16 21:38:03.902 I/vto     (27474): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 model-load ms=257
+11-16 21:38:09.162 I/vto     (27474): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 region i=0 start_ms=0 audio_ms=29360 ms=5258 segs=5
+11-16 21:38:14.186 I/vto     (27474): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 region i=1 start_ms=29360 audio_ms=27980 ms=5014 segs=8
+11-16 21:38:17.459 I/vto     (27474): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 region i=2 start_ms=57340 audio_ms=28240 ms=3261 segs=13
+11-16 21:38:20.478 I/vto     (27474): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 region i=3 start_ms=85580 audio_ms=23220 ms=3009 segs=3
+11-16 21:43:03.450 I/vto     (27474): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 region i=4 start_ms=109220 audio_ms=28160 ms=282967 segs=8
+11-16 21:43:28.510 I/vto     (27474): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 region i=5 start_ms=137380 audio_ms=29800 ms=25037 segs=8
+11-16 21:43:42.552 I/vto     (27474): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 region i=6 start_ms=167180 audio_ms=22380 ms=14025 segs=9
+11-16 21:43:55.329 I/vto     (27474): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 region i=7 start_ms=190040 audio_ms=13940 ms=12765 segs=3
+11-16 21:44:09.120 I/vto     (27474): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 region i=8 start_ms=204740 audio_ms=22080 ms=13777 segs=7
+11-16 21:44:19.354 I/vto     (31670): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 decode ms=4398 samples=57403814
+11-16 21:44:19.404 I/vto     (31670): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 vad ms=49 plan=2 regions=140 speech_ms=3532998 from=9
+11-16 21:44:19.492 I/vto     (31670): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 model-load ms=88
+11-16 21:44:24.987 I/vto     (31670): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 region i=9 start_ms=227600 audio_ms=28820 ms=5493 segs=8
+11-16 21:44:30.003 I/vto     (31670): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 region i=10 start_ms=256420 audio_ms=28500 ms=5009 segs=6
+11-16 21:44:33.020 I/vto     (31670): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 region i=11 start_ms=285380 audio_ms=22000 ms=3009 segs=3
+11-16 21:49:53.272 I/vto     (31670): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 region i=12 start_ms=308040 audio_ms=29520 ms=320242 segs=5
+11-16 21:50:07.851 I/vto     (31670): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 region i=13 start_ms=337560 audio_ms=26760 ms=14568 segs=8
+11-16 21:50:33.905 I/vto     (31670): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 region i=14 start_ms=364780 audio_ms=28580 ms=26042 segs=4
+11-16 21:50:48.188 I/vto     (31670): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 region i=15 start_ms=393360 audio_ms=29120 ms=14269 segs=11
+11-16 21:51:01.975 I/vto     (31670): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 region i=16 start_ms=422940 audio_ms=25480 ms=13776 segs=5
+11-16 21:51:15.512 I/vto     (31670): timing job 762e437f-9cf9-423d-b08e-f23ff08ae733 region i=17 start_ms=448420 audio_ms=24640 ms=13524 segs=4
