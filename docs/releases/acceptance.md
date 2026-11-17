@@ -213,3 +213,45 @@ The repair audit covered `tests/ui/updates.test.ts`,
 `tests/ui/preferences.test.ts`, and `tests/package-release.test.ps1`. The
 automatic-only race test was folded into the broader table above. The remaining
 tests protect current behavior; there are no obsolete skips or expected failures.
+
+## 0.1.8 publication (2026-11-17)
+
+The user approved publication of the exact 0.1.8 artifacts and notes, and
+[the release is public](https://github.com/LittleBitAI/video-translate-overlay-2/releases/tag/v0.1.8).
+It carries PRs #6–#9: Google-account local-network sharing, ranged audio
+downloads, faster phone transcription and the library rail.
+
+`pwsh -NoProfile -File scripts/package-release.ps1` printed `Prepared 0.1.8 (both)`
+from clean source commit `c5a17222a0f020532530c08d5dcbd145ab8c8305`
+(`dirty: false`), which tag `v0.1.8` points to. Android version code is 1008.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `video-translate-overlay-0.1.8-arm64.apk` | 27905239 | `341a8d6c83d46a7c62d6dcd23fb09b90c35f3478116b1ed844ab037a98ef5cee` |
+| `video-translate-overlay-0.1.8-windows-x64-setup.exe` | 4975579 | `412da1b033903ec72499935b3409f5b7dc754f1ff2fe8be0492badc53620866c` |
+
+The release body is `docs/releases/0.1.8.md`, SHA-256
+`88ba199e225d746e96f64592a00d22fa95625b3598d65df276842a7228374acd`. Android
+signature verification reports certificate SHA-256
+`fa6da2233c2062b48baf20b3562eacacce774da80f2e4bb3d20ec3a6a527ec28`, package
+`dev.vto.overlay`, version name 0.1.8, ABI `arm64-v8a`.
+
+Two earlier invocations failed and were archived under the ignored
+`artifacts/releases-archive/`: the saved JDK path was empty, then the Windows
+`opusic-sys` CMake configure (Ninja generator) failed with the Android
+environment loaded. The same crate built in a clean environment, and the third
+`both` run completed with that build cached.
+
+The repository gate (`npm ci`, `node scripts/contract-tests.mjs
+artifacts/junit.xml`, `npm run test:ui`, `npm run build`) passed at the
+documentation head: 347 JUnit cases with no failure, error or skip, then 74 and
+95 Vitest cases, then the build.
+
+Unauthenticated `GET /repos/LittleBitAI/video-translate-overlay-2/releases`
+showed `v0.1.8` published, not draft or prerelease, with the approval marker,
+`## Features`, and all three assets `uploaded` at the exact URLs from the release
+contract. Both installers downloaded anonymously and matched the hashes above.
+
+Not performed for 0.1.8: isolated older-version native profiles selecting this
+release, either platform's download action, a silent Windows payload
+inspection, and installation on a physical device.
