@@ -4,10 +4,13 @@ import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {call} from '../../../../scripts/verification/library-scenario.mjs';
-const out='artifacts/subtitle-scaling';
+import {sourceBinding, assertClean} from '../../../../scripts/verification/subtitle-binding.mjs';
+import os from 'node:os';
+const out=process.env.SUBTITLE_OUTPUT ?? 'artifacts/subtitle-scaling';
 const head=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
-const receipts={head,at:new Date().toISOString(),native:[],browser:[]};
+assertClean();
+const receipts={head,sourceBinding:sourceBinding(head),at:new Date().toISOString(),environment:{os:os.version(),release:os.release(),node:process.version},native:[],browser:[]};
 async function measure(page,selector) {
  return page.locator(selector).evaluate(sub=>{
   const v=document.querySelector('video'),b=v.getBoundingClientRect(),scale=Math.min(b.width/v.videoWidth,b.height/v.videoHeight);
@@ -42,7 +45,7 @@ try {
  const main=pages().find(p=>p.url().includes('tauri.localhost'));
  receipts.identity=await main.evaluate(()=>({head:window.__WIKI_NATIVE_BUILD_HEAD__,profile:window.__WIKI_NATIVE_PROFILE__,screen:document.querySelector('meta[name="wiki-build-head"]').content}));
  assert.equal(receipts.identity.screen,receipts.identity.head);
- assert.equal(execFileSync('git',['diff','--name-only',receipts.identity.head,head,'--','src','src-tauri','package.json','package-lock.json','vite.config.ts','vite.overlay.config.ts'],{encoding:'utf8'}).trim(),'','Native application inputs match');
+ assert.equal(receipts.identity.head,head,'Native core and collector share the producer revision');
  assert.equal(receipts.identity.profile,sha(`${launch.profile}\\data`),'Disposable native profile');
  receipts.exe={sha256:sha(readFileSync('target/debug/video-translate-overlay.exe'))};
  receipts.ownership=JSON.parse(execFileSync('pwsh',['-NoProfile','-File','scripts/verification/maximized-layout/inspect.ps1','-AppPid',String(launch.pid),'-Port',String(launch.port),'-RootPid',String(launch.pid)],{encoding:'utf8',windowsHide:true}));
@@ -82,12 +85,15 @@ try {
  const page=await browser.newPage();
  const opened=await fetch('http://127.0.0.1:8157/browser/open',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url:'http://127.0.0.1:8159/other.mp4'})});assert.equal(opened.status,200);
  receipts.browserCore=await (await fetch('http://127.0.0.1:8157/build')).json();
- assert.equal(execFileSync('git',['diff','--name-only',receipts.browserCore.head,head,'--','Cargo.toml','Cargo.lock','src-tauri/src','src-tauri/build.rs'],{encoding:'utf8'}).trim(),'','Reused browser core is unchanged');
+ assert.equal(receipts.browserCore.head,head,'Browser core and collector share the producer revision');
+ receipts.browserExe={sha256:sha(readFileSync('target/debug/vto-web.exe'))};
+ receipts.browserOwnership=JSON.parse(execFileSync('pwsh',['-NoProfile','-File','scripts/verification/maximized-layout/inspect.ps1','-AppPid',String(receipts.browserCore.pid),'-Port','8157','-RootPid',String(receipts.browserCore.pid)],{encoding:'utf8',windowsHide:true}));
  const info=await (await fetch('http://127.0.0.1:8157/browser')).json();
  const body=await (await fetch(`http://127.0.0.1:8157/videos/${info.job.video_key}/subtitles`)).json();
  for(const [w,h] of [[1280,720],[1920,1080],[384,854]]) {
   await page.setViewportSize({width:w,height:h});await page.goto('http://127.0.0.1:8157/');
-  assert.equal(await page.locator('meta[name=\"wiki-build-head\"]').getAttribute('content'),receipts.identity.screen,'Browser screen matches native screen');
+  receipts.browserScreen=await page.locator('meta[name=\"wiki-build-head\"]').getAttribute('content');
+  assert.equal(receipts.browserScreen,head,'Browser screen matches producer revision');
   await page.waitForFunction(()=>document.querySelector('video')?.readyState>=2);
   await page.locator('video').evaluate(v=>v.play());await page.waitForTimeout(200);
   await page.locator('video').evaluate(v=>{v.pause();v.currentTime=.5;});

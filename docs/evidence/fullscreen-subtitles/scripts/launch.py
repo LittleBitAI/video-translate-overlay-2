@@ -7,7 +7,7 @@ import sys
 import time
 
 root = Path.cwd()
-out = root / 'artifacts/subtitle-scaling/windows-final'
+out = root / os.environ.get('SUBTITLE_OUTPUT', 'artifacts/subtitle-scaling') / 'windows-final'
 out.mkdir(parents=True, exist_ok=True)
 profile = out / 'profile'
 subprocess.run([sys.executable, 'scripts/verification/seed.py', str(profile / 'data'), '127.0.0.1', '8159'], check=True)
