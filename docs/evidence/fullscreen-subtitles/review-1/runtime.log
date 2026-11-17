@@ -1,0 +1,11 @@
+native/restored-short: 1280x800; 38.4px; cue at 0.50s; fits
+native/fullscreen-short: 1920x1080; 57.6px; cue at 0.50s; fits
+native/fullscreen-long: 1920x1080; 57.6px; cue at 1.50s; fits
+native/seek-back: 1920x1080; 57.6px; cue at 0.60s; fits
+native/letterboxed-long: 1920x1080; 46.08px; cue at 1.60s; fits
+native/exit-long: 1280x800; 38.4px; cue at 1.60s; fits
+native/resized-long: 960x600; 28.8px; cue at 1.60s; fits
+browser/1280x720: 1280x720; 33.4392px; cue at 0.50s; fits
+browser/1920x1080: 1920x1080; 52.6392px; cue at 0.50s; fits
+browser/384x854: 384x854; 14px; cue at 0.50s; fits
+PASS: 7 actual Windows states and 3 browser viewports; saved cues unchanged

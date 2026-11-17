@@ -1,0 +1,11 @@
+✔ a historical receipt without recorded source binding is refused (2.6338ms)
+✔ binding accepts identical inputs and refuses changed or incomplete inputs (688.3534ms)
+✔ only the declared output packet, acceptance prose and wiki metadata are excluded (0.2019ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 800.6798

@@ -1,0 +1,635 @@
+   Compiling video-translate-overlay v0.1.8 (C:\Users\dasdk\PycharmProjects\video-translate-overlay-2\src-tauri)
+warning: unexpected `cfg` condition name: `desktop`
+  --> src-tauri\src\screens.rs:26:11
+   |
+26 |     #[cfg(desktop)]
+   |           ^^^^^^^
+   |
+   = help: expected names are: `docsrs`, `feature`, and `test` and 32 more
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(desktop)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(desktop)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition name: `desktop`
+  --> src-tauri\src\screens.rs:15:15
+   |
+15 |         #[cfg(desktop)]
+   |               ^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(desktop)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(desktop)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: method `expires_at` is never used
+  --> src-tauri\src\account.rs:96:19
+   |
+89 | impl DeviceIdentity {
+   | ------------------- method in this implementation
+...
+96 |     pub(crate) fn expires_at(&self) -> i64 {
+   |                   ^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `device`, `proof`, and `platform` are never read
+   --> src-tauri\src\account.rs:179:5
+    |
+175 | pub struct Session {
+    |            ------- fields in this struct
+...
+179 |     device: Option<DeviceKey>,
+    |     ^^^^^^
+180 |     proof: String,
+    |     ^^^^^
+181 |     platform: Platform,
+    |     ^^^^^^^^
+
+warning: method `owns_account` is never used
+   --> src-tauri\src\account.rs:194:19
+    |
+193 | impl LibraryScope {
+    | ----------------- method in this implementation
+194 |     pub(crate) fn owns_account(&self) -> bool { self.session.is_some() }
+    |                   ^^^^^^^^^^^^
+
+warning: methods `device`, `peer_proof`, `cancellation`, and `platform` are never used
+   --> src-tauri\src\account.rs:210:19
+    |
+202 | impl Session {
+    | ------------ methods in this implementation
+...
+210 |     pub(crate) fn device(&self) -> Result<&DeviceKey, AuthError> {
+    |                   ^^^^^^
+...
+215 |     pub(crate) fn peer_proof(&self) -> Result<(&str, Platform), AuthError> {
+    |                   ^^^^^^^^^^
+...
+223 |     pub(crate) fn cancellation(&self) -> Arc<AtomicBool> {
+    |                   ^^^^^^^^^^^^
+...
+226 |     pub(crate) fn platform(&self) -> Platform {
+    |                   ^^^^^^^^
+
+warning: methods `verifier`, `peer_trust`, and `enroll_peer` are never used
+   --> src-tauri\src\account.rs:284:19
+    |
+283 | impl Manager {
+    | ------------ methods in this implementation
+284 |     pub(crate) fn verifier(&self) -> &Verifier {
+    |                   ^^^^^^^^
+...
+646 |     pub(crate) fn peer_trust(
+    |                   ^^^^^^^^^^
+...
+663 |     pub(crate) fn enroll_peer(
+    |                   ^^^^^^^^^^^
+
+warning: method `pending_video_deletions` is never used
+   --> src-tauri\src\library_store.rs:100:19
+    |
+  5 | impl Store {
+    | ---------- method in this implementation
+...
+100 |     pub(crate) fn pending_video_deletions(&self, after: &str) -> R<Vec<String>> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `owns_account` and `project_pending` are never used
+  --> src-tauri\src\library_scope.rs:95:19
+   |
+94 | impl Library<'_> {
+   | ---------------- methods in this implementation
+95 |     pub(crate) fn owns_account(&self) -> bool { self.scope.owns_account() }
+   |                   ^^^^^^^^^^^^
+...
+99 |     pub(crate) fn project_pending(&self) -> Result<usize, ApiError> {
+   |                   ^^^^^^^^^^^^^^^
+
+warning: methods `peer_expiry` and `trust_peer` are never used
+   --> src-tauri\src\sync.rs:390:19
+    |
+343 | impl Journal {
+    | ------------ methods in this implementation
+...
+390 |     pub(crate) fn peer_expiry(&self,certificate:&str)->Result<Option<i64>> {
+    |                   ^^^^^^^^^^^
+...
+394 |     pub(crate) fn trust_peer(&self,certificate:&str,expires_at:i64)->Result<()> {
+    |                   ^^^^^^^^^^
+
+warning: function `server_name` is never used
+   --> src-tauri\src\sync_tls.rs:124:15
+    |
+124 | pub(crate) fn server_name() -> ServerName<'static> {
+    |               ^^^^^^^^^^^
+
+warning: struct `PeerCertificate` is never constructed
+   --> src-tauri\src\sync_tls.rs:137:19
+    |
+137 | pub(crate) struct PeerCertificate {
+    |                   ^^^^^^^^^^^^^^^
+
+warning: struct `PeerIdentity` is never constructed
+   --> src-tauri\src\sync_tls.rs:141:19
+    |
+141 | pub(crate) struct PeerIdentity {
+    |                   ^^^^^^^^^^^^
+
+warning: methods `subject`, `certificate`, `expires_at`, and `require_fresh` are never used
+   --> src-tauri\src\sync_tls.rs:147:12
+    |
+146 | impl PeerIdentity {
+    | ----------------- methods in this implementation
+147 |     pub fn subject(&self) -> &str {
+    |            ^^^^^^^
+...
+150 |     pub fn certificate(&self) -> &str {
+    |            ^^^^^^^^^^^
+...
+153 |     pub fn expires_at(&self) -> i64 {
+    |            ^^^^^^^^^^
+...
+156 |     pub fn require_fresh(&self) -> Result<(), AuthError> {
+    |            ^^^^^^^^^^^^^
+
+warning: associated items `fingerprint`, `expires_at`, `from_tls`, and `verify_google` are never used
+   --> src-tauri\src\sync_tls.rs:172:12
+    |
+171 | impl PeerCertificate {
+    | -------------------- associated items in this implementation
+172 |     pub fn fingerprint(&self) -> &str {
+    |            ^^^^^^^^^^^
+...
+175 |     pub fn expires_at(&self) -> i64 {
+    |            ^^^^^^^^^^
+...
+178 |     pub fn from_tls(tls: &CommonState) -> Result<Self, AuthError> {
+    |            ^^^^^^^^
+...
+195 |     pub fn verify_google(
+    |            ^^^^^^^^^^^^^
+
+warning: constant `CONTROL_LIMIT` is never used
+  --> src-tauri\src\sync_channel.rs:20:7
+   |
+20 | const CONTROL_LIMIT: usize = 16 * 1024;
+   |       ^^^^^^^^^^^^^
+
+warning: constant `PAGE_LIMIT` is never used
+  --> src-tauri\src\sync_channel.rs:21:7
+   |
+21 | const PAGE_LIMIT: usize = MAX_PAGE_BYTES + 1024;
+   |       ^^^^^^^^^^
+
+warning: constant `HANDSHAKE_TIME` is never used
+  --> src-tauri\src\sync_channel.rs:22:7
+   |
+22 | const HANDSHAKE_TIME: Duration = Duration::from_secs(5);
+   |       ^^^^^^^^^^^^^^
+
+warning: constant `FRAME_TIME` is never used
+  --> src-tauri\src\sync_channel.rs:23:7
+   |
+23 | const FRAME_TIME: Duration = Duration::from_secs(30);
+   |       ^^^^^^^^^^
+
+warning: enum `Failure` is never used
+  --> src-tauri\src\sync_channel.rs:26:17
+   |
+26 | pub(crate) enum Failure {
+   |                 ^^^^^^^
+
+warning: type alias `Result` is never used
+  --> src-tauri\src\sync_channel.rs:36:6
+   |
+36 | type Result<T> = std::result::Result<T, Failure>;
+   |      ^^^^^^
+
+warning: enum `Frame` is never used
+  --> src-tauri\src\sync_channel.rs:40:6
+   |
+40 | enum Frame {
+   |      ^^^^^
+
+warning: struct `DeadlineIo` is never constructed
+  --> src-tauri\src\sync_channel.rs:64:8
+   |
+64 | struct DeadlineIo {
+   |        ^^^^^^^^^^
+
+warning: associated items `new` and `require` are never used
+  --> src-tauri\src\sync_channel.rs:70:8
+   |
+69 | impl DeadlineIo {
+   | --------------- associated items in this implementation
+70 |     fn new(tcp: TcpStream, session: &Session) -> io::Result<Self> {
+   |        ^^^
+...
+79 |     fn require(&self) -> io::Result<()> {
+   |        ^^^^^^^
+
+warning: enum `Tls` is never used
+   --> src-tauri\src\sync_channel.rs:128:6
+    |
+128 | enum Tls {
+    |      ^^^
+
+warning: methods `rearm` and `peer` are never used
+   --> src-tauri\src\sync_channel.rs:133:8
+    |
+132 | impl Tls {
+    | -------- methods in this implementation
+133 |     fn rearm(&mut self, timeout: Duration) {
+    |        ^^^^^
+...
+140 |     fn peer(&self) -> Result<PeerCertificate> {
+    |        ^^^^
+
+warning: function `read` is never used
+   --> src-tauri\src\sync_channel.rs:171:4
+    |
+171 | fn read(stream: &mut impl Read, limit: usize) -> Result<Frame> {
+    |    ^^^^
+
+warning: function `write` is never used
+   --> src-tauri\src\sync_channel.rs:186:4
+    |
+186 | fn write(stream: &mut impl Write, frame: &Frame) -> Result<()> {
+    |    ^^^^^
+
+warning: function `replica_valid` is never used
+   --> src-tauri\src\sync_channel.rs:215:4
+    |
+215 | fn replica_valid(replica: &str) -> bool {
+    |    ^^^^^^^^^^^^^
+
+warning: struct `Channel` is never constructed
+   --> src-tauri\src\sync_channel.rs:224:19
+    |
+224 | pub(crate) struct Channel {
+    |                   ^^^^^^^
+
+warning: multiple associated items are never used
+   --> src-tauri\src\sync_channel.rs:232:12
+    |
+231 | impl Channel {
+    | ------------ associated items in this implementation
+232 |     pub fn client(tcp: TcpStream, session: Arc<Session>, manager: &Manager) -> Result<Self> {
+    |            ^^^^^^
+...
+256 |     pub fn server(tcp: TcpStream, session: Arc<Session>, manager: &Manager) -> Result<Self> {
+    |            ^^^^^^
+...
+279 |     fn read(&mut self, limit: usize) -> Result<Frame> {
+    |        ^^^^
+...
+286 |     fn write(&mut self, frame: Frame) -> Result<()> {
+    |        ^^^^^
+...
+293 |     fn require_current(&self) -> Result<()> {
+    |        ^^^^^^^^^^^^^^^
+...
+303 |     fn remaining(&self) -> Duration {
+    |        ^^^^^^^^^
+...
+312 |     fn send_proof(&mut self, fresh: bool) -> Result<()> {
+    |        ^^^^^^^^^^
+...
+331 |     fn accept_proof(&mut self, manager: &Manager) -> Result<()> {
+    |        ^^^^^^^^^^^^
+...
+362 |     fn authenticate(&mut self, manager: &Manager) -> Result<()> {
+    |        ^^^^^^^^^^^^
+...
+384 |     fn requested_proof(&mut self) -> Result<bool> {
+    |        ^^^^^^^^^^^^^^^
+...
+390 |     fn cursor(&mut self) -> Result<i64> {
+    |        ^^^^^^
+...
+396 |     fn page(&mut self) -> Result<Page> {
+    |        ^^^^
+...
+402 |     fn outgoing(&self, manager: &Manager, after: i64) -> Result<Page> {
+    |        ^^^^^^^^
+...
+408 |     fn receive(&self, manager: &Manager, page: &Page) -> Result<bool> {
+    |        ^^^^^^^
+...
+416 |     fn saved_cursor(&self, manager: &Manager) -> Result<i64> {
+    |        ^^^^^^^^^^^^
+...
+423 |     pub fn exchange(&mut self, manager: &Manager) -> Result<bool> {
+    |            ^^^^^^^^
+
+warning: constant `SERVICE` is never used
+  --> src-tauri\src\sync_discovery.rs:11:18
+   |
+11 | pub(crate) const SERVICE: &str = "_vto-sync._tcp.local.";
+   |                  ^^^^^^^
+
+warning: constant `MAX_INTERFACES` is never used
+  --> src-tauri\src\sync_discovery.rs:12:7
+   |
+12 | const MAX_INTERFACES: usize = 16;
+   |       ^^^^^^^^^^^^^^
+
+warning: constant `MAX_ENDPOINTS` is never used
+  --> src-tauri\src\sync_discovery.rs:13:7
+   |
+13 | const MAX_ENDPOINTS: usize = 32;
+   |       ^^^^^^^^^^^^^
+
+warning: enum `Failure` is never used
+  --> src-tauri\src\sync_discovery.rs:16:17
+   |
+16 | pub(crate) enum Failure {
+   |                 ^^^^^^^
+
+warning: type alias `Result` is never used
+  --> src-tauri\src\sync_discovery.rs:23:6
+   |
+23 | type Result<T> = std::result::Result<T, Failure>;
+   |      ^^^^^^
+
+warning: struct `Network` is never constructed
+  --> src-tauri\src\sync_discovery.rs:26:19
+   |
+26 | pub(crate) struct Network {
+   |                   ^^^^^^^
+
+warning: function `private` is never used
+  --> src-tauri\src\sync_discovery.rs:31:4
+   |
+31 | fn private(ip: IpAddr) -> bool {
+   |    ^^^^^^^
+
+warning: associated items `current`, `bind_address`, `connect`, and `allows` are never used
+  --> src-tauri\src\sync_discovery.rs:38:12
+   |
+37 | impl Network {
+   | ------------ associated items in this implementation
+38 |     pub fn current() -> Result<Vec<Self>> {
+   |            ^^^^^^^
+...
+43 |     pub fn bind_address(&self, port: u16) -> SocketAddr {
+   |            ^^^^^^^^^^^^
+...
+60 |     pub fn connect(&self, peer: SocketAddr) -> Result<TcpStream> {
+   |            ^^^^^^^
+...
+75 |     pub fn allows(&self, peer: SocketAddr) -> bool {
+   |            ^^^^^^
+
+warning: function `select_networks` is never used
+  --> src-tauri\src\sync_discovery.rs:99:4
+   |
+99 | fn select_networks(interfaces: Vec<if_addrs::Interface>) -> Result<Vec<Network>> {
+   |    ^^^^^^^^^^^^^^^
+
+warning: struct `Listeners` is never constructed
+   --> src-tauri\src\sync_discovery.rs:134:19
+    |
+134 | pub(crate) struct Listeners {
+    |                   ^^^^^^^^^
+
+warning: associated items `bind`, `port`, and `accept` are never used
+   --> src-tauri\src\sync_discovery.rs:139:12
+    |
+138 | impl Listeners {
+    | -------------- associated items in this implementation
+139 |     pub fn bind(networks: &[Network]) -> Result<Self> {
+    |            ^^^^
+...
+161 |     pub fn port(&self) -> u16 {
+    |            ^^^^
+...
+164 |     pub fn accept(&self) -> Result<Option<TcpStream>> {
+    |            ^^^^^^
+
+warning: struct `Discovery` is never constructed
+   --> src-tauri\src\sync_discovery.rs:182:19
+    |
+182 | pub(crate) struct Discovery {
+    |                   ^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src-tauri\src\sync_discovery.rs:191:12
+    |
+190 | impl Discovery {
+    | -------------- associated items in this implementation
+191 |     pub fn new(networks: Vec<Network>) -> Result<Self> {
+    |            ^^^
+...
+196 |     fn from_daemon(daemon: ServiceDaemon, networks: Vec<Network>) -> Result<Self> {
+    |        ^^^^^^^^^^^
+...
+231 |     pub fn advertise(&mut self, port: u16) -> Result<()> {
+    |            ^^^^^^^^^
+...
+240 |     pub fn check(&self) -> Result<()> {
+    |            ^^^^^
+...
+265 |     pub fn next_event(&self) -> Result<Option<ServiceEvent>> {
+    |            ^^^^^^^^^^
+...
+274 |     pub fn endpoints(&self, info: &ResolvedService) -> Vec<SocketAddr> {
+    |            ^^^^^^^^^
+...
+278 |     pub fn close(&mut self) -> Result<()> {
+    |            ^^^^^
+
+warning: function `advertisement` is never used
+   --> src-tauri\src\sync_discovery.rs:320:4
+    |
+320 | fn advertisement(networks: &[Network], port: u16) -> Result<ServiceInfo> {
+    |    ^^^^^^^^^^^^^
+
+warning: function `candidate_addresses` is never used
+   --> src-tauri\src\sync_discovery.rs:342:4
+    |
+342 | fn candidate_addresses(networks: &[Network], info: &ResolvedService) -> Vec<SocketAddr> {
+    |    ^^^^^^^^^^^^^^^^^^^
+
+warning: constant `MAX_CONNECTIONS` is never used
+  --> src-tauri\src\sync_runtime.rs:14:7
+   |
+14 | const MAX_CONNECTIONS: usize = 4;
+   |       ^^^^^^^^^^^^^^^
+
+warning: constant `MAX_PEERS` is never used
+  --> src-tauri\src\sync_runtime.rs:15:7
+   |
+15 | const MAX_PEERS: usize = 16;
+   |       ^^^^^^^^^
+
+warning: constant `POLL` is never used
+  --> src-tauri\src\sync_runtime.rs:16:7
+   |
+16 | const POLL: Duration = Duration::from_millis(100);
+   |       ^^^^
+
+warning: constant `INTERVAL` is never used
+  --> src-tauri\src\sync_runtime.rs:17:7
+   |
+17 | const INTERVAL: Duration = Duration::from_secs(2);
+   |       ^^^^^^^^
+
+warning: multiple variants are never constructed
+  --> src-tauri\src\sync_runtime.rs:22:15
+   |
+21 | pub(crate) enum ConnectionState {
+   |                 --------------- variants in this enum
+22 |     Disabled, SignedOut, AuthenticationRequired, NoPrivateNetwork, DiscoveryUnavailable,
+   |               ^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^
+23 |     ListenerUnavailable, BackgroundPaused, Listening, Searching, Connected, Interrupted,
+   |     ^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^  ^^^^^^^^^  ^^^^^^^^^             ^^^^^^^^^^^
+24 |     AccountMismatch, Rejected, Stopped,
+   |     ^^^^^^^^^^^^^^^  ^^^^^^^^  ^^^^^^^
+   |
+   = note: `ConnectionState` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: method `set` is never used
+  --> src-tauri\src\sync_runtime.rs:41:8
+   |
+37 | impl StatusStore {
+   | ---------------- method in this implementation
+...
+41 |     fn set(&self, generation: u64, state: ConnectionState, success: bool) {
+   |        ^^^
+
+warning: struct `Connections` is never constructed
+  --> src-tauri\src\sync_runtime.rs:52:8
+   |
+52 | struct Connections {
+   |        ^^^^^^^^^^^
+
+warning: methods `reserve`, `close`, and `stop` are never used
+  --> src-tauri\src\sync_runtime.rs:57:8
+   |
+56 | impl Connections {
+   | ---------------- methods in this implementation
+57 |     fn reserve(self: &Arc<Self>, cancelled: Arc<AtomicBool>) -> Option<Slot> {
+   |        ^^^^^^^
+...
+64 |     fn close(&self) {
+   |        ^^^^^
+...
+69 |     fn stop(&self) { self.stopped.store(true, Ordering::Release); self.close(); }
+   |        ^^^^
+
+warning: struct `Slot` is never constructed
+  --> src-tauri\src\sync_runtime.rs:71:8
+   |
+71 | struct Slot {
+   |        ^^^^
+
+warning: methods `current` and `attach` are never used
+  --> src-tauri\src\sync_runtime.rs:77:8
+   |
+76 | impl Slot {
+   | --------- methods in this implementation
+77 |     fn current(&self) -> bool { !self.owner.stopped.load(Ordering::Acquire) && !self.cancelled.load(Ordering::Acquire) }
+   |        ^^^^^^^
+78 |     fn attach(&self, tcp: &TcpStream) -> Result<(), Failure> {
+   |        ^^^^^^
+
+warning: struct `Peer` is never constructed
+  --> src-tauri\src\sync_runtime.rs:91:8
+   |
+91 | struct Peer {
+   |        ^^^^
+
+warning: method `finish` is never used
+  --> src-tauri\src\sync_runtime.rs:99:8
+   |
+98 | impl Peer {
+   | --------- method in this implementation
+99 |     fn finish(&mut self, success: bool) {
+   |        ^^^^^^
+
+warning: struct `Lease` is never constructed
+   --> src-tauri\src\sync_runtime.rs:105:8
+    |
+105 | struct Lease {
+    |        ^^^^^
+
+warning: associated items `new`, `discoveries`, and `incoming` are never used
+   --> src-tauri\src\sync_runtime.rs:117:8
+    |
+116 | impl Lease {
+    | ---------- associated items in this implementation
+117 |     fn new(session: Arc<Session>, networks: Vec<Network>, server: bool, connections: Arc<Connections>) -> Result<Self, ConnectionSt...
+    |        ^^^
+...
+124 |     fn discoveries(&mut self) -> Result<(), ConnectionState> {
+    |        ^^^^^^^^^^^
+...
+142 |     fn incoming(&mut self) -> Result<Option<TcpStream>, ConnectionState> {
+    |        ^^^^^^^^
+
+warning: struct `Outcome` is never constructed
+   --> src-tauri\src\sync_runtime.rs:161:8
+    |
+161 | struct Outcome {
+    |        ^^^^^^^
+
+warning: function `connection` is never used
+   --> src-tauri\src\sync_runtime.rs:167:4
+    |
+167 | fn connection(core: Arc<Core>, session: Arc<Session>, slot: Slot, server: bool, tcp: TcpStream) -> Result<bool, Failure> {
+    |    ^^^^^^^^^^
+
+warning: struct `Runtime` is never constructed
+   --> src-tauri\src\sync_runtime.rs:174:19
+    |
+174 | pub(crate) struct Runtime {
+    |                   ^^^^^^^
+
+warning: associated items `start` and `stop` are never used
+   --> src-tauri\src\sync_runtime.rs:179:12
+    |
+178 | impl Runtime {
+    | ------------ associated items in this implementation
+179 |     pub fn start(core: &Arc<Core>, server: bool) -> Result<Self, String> {
+    |            ^^^^^
+...
+204 |     pub fn stop(&self) -> Option<JoinHandle<()>> {
+    |            ^^^^
+
+warning: function `run` is never used
+   --> src-tauri\src\sync_runtime.rs:213:4
+    |
+213 | fn run(weak: Weak<Core>, connections: Arc<Connections>, status: StatusStore, server: bool, owner: String) {
+    |    ^^^
+
+warning: struct `Cursor` is never constructed
+ --> src-tauri\src\sync_cleanup.rs:6:8
+  |
+6 | struct Cursor { generation: Option<u64>, after: String }
+  |        ^^^^^^
+
+warning: function `once` is never used
+ --> src-tauri\src\sync_cleanup.rs:8:4
+  |
+8 | fn once(core: &Core, cursor: &mut Cursor, stopped: &AtomicBool) -> Result<bool, ApiError> {
+  |    ^^^^
+
+warning: function `run` is never used
+  --> src-tauri\src\sync_cleanup.rs:44:15
+   |
+44 | pub(super) fn run(weak: Weak<Core>, controls: Arc<Connections>) {
+   |               ^^^
+
+warning: linker stdout: C:\Users\dasdk\PycharmProjects\video-translate-overlay-2\target\debug\deps\vto.dll.lib 라이브러리 및 C:\Users\dasdk\PycharmProjects\video-translate-overlay-2\target\debug\deps\vto.dll.exp 개체를 생성하고 있습니다.
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `video-translate-overlay` (lib) generated 69 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 28.04s

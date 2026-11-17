@@ -1,0 +1,12 @@
+{
+  "browser-1280x720.png": "37b9b6ad4c3bfe810c70b2786649ba8c3197b8a7cc3cd824e1ce0d97ab7d459b",
+  "browser-1920x1080.png": "a56b1f7b16faf4af859104884dd822ebda005a2e7301235f7ff7ddc6d28edfe2",
+  "browser-384x854.png": "159d91fbfdd7c2fb2042d490ad373ac8ce4f9d84d3ebfc447d8aa9267fe6bc34",
+  "native-exit-long.png": "84f4ae94ff5d4b15c934b816c8103c1b3260e173d9972c1b9e66e73de7043682",
+  "native-fullscreen-long.png": "a78fa0219c6de2fb9ef0c1c059b60ee9d7b42ef605b42d9eff07886883ce6dc5",
+  "native-fullscreen-short.png": "6120be21cea45ee60644f37e4c4fa13692582aa620ff87358b7849c36399ce1f",
+  "native-letterboxed-long.png": "49168b56ad3bcb35f1851ba9bff09ea99b5b2c16c8ae9bc24c555b4f55170faf",
+  "native-resized-long.png": "5afaed92d65cfecd3bce1760fb04375d4a7b05b7e4ecf74b89f133027f10a5ff",
+  "native-restored-short.png": "5c8766c9f604a80c0db06fa7bec2a03a7da30983eecf97fef5946a2e8a2b5ce2",
+  "native-seek-back.png": "97f7e39caca5e390eb424642b9f9ed93e2272a8f5d22c840cdd2ba1bb4479b1f"
+}

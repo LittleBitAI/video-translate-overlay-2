@@ -1,0 +1,136 @@
+{
+  "at": "2026-11-17T21:44:54.650Z",
+  "reviewedHead": "f09023a34907cdf0af11007613595729c9f385bb",
+  "producerHead": "be8b00b36acd794630d6a3f9d782778d40e9a776",
+  "environment": {
+    "os": "Windows 11 Home",
+    "release": "10.0.26200",
+    "node": "v24.18.0"
+  },
+  "documentIndexValidation": {
+    "name": "test_document_index_matches_current_markdown",
+    "result": "PASS",
+    "documents": 21,
+    "otherEntriesChecked": 20,
+    "fields": [
+      "title",
+      "heads",
+      "chars"
+    ],
+    "target": "docs/evidence/fullscreen-subtitles/README.md",
+    "previousCharacters": 12253,
+    "currentCharacters": 13791,
+    "requiredHeading": "Review round 4: bind the merge-maintenance candidate",
+    "corpusSha256": "79cc56b059e09e3eeec3eaf57d361569e005c2beecc0de8d9bc07371a550fe5e",
+    "markdownSha256": "e8f65bcbc67aa6a9b38c13e92753ba708ad8ba42b8a73ce4da04555760c30c36",
+    "generator": "python C:/Users/dasdk/PycharmProjects/wiki-agent/tool/corpus.py --project C:/Users/dasdk/PycharmProjects/video-translate-overlay-2 --write"
+  },
+  "sourceComparison": {
+    "producer": {
+      "head": "be8b00b36acd794630d6a3f9d782778d40e9a776",
+      "inputTreeSha256": "7abea7747ccdebebd32604bb7cdc5b3b16740648aba80ea7bf2b52a17264860d",
+      "exclusions": [
+        ".wiki/",
+        "docs/evidence/fullscreen-subtitles/review-1/",
+        "docs/evidence/fullscreen-subtitles/README.md"
+      ]
+    },
+    "reviewed": {
+      "head": "f09023a34907cdf0af11007613595729c9f385bb",
+      "inputTreeSha256": "7abea7747ccdebebd32604bb7cdc5b3b16740648aba80ea7bf2b52a17264860d",
+      "exclusions": [
+        ".wiki/",
+        "docs/evidence/fullscreen-subtitles/review-1/",
+        "docs/evidence/fullscreen-subtitles/README.md"
+      ]
+    },
+    "changedIncludedPaths": [],
+    "changedExcludedPaths": [
+      ".wiki/corpus.json",
+      ".wiki/graph.json",
+      "docs/evidence/fullscreen-subtitles/README.md",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/audit-failure.json",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/browser-1280x720.png",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/browser-1920x1080.png",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/browser-384x854.png",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/captures.json",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/focused-binding.log",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/focused-overlay.log",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/focused-screens.log",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/focused.json",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/native-exit-long.png",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/native-fullscreen-long.png",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/native-fullscreen-short.png",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/native-letterboxed-long.png",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/native-resized-long.png",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/native-restored-short.png",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/native-seek-back.png",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/runtime.json",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/runtime.log",
+      "docs/evidence/fullscreen-subtitles/review-1/attempt-1/source-binding.json",
+      "docs/evidence/fullscreen-subtitles/review-1/audit.log",
+      "docs/evidence/fullscreen-subtitles/review-1/binding-reviewed-head.log",
+      "docs/evidence/fullscreen-subtitles/review-1/browser-1280x720.png",
+      "docs/evidence/fullscreen-subtitles/review-1/browser-1920x1080.png",
+      "docs/evidence/fullscreen-subtitles/review-1/browser-384x854.png",
+      "docs/evidence/fullscreen-subtitles/review-1/build-native-final.log",
+      "docs/evidence/fullscreen-subtitles/review-1/build-web-final.log",
+      "docs/evidence/fullscreen-subtitles/review-1/captures.json",
+      "docs/evidence/fullscreen-subtitles/review-1/cleanup.json",
+      "docs/evidence/fullscreen-subtitles/review-1/focused-binding.log",
+      "docs/evidence/fullscreen-subtitles/review-1/focused-overlay.log",
+      "docs/evidence/fullscreen-subtitles/review-1/focused-screens.log",
+      "docs/evidence/fullscreen-subtitles/review-1/focused.json",
+      "docs/evidence/fullscreen-subtitles/review-1/native-exit-long.png",
+      "docs/evidence/fullscreen-subtitles/review-1/native-fullscreen-long.png",
+      "docs/evidence/fullscreen-subtitles/review-1/native-fullscreen-short.png",
+      "docs/evidence/fullscreen-subtitles/review-1/native-letterboxed-long.png",
+      "docs/evidence/fullscreen-subtitles/review-1/native-resized-long.png",
+      "docs/evidence/fullscreen-subtitles/review-1/native-restored-short.png",
+      "docs/evidence/fullscreen-subtitles/review-1/native-seek-back.png",
+      "docs/evidence/fullscreen-subtitles/review-1/reviewed-head.json",
+      "docs/evidence/fullscreen-subtitles/review-1/runtime.json",
+      "docs/evidence/fullscreen-subtitles/review-1/runtime.log",
+      "docs/evidence/fullscreen-subtitles/review-1/source-binding.json"
+    ]
+  },
+  "reused": {
+    "runtime": "runtime.json",
+    "offline": "focused.json",
+    "buildIdentities": {
+      "native": {
+        "head": "be8b00b36acd794630d6a3f9d782778d40e9a776",
+        "profile": "b5504170e048afa64ccaaeae9fe83f256eec2d637f5a7315cee569d253f62b52",
+        "screen": "be8b00b36acd794630d6a3f9d782778d40e9a776"
+      },
+      "browserCore": {
+        "head": "be8b00b36acd794630d6a3f9d782778d40e9a776",
+        "pid": 4196
+      },
+      "browserScreen": "be8b00b36acd794630d6a3f9d782778d40e9a776",
+      "nativeExe": {
+        "sha256": "e6e5578a668f168745f8a5080838348045056d06fdf89e8ef36f708b124c86c4"
+      },
+      "browserExe": {
+        "sha256": "4eddb4486fcd499f67e3e128a4937e1f422cca85fa93f48ac394892d9205b390"
+      }
+    },
+    "reason": "Only the generated document index and declared evidence outputs change in this repair. All application, test, build, fixture and verifier input digests remain identical; runtime scenarios and 84 renderer tests are reused."
+  },
+  "freshChecks": [
+    {
+      "command": "node --test scripts/verification/subtitle-binding.test.mjs",
+      "exitCode": 0,
+      "log": "binding-reviewed-head.log",
+      "sha256": "dba576fc7eab1359ab1158648c523a4600d20eb4098ae5870daca899ef486289",
+      "result": "3 binding tests passed."
+    },
+    {
+      "command": "node scripts/verification/subtitle-evidence-audit.mjs",
+      "exitCode": 0,
+      "log": "audit.log",
+      "sha256": "d2bbcd94602175a202b58827db4e1f251d7ba57e582896af9cd7b28459f45027",
+      "result": "PASS: runtime, API, browser, desktop and offline evidence bound to HEAD f09023a34907cdf0af11007613595729c9f385bb; producer be8b00b36acd794630d6a3f9d782778d40e9a776; 10 capture hashes verified"
+    }
+  ]
+}

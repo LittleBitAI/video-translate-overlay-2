@@ -4,9 +4,41 @@
 import { flushSync, mount, unmount } from 'svelte';
 import { afterEach, expect, onTestFinished, test, vi } from 'vitest';
 import Overlay from '../../src/ui/Overlay.svelte';
+import '../../src/ui/app.css';
+import { page } from 'vitest/browser';
 import { api, calls, text } from './fake';
 
 let shown: ReturnType<typeof mount> | null = null;
+
+test('local subtitles scale with their player and wrap inside a letterboxed image', async () => {
+  await page.viewport(1920, 1080);
+  const cue = '이 강의에서는 트랜스포머의 어텐션 메커니즘이 긴 문맥에서 어떻게 계산량을 줄이는지 차례대로 설명합니다.\n두 번째 줄도 영상 안에 표시합니다.';
+  api(() => [200, {duration_ms: 600000, cues: [{seq: 0, start_ms: 1000, end_ms: 4000, text_ko: cue}]}]);
+  const target = document.body.appendChild(document.createElement('div'));
+  target.style.cssText = 'position:fixed;inset:0 auto auto 0;width:640px;height:360px';
+  const video = target.appendChild(document.createElement('video'));
+  video.style.cssText = 'width:100%;height:100%;object-fit:contain';
+  Object.defineProperty(video, 'videoWidth', {value: 1440});
+  Object.defineProperty(video, 'videoHeight', {value: 1080});
+  shown = mount(Overlay, {target, props: {pageUrl: 'https://talks.example.org/7', video, timeMs: 1500, durationMs: 600000,
+    initial: {stage: 'ready', percent: 100, cost_krw: 3, failure_reason: null, video_key: 'vk'}}});
+  for (const [width, height] of [[640, 360], [1920, 1080], [800, 450], [384, 216]]) {
+    target.style.width = `${width}px`; target.style.height = `${height}px`;
+    await vi.waitFor(() => {
+      const sub = target.querySelector<HTMLElement>('[data-feature="watch-subtitles"]')!;
+      expect(sub.textContent?.trim()).toBe(cue);
+      const imageWidth = height * 4 / 3;
+      expect(parseFloat(getComputedStyle(sub).fontSize)).toBeCloseTo(Math.max(14, imageWidth * 0.03), 1);
+      const r = sub.getBoundingClientRect();
+      expect(r.left).toBeGreaterThanOrEqual((width - imageWidth) / 2);
+      expect(r.right).toBeLessThanOrEqual((width + imageWidth) / 2);
+      expect(r.top).toBeGreaterThanOrEqual(target.querySelector('[data-feature="detect-video"]')!.getBoundingClientRect().bottom);
+      expect(r.bottom).toBeLessThanOrEqual(height - Math.max(48, height * 0.1));
+      expect(sub.scrollWidth).toBeLessThanOrEqual(sub.clientWidth + 1);
+      expect(sub.scrollHeight).toBeLessThanOrEqual(sub.clientHeight + 1);
+    });
+  }
+});
 
 const deletionCases = ['native', 'broadcast'].flatMap(source => ['ready', 'failed'].map(stage => ({source, stage})));
 function deletedVideo(source: string, key: string) {

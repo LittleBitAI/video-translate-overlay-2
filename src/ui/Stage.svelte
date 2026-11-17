@@ -135,5 +135,5 @@
     {/if}
   </div>
 
-  <Overlay pageUrl={url} {title} mediaUrl={shown.kind === 'video' ? url : null} {timeMs} {durationMs} {prepare} remote={inApp()} initial={job} />
+  <Overlay pageUrl={url} {title} mediaUrl={shown.kind === 'video' ? url : null} {timeMs} {durationMs} {video} {prepare} remote={inApp()} initial={job} />
 </div>

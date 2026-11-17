@@ -1,0 +1,9 @@
+오전 12:13:39 [vite-plugin-svelte] no Svelte config found at C:/Users/dasdk/PycharmProjects/video-translate-overlay-2 - using default configuration.
+
+ RUN  v5.1.0 C:/Users/dasdk/PycharmProjects/video-translate-overlay-2
+
+
+ Test Files  2 passed (2)
+      Tests  41 passed (41)
+   Start at  00:13:39
+   Duration  11.82s (tests 92%, worker 7%, import 1%)

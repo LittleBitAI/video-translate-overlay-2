@@ -1,0 +1,13 @@
+오전 12:08:54 [vite-plugin-svelte] no Svelte config found at C:/Users/dasdk/PycharmProjects/video-translate-overlay-2 - using default configuration.
+
+ RUN  v5.1.0 C:/Users/dasdk/PycharmProjects/video-translate-overlay-2
+
+
+ Test Files  2 passed (2)
+      Tests  41 passed (41)
+   Start at  00:08:54
+   Duration  12.14s (tests 91%, worker 7%, import 2%)
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./vite.config" without a file extension (vitest.ui.config.ts:5:17). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.

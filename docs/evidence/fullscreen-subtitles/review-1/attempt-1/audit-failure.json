@@ -1,0 +1,8 @@
+{
+  "producer": "aafbc96585292a104b3c9e5d78dda66d403ece90",
+  "command": "node scripts/verification/subtitle-evidence-audit.mjs",
+  "exitCode": 1,
+  "observed": "TypeError: owner.listeners.every is not a function",
+  "reason": "PowerShell emitted one loopback listener as a scalar string, while the new audit expected an array.",
+  "repair": "Normalize scalar and array listener reports before comparing with the one allowed loopback address."
+}

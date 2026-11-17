@@ -24,6 +24,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import { findCue, type Cue } from '../overlay/index';
+  import { videoArea, SUBTITLE_SIZE } from '../overlay/geometry';
   import { request, won } from './api';
   import Link from './Link.svelte';
 
@@ -35,6 +36,7 @@
     /** Where the stage's player is and how long it plays, in ms (0: not known yet). */
     timeMs?: number;
     durationMs?: number;
+    video?: HTMLVideoElement;
     /** Loads the player when it is not yet, and gives its length (0 when it cannot). */
     prepare?: () => Promise<number>;
     /** In the app 영상감지 is on the site's own overlay; this one only follows the job. */
@@ -42,7 +44,35 @@
     /** The page's job as P9 gave it (`null`: none yet); left out, P7 is asked. */
     initial?: Job | null;
   };
-  let { pageUrl, title = '', mediaUrl = null, timeMs = 0, durationMs = 0, prepare, remote = false, initial }: Props = $props();
+  let { pageUrl, title = '', mediaUrl = null, timeMs = 0, durationMs = 0, video, prepare, remote = false, initial }: Props = $props();
+
+  let overlay = $state<HTMLDivElement>();
+  $effect(() => {
+    const node = overlay;
+    const player = video;
+    if (!node?.parentElement) return;
+    const parent = node.parentElement;
+    const place = () => {
+      const box = parent.getBoundingClientRect();
+      const area = player ? videoArea(player) : new DOMRect(box.left, box.top, box.width, box.width * 9 / 16);
+      node.style.cssText = `left:${area.left - box.left}px;top:${area.top - box.top}px;width:${area.width}px;height:${area.height}px;--w:${area.width}px;--h:${area.height}px`;
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(parent);
+    if (player) observer.observe(player);
+    player?.addEventListener('loadedmetadata', place);
+    player?.addEventListener('resize', place);
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      observer.disconnect();
+      player?.removeEventListener('loadedmetadata', place);
+      player?.removeEventListener('resize', place);
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  });
 
   const POLL_MS = 1_000;
   /** A player length this far from the lecture's is an ad's. */
@@ -190,7 +220,7 @@
   const label = 'text-sm text-ink/60';
   const value = 'font-semibold text-ink';
   /** The subtitle line: a dark band and a shadow, so it reads over a bright scene too. */
-  const line = 'mx-auto mb-2 max-w-full rounded-md bg-black/60 px-3 py-1 text-center [text-shadow:0_0_4px_rgb(0_0_0/0.9),0_1px_2px_#000] sm:mb-[6%]';
+  const line = 'mx-auto mb-[max(48px,calc(var(--h)*0.1))] max-w-full rounded-md bg-black/60 px-3 py-1 text-center whitespace-pre-wrap wrap-anywhere [text-shadow:0_0_4px_rgb(0_0_0/0.9),0_1px_2px_#000]';
   /** A button in a notice: 44 px high, so a thumb finds it. */
   const action = 'pointer-events-auto mt-2 inline-flex min-h-11 items-center rounded-lg px-4';
   onDestroy(() => {
@@ -252,7 +282,7 @@
   {/if}
 {/snippet}
 
-<div class="pointer-events-none absolute inset-x-0 top-0 flex aspect-video flex-col justify-between gap-2 p-2">
+<div bind:this={overlay} class="pointer-events-none absolute top-0 flex aspect-video flex-col justify-between gap-2 p-2">
   <div class="flex items-start justify-end gap-2 sm:justify-between">
     <div class="hidden min-w-0 sm:block sm:max-w-[70%]">{@render panel()}</div>
 
@@ -275,7 +305,7 @@
   </div>
 
   {#if cue}
-    <p data-feature="watch-subtitles" class="{line} text-base text-ink sm:text-lg lg:text-2xl">
+    <p data-feature="watch-subtitles" class="{line} text-ink" style:font-size={SUBTITLE_SIZE} style:line-height="1.4">
       {cue.text_ko}
     </p>
   {:else if !ready && look === 'done' && subs === 'none'}

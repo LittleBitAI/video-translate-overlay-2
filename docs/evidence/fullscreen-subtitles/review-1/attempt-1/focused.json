@@ -1,0 +1,33 @@
+{
+  "at": "2026-11-17T15:09:06.936Z",
+  "sourceBinding": {
+    "head": "aafbc96585292a104b3c9e5d78dda66d403ece90",
+    "inputTreeSha256": "84bfab9add47704ac9dca9fee625a72c3f4b5911dc812f8812f12e5dd6b91c1c",
+    "exclusions": [
+      ".wiki/",
+      "docs/evidence/fullscreen-subtitles/review-1/",
+      "docs/evidence/fullscreen-subtitles/README.md"
+    ]
+  },
+  "node": "v24.18.0",
+  "results": [
+    {
+      "command": "node --test scripts/verification/subtitle-binding.test.mjs",
+      "exitCode": 0,
+      "log": "focused-binding.log",
+      "sha256": "6147ac95924c84fccc705788d26f4d43fffa1dc4bf056249c3a14f8d8a69bb12"
+    },
+    {
+      "command": "node node_modules/vitest/vitest.mjs run tests/overlay/overlay.test.ts tests/overlay/placement.test.ts tests/overlay/frames.test.ts tests/overlay/hidden_mount.test.ts tests/overlay/trusted_types.test.ts",
+      "exitCode": 0,
+      "log": "focused-overlay.log",
+      "sha256": "3522e4d5442be53bc88c8f0414933f240b9624fe17b240c3807ee09f7abe27c4"
+    },
+    {
+      "command": "node node_modules/vitest/vitest.mjs run -c vitest.ui.config.ts tests/ui/subtitles.test.svelte.ts tests/ui/watch.test.ts",
+      "exitCode": 0,
+      "log": "focused-screens.log",
+      "sha256": "7863611825bb1aefba7c58385ee91773b8d6272dbb0af941a52c46fdd9d8a77e"
+    }
+  ]
+}

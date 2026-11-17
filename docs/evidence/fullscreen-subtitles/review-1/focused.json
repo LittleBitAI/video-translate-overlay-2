@@ -1,0 +1,36 @@
+{
+  "at": "2026-11-17T15:13:51.546Z",
+  "sourceBinding": {
+    "head": "be8b00b36acd794630d6a3f9d782778d40e9a776",
+    "inputTreeSha256": "7abea7747ccdebebd32604bb7cdc5b3b16740648aba80ea7bf2b52a17264860d",
+    "exclusions": [
+      ".wiki/",
+      "docs/evidence/fullscreen-subtitles/review-1/",
+      "docs/evidence/fullscreen-subtitles/README.md"
+    ]
+  },
+  "node": "v24.18.0",
+  "results": [
+    {
+      "command": "node --test scripts/verification/subtitle-binding.test.mjs",
+      "log": "focused-binding.log",
+      "sha256": "06a25bbbac23ebe46f86d432e4344235b4fee136492277d379c5736bf49daee4",
+      "exitCode": 0
+    },
+    {
+      "command": "node node_modules/vitest/vitest.mjs run tests/overlay/overlay.test.ts tests/overlay/placement.test.ts tests/overlay/frames.test.ts tests/overlay/hidden_mount.test.ts tests/overlay/trusted_types.test.ts",
+      "log": "focused-overlay.log",
+      "sha256": "a9684047ca5529cd1d5a361b9d2618606c5189e6cac6d6cad8b7a69371d4efe2",
+      "exitCode": 0
+    },
+    {
+      "command": "node node_modules/vitest/vitest.mjs run -c vitest.ui.config.ts tests/ui/subtitles.test.svelte.ts tests/ui/watch.test.ts",
+      "log": "focused-screens.log",
+      "sha256": "38cd727459cd42979c4c312257b03ba8f82744c327e69bccc63cc628ca348525",
+      "exitCode": 0,
+      "originalSha256": "4a3cb15d1e06f10d5304296a940d7cac6e3a7dd404f0737e4ac6916303b81d37",
+      "originalRevision": "3ee4aca6e0fa4dfad1d92ba2c2d4e48369279545",
+      "normalization": "Removed trailing blank lines and retained one final LF; test output and exit status are unchanged."
+    }
+  ]
+}

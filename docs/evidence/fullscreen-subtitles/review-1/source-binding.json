@@ -1,0 +1,43 @@
+{
+  "reviewedHead": "f09023a34907cdf0af11007613595729c9f385bb",
+  "producerHead": "be8b00b36acd794630d6a3f9d782778d40e9a776",
+  "runtimeReuse": true,
+  "offlineReuse": true,
+  "acceptanceReuse": {
+    "sourceApplicationHead": "aedada2c3e6c1aef9470359ca59c18a9b126b2d9",
+    "acceptedAt": "2026-11-17",
+    "decision": "Accept readability (Recommended)",
+    "comparedPaths": [
+      "src",
+      "src-tauri",
+      "tests",
+      "Cargo.toml",
+      "Cargo.lock",
+      "package.json",
+      "package-lock.json",
+      "vite.config.ts",
+      "vite.overlay.config.ts",
+      "vitest.config.ts",
+      "vitest.ui.config.ts"
+    ],
+    "changedPaths": [],
+    "reason": "Application and existing subtitle tests are unchanged; only verification producers and evidence binding were repaired."
+  },
+  "ownerReports": [
+    {
+      "owner": "wiki-agent server",
+      "revision": "f68351a35fb9baf9df48debe1634e19f954807cc",
+      "result": "gate passed",
+      "source": "User message before PR summary",
+      "reusedForRepair": false
+    }
+  ],
+  "finalVerification": "Pending server-owned hosted CI; no final verification dispatched or retried by implementation.",
+  "previousReviewedHeads": [
+    "f68351a35fb9baf9df48debe1634e19f954807cc",
+    "8e53d39bf066e0c92d8011f351a5ac46115dcd00",
+    "31b5d9ebe5fb26005909b520e3513aff5751cf41"
+  ],
+  "reuseValidation": "reviewed-head.json",
+  "reuseReason": "Only the generated document index and declared evidence outputs change in this repair. All application, test, build, fixture and verifier input digests remain identical; runtime scenarios and 84 renderer tests are reused."
+}

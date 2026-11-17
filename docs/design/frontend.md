@@ -27,8 +27,7 @@ The desktop menu and all three pages start at the same 16 px inset. The page
 containers no longer have separate centered maximum widths. The library keeps
 the established rail, grid and phone accordion; extra desktop width adds grid
 columns. The video stage keeps its 16:9 ratio and fits the height below its actual
-position, including address errors and ready notices above it, without changing
-the overlay's subtitle sizing. Desktop fitting rechecks after content and window
+position, including address errors and ready notices above it. Desktop fitting rechecks after content and window
 resizes; the narrow-screen layout remains unchanged.
 
 Settings is reconstructed at 1920×1080 with no overall width cap. Gemini setup
@@ -42,6 +41,18 @@ native opener and retryable error. Below 1024 px the tasks stack, preserving
 their controls and confirmations. The palette and shared navigation are
 unchanged. Earlier card, flat-row and capped hierarchy revisions were rejected;
 their captures are historical, not accepted final designs.
+
+### Automatic subtitle sizing
+
+The injected site overlay and the local screen overlay size subtitles from the
+visible video image, excluding letterboxing and the portion outside the viewport.
+The reading size is 3% of that width, limited to 5.5% of its height, with a 14 px
+minimum. A 1920×1080 image therefore uses 57.6 px text instead of the former
+26 px injected ceiling. Restoring or resizing the player recalculates the size.
+Korean words wrap, explicit newlines remain, and the bottom clearance is 10% of
+image height with a 48 px minimum to leave player controls accessible. Cue
+selection still uses the player's source clock; sizing never edits subtitles or
+their timestamps.
 
 ## 기능을 둔 자리
 
