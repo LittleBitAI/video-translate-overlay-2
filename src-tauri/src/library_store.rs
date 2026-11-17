@@ -182,8 +182,9 @@ impl Store {
             };
             let mut ids = rows.iter().map(|r| r[0].text()).collect::<Vec<_>>();
             let from = ids.iter().position(|v| v == key.unwrap_or(id)).ok_or("missing item")?;
-            // Any step, clamped at the ends; the items between shift by one place.
-            let to = (from as i64 + delta).clamp(0, ids.len() as i64 - 1) as usize;
+            // Any step, clamped at the ends; the items between shift by one place. Saturating, so a
+            // delta near the i64 limits lands at an end instead of wrapping or panicking.
+            let to = (from as i64).saturating_add(delta).clamp(0, ids.len() as i64 - 1) as usize;
             let moved = ids.remove(from);
             ids.insert(to, moved);
             for (i, value) in ids.iter().enumerate() {
