@@ -228,6 +228,7 @@ this packet; those results belong to the server owner.
 | `review-1/windows/receipt.json` | 39 native API calls, 46 expected/observed assertions, listener/process ownership, actual window states, geometry and screenshots |
 | `review-1/windows/build-inputs.json` | Native collector revision, environment and tracked input blob inventory |
 | `review-1/focused-tests.json` and `.log` | Committed source identity, environment, command, exit status and final focused test totals |
+| `review-1/audit.json` and `.log` | Read-only validation of 129 retained assertions, exact producer inventories, host sources and the revision-binding property |
 | `review-1/cleanup.json` | Exit of the owned native tree and release of both test listeners |
 
 The API assertions cover a fresh empty library, playlist creation, 36 retained
