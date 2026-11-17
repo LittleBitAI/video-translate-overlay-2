@@ -2,6 +2,8 @@
 // YouTube account screen, 영상감지 and its refusals, and a job's progress to
 // its ready subtitles.
 import { expect, test, vi } from 'vitest';
+import { page } from 'vitest/browser';
+import '../../src/ui/app.css';
 import { $, api, button, calls, features, open, text, type } from './fake';
 
 const YT = 'https://www.youtube.com/watch?v=kCc8FmEb1nY';
@@ -60,7 +62,15 @@ test('error: a failed P9 says so and loads again', async () => {
   await vi.waitFor(() => expect(text(s1)).toContain('영상 주소를 넣으면 여기에서 열립니다'));
 });
 
-test('an address that cannot be opened is told under the address bar; one that can opens with 영상감지 over it', async () => {
+test.each([
+  [1280, 720, ''],
+  [1280, 720, 'Saved subtitles are ready.'],
+  [768, 720, 'Saved subtitles are ready. '.repeat(8)],
+  [1920, 1080, 'Saved subtitles are ready.'],
+  [2560, 1440, 'Saved subtitles are ready.'],
+  [384, 854, 'Saved subtitles are ready.'],
+] as const)('at %i px a rejected address retains the player and keeps its frame visible below messages', async (width, height, notice) => {
+  await page.viewport(width, height);
   let opened: string | null = null;
   api((c) => {
     if (c.path === '/browser') return [200, { url: opened, job: null }];
@@ -72,7 +82,7 @@ test('an address that cannot be opened is told under the address bar; one that c
   });
   const s1 = open('/');
   await vi.waitFor(() => expect(text(s1)).toContain('여기에서 열립니다'));
-  type($(s1, '#address'), 'javascript:alert(1)');
+  type($(s1, '#address'), 'file:///outside/target.mp4');
   button(s1, '열기').click();
   await vi.waitFor(() => expect(text($(s1, '#address-error')!)).toContain('열 수 없는 주소입니다'));
 
@@ -86,6 +96,17 @@ test('an address that cannot be opened is told under the address bar; one that c
   expect(text($(s1, '[data-feature="watch-subtitles"]')!)).toBe('한국어 자막이 여기에 뜹니다');
   // P9 again after P1: the page's job comes with it, so P7 is not asked for a page that has none.
   expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual(['GET /browser', 'POST /browser/open', 'POST /browser/open', 'GET /browser']);
+  if (notice) (window as any).vtoReady({text:notice, url:FILE});
+  type($(s1, '#address'), 'file:///outside/target.mp4');
+  button(s1, '열기').click();
+  await vi.waitFor(() => expect($(s1, '#address-error')).not.toBeNull());
+  expect($(s1, 'video')?.getAttribute('src')).toBe(FILE);
+  await vi.waitFor(() => {
+    const frame = $(s1, 'video')!.getBoundingClientRect();
+    expect(frame.width / frame.height).toBeCloseTo(16 / 9, 1);
+    expect(frame.bottom).toBeLessThanOrEqual(height);
+    expect(frame.right).toBeLessThanOrEqual(width);
+  });
 });
 
 test("YouTube's first open shows Google's account screen, and it can be skipped", async () => {

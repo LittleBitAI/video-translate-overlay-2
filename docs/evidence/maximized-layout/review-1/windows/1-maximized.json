@@ -1,0 +1,379 @@
+[
+  {
+    "name": "video",
+    "viewport": [
+      1920,
+      1017
+    ],
+    "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+    "coreHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+    "profile": "aff63f2331eb0297aead839b1d69e562f04274e0111f7067230786244761273f",
+    "scrollWidth": 1905,
+    "scrollHeight": 1017,
+    "nav": {
+      "x": 16,
+      "y": 0,
+      "width": 208,
+      "height": 60,
+      "right": 224,
+      "bottom": 60
+    },
+    "main": {
+      "x": 0,
+      "y": 61,
+      "width": 1905,
+      "height": 955.984375,
+      "right": 1905,
+      "bottom": 1016.984375
+    },
+    "content": {
+      "x": 16,
+      "y": 77,
+      "width": 1642.65625,
+      "height": 923.984375,
+      "right": 1658.65625,
+      "bottom": 1000.984375
+    },
+    "stage": {
+      "x": 16,
+      "y": 77,
+      "width": 1642.65625,
+      "height": 923.984375,
+      "right": 1658.65625,
+      "bottom": 1000.984375
+    },
+    "firstCard": null,
+    "columns": 0,
+    "rail": null,
+    "account": null,
+    "keyCard": null,
+    "key": null,
+    "settingsGroups": [],
+    "footer": null,
+    "keyForm": null,
+    "workspace": null,
+    "keyRemove": null,
+    "youtubeLogout": null,
+    "youtubeSection": null,
+    "update": null,
+    "privacyInFooter": false,
+    "navItems": [
+      {
+        "text": "영상",
+        "href": "/",
+        "current": "page"
+      },
+      {
+        "text": "보관함",
+        "href": "/library",
+        "current": null
+      },
+      {
+        "text": "설정",
+        "href": "/preferences",
+        "current": null
+      }
+    ],
+    "screenshot": "1-maximized-video.png",
+    "scroll": {
+      "y": 0,
+      "max": 0,
+      "width": 1905
+    }
+  },
+  {
+    "name": "library",
+    "viewport": [
+      1920,
+      1017
+    ],
+    "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+    "coreHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+    "profile": "aff63f2331eb0297aead839b1d69e562f04274e0111f7067230786244761273f",
+    "scrollWidth": 1905,
+    "scrollHeight": 1549,
+    "nav": {
+      "x": 16,
+      "y": 0,
+      "width": 208,
+      "height": 60,
+      "right": 224,
+      "bottom": 60
+    },
+    "main": {
+      "x": 0,
+      "y": 61,
+      "width": 1905,
+      "height": 1487.6875,
+      "right": 1905,
+      "bottom": 1548.6875
+    },
+    "content": {
+      "x": 16,
+      "y": 77,
+      "width": 1873,
+      "height": 1455.6875,
+      "right": 1889,
+      "bottom": 1532.6875
+    },
+    "stage": null,
+    "firstCard": {
+      "x": 296,
+      "y": 137,
+      "width": 213.84375,
+      "height": 219.28125,
+      "right": 509.84375,
+      "bottom": 356.28125
+    },
+    "columns": 7,
+    "rail": {
+      "x": 16,
+      "y": 77,
+      "width": 256,
+      "height": 202,
+      "right": 272,
+      "bottom": 279
+    },
+    "account": null,
+    "keyCard": null,
+    "key": null,
+    "settingsGroups": [],
+    "footer": null,
+    "keyForm": null,
+    "workspace": null,
+    "keyRemove": null,
+    "youtubeLogout": null,
+    "youtubeSection": null,
+    "update": null,
+    "privacyInFooter": false,
+    "navItems": [
+      {
+        "text": "영상",
+        "href": "/",
+        "current": null
+      },
+      {
+        "text": "보관함",
+        "href": "/library",
+        "current": "page"
+      },
+      {
+        "text": "설정",
+        "href": "/preferences",
+        "current": null
+      }
+    ],
+    "screenshot": "1-maximized-library.png",
+    "scroll": {
+      "y": 532,
+      "max": 532,
+      "width": 1905
+    }
+  },
+  {
+    "name": "settings",
+    "viewport": [
+      1920,
+      1017
+    ],
+    "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+    "coreHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+    "profile": "aff63f2331eb0297aead839b1d69e562f04274e0111f7067230786244761273f",
+    "scrollWidth": 1905,
+    "scrollHeight": 1017,
+    "nav": {
+      "x": 16,
+      "y": 0,
+      "width": 208,
+      "height": 60,
+      "right": 224,
+      "bottom": 60
+    },
+    "main": {
+      "x": 0,
+      "y": 61,
+      "width": 1905,
+      "height": 956,
+      "right": 1905,
+      "bottom": 1017
+    },
+    "content": {
+      "x": 16,
+      "y": 77,
+      "width": 1873,
+      "height": 44.390625,
+      "right": 1889,
+      "bottom": 121.390625
+    },
+    "stage": null,
+    "firstCard": null,
+    "columns": 0,
+    "rail": null,
+    "account": {
+      "x": 16,
+      "y": 470.390625,
+      "width": 1873,
+      "height": 89,
+      "right": 1889,
+      "bottom": 559.390625
+    },
+    "keyCard": {
+      "x": 16,
+      "y": 145.390625,
+      "width": 924.5,
+      "height": 276,
+      "right": 940.5,
+      "bottom": 421.390625
+    },
+    "key": {
+      "x": 16,
+      "y": 222.390625,
+      "width": 772.5,
+      "height": 44,
+      "right": 788.5,
+      "bottom": 266.390625
+    },
+    "settingsGroups": [
+      {
+        "box": {
+          "x": 16,
+          "y": 145.390625,
+          "width": 924.5,
+          "height": 276,
+          "right": 940.5,
+          "bottom": 421.390625
+        },
+        "heading": {
+          "x": 16,
+          "y": 145.390625,
+          "width": 924.5,
+          "height": 28,
+          "right": 940.5,
+          "bottom": 173.390625
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "radius": "0px"
+      },
+      {
+        "box": {
+          "x": 964.5,
+          "y": 145.390625,
+          "width": 924.5,
+          "height": 276,
+          "right": 1889,
+          "bottom": 421.390625
+        },
+        "heading": {
+          "x": 964.5,
+          "y": 145.390625,
+          "width": 924.5,
+          "height": 28,
+          "right": 1889,
+          "bottom": 173.390625
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "radius": "0px"
+      },
+      {
+        "box": {
+          "x": 16,
+          "y": 470.390625,
+          "width": 1873,
+          "height": 89,
+          "right": 1889,
+          "bottom": 559.390625
+        },
+        "heading": {
+          "x": 16,
+          "y": 470.390625,
+          "width": 924.5,
+          "height": 28,
+          "right": 940.5,
+          "bottom": 498.390625
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "radius": "0px"
+      }
+    ],
+    "footer": {
+      "x": 16,
+      "y": 938,
+      "width": 1873,
+      "height": 63,
+      "right": 1889,
+      "bottom": 1001
+    },
+    "keyForm": {
+      "x": 16,
+      "y": 222.390625,
+      "width": 924.5,
+      "height": 44,
+      "right": 940.5,
+      "bottom": 266.390625
+    },
+    "workspace": {
+      "x": 16,
+      "y": 145.390625,
+      "width": 1873,
+      "height": 414,
+      "right": 1889,
+      "bottom": 559.390625
+    },
+    "keyRemove": {
+      "x": 804.875,
+      "y": 377.390625,
+      "width": 135.625,
+      "height": 44,
+      "right": 940.5,
+      "bottom": 421.390625
+    },
+    "youtubeLogout": {
+      "x": 1129.75,
+      "y": 377.390625,
+      "width": 151.625,
+      "height": 44,
+      "right": 1281.375,
+      "bottom": 421.390625
+    },
+    "youtubeSection": {
+      "x": 964.5,
+      "y": 145.390625,
+      "width": 924.5,
+      "height": 276,
+      "right": 1889,
+      "bottom": 421.390625
+    },
+    "update": {
+      "x": 1753.375,
+      "y": 77.1875,
+      "width": 135.625,
+      "height": 44,
+      "right": 1889,
+      "bottom": 121.1875
+    },
+    "privacyInFooter": true,
+    "navItems": [
+      {
+        "text": "영상",
+        "href": "/",
+        "current": null
+      },
+      {
+        "text": "보관함",
+        "href": "/library",
+        "current": null
+      },
+      {
+        "text": "설정",
+        "href": "/preferences",
+        "current": "page"
+      }
+    ],
+    "screenshot": "1-maximized-settings.png",
+    "scroll": {
+      "y": 0,
+      "max": 0,
+      "width": 1905
+    }
+  }
+]

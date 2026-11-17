@@ -21,6 +21,28 @@ with a blue top bar on the current tab. The current tab carries
 library no longer has its own 영상 열기 link and settings no longer has
 ← 영상으로; on `/`, 영상 열기 still names the button in a ready notice.
 
+### Maximized desktop layout
+
+The desktop menu and all three pages start at the same 16 px inset. The page
+containers no longer have separate centered maximum widths. The library keeps
+the established rail, grid and phone accordion; extra desktop width adds grid
+columns. The video stage keeps its 16:9 ratio and fits the height below its actual
+position, including address errors and ready notices above it, without changing
+the overlay's subtitle sizing. Desktop fitting rechecks after content and window
+resizes; the narrow-screen layout remains unchanged.
+
+Settings is reconstructed at 1920×1080 with no overall width cap. Gemini setup
+and YouTube session controls occupy an equal-height grid row from 1024 px;
+their bottom actions align through flex layout, without fixed blank spacers.
+The key form and removal group can grow to 60 rem. Google app-account sync is
+the next full-width row. Update checking is a prominent 44 px control at the
+header's trailing edge, aligned with the page's right inset. Privacy remains
+in the secondary footer and stays available before sign-in with the same fixed
+native opener and retryable error. Below 1024 px the tasks stack, preserving
+their controls and confirmations. The palette and shared navigation are
+unchanged. Earlier card, flat-row and capped hierarchy revisions were rejected;
+their captures are historical, not accepted final designs.
+
 ## 기능을 둔 자리
 
 | 기능 | 주인이 고른 칸 | 놓인 화면 |
@@ -151,13 +173,17 @@ reopens the video to use that response. It does not start a paid translation.
 The development build's Google app account section is separate from Gemini
 credentials and YouTube sign-in. It shows account identity and native connection
 recovery, confirms sign-out, and preserves local libraries. A 44 px privacy
-control is available before sign-in: native P18 opens only the published policy
+control in the secondary footer is available before sign-in: native P18 opens only the published policy
 in the external browser, while HTTP screens use a normal HTTPS link. Opening it
 does not change the selected account or last-opened video. Failures remain
 retryable without exposing platform diagnostics.
 
-![S2 desktop](shots/S2-desktop.png)
-![S2 phone](shots/S2-phone.png)
+The user accepted the 1920×1080 reconstruction on 2026-11-17. Its rendered
+evidence and focused checks are recorded in
+`docs/evidence/maximized-layout/README.md`.
+
+![S2 accepted desktop reconstruction](../evidence/maximized-layout/windows/settings-maximized-d9d1df6.png)
+![S2 narrow layout at 384×854](../evidence/maximized-layout/browser/384x854-settings.png)
 
 ## 색 배합 (하나를 고른다)
 

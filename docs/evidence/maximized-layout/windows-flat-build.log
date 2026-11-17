@@ -1,0 +1,7 @@
+   Compiling video-translate-overlay v0.1.8 (C:\Users\dasdk\PycharmProjects\video-translate-overlay-2\src-tauri)
+warning: linker stdout: C:\Users\dasdk\PycharmProjects\video-translate-overlay-2\target\debug\deps\vto.dll.lib 라이브러리 및 C:\Users\dasdk\PycharmProjects\video-translate-overlay-2\target\debug\deps\vto.dll.exp 개체를 생성하고 있습니다.
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `video-translate-overlay` (lib) generated 1 warning
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 36.85s

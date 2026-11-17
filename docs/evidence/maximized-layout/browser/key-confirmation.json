@@ -1,0 +1,35 @@
+[
+  {
+    "width": 1280,
+    "height": 720,
+    "dialog": {
+      "x": 16,
+      "y": 394.390625,
+      "width": 604.5,
+      "height": 62
+    },
+    "cancellationPreservesKey": true
+  },
+  {
+    "width": 768,
+    "height": 720,
+    "dialog": {
+      "x": 40,
+      "y": 427.390625,
+      "width": 673,
+      "height": 62
+    },
+    "cancellationPreservesKey": true
+  },
+  {
+    "width": 384,
+    "height": 854,
+    "dialog": {
+      "x": 24,
+      "y": 384.390625,
+      "width": 336,
+      "height": 66
+    },
+    "cancellationPreservesKey": true
+  }
+]

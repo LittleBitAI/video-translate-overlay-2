@@ -1,0 +1,520 @@
+{
+  "build": {
+    "head": "5cff21a5f8fbe662c91adda0c91df389518b9fde",
+    "pid": 33720
+  },
+  "results": [
+    {
+      "path": "/",
+      "viewport": [
+        1280,
+        720
+      ],
+      "pageWidth": 1280,
+      "scrollWidth": 1265,
+      "nav": {
+        "x": 72.5,
+        "y": 0,
+        "width": 208,
+        "height": 60
+      },
+      "main": {
+        "x": 120.5,
+        "y": 61,
+        "width": 1024,
+        "height": 590
+      },
+      "content": {
+        "x": 136.5,
+        "y": 77,
+        "width": 992,
+        "height": 558
+      },
+      "firstCard": null,
+      "settingsCards": [],
+      "keyField": null,
+      "file": "baseline-video-1280x720.png"
+    },
+    {
+      "path": "/library",
+      "viewport": [
+        1280,
+        720
+      ],
+      "pageWidth": 1280,
+      "scrollWidth": 1265,
+      "nav": {
+        "x": 72.5,
+        "y": 0,
+        "width": 208,
+        "height": 60
+      },
+      "main": {
+        "x": 56.5,
+        "y": 61,
+        "width": 1152,
+        "height": 2771
+      },
+      "content": {
+        "x": 72.5,
+        "y": 77,
+        "width": 1120,
+        "height": 2739
+      },
+      "firstCard": {
+        "x": 352.5,
+        "y": 137,
+        "width": 269.3,
+        "height": 253.5
+      },
+      "settingsCards": [],
+      "keyField": null,
+      "file": "baseline-library-1280x720.png"
+    },
+    {
+      "path": "/preferences",
+      "viewport": [
+        1280,
+        720
+      ],
+      "pageWidth": 1280,
+      "scrollWidth": 1265,
+      "nav": {
+        "x": 72.5,
+        "y": 0,
+        "width": 208,
+        "height": 60
+      },
+      "main": {
+        "x": 296.5,
+        "y": 61,
+        "width": 672,
+        "height": 1130.4
+      },
+      "content": {
+        "x": 312.5,
+        "y": 77,
+        "width": 640,
+        "height": 44.4
+      },
+      "firstCard": null,
+      "settingsCards": [
+        {
+          "x": 312.5,
+          "y": 137.4,
+          "width": 640,
+          "height": 211
+        },
+        {
+          "x": 312.5,
+          "y": 364.4,
+          "width": 640,
+          "height": 161
+        },
+        {
+          "x": 312.5,
+          "y": 541.4,
+          "width": 640,
+          "height": 390
+        },
+        {
+          "x": 312.5,
+          "y": 947.4,
+          "width": 640,
+          "height": 228
+        }
+      ],
+      "keyField": {
+        "x": 336.5,
+        "y": 662.4,
+        "width": 440,
+        "height": 44
+      },
+      "file": "baseline-preferences-1280x720.png"
+    },
+    {
+      "path": "/",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "pageWidth": 1920,
+      "scrollWidth": 1905,
+      "nav": {
+        "x": 392.5,
+        "y": 0,
+        "width": 208,
+        "height": 60
+      },
+      "main": {
+        "x": 440.5,
+        "y": 61,
+        "width": 1024,
+        "height": 590
+      },
+      "content": {
+        "x": 456.5,
+        "y": 77,
+        "width": 992,
+        "height": 558
+      },
+      "firstCard": null,
+      "settingsCards": [],
+      "keyField": null,
+      "file": "baseline-video-1920x1080.png"
+    },
+    {
+      "path": "/library",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "pageWidth": 1920,
+      "scrollWidth": 1905,
+      "nav": {
+        "x": 392.5,
+        "y": 0,
+        "width": 208,
+        "height": 60
+      },
+      "main": {
+        "x": 376.5,
+        "y": 61,
+        "width": 1152,
+        "height": 2771
+      },
+      "content": {
+        "x": 392.5,
+        "y": 77,
+        "width": 1120,
+        "height": 2739
+      },
+      "firstCard": {
+        "x": 672.5,
+        "y": 137,
+        "width": 269.3,
+        "height": 253.5
+      },
+      "settingsCards": [],
+      "keyField": null,
+      "file": "baseline-library-1920x1080.png"
+    },
+    {
+      "path": "/preferences",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "pageWidth": 1920,
+      "scrollWidth": 1905,
+      "nav": {
+        "x": 392.5,
+        "y": 0,
+        "width": 208,
+        "height": 60
+      },
+      "main": {
+        "x": 616.5,
+        "y": 61,
+        "width": 672,
+        "height": 1130.4
+      },
+      "content": {
+        "x": 632.5,
+        "y": 77,
+        "width": 640,
+        "height": 44.4
+      },
+      "firstCard": null,
+      "settingsCards": [
+        {
+          "x": 632.5,
+          "y": 137.4,
+          "width": 640,
+          "height": 211
+        },
+        {
+          "x": 632.5,
+          "y": 364.4,
+          "width": 640,
+          "height": 161
+        },
+        {
+          "x": 632.5,
+          "y": 541.4,
+          "width": 640,
+          "height": 390
+        },
+        {
+          "x": 632.5,
+          "y": 947.4,
+          "width": 640,
+          "height": 228
+        }
+      ],
+      "keyField": {
+        "x": 656.5,
+        "y": 662.4,
+        "width": 440,
+        "height": 44
+      },
+      "file": "baseline-preferences-1920x1080.png"
+    },
+    {
+      "path": "/",
+      "viewport": [
+        2560,
+        1440
+      ],
+      "pageWidth": 2560,
+      "scrollWidth": 2545,
+      "nav": {
+        "x": 712.5,
+        "y": 0,
+        "width": 208,
+        "height": 60
+      },
+      "main": {
+        "x": 760.5,
+        "y": 61,
+        "width": 1024,
+        "height": 590
+      },
+      "content": {
+        "x": 776.5,
+        "y": 77,
+        "width": 992,
+        "height": 558
+      },
+      "firstCard": null,
+      "settingsCards": [],
+      "keyField": null,
+      "file": "baseline-video-2560x1440.png"
+    },
+    {
+      "path": "/library",
+      "viewport": [
+        2560,
+        1440
+      ],
+      "pageWidth": 2560,
+      "scrollWidth": 2545,
+      "nav": {
+        "x": 712.5,
+        "y": 0,
+        "width": 208,
+        "height": 60
+      },
+      "main": {
+        "x": 696.5,
+        "y": 61,
+        "width": 1152,
+        "height": 2771
+      },
+      "content": {
+        "x": 712.5,
+        "y": 77,
+        "width": 1120,
+        "height": 2739
+      },
+      "firstCard": {
+        "x": 992.5,
+        "y": 137,
+        "width": 269.3,
+        "height": 253.5
+      },
+      "settingsCards": [],
+      "keyField": null,
+      "file": "baseline-library-2560x1440.png"
+    },
+    {
+      "path": "/preferences",
+      "viewport": [
+        2560,
+        1440
+      ],
+      "pageWidth": 2560,
+      "scrollWidth": 2545,
+      "nav": {
+        "x": 712.5,
+        "y": 0,
+        "width": 208,
+        "height": 60
+      },
+      "main": {
+        "x": 936.5,
+        "y": 61,
+        "width": 672,
+        "height": 1130.4
+      },
+      "content": {
+        "x": 952.5,
+        "y": 77,
+        "width": 640,
+        "height": 44.4
+      },
+      "firstCard": null,
+      "settingsCards": [
+        {
+          "x": 952.5,
+          "y": 137.4,
+          "width": 640,
+          "height": 211
+        },
+        {
+          "x": 952.5,
+          "y": 364.4,
+          "width": 640,
+          "height": 161
+        },
+        {
+          "x": 952.5,
+          "y": 541.4,
+          "width": 640,
+          "height": 390
+        },
+        {
+          "x": 952.5,
+          "y": 947.4,
+          "width": 640,
+          "height": 228
+        }
+      ],
+      "keyField": {
+        "x": 976.5,
+        "y": 662.4,
+        "width": 440,
+        "height": 44
+      },
+      "file": "baseline-preferences-2560x1440.png"
+    },
+    {
+      "path": "/",
+      "viewport": [
+        384,
+        854
+      ],
+      "pageWidth": 384,
+      "scrollWidth": 384,
+      "nav": {
+        "x": 0,
+        "y": 809,
+        "width": 384,
+        "height": 45
+      },
+      "main": {
+        "x": 0,
+        "y": 61,
+        "width": 384,
+        "height": 223
+      },
+      "content": {
+        "x": 8,
+        "y": 69,
+        "width": 368,
+        "height": 207
+      },
+      "firstCard": null,
+      "settingsCards": [],
+      "keyField": null,
+      "file": "baseline-video-384x854.png"
+    },
+    {
+      "path": "/library",
+      "viewport": [
+        384,
+        854
+      ],
+      "pageWidth": 384,
+      "scrollWidth": 384,
+      "nav": {
+        "x": 0,
+        "y": 809,
+        "width": 384,
+        "height": 45
+      },
+      "main": {
+        "x": 0,
+        "y": 0,
+        "width": 384,
+        "height": 3844.4
+      },
+      "content": {
+        "x": 16,
+        "y": 16,
+        "width": 352,
+        "height": 3812.4
+      },
+      "firstCard": {
+        "x": 16,
+        "y": 266.4,
+        "width": 352,
+        "height": 111
+      },
+      "settingsCards": [],
+      "keyField": null,
+      "file": "baseline-library-384x854.png"
+    },
+    {
+      "path": "/preferences",
+      "viewport": [
+        384,
+        854
+      ],
+      "pageWidth": 384,
+      "scrollWidth": 384,
+      "nav": {
+        "x": 0,
+        "y": 809,
+        "width": 384,
+        "height": 45
+      },
+      "main": {
+        "x": 0,
+        "y": 0,
+        "width": 384,
+        "height": 1197.4
+      },
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 368,
+        "height": 44.4
+      },
+      "firstCard": null,
+      "settingsCards": [
+        {
+          "x": 8,
+          "y": 68.4,
+          "width": 368,
+          "height": 237
+        },
+        {
+          "x": 8,
+          "y": 321.4,
+          "width": 368,
+          "height": 166
+        },
+        {
+          "x": 8,
+          "y": 503.4,
+          "width": 368,
+          "height": 437
+        },
+        {
+          "x": 8,
+          "y": 956.4,
+          "width": 368,
+          "height": 233
+        }
+      ],
+      "keyField": {
+        "x": 24,
+        "y": 637.4,
+        "width": 264,
+        "height": 44
+      },
+      "file": "baseline-preferences-384x854.png"
+    }
+  ]
+}

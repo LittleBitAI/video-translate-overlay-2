@@ -11,7 +11,7 @@
 </script>
 
 <header class="border-b border-ink/10 bg-surface {children ? '' : 'max-md:border-0'}">
-  <div class="mx-auto flex max-w-6xl items-center gap-4 md:px-4">
+  <div class="flex items-center gap-4 md:px-4">
     <nav aria-label="주 메뉴" class="flex max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-30 max-md:border-t max-md:border-ink/15 max-md:bg-surface max-md:pb-[env(safe-area-inset-bottom)]">
       {#each tabs as [href, label]}
         {@const current = router.path === href}

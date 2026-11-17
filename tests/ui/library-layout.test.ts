@@ -19,7 +19,7 @@ const rows = (root: ParentNode) => $$(root, 'ul[aria-label="재생목록"] li > 
 const row = (root: ParentNode, name: string) => rows(root).find(b => text(b).startsWith(`${name} 영상 `)) as HTMLButtonElement;
 const cards = (root: ParentNode) => $$(root, 'li[data-video-key]');
 
-test.each([[1280, 720], [1009, 720]])('at %i px the rail lists every playlist and a click shows its grid inside the viewport', async (width, height) => {
+test.each([[1280, 720, 4], [1009, 720, 3], [1920, 1080, 7], [2560, 1440, 10]])('at %i px the rail lists every playlist and a click shows its grid inside the viewport', async (width, height, columns) => {
   await page.viewport(width, height);
   serve();
   const root = open('/library');
@@ -27,6 +27,8 @@ test.each([[1280, 720], [1009, 720]])('at %i px the rail lists every playlist an
   expect(rows(root).map(b => text(b))).toEqual(['전체 영상 영상 13개', 'Deep learning 영상 10개', 'Systems 영상 2개', 'Later 영상 0개']);
   for (const b of rows(root)) expect(b.querySelector('.aspect-video')).not.toBeNull();
   expect(row(root, '전체 영상').getAttribute('aria-current')).toBe('true');
+  const top = cards(root)[0].getBoundingClientRect().top;
+  expect(cards(root).filter(card => card.getBoundingClientRect().top === top)).toHaveLength(columns);
   row(root, 'Systems').click();
   await vi.waitFor(() => expect(row(root, 'Systems').getAttribute('aria-current')).toBe('true'));
   expect(row(root, '전체 영상').hasAttribute('aria-current')).toBe(false);
@@ -45,13 +47,15 @@ test.each([[1280, 720], [1009, 720]])('at %i px the rail lists every playlist an
 // Both lists hold the same videos, so nothing but the reveal can change the position.
 test.each([[1280, 720, 0], [384, 854, 45]])('at %i px activating a list after scrolling the previous one shows its first card', async (width, height, bar) => {
   await page.viewport(width, height);
-  const same = many.map(v => v.video_key);
-  const twins = {videos:many, playlists:[{id:'a', name:'First', entries:same}, {id:'b', name:'Second', entries:same}]};
+  const videos = Array.from({length:36}, (_, i) => yt(`scroll${String(i).padStart(5, '0')}`, `Lecture ${i}`));
+  const same = videos.map(v => v.video_key);
+  const twins = {videos, playlists:[{id:'a', name:'First', entries:same}, {id:'b', name:'Second', entries:same}]};
   api(c => c.path === '/library/data' && c.method === 'GET' ? [200, twins] : c.path === '/browser' ? [200, {url:null, job:null}] : [200, {changed:true}]);
   const root = open('/library');
   await vi.waitFor(() => expect(rows(root)).toHaveLength(3));
   row(root, 'First').click();
-  await vi.waitFor(() => expect(cards(root)).toHaveLength(12));
+  await vi.waitFor(() => expect(cards(root)).toHaveLength(36));
+  await vi.waitFor(() => expect(document.documentElement.scrollHeight).toBeGreaterThan(height + 300));
   scrollTo({top: document.documentElement.scrollHeight});
   await vi.waitFor(() => expect(scrollY).toBeGreaterThan(300));
   row(root, 'Second').click();
@@ -219,14 +223,14 @@ test('추가 offers saved videos with thumbnails, a link with an optional name a
   expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(384);
 });
 
-const everyScreen = () => api(c => {
+const everyScreen = (url: string | null = null) => api(c => {
   if (c.path === '/library/data') return [200, {videos:[], playlists:[]}];
   if (c.path === '/settings') return [200, {key_set:false, key_masked:null, translation_model:'gemini-3.1-flash-lite'}];
   if (c.path === '/account') return [200, {generation:0, state:'unsupported', email:null, error:null, sync_ready:false}];
-  return [200, {url:null, job:null}];
+  return [200, {url, job:null}];
 });
 
-test.each([[1280, 720], [384, 854]])('at %i px the shared menu sits in the same place on every screen and marks the current one', async (width, height) => {
+test.each([[1280, 720], [1920, 1080], [2560, 1440], [768, 720], [384, 854]])('at %i px the shared menu sits in the same place on every screen and marks the current one', async (width, height) => {
   await page.viewport(width, height);
   everyScreen();
   const root = open('/');
@@ -247,7 +251,52 @@ test.each([[1280, 720], [384, 854]])('at %i px the shared menu sits in the same 
       expect(getComputedStyle(nav).position).toBe('fixed');
       expect(nav.getBoundingClientRect().bottom).toBe(height);
       expect(nav.className).toContain('pb-[env(safe-area-inset-bottom)]');
-    } else expect(nav.getBoundingClientRect().top).toBe(0);
+    } else {
+      expect(nav.getBoundingClientRect().top).toBe(0);
+      expect(nav.getBoundingClientRect().left).toBe(16);
+      const main = $(root, 'main')!;
+      expect(main.getBoundingClientRect().left).toBe(0);
+      expect(getComputedStyle(main).paddingLeft).toBe('16px');
+      if (path === '/') {
+        const stage = $(root, '.video-stage')!.getBoundingClientRect();
+        expect(stage.left).toBe(16);
+        expect(stage.width).toBeGreaterThan(width * 0.8);
+        expect(stage.bottom).toBeLessThanOrEqual(height);
+        expect(stage.width / stage.height).toBeCloseTo(16 / 9, 1);
+      }
+      if (path === '/preferences') {
+        const account = $(root, 'section[aria-label="Google 앱 계정"]')!.getBoundingClientRect();
+        const key = $(root, '#api-key')!.closest('section')!.getBoundingClientRect();
+        expect(key.left).toBe(16);
+        expect($(root, '#api-key')!.closest('form')!.getBoundingClientRect().width).toBeLessThanOrEqual(960);
+        if (width >= 1024) {
+          const youtube = $(root, '[data-feature="youtube-logout"]')!;
+          const youtubeSection = youtube.closest('section')!.getBoundingClientRect();
+          const workspace = $(root, '#api-key')!.closest('section')!.parentElement!.getBoundingClientRect();
+          const update = button(root, '업데이트 확인').getBoundingClientRect();
+          expect(youtubeSection.top).toBe(key.top);
+          expect(youtubeSection.bottom).toBe(key.bottom);
+          expect(youtube.getBoundingClientRect().bottom).toBe($(root, '[data-feature="delete-api-key"]')!.getBoundingClientRect().bottom);
+          expect(workspace.width).toBe(main.getBoundingClientRect().width - 32);
+          expect(update.right).toBe(workspace.right);
+          expect(update.height).toBeGreaterThanOrEqual(44);
+          expect(update.top).toBeLessThan(130);
+          expect(account.top).toBeGreaterThan(key.bottom);
+          for (const section of $$(root, '.settings-section')) {
+            expect(getComputedStyle(section).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+            expect(getComputedStyle(section).borderRadius).toBe('0px');
+          }
+        } else {
+          expect(account.top).toBeGreaterThan(key.bottom);
+        }
+      }
+    }
+    if (path === '/preferences') {
+      expect($$(root, 'h2').map(text)).toEqual(['Gemini 개인키', '유튜브 로그인', 'Google 앱 계정', '앱 업데이트']);
+      const footer = $(root, 'main footer')!;
+      expect(footer.getBoundingClientRect().top).toBeGreaterThanOrEqual(Math.max(...$$(root, '.settings-section').map(section => section.getBoundingClientRect().bottom)));
+      expect(text(footer)).toContain('개인정보처리방침');
+    }
     expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(width);
   }
   expect(seen['/library']).toEqual(seen['/']);
@@ -256,4 +305,27 @@ test.each([[1280, 720], [384, 854]])('at %i px the shared menu sits in the same 
   button(root, '보관함').click();
   await vi.waitFor(() => expect(text(root)).toContain('아직 저장한 영상이 없습니다'));
   expect($$(root, 'a').filter(a => text(a) === '영상 열기')).toHaveLength(0);
+});
+
+test.each([1280, 1920, 2560, 384].flatMap(width => ['loading', 'empty', 'media', 'youtube', 'page'].map(state =>
+  [width, width === 384 ? 854 : width === 1280 ? 720 : width === 1920 ? 1080 : 1440, state] as const
+)))('at %i px and %i px high the %s state keeps a visible 16:9 frame', async (width, height, state) => {
+  await page.viewport(width, height);
+  if (state === 'loading') api(() => 'hang');
+  else everyScreen(state === 'empty' ? null : state === 'youtube' ? 'https://www.youtube.com/watch?v=abcDEF12345'
+    : state === 'page' ? 'https://lectures.example.org/lecture' : 'https://lectures.example.org/layout.mp4');
+  const root = open('/');
+  if (state !== 'loading') await vi.waitFor(() => expect($(root, '[aria-busy="true"]')).toBeNull());
+  const stage = $(root, '.video-stage')!.getBoundingClientRect();
+  const frame = ($(root, '.video-stage > .aspect-video') ?? $(root, '.video-stage'))!.getBoundingClientRect();
+  expect(frame.width / frame.height).toBeCloseTo(16 / 9, 1);
+  expect(frame.width).toBeCloseTo(stage.width, 1);
+  expect(frame.bottom).toBeLessThanOrEqual(height);
+  expect(frame.right).toBeLessThanOrEqual(width);
+  const overlay = $(root, '.pointer-events-none')?.getBoundingClientRect();
+  if (overlay) {
+    expect(overlay.width).toBeCloseTo(frame.width, 1);
+    expect(overlay.height).toBeCloseTo(frame.height, 1);
+  }
+  expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(width);
 });

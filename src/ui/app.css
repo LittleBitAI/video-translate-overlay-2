@@ -45,6 +45,13 @@
   }
 }
 
+/* Messages above the stage consume height too; leave the main's bottom padding. */
+@media (min-width: 768px) {
+  .video-stage {
+    max-width: calc(max(0px, 100dvh - var(--stage-top, 5rem) - 1rem) * 16 / 9);
+  }
+}
+
 /* A bar for work with no percent to show: a segment that runs across the track. */
 .vto-indeterminate {
   animation: vto-run 1.2s ease-in-out infinite;

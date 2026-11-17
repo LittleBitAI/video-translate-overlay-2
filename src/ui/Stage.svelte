@@ -91,7 +91,7 @@
 </script>
 
 <!-- The overlay lies over the frame; on a phone its status panel goes under it. -->
-<div class="relative">
+<div class="video-stage relative">
   <div class="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
     {#if inApp()}
       <div class="absolute inset-0 flex items-center justify-center p-6 text-center text-base text-ink/80">

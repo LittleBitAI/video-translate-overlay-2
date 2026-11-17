@@ -1,0 +1,10 @@
+{
+  "auditorHead": "79699e933ba2801d8c1d42b3ff0240160c20bacb",
+  "command": "node scripts/verification/maximized-layout/audit.mjs",
+  "exitCode": 0,
+  "runtimeAssertionsMatched": 129,
+  "producerInventoriesMatched": 2,
+  "unchangedRevisionsAccepted": 2,
+  "changedRevisionsRejected": 2,
+  "kind": "Read-only validation; does not re-execute runtime observations"
+}

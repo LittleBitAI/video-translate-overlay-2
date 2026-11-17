@@ -56,6 +56,21 @@ the left of the top bar from 768 px, a bottom tab bar with 44 px targets and the
 safe-area inset below that. The current one has `aria-current="page"`, weight
 and a blue bar. The address field stays only on `/`.
 
+Desktop navigation and page content share a 16 px leading inset instead of
+separate centered width limits. The library grid uses the available width;
+its 16 rem rail, 13 rem minimum cards and 768 px accordion split stay the same.
+The video stage stays left-aligned at 16:9, growing within the width and the
+height below the menu so the player and its overlay fit together. Desktop
+Settings is composed at 1920×1080 using the available width, with 16 px page
+insets and no overall width cap. From 1024 px Gemini setup and YouTube session
+controls share one grid row with equal-height sections. Their final actions
+share a bottom edge; the layout uses content height and flex alignment rather
+than a fixed spacer. The key form and removal group can grow to 60 rem. Google
+app-account synchronization occupies the next full-width row. Update checking
+is a prominent 44 px button at the header's trailing edge. Privacy stays in the
+secondary footer. Smaller windows stack the tasks with their existing controls
+and confirmations. Desktop sections have no decorative card backgrounds.
+
 Use the existing approved charcoal theater palette C1. Blue identifies actions
 and the selected place; yellow identifies errors, processing and permanent
 deletion. The existing system font uses 28 px for the page heading, 20 px for
@@ -93,7 +108,7 @@ confirm sign-out and preserve existing saved data. A signed-in identity alone
 must not appear as an established sync connection. Account responses must match
 the captured account generation as well as the screen generation.
 
-Keep a 44 px privacy-policy control in that same account section, available
+Keep a 44 px privacy-policy control in the Settings footer, available
 before sign-in. Its native action opens only the published policy in the
 platform browser and shows a retryable error without changing account state.
 

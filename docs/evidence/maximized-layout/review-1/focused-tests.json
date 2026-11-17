@@ -1,0 +1,22 @@
+{
+  "head": "938285973f01e1dd89710e3a476393b17d31f556",
+  "environment": {
+    "observedAt": "2026-11-17T09:29:48.459Z",
+    "platform": "win32",
+    "os": "Windows 11 Home",
+    "release": "10.0.26200",
+    "arch": "x64",
+    "node": "v24.18.0",
+    "playwright": "1.61.0",
+    "rust": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "chromium": "149.0.7827.55"
+  },
+  "command": "npx vitest run -c vitest.ui.config.ts tests/ui/watch.test.ts tests/ui/library-layout.test.ts",
+  "exitCode": 0,
+  "filesPassed": 2,
+  "testsPassed": 54,
+  "testBlobs": {
+    "tests/ui/watch.test.ts": "705de64ad936ca1f82ecb40aa59687061df18534",
+    "tests/ui/library-layout.test.ts": "cbbbf962891ca0e7252c8a6cc01350bd93b745ef"
+  }
+}

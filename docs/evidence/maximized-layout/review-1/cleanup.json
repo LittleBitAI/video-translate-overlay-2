@@ -1,0 +1,24 @@
+{
+  "httpPid": 37532,
+  "observedAt": "2026-11-17T09:35:24.0364110Z",
+  "nativePid": 37520,
+  "assertions": [
+    {
+      "name": "owned native process exited",
+      "observed": false,
+      "expected": false
+    },
+    {
+      "name": "owned HTTP process exited",
+      "observed": false,
+      "expected": false
+    },
+    {
+      "name": "test listeners released",
+      "observed": 0,
+      "expected": 0
+    }
+  ],
+  "sourceHead": "938285973f01e1dd89710e3a476393b17d31f556",
+  "buildHead": "f5277edebf2d1b0281f404177299479f19f80c55"
+}

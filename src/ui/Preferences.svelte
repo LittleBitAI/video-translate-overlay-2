@@ -21,6 +21,9 @@
   let failed = $state('');
   let connecting = $state(false);
   let connectionGeneration = 0;
+  let privacyOpening = $state(false);
+  let privacyError = $state('');
+  let privacyGeneration = 0;
   const youtubeSignIn = 'https://accounts.google.com/ServiceLogin?service=youtube&continue=https%3A%2F%2Fwww.youtube.com%2F';
 
   async function connectYoutube() {
@@ -35,7 +38,18 @@
     else failed = r.body?.message ?? '유튜브 계정 화면을 열지 못했습니다. 다시 시도해 주세요.';
   }
 
-  onDestroy(() => connectionGeneration++);
+  onDestroy(() => { connectionGeneration++; privacyGeneration++; });
+
+  async function openPrivacy() {
+    if (privacyOpening) return;
+    const generation = privacyGeneration;
+    privacyOpening = true;
+    privacyError = '';
+    const result = await request('POST', '/privacy/open');
+    if (generation !== privacyGeneration) return;
+    privacyOpening = false;
+    if (result.status !== 200) privacyError = '개인정보처리방침을 열지 못했습니다. 다시 시도해 주세요.';
+  }
 
   async function load() {
     screen = 'loading';
@@ -104,12 +118,12 @@
     load();
   });
 
-  const card = 'rounded-lg bg-ink/5 p-4 sm:p-6';
+  const section = 'settings-section min-w-0 max-lg:rounded-lg max-lg:bg-ink/5 max-lg:p-4 sm:max-lg:p-6';
   const outline = 'min-h-11 rounded-lg border border-ink/40 px-4 py-2 text-base disabled:opacity-50';
 </script>
 
 {#snippet confirmRow(what: 'delete' | 'logout', question: string, yes: string, feature: string)}
-  <div role="alertdialog" aria-label={question} class="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-accent/60 p-2">
+  <div role="alertdialog" aria-label={question} class="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-accent/60 p-2 md:col-span-full">
     <p class="min-w-0 flex-1 text-base">{question}</p>
     <button type="button" data-feature={feature} class="rounded-lg bg-accent px-4 py-2 text-base font-semibold text-surface disabled:opacity-60" disabled={busy} onclick={confirm}>
       {yes}
@@ -120,118 +134,143 @@
 
 <Nav />
 
-<main class="mx-auto flex max-w-2xl flex-col gap-4 p-2 sm:p-4">
-  <h1 class="px-2 pt-2 text-2xl font-semibold sm:px-0">설정</h1>
-  <GoogleAccount />
-  <section class={card}>
-    <h2 class="text-lg font-semibold">앱 업데이트</h2>
-    <p class="mt-1 text-sm text-ink/70">승인된 새 버전과 추가 기능을 확인합니다. 닫은 버전도 다시 볼 수 있습니다.</p>
-    <button type="button" class="{outline} mt-4" onclick={() => window.dispatchEvent(new Event('vto-check-updates'))}>업데이트 확인</button>
-  </section>
-  <section class={card} aria-busy={screen === 'loading'}>
-    <h2 class="text-lg font-semibold">개인키</h2>
-    {#if screen === 'error'}
-      <!-- The saved settings did not load: its own box, apart from the field, whose place is for a key's own errors. -->
-      <div role="alert" class="my-2 flex flex-wrap items-center gap-2 rounded-lg border border-accent p-2">
-        <p class="min-w-0 flex-1 text-sm text-accent">설정을 불러오지 못했습니다. 잠시 뒤에 다시 눌러 주세요.</p>
-        <button type="button" class="min-h-11 rounded-lg border border-accent px-4 py-2 text-base text-accent" onclick={load}>다시 불러오기</button>
+<main class="flex flex-col gap-6 p-2 sm:p-4 md:min-h-[calc(100dvh-61px)]">
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <h1 class="px-2 pt-2 text-2xl font-semibold sm:px-0">설정</h1>
+    <button type="button" class="inline-flex min-h-11 items-center rounded-lg border border-primary/60 px-4 py-2 text-base font-semibold text-primary hover:bg-primary/10" onclick={() => window.dispatchEvent(new Event('vto-check-updates'))}>업데이트 확인</button>
+  </div>
+  <div class="grid w-full items-stretch gap-6 lg:grid-cols-2">
+    <section class="{section} lg:flex lg:flex-col" aria-busy={screen === 'loading'}>
+      <div>
+        <h2 class="text-lg font-semibold">Gemini 개인키</h2>
+        <p class="mt-1 text-sm text-ink/70">개인키는 이 기기에만 저장됩니다. 번역 비용은 개인키 주인에게 청구됩니다.</p>
       </div>
-    {/if}
-    <p class="mt-1 text-sm text-ink/70">개인키는 이 기기에만 저장됩니다. 번역 비용은 개인키 주인에게 청구됩니다.</p>
+      <div class="max-w-[60rem]">
+        {#if screen === 'error'}
+          <!-- The saved settings did not load: its own box, apart from the field, whose place is for a key's own errors. -->
+          <div role="alert" class="my-2 flex flex-wrap items-center gap-2 rounded-lg border border-accent p-2">
+            <p class="min-w-0 flex-1 text-sm text-accent">설정을 불러오지 못했습니다. 잠시 뒤에 다시 눌러 주세요.</p>
+            <button type="button" class="min-h-11 rounded-lg border border-accent px-4 py-2 text-base text-accent" onclick={load}>다시 불러오기</button>
+          </div>
+        {/if}
 
-    <form class="mt-4" onsubmit={save} novalidate>
-      <label for="api-key" class="text-sm">Gemini 개인키</label>
-      <div class="mt-1 flex gap-2">
-        <input
-          id="api-key"
-          data-feature="set-api-key"
-          class="min-h-11 min-w-0 flex-1 rounded-lg border bg-ink/5 px-4 py-2 text-base placeholder:text-ink/50 {keyError ? 'border-accent' : 'border-ink/30'} disabled:opacity-60"
-          type="password"
-          autocomplete="off"
-          spellcheck="false"
-          placeholder="개인키 붙여 넣기"
-          aria-describedby="key-message"
-          aria-invalid={keyError ? 'true' : undefined}
-          disabled={saving || screen === 'loading'}
-          bind:value={key}
-        />
-        <button
-          data-feature="set-api-key"
-          class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-surface sm:min-w-36 {saving ? 'cursor-wait opacity-80' : 'disabled:opacity-50'}"
-          disabled={saving || screen === 'loading'}
-        >
-          {#if saving}
-            <span class="size-4 animate-spin rounded-full border-2 border-surface border-t-transparent" aria-hidden="true"></span>확인하는 중
-          {:else}
-            저장
-          {/if}
-        </button>
+        <form class="mt-6" onsubmit={save} novalidate>
+          <label for="api-key" class="sr-only">Gemini 개인키</label>
+          <div class="mt-1 flex gap-2">
+            <input
+              id="api-key"
+              data-feature="set-api-key"
+              class="min-h-11 min-w-0 flex-1 rounded-lg border bg-ink/5 px-4 py-2 text-base placeholder:text-ink/50 {keyError ? 'border-accent' : 'border-ink/30'} disabled:opacity-60"
+              type="password"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="개인키 붙여 넣기"
+              aria-describedby="key-message"
+              aria-invalid={keyError ? 'true' : undefined}
+              disabled={saving || screen === 'loading'}
+              bind:value={key}
+            />
+            <button
+              data-feature="set-api-key"
+              class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-surface sm:min-w-36 {saving ? 'cursor-wait opacity-80' : 'disabled:opacity-50'}"
+              disabled={saving || screen === 'loading'}
+            >
+              {#if saving}
+                <span class="size-4 animate-spin rounded-full border-2 border-surface border-t-transparent" aria-hidden="true"></span>확인하는 중
+              {:else}
+                저장
+              {/if}
+            </button>
+          </div>
+          <p id="key-message" role={keyError ? 'alert' : 'status'} class="mt-1 text-sm {keyError ? 'text-accent' : 'text-ink/70'}">
+            {#if keyError}{keyError}{:else if keySaved}Gemini가 확인한 개인키를 저장했습니다.{/if}
+          </p>
+        </form>
+
+        {#if screen === 'loading'}
+          <dl class="mt-2 grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-sm">
+            <dt>저장된 개인키</dt>
+            <dd class="h-4 w-32 animate-pulse rounded bg-ink/20"></dd>
+            <dt>번역 모듈</dt>
+            <dd class="h-4 w-40 animate-pulse rounded bg-ink/20"></dd>
+          </dl>
+        {:else if screen === 'error'}
+          <!-- What is saved is not known: nothing is claimed about it. -->
+        {:else if s.key_set}
+          <dl class="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+            <dt>저장된 개인키</dt>
+            <dd class="font-mono break-all">{s.key_masked} <span class="font-sans text-ink/60">끝 네 글자만 보입니다</span></dd>
+            <dt>번역 모듈</dt>
+            <dd>{s.translation_model}</dd>
+          </dl>
+        {:else}
+          <p class="mt-2 flex items-center gap-2 text-sm text-ink/70"><svg aria-hidden="true" viewBox="0 0 16 16" class="size-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="7" /><path d="M8 7v4.5M8 4.5v.01" stroke-linecap="round" /></svg>개인키를 넣어야 영상감지 버튼이 작업을 시작합니다</p>
+          <dl class="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+            <dt>저장된 개인키</dt>
+            <dd class="text-ink/60">없음</dd>
+            <dt>번역 모듈</dt>
+            <dd>{s.translation_model}</dd>
+          </dl>
+        {/if}
       </div>
-      <p id="key-message" role={keyError ? 'alert' : 'status'} class="mt-1 text-sm {keyError ? 'text-accent' : 'text-ink/70'}">
-        {#if keyError}{keyError}{:else if keySaved}Gemini가 확인한 개인키를 저장했습니다.{/if}
-      </p>
-    </form>
-
-    {#if screen === 'loading'}
-      <dl class="mt-2 grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-sm">
-        <dt>저장된 개인키</dt>
-        <dd class="h-4 w-32 animate-pulse rounded bg-ink/20"></dd>
-        <dt>번역 모듈</dt>
-        <dd class="h-4 w-40 animate-pulse rounded bg-ink/20"></dd>
-      </dl>
-    {:else if screen === 'error'}
-      <!-- What is saved is not known: nothing is claimed about it. -->
-    {:else if s.key_set}
-      <dl class="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-        <dt>저장된 개인키</dt>
-        <dd class="font-mono break-all">{s.key_masked} <span class="font-sans text-ink/60">끝 네 글자만 보입니다</span></dd>
-        <dt>번역 모듈</dt>
-        <dd>{s.translation_model}</dd>
-      </dl>
-    {:else}
-      <p class="mt-2 flex items-center gap-2 text-sm text-ink/70"><svg aria-hidden="true" viewBox="0 0 16 16" class="size-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="7" /><path d="M8 7v4.5M8 4.5v.01" stroke-linecap="round" /></svg>개인키를 넣어야 영상감지 버튼이 작업을 시작합니다</p>
-      <dl class="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-        <dt>저장된 개인키</dt>
-        <dd class="text-ink/60">없음</dd>
-        <dt>번역 모듈</dt>
-        <dd>{s.translation_model}</dd>
-      </dl>
-    {/if}
-
-    <hr class="my-4 border-ink/15" />
-    <p class="mb-4 text-sm {s.key_set ? 'text-ink/70' : 'text-ink/40'}">지우면 이 기기에서 사라지고, 영상감지 버튼을 누를 때 개인키를 넣으라는 안내가 뜹니다.</p>
-    {#if asking === 'delete'}
-      {@render confirmRow('delete', '개인키를 지울까요?', '지우기', 'delete-api-key')}
-    {:else}
-      <button type="button" data-feature="delete-api-key" class={outline} disabled={!s.key_set || screen !== 'ready'} onclick={() => ask('delete')}>
-        개인키 지우기
-      </button>
-    {/if}
-  </section>
-
-  <section class={card}>
-    <h2 class="text-lg font-semibold">유튜브 로그인</h2>
-    <p class="mt-1 text-sm text-ink/70">
-      한 번 로그인하면 앱에 저장한 세션으로 다음 영상을 엽니다. 로그인은 구글 화면에서 진행하며, 앱은 비밀번호를 받거나 저장하지 않습니다.
-    </p>
-    <p class="mt-1 text-sm text-ink/70">휴대폰의 유튜브 앱과는 별도 로그인입니다. 구글이 앱 내 로그인을 차단하면 계정을 연결할 수 없습니다.</p>
-    {#if inApp()}
-      <button type="button" class="{outline} mt-4" disabled={connecting || busy || screen !== 'ready'} onclick={connectYoutube}>
-        {connecting ? '계정 화면 여는 중' : '유튜브 계정 연결'}
-      </button>
-    {:else}
-      <a class="{outline} mt-4 inline-flex items-center" href={youtubeSignIn} target="_blank" rel="noopener noreferrer">유튜브 계정 연결</a>
-    {/if}
-    {#if asking === 'logout'}
-      {@render confirmRow('logout', '유튜브에서 로그아웃할까요?', '로그아웃', 'youtube-logout')}
-    {:else}
-      <button type="button" data-feature="youtube-logout" class="{outline} mt-4" disabled={connecting || busy || screen !== 'ready'} onclick={() => ask('logout')}>
-        유튜브 로그아웃
-      </button>
-    {/if}
-  </section>
-
+      <hr class="my-4 border-ink/15 lg:hidden" />
+      <div class="mt-4 w-full max-w-[60rem] md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-end md:gap-4 lg:mt-auto lg:pt-6">
+        <p class="mb-4 text-sm md:mb-0 {s.key_set ? 'text-ink/70' : 'text-ink/40'}">지우면 이 기기에서 사라지고, 영상감지 버튼을 누를 때 개인키를 넣으라는 안내가 뜹니다.</p>
+        {#if asking === 'delete'}
+          {@render confirmRow('delete', '개인키를 지울까요?', '지우기', 'delete-api-key')}
+        {:else}
+          <button type="button" data-feature="delete-api-key" class={outline} disabled={!s.key_set || screen !== 'ready'} onclick={() => ask('delete')}>
+            개인키 지우기
+          </button>
+        {/if}
+      </div>
+    </section>
+    <section class="{section} lg:flex lg:flex-col">
+      <div>
+        <h2 class="text-lg font-semibold">유튜브 로그인</h2>
+        <p class="mt-1 text-sm text-ink/70">
+          한 번 로그인하면 앱에 저장한 세션으로 다음 영상을 엽니다. 로그인은 구글 화면에서 진행하며, 앱은 비밀번호를 받거나 저장하지 않습니다.
+        </p>
+        <p class="mt-1 text-sm text-ink/70">휴대폰의 유튜브 앱과는 별도 로그인입니다. 구글이 앱 내 로그인을 차단하면 계정을 연결할 수 없습니다.</p>
+      </div>
+      <div class="mt-4 flex flex-wrap items-end gap-2 lg:mt-auto lg:pt-6">
+        {#if inApp()}
+          <button type="button" class="{outline}" disabled={connecting || busy || screen !== 'ready'} onclick={connectYoutube}>
+            {connecting ? '계정 화면 여는 중' : '유튜브 계정 연결'}
+          </button>
+        {:else}
+          <a class="{outline} inline-flex items-center" href={youtubeSignIn} target="_blank" rel="noopener noreferrer">유튜브 계정 연결</a>
+        {/if}
+        {#if asking === 'logout'}
+          {@render confirmRow('logout', '유튜브에서 로그아웃할까요?', '로그아웃', 'youtube-logout')}
+        {:else}
+          <button type="button" data-feature="youtube-logout" class="{outline}" disabled={connecting || busy || screen !== 'ready'} onclick={() => ask('logout')}>
+            유튜브 로그아웃
+          </button>
+        {/if}
+      </div>
+    </section>
+    <div class="min-w-0 lg:col-span-2 lg:border-t lg:border-ink/10 lg:pt-6">
+      <GoogleAccount />
+    </div>
+  </div>
   {#if done || failed}
     <p role="status" class="text-sm {failed ? 'text-accent' : 'text-ink/80'}">{failed || done}</p>
   {/if}
+  <footer class="mt-auto flex w-full flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t border-ink/10 pt-4">
+    <section aria-label="앱 업데이트" class="flex flex-wrap items-center gap-4">
+      <div>
+        <h2 class="text-sm font-semibold">앱 업데이트</h2>
+        <p class="mt-1 text-sm text-ink/70">승인된 새 버전과 추가 기능을 확인합니다. 닫은 버전도 다시 볼 수 있습니다.</p>
+      </div>
+    </section>
+    <div>
+      {#if inApp()}
+        <button type="button" class="inline-flex min-h-11 items-center text-sm text-ink/70 underline underline-offset-4 hover:text-ink" disabled={privacyOpening} onclick={openPrivacy}>개인정보처리방침</button>
+      {:else}
+        <a class="inline-flex min-h-11 items-center text-sm text-ink/70 underline underline-offset-4 hover:text-ink" href="https://littlebitai.github.io/video-translate-overlay-2/privacy.html" target="_blank" rel="noopener noreferrer">개인정보처리방침</a>
+      {/if}
+      {#if privacyError}<p class="mt-2 text-sm text-accent" role="alert">{privacyError}</p>{/if}
+    </div>
+  </footer>
 </main>

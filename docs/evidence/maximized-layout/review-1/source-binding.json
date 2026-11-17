@@ -1,0 +1,58 @@
+{
+  "collectorHead": "938285973f01e1dd89710e3a476393b17d31f556",
+  "runtimeHeads": [
+    "f5277edebf2d1b0281f404177299479f19f80c55"
+  ],
+  "legacyReuse": {
+    "from": "d9d1df6f081a158bbb2adf561eed3758d77f60ad",
+    "to": "355cbc723dcf2b4c86d2207f3858d2898a60ea17",
+    "paths": [
+      "src",
+      "src-tauri",
+      "tests",
+      "Cargo.toml",
+      "Cargo.lock",
+      "package.json",
+      "package-lock.json",
+      "vite.config.ts",
+      "vite.overlay.config.ts",
+      "vitest.ui.config.ts",
+      "index.html",
+      "scripts/live.mjs"
+    ],
+    "changes": [],
+    "reuse": "Settings acceptance and historical screen geometry only; no missing browser core identity is inferred."
+  },
+  "unchangedAcceptedSettings": {
+    "from": "d9d1df6f081a158bbb2adf561eed3758d77f60ad",
+    "to": "938285973f01e1dd89710e3a476393b17d31f556",
+    "paths": [
+      "src/ui/Preferences.svelte",
+      "src/ui/GoogleAccount.svelte",
+      "src/ui/Nav.svelte"
+    ],
+    "changes": []
+  },
+  "runtimeBinding": {
+    "reportedHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+    "collectorHead": "938285973f01e1dd89710e3a476393b17d31f556",
+    "changedBuildInputs": [],
+    "comparisonExcludes": [
+      ".wiki",
+      "docs/evidence/maximized-layout",
+      "scripts/verification/maximized-layout"
+    ]
+  },
+  "ownerReports": [
+    {
+      "owner": "user",
+      "observation": "Accept reconstruction (Recommended)",
+      "kind": "Settings design acceptance"
+    },
+    {
+      "owner": "server",
+      "observation": "Review round 1 refused merge; complete repository and final checks remain server-owned",
+      "kind": "No local final-gate claim"
+    }
+  ]
+}
