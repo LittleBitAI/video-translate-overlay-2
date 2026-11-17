@@ -48,7 +48,7 @@ export default async function scenario(session) {
     // A card by its title; a playlist row (rail item from 768 px, accordion row below) by its name.
     const row = title => page.locator('li[data-video-key]').filter({hasText: title});
     const playlistRow = name => page.locator('ul[aria-label="재생목록"] li > div > button')
-      .filter({hasText: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} 영상 \\d+개$`)});
+      .filter({hasText: new RegExp(`^\\s*${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} 영상 \\d+개\\s*$`)});
     /** Shows a playlist's videos; tapping an open accordion row again would close it. */
     const select = async name => {
       const button = playlistRow(name);
