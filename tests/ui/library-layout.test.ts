@@ -41,6 +41,28 @@ test.each([[1280, 720], [1009, 720]])('at %i px the rail lists every playlist an
   expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(width);
 });
 
+// Property: whatever the scroll position, activating a list leaves its first card on screen.
+// Both lists hold the same videos, so nothing but the reveal can change the position.
+test.each([[1280, 720, 0], [384, 854, 45]])('at %i px activating a list after scrolling the previous one shows its first card', async (width, height, bar) => {
+  await page.viewport(width, height);
+  const same = many.map(v => v.video_key);
+  const twins = {videos:many, playlists:[{id:'a', name:'First', entries:same}, {id:'b', name:'Second', entries:same}]};
+  api(c => c.path === '/library/data' && c.method === 'GET' ? [200, twins] : c.path === '/browser' ? [200, {url:null, job:null}] : [200, {changed:true}]);
+  const root = open('/library');
+  await vi.waitFor(() => expect(rows(root)).toHaveLength(3));
+  row(root, 'First').click();
+  await vi.waitFor(() => expect(cards(root)).toHaveLength(12));
+  scrollTo({top: document.documentElement.scrollHeight});
+  await vi.waitFor(() => expect(scrollY).toBeGreaterThan(300));
+  row(root, 'Second').click();
+  await vi.waitFor(() => expect(row(root, 'Second').getAttribute(width < 768 ? 'aria-expanded' : 'aria-current')).toBe('true'));
+  await vi.waitFor(() => {
+    const first = cards(root)[0].getBoundingClientRect();
+    expect(first.top).toBeGreaterThanOrEqual(0);
+    expect(first.bottom).toBeLessThanOrEqual(height - bar);
+  });
+});
+
 test('at 384 px a tapped row expands its videos directly under it, one row at a time, pinned while they scroll', async () => {
   await page.viewport(384, 854);
   serve();

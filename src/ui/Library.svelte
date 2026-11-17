@@ -3,7 +3,7 @@
      playlist rail from 768 px, directly under the tapped row below that. Reordering,
      renaming and deleting wait behind 편집; adding waits behind 추가. -->
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, tick } from 'svelte';
   import { MediaQuery } from 'svelte/reactivity';
   import { request } from './api';
   import { go } from './router.svelte';
@@ -105,10 +105,19 @@
   }
 
   /** Selects a playlist (`''`: 전체 영상); on a phone, tapping the open row closes it. */
-  function choose(id: string) {
-    selected = !wide.current && open === id ? null : id;
+  async function choose(id: string) {
+    const closing = !wide.current && open === id;
+    selected = closing ? null : id;
     rename = playlists.find(p => p.id === id)?.name ?? '';
     search = ''; url = ''; linkTitle = ''; confirmation = null; error = '';
+    if (closing) return;
+    // The activated list starts on screen. Wide: the pane begins at the top of the page, and a
+    // grid scrolled down for the previous list would otherwise hide this one's first cards. Phone:
+    // the open list above may have collapsed and pulled the tapped row above the viewport.
+    await tick();
+    if (wide.current) { scrollTo({top: 0}); return; }
+    const row = root?.querySelector(`ul[aria-label="재생목록"] > li[data-key="${CSS.escape(id)}"]`);
+    if (row && row.getBoundingClientRect().top < 0) row.scrollIntoView({block: 'start'});
   }
 
   /** Moves by any number of places in one request; the backend clamps at the ends. */
