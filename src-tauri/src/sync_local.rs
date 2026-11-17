@@ -205,6 +205,34 @@ pub(crate) fn select_translation(db: &Db, key: &str, identity: &str) -> Result<(
     Ok(())
 }
 
+pub(crate) fn repair_silent_cue(db: &Db, key: &str, identity: &str, seq: usize) -> Result<String> {
+    if !owned(db)? { return Err("repair requires a retained saved version".into()); }
+    if db.query_one("SELECT id FROM job WHERE video_key=? AND stage IN ('downloading','writing','translating')", p![key])?.is_some()
+        || db.query_one("SELECT video_key FROM deleted_video WHERE video_key=?", p![key])?.is_some()
+        || !deletions_cleaned(db, key)? { return Err("saved version unavailable".into()); }
+    if db.query_one("SELECT identity FROM sync_selected_translation WHERE video_key=? AND identity=?", p![key,identity])?.is_none() {
+        return Err("selected version changed; inspect it again before repair".into());
+    }
+    let body = db.query_one("SELECT body FROM sync_record WHERE video_key=? AND identity=? AND identity LIKE 't/%'", p![key,identity])?
+        .ok_or("saved version unavailable")?[0].text();
+    let record = super::library::decode(&body)?;
+    let Change::Translation { mut translation } = record.change else { return Err("invalid saved version".into()); };
+    if seq >= translation.cues.len() || translation.cues.len() < 2 { return Err("repair must retain valid speech".into()); }
+    let cue = &translation.cues[seq];
+    if db.query_one("SELECT seq FROM cue WHERE video_key=? AND seq=? AND start_ms=? AND end_ms=? AND source_text=? AND text_ko=?",
+        p![key,seq as i64,cue.start_ms,cue.end_ms,&cue.source_text,&cue.text_ko])?.is_none() {
+        return Err("saved cue changed; inspect it again before repair".into());
+    }
+    translation.cues.remove(seq);
+    let jobs = db.query_one("SELECT COALESCE(MAX(cost_krw),0) FROM job WHERE video_key=?", p![key])?.ok_or("missing cost summary")?[0].real();
+    translation.cost_krw = translation.cost_krw.max(jobs).max(retained_cost(db, key)?);
+    let replacement = append(db, Change::Translation { translation }, record.seen_deletions, false)?
+        .ok_or("repair did not publish a replacement")?;
+    if !super::library::video(db, key)? { return Err("repair projection unavailable".into()); }
+    db.execute("DELETE FROM sync_dirty WHERE kind='video' AND key=?", p![key])?;
+    Ok(replacement.identity())
+}
+
 pub(crate) fn cleanup_video(db: &Db, key: &str) -> Result<()> {
     if !owned(db)? {
         return Ok(());

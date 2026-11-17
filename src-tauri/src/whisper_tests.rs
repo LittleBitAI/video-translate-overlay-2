@@ -6,6 +6,52 @@ use serde_json::json;
 use std::time::Instant;
 
 #[test]
+#[ignore = "needs VTO_MIT_OPENING_AUDIO, VTO_SPOKEN_REPETITION_AUDIO and VTO_MUSIC_MODELS: real audio and pinned local models"]
+fn mit_music_and_contrasting_speech_keep_their_source_clock() {
+    let models = PathBuf::from(std::env::var_os("VTO_MUSIC_MODELS").expect("models"));
+    let path = PathBuf::from(std::env::var_os("VTO_MIT_OPENING_AUDIO").expect("MIT opening"));
+    let pcm = crate::audio::decode_file(&path).unwrap();
+    let samples: Vec<_> = pcm.iter().map(|&s| s as f32 / 32768.0).collect();
+    let rate = crate::audio::RATE;
+    let detector = voice::Detector::new(&models);
+    detector.prepare(false).unwrap();
+    assert!(detector.spans(&samples[..8 * rate]).unwrap().is_empty(), "music became speech");
+    let cropped = &samples[1180 * rate / 1000..5800 * rate / 1000];
+    assert!(detector.spans(cropped).unwrap().is_empty(), "the original cropped music window became speech");
+    let spans = detector.spans(&samples[..20 * rate]).unwrap();
+    println!("MIT opening speech spans: {spans:?}");
+    assert!(spans.iter().all(|&(a, _)| a >= 8500), "music acquired a speech span: {spans:?}");
+    let speech = &samples[10 * rate..17 * rate];
+    let normal = detector.spans(speech).unwrap();
+    let quiet: Vec<_> = speech.iter().map(|x| x * 0.005).collect();
+    let quiet_spans = detector.spans(&quiet).unwrap();
+    assert!(!normal.is_empty() && !quiet_spans.is_empty());
+    assert!((normal[0].0 - quiet_spans[0].0).abs() <= 300);
+    let music = &samples[rate..8 * rate];
+    let mixed: Vec<_> = speech.iter().zip(music).map(|(s, m)| s + m * 0.3).collect();
+    assert!(!detector.spans(&mixed).unwrap().is_empty(), "speech over music was lost");
+    assert_eq!(detector.spans(&samples[..20 * rate]).unwrap(), spans, "reused state changed the speech clock");
+    assert_eq!(voice::Detector::new(&models).spans(&samples[..20 * rate]).unwrap(), spans, "reopening changed the speech clock");
+    let repetition_path = PathBuf::from(std::env::var_os("VTO_SPOKEN_REPETITION_AUDIO").expect("spoken repetition"));
+    let repetition: Vec<_> = crate::audio::decode_file(&repetition_path).unwrap().into_iter().map(|x| x as f32 / 32768.0).collect();
+    assert!(detector.spans(&repetition).unwrap().iter().any(|&(a,b)| a < 3500 && b > 9500), "genuine rhythmic speech was lost");
+    for (name, mobile) in [("ggml-base-q5_1.bin", true), ("ggml-large-v3-turbo-q5_0.bin", false)] {
+        let mut w = Whisper::new(&models, Some(models.join(name)));
+        w.mobile = mobile;
+        assert!(w.transcribe(&samples[..8 * rate], &mut |_| {}).unwrap().is_empty());
+        assert!(w.transcribe(cropped, &mut |_| {}).unwrap().is_empty());
+        let segs = w.transcribe(&samples[..20 * rate], &mut |_| {}).unwrap();
+        println!("{name}: {segs:?}");
+        assert!(!segs.is_empty() && segs.iter().all(|s| s.start_ms >= 8500));
+        assert!(segs.iter().map(|s| s.text.to_lowercase()).collect::<String>().contains("afternoon"));
+        let mut end = 0;
+        let (cues, _) = crate::stitch::window_cues(&crate::audio::Region { start: 0, end: 20 * rate }, segs, Vec::new(), None, None, &mut end);
+        assert!(cues.windows(2).all(|w| w[0].1 <= w[1].0));
+        assert!((cues[0].0 - 9100).abs() <= 300, "speech timing moved: {cues:?}");
+    }
+}
+
+#[test]
 #[ignore = "needs the original audio of vSCYL8ySh9g in VTO_WHISPER_BENCH_AUDIO, models and VTO_SYNC_RESULT"]
 fn problem_video_keeps_its_late_speech_on_the_source_clock() {
     let models = PathBuf::from(std::env::var_os("VTO_WHISPER_BENCH_MODELS").expect("models"));

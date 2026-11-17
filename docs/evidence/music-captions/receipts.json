@@ -1,0 +1,56 @@
+{
+  "recorded_at": "2026-11-17T23:37:34.621667+00:00",
+  "source_inputs": {
+    "src-tauri/Cargo.toml": "cc3b659fe56d4f86fdefed14c2de7d12556e98c77273e463f44c04690cc6290e",
+    "src-tauri/src/audio.rs": "d7106dd3208fac3ea9e4cfc444282991f30a4c0800c88f07002e58b1690970f1",
+    "src-tauri/src/library_store.rs": "d9937626b88b3907052ec5d8545df8367752ecbab6c0131ab80880d3334fbd2d",
+    "src-tauri/src/sync_local.rs": "42efc8c4e12c63ef87e32f92a79e8ab59ad36fbcf4245818a5f9cb69279706c6",
+    "src-tauri/src/sync_store_tests.rs": "025f1df86fa6209058c001e52214586a72f109564914d52b2f6054762cdf430a",
+    "src-tauri/src/whisper.rs": "2ec5491036e0cbd6a55fd9801778fd512d685862952aa362dbaaa8e868ed2067",
+    "src-tauri/src/whisper_tests.rs": "7cc19ac1336d7b3c0823a4801f1c6658e69b08afaa8be5420bd43d0373f5711f",
+    "src-tauri/src/voice.rs": "0d87d802b41f9bdae5a52104d6f50b8174b5cc66eb6b4b245849ea241f828fe0",
+    "src-tauri/examples/repair_saved_music.rs": "abbffdfef6595265fcf8d89aea3f71a5af297933ff9569f6bab6e0017f538597"
+  },
+  "inputs": {
+    "mit_opening_wav_sha256": "df962fa26e63bf34842203f889ecf7040a85e155010eae9199ae490968605835",
+    "spoken_repetition_wav_sha256": "22c4b85abf853c4693521295404a6a9e292135c218b59de58b3a75f9f4605af7",
+    "vad_model_sha256": "2aa269b785eeb53a82983a20501ddf7c1d9c48e33ab63a41391ac6c9f7fb6987"
+  },
+  "tools": {
+    "target/debug/examples/repair_saved_music.exe": "4822225aa92be81be01ddad46cd54618c118f13fd7a8ba55fa21b92117ee31dc",
+    "target/debug/vto-web.exe": "6b04daa42f37b8967375f1322b529623c079995171312e5f4b742eda4f85c0ed"
+  },
+  "api": {
+    "video_key": "QDX-1M5Nj7s",
+    "previous": "t/QDX-1M5Nj7s/dae8e80e2206305ffe0d3e679af5df6474dcfa75081c8045d1ab6a6cda4d8973",
+    "selected": "t/QDX-1M5Nj7s/b46450964281773a3b439fbe164cb5ac0b9aa0fcc8dc77c13c6a240554de8b27",
+    "retained_cues": 754,
+    "first_speech_ms": 9100,
+    "cost_krw": 276.2938750000004,
+    "paid_calls": 0,
+    "prior_version_retained": true,
+    "unrelated_saved_videos": 4,
+    "playlists_unchanged": true,
+    "reopened": true
+  },
+  "installed_library": {
+    "video_key": "QDX-1M5Nj7s",
+    "previous": "t/QDX-1M5Nj7s/dae8e80e2206305ffe0d3e679af5df6474dcfa75081c8045d1ab6a6cda4d8973",
+    "selected": "t/QDX-1M5Nj7s/b46450964281773a3b439fbe164cb5ac0b9aa0fcc8dc77c13c6a240554de8b27",
+    "original_cues": 755,
+    "repaired_cues": 754,
+    "first_speech_ms": 9100,
+    "source_and_translation_bytes_preserved": true,
+    "timestamps_preserved": true,
+    "previous_response_bytes_preserved": true,
+    "cost_krw": 276.2938750000004,
+    "paid_calls": 0,
+    "videos_playlists_playback_and_browser_unchanged": true,
+    "unrelated_jobs_cues_and_selections_unchanged": true,
+    "reopened": true,
+    "integrity_check": "ok"
+  },
+  "windows_playback": "pending user verification; native UI transport unavailable",
+  "final_verification": "server-owned, pending",
+  "baseline_commit": "cd81109bc4c8be7ab81ff2e5d6dc74de83c7a1d3"
+}

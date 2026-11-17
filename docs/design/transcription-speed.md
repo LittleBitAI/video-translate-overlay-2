@@ -86,6 +86,13 @@ window's start plus the model's time inside the window, clamped to the window.
 
 ## How a cut through speech is reconciled
 
+Before recognizing a window, both platforms now apply an on-device speech
+detector so music admitted by volume detection cannot become captions. Speech
+portions retain their source offsets and short pauses; the original window
+plan and the reconciliation below still apply. The [music-caption repair
+record](../evidence/music-captions/README.md) describes the detector, the MIT
+opening regression and the explicit saved-version repair.
+
 Both windows hear the 3 s overlap, so both may write the words in it, a word
 cut at an edge may come back as a fragment, and a sentence may be split
 between the two (`src-tauri/src/stitch.rs`).

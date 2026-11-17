@@ -75,6 +75,11 @@ impl Store {
         self.library_write(|db| local::select_translation(db, key, identity))
     }
 
+    /// The caller checks the original audio for this cue first. Publication is atomic and version-bound.
+    pub fn repair_silent_cue(&self, key: &str, identity: &str, seq: usize) -> R<String> {
+        self.library_write(|db| local::repair_silent_cue(db, key, identity, seq))
+    }
+
     pub fn deleted(&self, key: &str) -> R<Option<(String, bool)>> {
         Ok(self.db.query_one("SELECT token,complete FROM deleted_video WHERE video_key=?", p![key])?.map(|r| (r[0].text(), r[1].int() != 0)))
     }

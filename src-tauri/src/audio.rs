@@ -227,6 +227,21 @@ pub fn speech_regions(pcm: &[i16]) -> Vec<Region> {
 /// Silence inside one window of [`speech_windows`] is at most this (padding
 /// included): a pause, never the long silence the model would fill with text.
 const MAX_GAP: usize = 3 * RATE / 2;
+
+/// Acoustic voice spans inside an existing model window, still on that window's clock.
+pub(crate) fn detected_voice_regions(spans: &[(i64, i64)], samples: usize) -> Vec<Region> {
+    let mut out: Vec<Region> = Vec::new();
+    for &(start, end) in spans {
+        let start = (start.max(0) as usize * RATE / 1000).min(samples);
+        let end = (end.max(0) as usize * RATE / 1000).min(samples);
+        if end <= start { continue; }
+        match out.last_mut() {
+            Some(r) if start <= r.end + MAX_GAP => r.end = r.end.max(end),
+            _ => out.push(Region {start, end}),
+        }
+    }
+    out
+}
 /// A pause this long (all frames under the speech threshold) is a safe cut.
 const PAUSE_FRAMES: usize = 10; // 200 ms
 /// How far back from a window's limit a cut through a long span is looked for.
@@ -443,6 +458,15 @@ mod tests {
 
     fn tone(ms: usize) -> Vec<i16> {
         (0..ms * RATE / 1000).map(|i| ((i as f32 * 0.055).sin() * 8000.0) as i16).collect()
+    }
+
+    #[test]
+    fn detected_voice_keeps_nearby_speech_and_original_offsets_without_music() {
+        assert!(detected_voice_regions(&[], 8 * RATE).is_empty());
+        let r = detected_voice_regions(&[(9040,14000),(14070,18580),(18580,20000)], 20 * RATE);
+        assert_eq!(r.iter().map(|r|(r.start_ms(),r.end_ms())).collect::<Vec<_>>(),[(9040,20000)]);
+        let r = detected_voice_regions(&[(1000,2000),(4500,5500),(7000,8000)], 7500 * RATE / 1000);
+        assert_eq!(r.iter().map(|r|(r.start_ms(),r.end_ms())).collect::<Vec<_>>(),[(1000,2000),(4500,7500)]);
     }
 
     #[test]
