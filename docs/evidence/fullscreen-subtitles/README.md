@@ -1,8 +1,12 @@
 # Automatic fullscreen subtitle sizing
 
-Application revision: `aedada2`. User acceptance of fullscreen readability is
-pending. These are focused execution checks; the server-owned repository gate
-and final hosted CI have not been run by this session.
+Application revision: `aedada2`. On 2026-11-17 the user selected
+"Accept readability (Recommended)" after receiving the committed short- and
+long-cue Windows fullscreen captures. This accepts automatic sizing at 57.6 px
+for a 1920×1080 video area. The accepted captures are
+`native-fullscreen-short.png` and `native-fullscreen-long.png`; their hashes are
+in `captures.json`. These are focused execution checks; the server-owned
+repository gate and final hosted CI have not been run by this session.
 
 ## Player and build
 
