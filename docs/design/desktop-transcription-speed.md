@@ -60,4 +60,10 @@ The Windows build needs the Vulkan SDK (`VULKAN_SDK`: headers, `glslc`,
 `vulkan-1.lib`), 1.4.363.1 here. Android and the default `tools` build
 (CI's gate) do not compile whisper.cpp with Vulkan. CMake inside
 whisper-rs-sys fails to detect the compiler under a very long target path;
-a short `CARGO_TARGET_DIR` avoids it.
+a short `CARGO_TARGET_DIR` avoids it, and `scripts/package-release.ps1`
+takes the installer from that directory too.
+
+The shipped loader takes precedence over a newer one a driver installs, and
+is replaced only by a new app release. Khronos advises against bundling it
+for that reason; here it is the price of starting on a PC with no Vulkan
+driver at all.
