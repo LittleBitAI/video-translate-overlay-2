@@ -1,0 +1,5425 @@
+{
+  "head": "938285973f01e1dd89710e3a476393b17d31f556",
+  "buildBinding": {
+    "reportedHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+    "collectorHead": "938285973f01e1dd89710e3a476393b17d31f556",
+    "changedBuildInputs": [],
+    "comparisonExcludes": [
+      ".wiki",
+      "docs/evidence/maximized-layout",
+      "scripts/verification/maximized-layout"
+    ]
+  },
+  "environment": {
+    "observedAt": "2026-11-17T09:29:48.459Z",
+    "platform": "win32",
+    "os": "Windows 11 Home",
+    "release": "10.0.26200",
+    "arch": "x64",
+    "node": "v24.18.0",
+    "playwright": "1.61.0",
+    "rust": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "chromium": "149.0.7827.55"
+  },
+  "treeSha256": "d021b360dd0946588421d084092dc2061d3e91b7829319a03cf6f6a45e77adb3",
+  "origin": "http://127.0.0.1:8146",
+  "profile": "9716aba339a13f4fc15f2b559d976df7295d02cb7fd037aeddf0be8835107d27",
+  "build": {
+    "head": "f5277edebf2d1b0281f404177299479f19f80c55",
+    "pid": 37532
+  },
+  "ownership": {
+    "listeners": "127.0.0.1",
+    "created": "2026-11-17T09:28:07.7006190Z",
+    "image": "C:\\Users\\dasdk\\PycharmProjects\\video-translate-overlay-2\\target\\debug\\vto-web.exe",
+    "pid": 37532,
+    "rootPid": 37532,
+    "ancestry": [
+      {
+        "pid": 37532,
+        "parent": 36228,
+        "image": "C:\\Users\\dasdk\\PycharmProjects\\video-translate-overlay-2\\target\\debug\\vto-web.exe",
+        "created": "2026-11-17T09:28:07.7006190Z",
+        "command": "C:\\Users\\dasdk\\PycharmProjects\\video-translate-overlay-2\\target\\debug\\vto-web.exe --stand-ins"
+      }
+    ],
+    "listenerVersion": null,
+    "port": 8146
+  },
+  "binary": {
+    "path": "target/debug/vto-web.exe",
+    "sha256": "aaf0993659777202434d77539b990e4fb7355d023edb7e7210751f98fde2f576"
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "route": "/build",
+      "status": 200,
+      "body": {
+        "head": "f5277edebf2d1b0281f404177299479f19f80c55",
+        "pid": 37532
+      }
+    },
+    {
+      "method": "GET",
+      "route": "/library/data",
+      "status": 200,
+      "body": {
+        "account_email": null,
+        "legacy_available": false,
+        "playlists": [],
+        "videos": []
+      }
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/library/data",
+      "status": 200,
+      "body": {
+        "account_email": null,
+        "legacy_available": false,
+        "playlists": [
+          {
+            "entries": [],
+            "id": "0a43ed99-f59e-4720-878e-14661c638787",
+            "name": "Layout fixtures"
+          }
+        ],
+        "videos": []
+      }
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "changed": true
+      },
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/library/data",
+      "status": 200,
+      "body": {
+        "account_email": null,
+        "legacy_available": false,
+        "playlists": [
+          {
+            "entries": [
+              "7f8ad22845bfe8710a373686f246fca2e960d074da023bcbee2b82c53adbfead",
+              "7f9f64c0432da690ad941cf98d080330e2c93e96430b82db0c4ef15a38606e35",
+              "95a9a0defaf3faaaab0a2e9ce03b52cde6d089be60b790e197664f463c439e3d",
+              "8ccef6e61d3db819ec60b3d11306631e85e3e80d509f9772e863479859cb0664",
+              "e9a94bb22ab9b8087b625a1838552f1a23c1c6b7db9c5f67fb4881109d7be138",
+              "e167e64df4bedacaee5bd458cf1068de853adedd9bfa19f2ea050e5bbe4d7e68",
+              "32ee365a21fed81d3eb2e6fa12d37e67d0208923162896c468535071d1fe7f50",
+              "a18e60907bea950281a5940d9597692ef2619523d0c9dc1044922ab25eafb5b6",
+              "cda545a20c50ca5925aaf3a4714dc66cc9196744e50fd8078a9550b5fd4bd88f",
+              "e5fbc1af180de8e11be30fe2753a17798d9132bca511cfa7be518af8a0a6d74b",
+              "1b18d988ef801a9123581c51777ade598b3af62ff94cf66b0bedd2a33bd02940",
+              "f0ca507b4dee8c174700607e4b946a0bf0a88001feb3f3d4f1919f1e3ea8e52c",
+              "6258904b75ded2d092caadd025c9f89a22038fed3f15b7e7b979d5e957d19a66",
+              "454336dd8200b45c42cf2f880a6093e789f7c0fddc06e1a3c6ca7df44c13cf39",
+              "dff972ac0b0ec0908566927081fe65022d6831f90320aa15e3e967ed9491ea50",
+              "bfb5d4f94252ad35a839315581d43206c397a983fda65bc2839444fb2f5a20a3",
+              "6297bae8b6fad09b96a60c927aeacedd79b93afec68b9331526f4b3204a2b867",
+              "b90801eb2cead18f045cb2ba948f23b39ebc265348021ada99f2d1ce07c5bf48",
+              "85b5b09dc70b8a95413583101a7af511e4974de3a1db08d1ffdfd24a686cfab1",
+              "0a139ae331147e721cccd5101e6a35a273b84724a4f5773d81a7fecc8adb2797",
+              "342d1525b1050d4309d63adb1e5732952a5572309f2dc0530396809c23d92429",
+              "52a8c88fd5c8e3b65fa522bf931a50e7379d219dd1ed0752d47d9083ed65b1f7",
+              "33623cbe9f82eb96b489dfae89b6f9e28d67f53080a9fbdef1bf482d86d5ee90",
+              "3ba30c2d08abcef2dc2395a62c4cd6e2a5777a4449c721db3a589ca3bcacd8b9",
+              "d08021a6ab57ca48ba741c2071f674df80cda36665dd4c11309460770ebdbf12",
+              "37cf84e7a1540409f83e4bc5ad28f10f91d136e89ff932df901bd6ed0515b549",
+              "46226803f90dc45ebaf03e7a44b4dad39237476f5f98b952656b3e3cbff07ce1",
+              "47b81dc6f0fde44fc7371ace25affefa11d66e8dcd984dac706f03174fdd6088",
+              "34299e0ba6c680a29a77d95e381a8afe8f15302f2fe1853de62d9800f926dc31",
+              "8b92d8b3ea544cfd662f0bc057616f8828152cd486c7afd84436fa978943f952",
+              "ef9441fbce187a34d74c658a8a0f2867c65aab48ef01c0f736d4c88a086e019b",
+              "96640a99c8bb2a52e9180a76b049c55a6645ff1fd3e28d86f96df612edcbef4e",
+              "37f0e8afc3498da582a3ac698f249025cba1b71e24ae36ab03143e5b5c717870",
+              "b1a383b3dcfc57cd0a29123815a576ffa568b9d3ff387b802b71ee2c5686382b",
+              "994372f7fbf40e452356b834ed3d435f3504156d2cee20b841452a1337c87710",
+              "779e092e0938d44a35f709edffa2aa2cb9e4e8f4d86af3c819e682debcc6d328"
+            ],
+            "id": "0a43ed99-f59e-4720-878e-14661c638787",
+            "name": "Layout fixtures"
+          }
+        ],
+        "videos": [
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-35.mp4",
+            "saved": false,
+            "title": "Lecture 36: layout fixture",
+            "versions": [],
+            "video_key": "779e092e0938d44a35f709edffa2aa2cb9e4e8f4d86af3c819e682debcc6d328"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-34.mp4",
+            "saved": false,
+            "title": "Lecture 35: layout fixture",
+            "versions": [],
+            "video_key": "994372f7fbf40e452356b834ed3d435f3504156d2cee20b841452a1337c87710"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-33.mp4",
+            "saved": false,
+            "title": "Lecture 34: layout fixture",
+            "versions": [],
+            "video_key": "b1a383b3dcfc57cd0a29123815a576ffa568b9d3ff387b802b71ee2c5686382b"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-32.mp4",
+            "saved": false,
+            "title": "Lecture 33: layout fixture",
+            "versions": [],
+            "video_key": "37f0e8afc3498da582a3ac698f249025cba1b71e24ae36ab03143e5b5c717870"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-31.mp4",
+            "saved": false,
+            "title": "Lecture 32: layout fixture",
+            "versions": [],
+            "video_key": "96640a99c8bb2a52e9180a76b049c55a6645ff1fd3e28d86f96df612edcbef4e"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-30.mp4",
+            "saved": false,
+            "title": "Lecture 31: layout fixture",
+            "versions": [],
+            "video_key": "ef9441fbce187a34d74c658a8a0f2867c65aab48ef01c0f736d4c88a086e019b"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-29.mp4",
+            "saved": false,
+            "title": "Lecture 30: layout fixture",
+            "versions": [],
+            "video_key": "8b92d8b3ea544cfd662f0bc057616f8828152cd486c7afd84436fa978943f952"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-28.mp4",
+            "saved": false,
+            "title": "Lecture 29: layout fixture",
+            "versions": [],
+            "video_key": "34299e0ba6c680a29a77d95e381a8afe8f15302f2fe1853de62d9800f926dc31"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-27.mp4",
+            "saved": false,
+            "title": "Lecture 28: layout fixture",
+            "versions": [],
+            "video_key": "47b81dc6f0fde44fc7371ace25affefa11d66e8dcd984dac706f03174fdd6088"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-26.mp4",
+            "saved": false,
+            "title": "Lecture 27: layout fixture",
+            "versions": [],
+            "video_key": "46226803f90dc45ebaf03e7a44b4dad39237476f5f98b952656b3e3cbff07ce1"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-25.mp4",
+            "saved": false,
+            "title": "Lecture 26: layout fixture",
+            "versions": [],
+            "video_key": "37cf84e7a1540409f83e4bc5ad28f10f91d136e89ff932df901bd6ed0515b549"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-24.mp4",
+            "saved": false,
+            "title": "Lecture 25: layout fixture",
+            "versions": [],
+            "video_key": "d08021a6ab57ca48ba741c2071f674df80cda36665dd4c11309460770ebdbf12"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-23.mp4",
+            "saved": false,
+            "title": "Lecture 24: layout fixture",
+            "versions": [],
+            "video_key": "3ba30c2d08abcef2dc2395a62c4cd6e2a5777a4449c721db3a589ca3bcacd8b9"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-22.mp4",
+            "saved": false,
+            "title": "Lecture 23: layout fixture",
+            "versions": [],
+            "video_key": "33623cbe9f82eb96b489dfae89b6f9e28d67f53080a9fbdef1bf482d86d5ee90"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-21.mp4",
+            "saved": false,
+            "title": "Lecture 22: layout fixture",
+            "versions": [],
+            "video_key": "52a8c88fd5c8e3b65fa522bf931a50e7379d219dd1ed0752d47d9083ed65b1f7"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-20.mp4",
+            "saved": false,
+            "title": "Lecture 21: layout fixture",
+            "versions": [],
+            "video_key": "342d1525b1050d4309d63adb1e5732952a5572309f2dc0530396809c23d92429"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-19.mp4",
+            "saved": false,
+            "title": "Lecture 20: layout fixture",
+            "versions": [],
+            "video_key": "0a139ae331147e721cccd5101e6a35a273b84724a4f5773d81a7fecc8adb2797"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-18.mp4",
+            "saved": false,
+            "title": "Lecture 19: layout fixture",
+            "versions": [],
+            "video_key": "85b5b09dc70b8a95413583101a7af511e4974de3a1db08d1ffdfd24a686cfab1"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-17.mp4",
+            "saved": false,
+            "title": "Lecture 18: layout fixture",
+            "versions": [],
+            "video_key": "b90801eb2cead18f045cb2ba948f23b39ebc265348021ada99f2d1ce07c5bf48"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-16.mp4",
+            "saved": false,
+            "title": "Lecture 17: layout fixture",
+            "versions": [],
+            "video_key": "6297bae8b6fad09b96a60c927aeacedd79b93afec68b9331526f4b3204a2b867"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-15.mp4",
+            "saved": false,
+            "title": "Lecture 16: layout fixture",
+            "versions": [],
+            "video_key": "bfb5d4f94252ad35a839315581d43206c397a983fda65bc2839444fb2f5a20a3"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-14.mp4",
+            "saved": false,
+            "title": "Lecture 15: layout fixture",
+            "versions": [],
+            "video_key": "dff972ac0b0ec0908566927081fe65022d6831f90320aa15e3e967ed9491ea50"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-13.mp4",
+            "saved": false,
+            "title": "Lecture 14: layout fixture",
+            "versions": [],
+            "video_key": "454336dd8200b45c42cf2f880a6093e789f7c0fddc06e1a3c6ca7df44c13cf39"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-12.mp4",
+            "saved": false,
+            "title": "Lecture 13: layout fixture",
+            "versions": [],
+            "video_key": "6258904b75ded2d092caadd025c9f89a22038fed3f15b7e7b979d5e957d19a66"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-11.mp4",
+            "saved": false,
+            "title": "Lecture 12: layout fixture",
+            "versions": [],
+            "video_key": "f0ca507b4dee8c174700607e4b946a0bf0a88001feb3f3d4f1919f1e3ea8e52c"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-10.mp4",
+            "saved": false,
+            "title": "Lecture 11: layout fixture",
+            "versions": [],
+            "video_key": "1b18d988ef801a9123581c51777ade598b3af62ff94cf66b0bedd2a33bd02940"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-9.mp4",
+            "saved": false,
+            "title": "Lecture 10: layout fixture",
+            "versions": [],
+            "video_key": "e5fbc1af180de8e11be30fe2753a17798d9132bca511cfa7be518af8a0a6d74b"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-8.mp4",
+            "saved": false,
+            "title": "Lecture 9: layout fixture",
+            "versions": [],
+            "video_key": "cda545a20c50ca5925aaf3a4714dc66cc9196744e50fd8078a9550b5fd4bd88f"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-7.mp4",
+            "saved": false,
+            "title": "Lecture 8: layout fixture",
+            "versions": [],
+            "video_key": "a18e60907bea950281a5940d9597692ef2619523d0c9dc1044922ab25eafb5b6"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-6.mp4",
+            "saved": false,
+            "title": "Lecture 7: layout fixture",
+            "versions": [],
+            "video_key": "32ee365a21fed81d3eb2e6fa12d37e67d0208923162896c468535071d1fe7f50"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-5.mp4",
+            "saved": false,
+            "title": "Lecture 6: layout fixture",
+            "versions": [],
+            "video_key": "e167e64df4bedacaee5bd458cf1068de853adedd9bfa19f2ea050e5bbe4d7e68"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-4.mp4",
+            "saved": false,
+            "title": "Lecture 5: layout fixture",
+            "versions": [],
+            "video_key": "e9a94bb22ab9b8087b625a1838552f1a23c1c6b7db9c5f67fb4881109d7be138"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-3.mp4",
+            "saved": false,
+            "title": "Lecture 4: layout fixture",
+            "versions": [],
+            "video_key": "8ccef6e61d3db819ec60b3d11306631e85e3e80d509f9772e863479859cb0664"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-2.mp4",
+            "saved": false,
+            "title": "Lecture 3: layout fixture",
+            "versions": [],
+            "video_key": "95a9a0defaf3faaaab0a2e9ce03b52cde6d089be60b790e197664f463c439e3d"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-1.mp4",
+            "saved": false,
+            "title": "Lecture 2: layout fixture",
+            "versions": [],
+            "video_key": "7f9f64c0432da690ad941cf98d080330e2c93e96430b82db0c4ef15a38606e35"
+          },
+          {
+            "active": false,
+            "deleting": false,
+            "duration_ms": 0,
+            "page_url": "http://127.0.0.1:8146/lecture-0.mp4",
+            "saved": false,
+            "title": "Lecture 1: layout fixture",
+            "versions": [],
+            "video_key": "7f8ad22845bfe8710a373686f246fca2e960d074da023bcbee2b82c53adbfead"
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "route": "/browser/open",
+      "body": {
+        "account_gate": false,
+        "opened_url": "http://127.0.0.1:8146/layout.mp4",
+        "site": "other"
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/browser/open",
+      "body": {
+        "error": "bad_url",
+        "message": "http나 https 주소만 열 수 있습니다.",
+        "status": 400
+      },
+      "status": 400
+    },
+    {
+      "method": "GET",
+      "route": "/browser",
+      "status": 200,
+      "body": {
+        "job": null,
+        "url": "http://127.0.0.1:8146/layout.mp4"
+      }
+    },
+    {
+      "method": "POST",
+      "route": "/browser/open",
+      "body": {
+        "error": "bad_url",
+        "message": "http나 https 주소만 열 수 있습니다.",
+        "status": 400
+      },
+      "status": 400
+    },
+    {
+      "method": "GET",
+      "route": "/browser",
+      "status": 200,
+      "body": {
+        "job": null,
+        "url": "http://127.0.0.1:8146/layout.mp4"
+      }
+    },
+    {
+      "method": "POST",
+      "route": "/browser/open",
+      "body": {
+        "error": "bad_url",
+        "message": "http나 https 주소만 열 수 있습니다.",
+        "status": 400
+      },
+      "status": 400
+    },
+    {
+      "method": "GET",
+      "route": "/browser",
+      "status": 200,
+      "body": {
+        "job": null,
+        "url": "http://127.0.0.1:8146/layout.mp4"
+      }
+    },
+    {
+      "method": "GET",
+      "route": "/settings",
+      "status": 200,
+      "body": {
+        "favorite_voice_available": false,
+        "key_masked": null,
+        "key_set": false,
+        "translation_model": "gemini-3.1-flash-lite"
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "name": "unchanged application inputs at the core revision",
+      "expected": [],
+      "observed": []
+    },
+    {
+      "name": "core executable",
+      "expected": "c:\\users\\dasdk\\pycharmprojects\\video-translate-overlay-2\\target\\debug\\vto-web.exe",
+      "observed": "c:\\users\\dasdk\\pycharmprojects\\video-translate-overlay-2\\target\\debug\\vto-web.exe"
+    },
+    {
+      "name": "fresh isolated library",
+      "expected": {
+        "videos": [],
+        "playlists": []
+      },
+      "observed": {
+        "videos": [],
+        "playlists": []
+      }
+    },
+    {
+      "name": "playlist creation status",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "playlist name",
+      "expected": [
+        "Layout fixtures"
+      ],
+      "observed": [
+        "Layout fixtures"
+      ]
+    },
+    {
+      "name": "link 1 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 2 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 3 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 4 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 5 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 6 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 7 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 8 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 9 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 10 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 11 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 12 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 13 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 14 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 15 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 16 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 17 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 18 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 19 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 20 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 21 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 22 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 23 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 24 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 25 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 26 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 27 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 28 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 29 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 30 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 31 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 32 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 33 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 34 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 35 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "link 36 accepted",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "all links retained",
+      "expected": 36,
+      "observed": 36
+    },
+    {
+      "name": "no translation created",
+      "expected": true,
+      "observed": true
+    },
+    {
+      "name": "media opening status",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "non-HTTP address denied",
+      "expected": 400,
+      "observed": 400
+    },
+    {
+      "name": "rejected address preserves player and creates no job",
+      "expected": {
+        "url": "http://127.0.0.1:8146/layout.mp4",
+        "job": null
+      },
+      "observed": {
+        "url": "http://127.0.0.1:8146/layout.mp4",
+        "job": null
+      }
+    },
+    {
+      "name": "non-HTTP address denied",
+      "expected": 400,
+      "observed": 400
+    },
+    {
+      "name": "rejected address preserves player and creates no job",
+      "expected": {
+        "url": "http://127.0.0.1:8146/layout.mp4",
+        "job": null
+      },
+      "observed": {
+        "url": "http://127.0.0.1:8146/layout.mp4",
+        "job": null
+      }
+    },
+    {
+      "name": "non-HTTP address denied",
+      "expected": 400,
+      "observed": 400
+    },
+    {
+      "name": "rejected address preserves player and creates no job",
+      "expected": {
+        "url": "http://127.0.0.1:8146/layout.mp4",
+        "job": null
+      },
+      "observed": {
+        "url": "http://127.0.0.1:8146/layout.mp4",
+        "job": null
+      }
+    },
+    {
+      "name": "settings readable",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "screen and core revisions match",
+      "expected": "f5277edebf2d1b0281f404177299479f19f80c55",
+      "observed": "f5277edebf2d1b0281f404177299479f19f80c55"
+    },
+    {
+      "name": "screen and core revisions match",
+      "expected": "f5277edebf2d1b0281f404177299479f19f80c55",
+      "observed": "f5277edebf2d1b0281f404177299479f19f80c55"
+    },
+    {
+      "name": "screen and core revisions match",
+      "expected": "f5277edebf2d1b0281f404177299479f19f80c55",
+      "observed": "f5277edebf2d1b0281f404177299479f19f80c55"
+    },
+    {
+      "name": "rejected address retains the media",
+      "expected": "http://127.0.0.1:8146/layout.mp4",
+      "observed": "http://127.0.0.1:8146/layout.mp4"
+    },
+    {
+      "name": "player bottom stays visible below messages",
+      "expected": true,
+      "observed": true
+    },
+    {
+      "name": "rejected address retains the media",
+      "expected": "http://127.0.0.1:8146/layout.mp4",
+      "observed": "http://127.0.0.1:8146/layout.mp4"
+    },
+    {
+      "name": "player bottom stays visible below messages",
+      "expected": true,
+      "observed": true
+    },
+    {
+      "name": "no browser runtime errors",
+      "expected": [],
+      "observed": []
+    },
+    {
+      "name": "screen and core revisions match",
+      "expected": "f5277edebf2d1b0281f404177299479f19f80c55",
+      "observed": "f5277edebf2d1b0281f404177299479f19f80c55"
+    },
+    {
+      "name": "screen and core revisions match",
+      "expected": "f5277edebf2d1b0281f404177299479f19f80c55",
+      "observed": "f5277edebf2d1b0281f404177299479f19f80c55"
+    },
+    {
+      "name": "screen and core revisions match",
+      "expected": "f5277edebf2d1b0281f404177299479f19f80c55",
+      "observed": "f5277edebf2d1b0281f404177299479f19f80c55"
+    },
+    {
+      "name": "rejected address retains the media",
+      "expected": "http://127.0.0.1:8146/layout.mp4",
+      "observed": "http://127.0.0.1:8146/layout.mp4"
+    },
+    {
+      "name": "player bottom stays visible below messages",
+      "expected": true,
+      "observed": true
+    },
+    {
+      "name": "rejected address retains the media",
+      "expected": "http://127.0.0.1:8146/layout.mp4",
+      "observed": "http://127.0.0.1:8146/layout.mp4"
+    },
+    {
+      "name": "player bottom stays visible below messages",
+      "expected": true,
+      "observed": true
+    },
+    {
+      "name": "no browser runtime errors",
+      "expected": [],
+      "observed": []
+    },
+    {
+      "name": "screen and core revisions match",
+      "expected": "f5277edebf2d1b0281f404177299479f19f80c55",
+      "observed": "f5277edebf2d1b0281f404177299479f19f80c55"
+    },
+    {
+      "name": "screen and core revisions match",
+      "expected": "f5277edebf2d1b0281f404177299479f19f80c55",
+      "observed": "f5277edebf2d1b0281f404177299479f19f80c55"
+    },
+    {
+      "name": "screen and core revisions match",
+      "expected": "f5277edebf2d1b0281f404177299479f19f80c55",
+      "observed": "f5277edebf2d1b0281f404177299479f19f80c55"
+    },
+    {
+      "name": "rejected address retains the media",
+      "expected": "http://127.0.0.1:8146/layout.mp4",
+      "observed": "http://127.0.0.1:8146/layout.mp4"
+    },
+    {
+      "name": "player bottom stays visible below messages",
+      "expected": true,
+      "observed": true
+    },
+    {
+      "name": "rejected address retains the media",
+      "expected": "http://127.0.0.1:8146/layout.mp4",
+      "observed": "http://127.0.0.1:8146/layout.mp4"
+    },
+    {
+      "name": "player bottom stays visible below messages",
+      "expected": true,
+      "observed": true
+    },
+    {
+      "name": "no browser runtime errors",
+      "expected": [],
+      "observed": []
+    },
+    {
+      "name": "screen and core revisions match",
+      "expected": "f5277edebf2d1b0281f404177299479f19f80c55",
+      "observed": "f5277edebf2d1b0281f404177299479f19f80c55"
+    },
+    {
+      "name": "screen and core revisions match",
+      "expected": "f5277edebf2d1b0281f404177299479f19f80c55",
+      "observed": "f5277edebf2d1b0281f404177299479f19f80c55"
+    },
+    {
+      "name": "screen and core revisions match",
+      "expected": "f5277edebf2d1b0281f404177299479f19f80c55",
+      "observed": "f5277edebf2d1b0281f404177299479f19f80c55"
+    },
+    {
+      "name": "rejected address retains the media",
+      "expected": "http://127.0.0.1:8146/layout.mp4",
+      "observed": "http://127.0.0.1:8146/layout.mp4"
+    },
+    {
+      "name": "player bottom stays visible below messages",
+      "expected": true,
+      "observed": true
+    },
+    {
+      "name": "rejected address retains the media",
+      "expected": "http://127.0.0.1:8146/layout.mp4",
+      "observed": "http://127.0.0.1:8146/layout.mp4"
+    },
+    {
+      "name": "player bottom stays visible below messages",
+      "expected": true,
+      "observed": true
+    },
+    {
+      "name": "no browser runtime errors",
+      "expected": [],
+      "observed": []
+    }
+  ],
+  "sessions": [
+    {
+      "viewport": [
+        1280,
+        720
+      ],
+      "results": [
+        {
+          "name": "video",
+          "viewport": [
+            1280,
+            720
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "profile": "9716aba339a13f4fc15f2b559d976df7295d02cb7fd037aeddf0be8835107d27",
+          "scrollWidth": 1265,
+          "scrollHeight": 720,
+          "nav": {
+            "x": 16,
+            "y": 0,
+            "width": 208,
+            "height": 60,
+            "right": 224,
+            "bottom": 60
+          },
+          "main": {
+            "x": 0,
+            "y": 61,
+            "width": 1265,
+            "height": 658.984375,
+            "right": 1265,
+            "bottom": 719.984375
+          },
+          "content": {
+            "x": 16,
+            "y": 77,
+            "width": 1114.65625,
+            "height": 626.984375,
+            "right": 1130.65625,
+            "bottom": 703.984375
+          },
+          "stage": {
+            "x": 16,
+            "y": 77,
+            "width": 1114.65625,
+            "height": 626.984375,
+            "right": 1130.65625,
+            "bottom": 703.984375
+          },
+          "firstCard": null,
+          "columns": 0,
+          "rail": null,
+          "account": null,
+          "keyCard": null,
+          "key": null,
+          "settingsGroups": [],
+          "footer": null,
+          "keyForm": null,
+          "workspace": null,
+          "keyRemove": null,
+          "youtubeLogout": null,
+          "youtubeSection": null,
+          "update": null,
+          "privacyInFooter": false,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": "page"
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": null
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": null
+            }
+          ],
+          "screenshot": "1280x720-video.png",
+          "scroll": {
+            "y": 0,
+            "max": 0,
+            "width": 1265
+          }
+        },
+        {
+          "name": "library",
+          "viewport": [
+            1280,
+            720
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "profile": "9716aba339a13f4fc15f2b559d976df7295d02cb7fd037aeddf0be8835107d27",
+          "scrollWidth": 1265,
+          "scrollHeight": 2128,
+          "nav": {
+            "x": 16,
+            "y": 0,
+            "width": 208,
+            "height": 60,
+            "right": 224,
+            "bottom": 60
+          },
+          "main": {
+            "x": 0,
+            "y": 61,
+            "width": 1265,
+            "height": 2067.390625,
+            "right": 1265,
+            "bottom": 2128.390625
+          },
+          "content": {
+            "x": 16,
+            "y": 77,
+            "width": 1233,
+            "height": 2035.390625,
+            "right": 1249,
+            "bottom": 2112.390625
+          },
+          "stage": null,
+          "firstCard": {
+            "x": 296,
+            "y": 137,
+            "width": 226.25,
+            "height": 205.265625,
+            "right": 522.25,
+            "bottom": 342.265625
+          },
+          "columns": 4,
+          "rail": {
+            "x": 16,
+            "y": 77,
+            "width": 256,
+            "height": 202,
+            "right": 272,
+            "bottom": 279
+          },
+          "account": null,
+          "keyCard": null,
+          "key": null,
+          "settingsGroups": [],
+          "footer": null,
+          "keyForm": null,
+          "workspace": null,
+          "keyRemove": null,
+          "youtubeLogout": null,
+          "youtubeSection": null,
+          "update": null,
+          "privacyInFooter": false,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": null
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": "page"
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": null
+            }
+          ],
+          "screenshot": "1280x720-library.png",
+          "scroll": {
+            "y": 1408,
+            "max": 1408,
+            "width": 1265
+          }
+        },
+        {
+          "name": "settings",
+          "viewport": [
+            1280,
+            720
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "profile": "9716aba339a13f4fc15f2b559d976df7295d02cb7fd037aeddf0be8835107d27",
+          "scrollWidth": 1265,
+          "scrollHeight": 720,
+          "nav": {
+            "x": 16,
+            "y": 0,
+            "width": 208,
+            "height": 60,
+            "right": 224,
+            "bottom": 60
+          },
+          "main": {
+            "x": 0,
+            "y": 61,
+            "width": 1265,
+            "height": 659,
+            "right": 1265,
+            "bottom": 720
+          },
+          "content": {
+            "x": 16,
+            "y": 77,
+            "width": 1233,
+            "height": 44.390625,
+            "right": 1249,
+            "bottom": 121.390625
+          },
+          "stage": null,
+          "firstCard": null,
+          "columns": 0,
+          "rail": null,
+          "account": {
+            "x": 16,
+            "y": 470.390625,
+            "width": 1233,
+            "height": 74,
+            "right": 1249,
+            "bottom": 544.390625
+          },
+          "keyCard": {
+            "x": 16,
+            "y": 145.390625,
+            "width": 604.5,
+            "height": 276,
+            "right": 620.5,
+            "bottom": 421.390625
+          },
+          "key": {
+            "x": 16,
+            "y": 222.390625,
+            "width": 452.5,
+            "height": 44,
+            "right": 468.5,
+            "bottom": 266.390625
+          },
+          "settingsGroups": [
+            {
+              "box": {
+                "x": 16,
+                "y": 145.390625,
+                "width": 604.5,
+                "height": 276,
+                "right": 620.5,
+                "bottom": 421.390625
+              },
+              "heading": {
+                "x": 16,
+                "y": 145.390625,
+                "width": 604.5,
+                "height": 28,
+                "right": 620.5,
+                "bottom": 173.390625
+              },
+              "background": "rgba(0, 0, 0, 0)",
+              "radius": "0px"
+            },
+            {
+              "box": {
+                "x": 644.5,
+                "y": 145.390625,
+                "width": 604.5,
+                "height": 276,
+                "right": 1249,
+                "bottom": 421.390625
+              },
+              "heading": {
+                "x": 644.5,
+                "y": 145.390625,
+                "width": 604.5,
+                "height": 28,
+                "right": 1249,
+                "bottom": 173.390625
+              },
+              "background": "rgba(0, 0, 0, 0)",
+              "radius": "0px"
+            },
+            {
+              "box": {
+                "x": 16,
+                "y": 470.390625,
+                "width": 1233,
+                "height": 74,
+                "right": 1249,
+                "bottom": 544.390625
+              },
+              "heading": {
+                "x": 16,
+                "y": 470.390625,
+                "width": 604.5,
+                "height": 28,
+                "right": 620.5,
+                "bottom": 498.390625
+              },
+              "background": "rgba(0, 0, 0, 0)",
+              "radius": "0px"
+            }
+          ],
+          "footer": {
+            "x": 16,
+            "y": 641,
+            "width": 1233,
+            "height": 63,
+            "right": 1249,
+            "bottom": 704
+          },
+          "keyForm": {
+            "x": 16,
+            "y": 222.390625,
+            "width": 604.5,
+            "height": 44,
+            "right": 620.5,
+            "bottom": 266.390625
+          },
+          "workspace": {
+            "x": 16,
+            "y": 145.390625,
+            "width": 1233,
+            "height": 399,
+            "right": 1249,
+            "bottom": 544.390625
+          },
+          "keyRemove": {
+            "x": 484.875,
+            "y": 377.390625,
+            "width": 135.625,
+            "height": 44,
+            "right": 620.5,
+            "bottom": 421.390625
+          },
+          "youtubeLogout": {
+            "x": 809.75,
+            "y": 377.390625,
+            "width": 151.625,
+            "height": 44,
+            "right": 961.375,
+            "bottom": 421.390625
+          },
+          "youtubeSection": {
+            "x": 644.5,
+            "y": 145.390625,
+            "width": 604.5,
+            "height": 276,
+            "right": 1249,
+            "bottom": 421.390625
+          },
+          "update": {
+            "x": 1113.375,
+            "y": 77.1875,
+            "width": 135.625,
+            "height": 44,
+            "right": 1249,
+            "bottom": 121.1875
+          },
+          "privacyInFooter": true,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": null
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": null
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": "page"
+            }
+          ],
+          "screenshot": "1280x720-settings.png",
+          "scroll": {
+            "y": 0,
+            "max": 0,
+            "width": 1265
+          }
+        }
+      ],
+      "geometry": [
+        {
+          "notice": false,
+          "viewport": [
+            1280,
+            720
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": null,
+          "profile": null,
+          "scrollWidth": 1265,
+          "scrollHeight": 720,
+          "nav": {
+            "x": 16,
+            "y": 14.5,
+            "width": 208,
+            "height": 60,
+            "right": 224,
+            "bottom": 74.5
+          },
+          "main": {
+            "x": 0,
+            "y": 90,
+            "width": 1265,
+            "height": 629.984375,
+            "right": 1265,
+            "bottom": 719.984375
+          },
+          "content": {
+            "x": 16,
+            "y": 106,
+            "width": 1063.109375,
+            "height": 597.984375,
+            "right": 1079.109375,
+            "bottom": 703.984375
+          },
+          "stage": {
+            "x": 16,
+            "y": 106,
+            "width": 1063.109375,
+            "height": 597.984375,
+            "right": 1079.109375,
+            "bottom": 703.984375
+          },
+          "firstCard": null,
+          "columns": 0,
+          "rail": null,
+          "account": null,
+          "keyCard": null,
+          "key": null,
+          "settingsGroups": [],
+          "footer": null,
+          "keyForm": null,
+          "workspace": null,
+          "keyRemove": null,
+          "youtubeLogout": null,
+          "youtubeSection": null,
+          "update": null,
+          "privacyInFooter": false,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": "page"
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": null
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": null
+            }
+          ],
+          "video": {
+            "x": 16,
+            "y": 106,
+            "width": 1063.109375,
+            "height": 597.984375
+          }
+        },
+        {
+          "notice": true,
+          "viewport": [
+            1280,
+            720
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": null,
+          "profile": null,
+          "scrollWidth": 1265,
+          "scrollHeight": 720,
+          "nav": {
+            "x": 16,
+            "y": 14.5,
+            "width": 208,
+            "height": 60,
+            "right": 224,
+            "bottom": 74.5
+          },
+          "main": {
+            "x": 0,
+            "y": 90,
+            "width": 1265,
+            "height": 630,
+            "right": 1265,
+            "bottom": 720
+          },
+          "content": {
+            "x": 16,
+            "y": 106,
+            "width": 1233,
+            "height": 60,
+            "right": 1249,
+            "bottom": 166
+          },
+          "stage": {
+            "x": 16,
+            "y": 182,
+            "width": 928,
+            "height": 522,
+            "right": 944,
+            "bottom": 704
+          },
+          "firstCard": null,
+          "columns": 0,
+          "rail": null,
+          "account": null,
+          "keyCard": null,
+          "key": null,
+          "settingsGroups": [],
+          "footer": null,
+          "keyForm": null,
+          "workspace": null,
+          "keyRemove": null,
+          "youtubeLogout": null,
+          "youtubeSection": null,
+          "update": null,
+          "privacyInFooter": false,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": "page"
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": null
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": null
+            }
+          ],
+          "video": {
+            "x": 16,
+            "y": 182,
+            "width": 928,
+            "height": 522
+          }
+        }
+      ],
+      "requests": [
+        {
+          "method": "GET",
+          "route": "/browser",
+          "status": 200,
+          "body": {
+            "job": null,
+            "url": "http://127.0.0.1:8146/layout.mp4"
+          }
+        },
+        {
+          "method": "GET",
+          "route": "/library/data",
+          "status": 200,
+          "body": {
+            "account_email": null,
+            "legacy_available": false,
+            "playlists": [
+              {
+                "entries": [
+                  "7f8ad22845bfe8710a373686f246fca2e960d074da023bcbee2b82c53adbfead",
+                  "7f9f64c0432da690ad941cf98d080330e2c93e96430b82db0c4ef15a38606e35",
+                  "95a9a0defaf3faaaab0a2e9ce03b52cde6d089be60b790e197664f463c439e3d",
+                  "8ccef6e61d3db819ec60b3d11306631e85e3e80d509f9772e863479859cb0664",
+                  "e9a94bb22ab9b8087b625a1838552f1a23c1c6b7db9c5f67fb4881109d7be138",
+                  "e167e64df4bedacaee5bd458cf1068de853adedd9bfa19f2ea050e5bbe4d7e68",
+                  "32ee365a21fed81d3eb2e6fa12d37e67d0208923162896c468535071d1fe7f50",
+                  "a18e60907bea950281a5940d9597692ef2619523d0c9dc1044922ab25eafb5b6",
+                  "cda545a20c50ca5925aaf3a4714dc66cc9196744e50fd8078a9550b5fd4bd88f",
+                  "e5fbc1af180de8e11be30fe2753a17798d9132bca511cfa7be518af8a0a6d74b",
+                  "1b18d988ef801a9123581c51777ade598b3af62ff94cf66b0bedd2a33bd02940",
+                  "f0ca507b4dee8c174700607e4b946a0bf0a88001feb3f3d4f1919f1e3ea8e52c",
+                  "6258904b75ded2d092caadd025c9f89a22038fed3f15b7e7b979d5e957d19a66",
+                  "454336dd8200b45c42cf2f880a6093e789f7c0fddc06e1a3c6ca7df44c13cf39",
+                  "dff972ac0b0ec0908566927081fe65022d6831f90320aa15e3e967ed9491ea50",
+                  "bfb5d4f94252ad35a839315581d43206c397a983fda65bc2839444fb2f5a20a3",
+                  "6297bae8b6fad09b96a60c927aeacedd79b93afec68b9331526f4b3204a2b867",
+                  "b90801eb2cead18f045cb2ba948f23b39ebc265348021ada99f2d1ce07c5bf48",
+                  "85b5b09dc70b8a95413583101a7af511e4974de3a1db08d1ffdfd24a686cfab1",
+                  "0a139ae331147e721cccd5101e6a35a273b84724a4f5773d81a7fecc8adb2797",
+                  "342d1525b1050d4309d63adb1e5732952a5572309f2dc0530396809c23d92429",
+                  "52a8c88fd5c8e3b65fa522bf931a50e7379d219dd1ed0752d47d9083ed65b1f7",
+                  "33623cbe9f82eb96b489dfae89b6f9e28d67f53080a9fbdef1bf482d86d5ee90",
+                  "3ba30c2d08abcef2dc2395a62c4cd6e2a5777a4449c721db3a589ca3bcacd8b9",
+                  "d08021a6ab57ca48ba741c2071f674df80cda36665dd4c11309460770ebdbf12",
+                  "37cf84e7a1540409f83e4bc5ad28f10f91d136e89ff932df901bd6ed0515b549",
+                  "46226803f90dc45ebaf03e7a44b4dad39237476f5f98b952656b3e3cbff07ce1",
+                  "47b81dc6f0fde44fc7371ace25affefa11d66e8dcd984dac706f03174fdd6088",
+                  "34299e0ba6c680a29a77d95e381a8afe8f15302f2fe1853de62d9800f926dc31",
+                  "8b92d8b3ea544cfd662f0bc057616f8828152cd486c7afd84436fa978943f952",
+                  "ef9441fbce187a34d74c658a8a0f2867c65aab48ef01c0f736d4c88a086e019b",
+                  "96640a99c8bb2a52e9180a76b049c55a6645ff1fd3e28d86f96df612edcbef4e",
+                  "37f0e8afc3498da582a3ac698f249025cba1b71e24ae36ab03143e5b5c717870",
+                  "b1a383b3dcfc57cd0a29123815a576ffa568b9d3ff387b802b71ee2c5686382b",
+                  "994372f7fbf40e452356b834ed3d435f3504156d2cee20b841452a1337c87710",
+                  "779e092e0938d44a35f709edffa2aa2cb9e4e8f4d86af3c819e682debcc6d328"
+                ],
+                "id": "0a43ed99-f59e-4720-878e-14661c638787",
+                "name": "Layout fixtures"
+              }
+            ],
+            "videos": [
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-35.mp4",
+                "saved": false,
+                "title": "Lecture 36: layout fixture",
+                "versions": [],
+                "video_key": "779e092e0938d44a35f709edffa2aa2cb9e4e8f4d86af3c819e682debcc6d328"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-34.mp4",
+                "saved": false,
+                "title": "Lecture 35: layout fixture",
+                "versions": [],
+                "video_key": "994372f7fbf40e452356b834ed3d435f3504156d2cee20b841452a1337c87710"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-33.mp4",
+                "saved": false,
+                "title": "Lecture 34: layout fixture",
+                "versions": [],
+                "video_key": "b1a383b3dcfc57cd0a29123815a576ffa568b9d3ff387b802b71ee2c5686382b"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-32.mp4",
+                "saved": false,
+                "title": "Lecture 33: layout fixture",
+                "versions": [],
+                "video_key": "37f0e8afc3498da582a3ac698f249025cba1b71e24ae36ab03143e5b5c717870"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-31.mp4",
+                "saved": false,
+                "title": "Lecture 32: layout fixture",
+                "versions": [],
+                "video_key": "96640a99c8bb2a52e9180a76b049c55a6645ff1fd3e28d86f96df612edcbef4e"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-30.mp4",
+                "saved": false,
+                "title": "Lecture 31: layout fixture",
+                "versions": [],
+                "video_key": "ef9441fbce187a34d74c658a8a0f2867c65aab48ef01c0f736d4c88a086e019b"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-29.mp4",
+                "saved": false,
+                "title": "Lecture 30: layout fixture",
+                "versions": [],
+                "video_key": "8b92d8b3ea544cfd662f0bc057616f8828152cd486c7afd84436fa978943f952"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-28.mp4",
+                "saved": false,
+                "title": "Lecture 29: layout fixture",
+                "versions": [],
+                "video_key": "34299e0ba6c680a29a77d95e381a8afe8f15302f2fe1853de62d9800f926dc31"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-27.mp4",
+                "saved": false,
+                "title": "Lecture 28: layout fixture",
+                "versions": [],
+                "video_key": "47b81dc6f0fde44fc7371ace25affefa11d66e8dcd984dac706f03174fdd6088"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-26.mp4",
+                "saved": false,
+                "title": "Lecture 27: layout fixture",
+                "versions": [],
+                "video_key": "46226803f90dc45ebaf03e7a44b4dad39237476f5f98b952656b3e3cbff07ce1"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-25.mp4",
+                "saved": false,
+                "title": "Lecture 26: layout fixture",
+                "versions": [],
+                "video_key": "37cf84e7a1540409f83e4bc5ad28f10f91d136e89ff932df901bd6ed0515b549"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-24.mp4",
+                "saved": false,
+                "title": "Lecture 25: layout fixture",
+                "versions": [],
+                "video_key": "d08021a6ab57ca48ba741c2071f674df80cda36665dd4c11309460770ebdbf12"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-23.mp4",
+                "saved": false,
+                "title": "Lecture 24: layout fixture",
+                "versions": [],
+                "video_key": "3ba30c2d08abcef2dc2395a62c4cd6e2a5777a4449c721db3a589ca3bcacd8b9"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-22.mp4",
+                "saved": false,
+                "title": "Lecture 23: layout fixture",
+                "versions": [],
+                "video_key": "33623cbe9f82eb96b489dfae89b6f9e28d67f53080a9fbdef1bf482d86d5ee90"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-21.mp4",
+                "saved": false,
+                "title": "Lecture 22: layout fixture",
+                "versions": [],
+                "video_key": "52a8c88fd5c8e3b65fa522bf931a50e7379d219dd1ed0752d47d9083ed65b1f7"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-20.mp4",
+                "saved": false,
+                "title": "Lecture 21: layout fixture",
+                "versions": [],
+                "video_key": "342d1525b1050d4309d63adb1e5732952a5572309f2dc0530396809c23d92429"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-19.mp4",
+                "saved": false,
+                "title": "Lecture 20: layout fixture",
+                "versions": [],
+                "video_key": "0a139ae331147e721cccd5101e6a35a273b84724a4f5773d81a7fecc8adb2797"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-18.mp4",
+                "saved": false,
+                "title": "Lecture 19: layout fixture",
+                "versions": [],
+                "video_key": "85b5b09dc70b8a95413583101a7af511e4974de3a1db08d1ffdfd24a686cfab1"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-17.mp4",
+                "saved": false,
+                "title": "Lecture 18: layout fixture",
+                "versions": [],
+                "video_key": "b90801eb2cead18f045cb2ba948f23b39ebc265348021ada99f2d1ce07c5bf48"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-16.mp4",
+                "saved": false,
+                "title": "Lecture 17: layout fixture",
+                "versions": [],
+                "video_key": "6297bae8b6fad09b96a60c927aeacedd79b93afec68b9331526f4b3204a2b867"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-15.mp4",
+                "saved": false,
+                "title": "Lecture 16: layout fixture",
+                "versions": [],
+                "video_key": "bfb5d4f94252ad35a839315581d43206c397a983fda65bc2839444fb2f5a20a3"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-14.mp4",
+                "saved": false,
+                "title": "Lecture 15: layout fixture",
+                "versions": [],
+                "video_key": "dff972ac0b0ec0908566927081fe65022d6831f90320aa15e3e967ed9491ea50"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-13.mp4",
+                "saved": false,
+                "title": "Lecture 14: layout fixture",
+                "versions": [],
+                "video_key": "454336dd8200b45c42cf2f880a6093e789f7c0fddc06e1a3c6ca7df44c13cf39"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-12.mp4",
+                "saved": false,
+                "title": "Lecture 13: layout fixture",
+                "versions": [],
+                "video_key": "6258904b75ded2d092caadd025c9f89a22038fed3f15b7e7b979d5e957d19a66"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-11.mp4",
+                "saved": false,
+                "title": "Lecture 12: layout fixture",
+                "versions": [],
+                "video_key": "f0ca507b4dee8c174700607e4b946a0bf0a88001feb3f3d4f1919f1e3ea8e52c"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-10.mp4",
+                "saved": false,
+                "title": "Lecture 11: layout fixture",
+                "versions": [],
+                "video_key": "1b18d988ef801a9123581c51777ade598b3af62ff94cf66b0bedd2a33bd02940"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-9.mp4",
+                "saved": false,
+                "title": "Lecture 10: layout fixture",
+                "versions": [],
+                "video_key": "e5fbc1af180de8e11be30fe2753a17798d9132bca511cfa7be518af8a0a6d74b"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-8.mp4",
+                "saved": false,
+                "title": "Lecture 9: layout fixture",
+                "versions": [],
+                "video_key": "cda545a20c50ca5925aaf3a4714dc66cc9196744e50fd8078a9550b5fd4bd88f"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-7.mp4",
+                "saved": false,
+                "title": "Lecture 8: layout fixture",
+                "versions": [],
+                "video_key": "a18e60907bea950281a5940d9597692ef2619523d0c9dc1044922ab25eafb5b6"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-6.mp4",
+                "saved": false,
+                "title": "Lecture 7: layout fixture",
+                "versions": [],
+                "video_key": "32ee365a21fed81d3eb2e6fa12d37e67d0208923162896c468535071d1fe7f50"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-5.mp4",
+                "saved": false,
+                "title": "Lecture 6: layout fixture",
+                "versions": [],
+                "video_key": "e167e64df4bedacaee5bd458cf1068de853adedd9bfa19f2ea050e5bbe4d7e68"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-4.mp4",
+                "saved": false,
+                "title": "Lecture 5: layout fixture",
+                "versions": [],
+                "video_key": "e9a94bb22ab9b8087b625a1838552f1a23c1c6b7db9c5f67fb4881109d7be138"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-3.mp4",
+                "saved": false,
+                "title": "Lecture 4: layout fixture",
+                "versions": [],
+                "video_key": "8ccef6e61d3db819ec60b3d11306631e85e3e80d509f9772e863479859cb0664"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-2.mp4",
+                "saved": false,
+                "title": "Lecture 3: layout fixture",
+                "versions": [],
+                "video_key": "95a9a0defaf3faaaab0a2e9ce03b52cde6d089be60b790e197664f463c439e3d"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-1.mp4",
+                "saved": false,
+                "title": "Lecture 2: layout fixture",
+                "versions": [],
+                "video_key": "7f9f64c0432da690ad941cf98d080330e2c93e96430b82db0c4ef15a38606e35"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-0.mp4",
+                "saved": false,
+                "title": "Lecture 1: layout fixture",
+                "versions": [],
+                "video_key": "7f8ad22845bfe8710a373686f246fca2e960d074da023bcbee2b82c53adbfead"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "route": "/settings",
+          "status": 200,
+          "body": {
+            "favorite_voice_available": false,
+            "key_masked": null,
+            "key_set": false,
+            "translation_model": "gemini-3.1-flash-lite"
+          }
+        },
+        {
+          "method": "GET",
+          "route": "/browser",
+          "status": 200,
+          "body": {
+            "job": null,
+            "url": "http://127.0.0.1:8146/layout.mp4"
+          }
+        },
+        {
+          "method": "POST",
+          "route": "/browser/open",
+          "status": 400,
+          "body": {
+            "error": "bad_url",
+            "message": "http나 https 주소만 열 수 있습니다.",
+            "status": 400
+          }
+        },
+        {
+          "method": "GET",
+          "route": "/browser",
+          "status": 200,
+          "body": {
+            "job": null,
+            "url": "http://127.0.0.1:8146/layout.mp4"
+          }
+        },
+        {
+          "method": "POST",
+          "route": "/browser/open",
+          "status": 400,
+          "body": {
+            "error": "bad_url",
+            "message": "http나 https 주소만 열 수 있습니다.",
+            "status": 400
+          }
+        }
+      ]
+    },
+    {
+      "viewport": [
+        1920,
+        1080
+      ],
+      "results": [
+        {
+          "name": "video",
+          "viewport": [
+            1920,
+            1080
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "profile": "9716aba339a13f4fc15f2b559d976df7295d02cb7fd037aeddf0be8835107d27",
+          "scrollWidth": 1905,
+          "scrollHeight": 1080,
+          "nav": {
+            "x": 16,
+            "y": 0,
+            "width": 208,
+            "height": 60,
+            "right": 224,
+            "bottom": 60
+          },
+          "main": {
+            "x": 0,
+            "y": 61,
+            "width": 1905,
+            "height": 1018.984375,
+            "right": 1905,
+            "bottom": 1079.984375
+          },
+          "content": {
+            "x": 16,
+            "y": 77,
+            "width": 1754.65625,
+            "height": 986.984375,
+            "right": 1770.65625,
+            "bottom": 1063.984375
+          },
+          "stage": {
+            "x": 16,
+            "y": 77,
+            "width": 1754.65625,
+            "height": 986.984375,
+            "right": 1770.65625,
+            "bottom": 1063.984375
+          },
+          "firstCard": null,
+          "columns": 0,
+          "rail": null,
+          "account": null,
+          "keyCard": null,
+          "key": null,
+          "settingsGroups": [],
+          "footer": null,
+          "keyForm": null,
+          "workspace": null,
+          "keyRemove": null,
+          "youtubeLogout": null,
+          "youtubeSection": null,
+          "update": null,
+          "privacyInFooter": false,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": "page"
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": null
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": null
+            }
+          ],
+          "screenshot": "1920x1080-video.png",
+          "scroll": {
+            "y": 0,
+            "max": 0,
+            "width": 1905
+          }
+        },
+        {
+          "name": "library",
+          "viewport": [
+            1920,
+            1080
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "profile": "9716aba339a13f4fc15f2b559d976df7295d02cb7fd037aeddf0be8835107d27",
+          "scrollWidth": 1905,
+          "scrollHeight": 1549,
+          "nav": {
+            "x": 16,
+            "y": 0,
+            "width": 208,
+            "height": 60,
+            "right": 224,
+            "bottom": 60
+          },
+          "main": {
+            "x": 0,
+            "y": 61,
+            "width": 1905,
+            "height": 1487.6875,
+            "right": 1905,
+            "bottom": 1548.6875
+          },
+          "content": {
+            "x": 16,
+            "y": 77,
+            "width": 1873,
+            "height": 1455.6875,
+            "right": 1889,
+            "bottom": 1532.6875
+          },
+          "stage": null,
+          "firstCard": {
+            "x": 296,
+            "y": 137,
+            "width": 213.84375,
+            "height": 219.28125,
+            "right": 509.84375,
+            "bottom": 356.28125
+          },
+          "columns": 7,
+          "rail": {
+            "x": 16,
+            "y": 77,
+            "width": 256,
+            "height": 202,
+            "right": 272,
+            "bottom": 279
+          },
+          "account": null,
+          "keyCard": null,
+          "key": null,
+          "settingsGroups": [],
+          "footer": null,
+          "keyForm": null,
+          "workspace": null,
+          "keyRemove": null,
+          "youtubeLogout": null,
+          "youtubeSection": null,
+          "update": null,
+          "privacyInFooter": false,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": null
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": "page"
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": null
+            }
+          ],
+          "screenshot": "1920x1080-library.png",
+          "scroll": {
+            "y": 469,
+            "max": 469,
+            "width": 1905
+          }
+        },
+        {
+          "name": "settings",
+          "viewport": [
+            1920,
+            1080
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "profile": "9716aba339a13f4fc15f2b559d976df7295d02cb7fd037aeddf0be8835107d27",
+          "scrollWidth": 1905,
+          "scrollHeight": 1080,
+          "nav": {
+            "x": 16,
+            "y": 0,
+            "width": 208,
+            "height": 60,
+            "right": 224,
+            "bottom": 60
+          },
+          "main": {
+            "x": 0,
+            "y": 61,
+            "width": 1905,
+            "height": 1019,
+            "right": 1905,
+            "bottom": 1080
+          },
+          "content": {
+            "x": 16,
+            "y": 77,
+            "width": 1873,
+            "height": 44.390625,
+            "right": 1889,
+            "bottom": 121.390625
+          },
+          "stage": null,
+          "firstCard": null,
+          "columns": 0,
+          "rail": null,
+          "account": {
+            "x": 16,
+            "y": 470.390625,
+            "width": 1873,
+            "height": 53,
+            "right": 1889,
+            "bottom": 523.390625
+          },
+          "keyCard": {
+            "x": 16,
+            "y": 145.390625,
+            "width": 924.5,
+            "height": 276,
+            "right": 940.5,
+            "bottom": 421.390625
+          },
+          "key": {
+            "x": 16,
+            "y": 222.390625,
+            "width": 772.5,
+            "height": 44,
+            "right": 788.5,
+            "bottom": 266.390625
+          },
+          "settingsGroups": [
+            {
+              "box": {
+                "x": 16,
+                "y": 145.390625,
+                "width": 924.5,
+                "height": 276,
+                "right": 940.5,
+                "bottom": 421.390625
+              },
+              "heading": {
+                "x": 16,
+                "y": 145.390625,
+                "width": 924.5,
+                "height": 28,
+                "right": 940.5,
+                "bottom": 173.390625
+              },
+              "background": "rgba(0, 0, 0, 0)",
+              "radius": "0px"
+            },
+            {
+              "box": {
+                "x": 964.5,
+                "y": 145.390625,
+                "width": 924.5,
+                "height": 276,
+                "right": 1889,
+                "bottom": 421.390625
+              },
+              "heading": {
+                "x": 964.5,
+                "y": 145.390625,
+                "width": 924.5,
+                "height": 28,
+                "right": 1889,
+                "bottom": 173.390625
+              },
+              "background": "rgba(0, 0, 0, 0)",
+              "radius": "0px"
+            },
+            {
+              "box": {
+                "x": 16,
+                "y": 470.390625,
+                "width": 1873,
+                "height": 53,
+                "right": 1889,
+                "bottom": 523.390625
+              },
+              "heading": {
+                "x": 16,
+                "y": 470.390625,
+                "width": 924.5,
+                "height": 28,
+                "right": 940.5,
+                "bottom": 498.390625
+              },
+              "background": "rgba(0, 0, 0, 0)",
+              "radius": "0px"
+            }
+          ],
+          "footer": {
+            "x": 16,
+            "y": 1001,
+            "width": 1873,
+            "height": 63,
+            "right": 1889,
+            "bottom": 1064
+          },
+          "keyForm": {
+            "x": 16,
+            "y": 222.390625,
+            "width": 924.5,
+            "height": 44,
+            "right": 940.5,
+            "bottom": 266.390625
+          },
+          "workspace": {
+            "x": 16,
+            "y": 145.390625,
+            "width": 1873,
+            "height": 378,
+            "right": 1889,
+            "bottom": 523.390625
+          },
+          "keyRemove": {
+            "x": 804.875,
+            "y": 377.390625,
+            "width": 135.625,
+            "height": 44,
+            "right": 940.5,
+            "bottom": 421.390625
+          },
+          "youtubeLogout": {
+            "x": 1129.75,
+            "y": 377.390625,
+            "width": 151.625,
+            "height": 44,
+            "right": 1281.375,
+            "bottom": 421.390625
+          },
+          "youtubeSection": {
+            "x": 964.5,
+            "y": 145.390625,
+            "width": 924.5,
+            "height": 276,
+            "right": 1889,
+            "bottom": 421.390625
+          },
+          "update": {
+            "x": 1753.375,
+            "y": 77.1875,
+            "width": 135.625,
+            "height": 44,
+            "right": 1889,
+            "bottom": 121.1875
+          },
+          "privacyInFooter": true,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": null
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": null
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": "page"
+            }
+          ],
+          "screenshot": "1920x1080-settings.png",
+          "scroll": {
+            "y": 0,
+            "max": 0,
+            "width": 1905
+          }
+        }
+      ],
+      "geometry": [
+        {
+          "notice": false,
+          "viewport": [
+            1920,
+            1080
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": null,
+          "profile": null,
+          "scrollWidth": 1905,
+          "scrollHeight": 1080,
+          "nav": {
+            "x": 16,
+            "y": 14.5,
+            "width": 208,
+            "height": 60,
+            "right": 224,
+            "bottom": 74.5
+          },
+          "main": {
+            "x": 0,
+            "y": 90,
+            "width": 1905,
+            "height": 989.984375,
+            "right": 1905,
+            "bottom": 1079.984375
+          },
+          "content": {
+            "x": 16,
+            "y": 106,
+            "width": 1703.109375,
+            "height": 957.984375,
+            "right": 1719.109375,
+            "bottom": 1063.984375
+          },
+          "stage": {
+            "x": 16,
+            "y": 106,
+            "width": 1703.109375,
+            "height": 957.984375,
+            "right": 1719.109375,
+            "bottom": 1063.984375
+          },
+          "firstCard": null,
+          "columns": 0,
+          "rail": null,
+          "account": null,
+          "keyCard": null,
+          "key": null,
+          "settingsGroups": [],
+          "footer": null,
+          "keyForm": null,
+          "workspace": null,
+          "keyRemove": null,
+          "youtubeLogout": null,
+          "youtubeSection": null,
+          "update": null,
+          "privacyInFooter": false,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": "page"
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": null
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": null
+            }
+          ],
+          "video": {
+            "x": 16,
+            "y": 106,
+            "width": 1703.109375,
+            "height": 957.984375
+          }
+        },
+        {
+          "notice": true,
+          "viewport": [
+            1920,
+            1080
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": null,
+          "profile": null,
+          "scrollWidth": 1905,
+          "scrollHeight": 1080,
+          "nav": {
+            "x": 16,
+            "y": 14.5,
+            "width": 208,
+            "height": 60,
+            "right": 224,
+            "bottom": 74.5
+          },
+          "main": {
+            "x": 0,
+            "y": 90,
+            "width": 1905,
+            "height": 989.984375,
+            "right": 1905,
+            "bottom": 1079.984375
+          },
+          "content": {
+            "x": 16,
+            "y": 106,
+            "width": 1873,
+            "height": 47,
+            "right": 1889,
+            "bottom": 153
+          },
+          "stage": {
+            "x": 16,
+            "y": 169,
+            "width": 1591.109375,
+            "height": 894.984375,
+            "right": 1607.109375,
+            "bottom": 1063.984375
+          },
+          "firstCard": null,
+          "columns": 0,
+          "rail": null,
+          "account": null,
+          "keyCard": null,
+          "key": null,
+          "settingsGroups": [],
+          "footer": null,
+          "keyForm": null,
+          "workspace": null,
+          "keyRemove": null,
+          "youtubeLogout": null,
+          "youtubeSection": null,
+          "update": null,
+          "privacyInFooter": false,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": "page"
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": null
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": null
+            }
+          ],
+          "video": {
+            "x": 16,
+            "y": 169,
+            "width": 1591.109375,
+            "height": 894.984375
+          }
+        }
+      ],
+      "requests": [
+        {
+          "method": "GET",
+          "route": "/browser",
+          "status": 200,
+          "body": {
+            "job": null,
+            "url": "http://127.0.0.1:8146/layout.mp4"
+          }
+        },
+        {
+          "method": "GET",
+          "route": "/library/data",
+          "status": 200,
+          "body": {
+            "account_email": null,
+            "legacy_available": false,
+            "playlists": [
+              {
+                "entries": [
+                  "7f8ad22845bfe8710a373686f246fca2e960d074da023bcbee2b82c53adbfead",
+                  "7f9f64c0432da690ad941cf98d080330e2c93e96430b82db0c4ef15a38606e35",
+                  "95a9a0defaf3faaaab0a2e9ce03b52cde6d089be60b790e197664f463c439e3d",
+                  "8ccef6e61d3db819ec60b3d11306631e85e3e80d509f9772e863479859cb0664",
+                  "e9a94bb22ab9b8087b625a1838552f1a23c1c6b7db9c5f67fb4881109d7be138",
+                  "e167e64df4bedacaee5bd458cf1068de853adedd9bfa19f2ea050e5bbe4d7e68",
+                  "32ee365a21fed81d3eb2e6fa12d37e67d0208923162896c468535071d1fe7f50",
+                  "a18e60907bea950281a5940d9597692ef2619523d0c9dc1044922ab25eafb5b6",
+                  "cda545a20c50ca5925aaf3a4714dc66cc9196744e50fd8078a9550b5fd4bd88f",
+                  "e5fbc1af180de8e11be30fe2753a17798d9132bca511cfa7be518af8a0a6d74b",
+                  "1b18d988ef801a9123581c51777ade598b3af62ff94cf66b0bedd2a33bd02940",
+                  "f0ca507b4dee8c174700607e4b946a0bf0a88001feb3f3d4f1919f1e3ea8e52c",
+                  "6258904b75ded2d092caadd025c9f89a22038fed3f15b7e7b979d5e957d19a66",
+                  "454336dd8200b45c42cf2f880a6093e789f7c0fddc06e1a3c6ca7df44c13cf39",
+                  "dff972ac0b0ec0908566927081fe65022d6831f90320aa15e3e967ed9491ea50",
+                  "bfb5d4f94252ad35a839315581d43206c397a983fda65bc2839444fb2f5a20a3",
+                  "6297bae8b6fad09b96a60c927aeacedd79b93afec68b9331526f4b3204a2b867",
+                  "b90801eb2cead18f045cb2ba948f23b39ebc265348021ada99f2d1ce07c5bf48",
+                  "85b5b09dc70b8a95413583101a7af511e4974de3a1db08d1ffdfd24a686cfab1",
+                  "0a139ae331147e721cccd5101e6a35a273b84724a4f5773d81a7fecc8adb2797",
+                  "342d1525b1050d4309d63adb1e5732952a5572309f2dc0530396809c23d92429",
+                  "52a8c88fd5c8e3b65fa522bf931a50e7379d219dd1ed0752d47d9083ed65b1f7",
+                  "33623cbe9f82eb96b489dfae89b6f9e28d67f53080a9fbdef1bf482d86d5ee90",
+                  "3ba30c2d08abcef2dc2395a62c4cd6e2a5777a4449c721db3a589ca3bcacd8b9",
+                  "d08021a6ab57ca48ba741c2071f674df80cda36665dd4c11309460770ebdbf12",
+                  "37cf84e7a1540409f83e4bc5ad28f10f91d136e89ff932df901bd6ed0515b549",
+                  "46226803f90dc45ebaf03e7a44b4dad39237476f5f98b952656b3e3cbff07ce1",
+                  "47b81dc6f0fde44fc7371ace25affefa11d66e8dcd984dac706f03174fdd6088",
+                  "34299e0ba6c680a29a77d95e381a8afe8f15302f2fe1853de62d9800f926dc31",
+                  "8b92d8b3ea544cfd662f0bc057616f8828152cd486c7afd84436fa978943f952",
+                  "ef9441fbce187a34d74c658a8a0f2867c65aab48ef01c0f736d4c88a086e019b",
+                  "96640a99c8bb2a52e9180a76b049c55a6645ff1fd3e28d86f96df612edcbef4e",
+                  "37f0e8afc3498da582a3ac698f249025cba1b71e24ae36ab03143e5b5c717870",
+                  "b1a383b3dcfc57cd0a29123815a576ffa568b9d3ff387b802b71ee2c5686382b",
+                  "994372f7fbf40e452356b834ed3d435f3504156d2cee20b841452a1337c87710",
+                  "779e092e0938d44a35f709edffa2aa2cb9e4e8f4d86af3c819e682debcc6d328"
+                ],
+                "id": "0a43ed99-f59e-4720-878e-14661c638787",
+                "name": "Layout fixtures"
+              }
+            ],
+            "videos": [
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-35.mp4",
+                "saved": false,
+                "title": "Lecture 36: layout fixture",
+                "versions": [],
+                "video_key": "779e092e0938d44a35f709edffa2aa2cb9e4e8f4d86af3c819e682debcc6d328"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-34.mp4",
+                "saved": false,
+                "title": "Lecture 35: layout fixture",
+                "versions": [],
+                "video_key": "994372f7fbf40e452356b834ed3d435f3504156d2cee20b841452a1337c87710"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-33.mp4",
+                "saved": false,
+                "title": "Lecture 34: layout fixture",
+                "versions": [],
+                "video_key": "b1a383b3dcfc57cd0a29123815a576ffa568b9d3ff387b802b71ee2c5686382b"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-32.mp4",
+                "saved": false,
+                "title": "Lecture 33: layout fixture",
+                "versions": [],
+                "video_key": "37f0e8afc3498da582a3ac698f249025cba1b71e24ae36ab03143e5b5c717870"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-31.mp4",
+                "saved": false,
+                "title": "Lecture 32: layout fixture",
+                "versions": [],
+                "video_key": "96640a99c8bb2a52e9180a76b049c55a6645ff1fd3e28d86f96df612edcbef4e"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-30.mp4",
+                "saved": false,
+                "title": "Lecture 31: layout fixture",
+                "versions": [],
+                "video_key": "ef9441fbce187a34d74c658a8a0f2867c65aab48ef01c0f736d4c88a086e019b"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-29.mp4",
+                "saved": false,
+                "title": "Lecture 30: layout fixture",
+                "versions": [],
+                "video_key": "8b92d8b3ea544cfd662f0bc057616f8828152cd486c7afd84436fa978943f952"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-28.mp4",
+                "saved": false,
+                "title": "Lecture 29: layout fixture",
+                "versions": [],
+                "video_key": "34299e0ba6c680a29a77d95e381a8afe8f15302f2fe1853de62d9800f926dc31"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-27.mp4",
+                "saved": false,
+                "title": "Lecture 28: layout fixture",
+                "versions": [],
+                "video_key": "47b81dc6f0fde44fc7371ace25affefa11d66e8dcd984dac706f03174fdd6088"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-26.mp4",
+                "saved": false,
+                "title": "Lecture 27: layout fixture",
+                "versions": [],
+                "video_key": "46226803f90dc45ebaf03e7a44b4dad39237476f5f98b952656b3e3cbff07ce1"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-25.mp4",
+                "saved": false,
+                "title": "Lecture 26: layout fixture",
+                "versions": [],
+                "video_key": "37cf84e7a1540409f83e4bc5ad28f10f91d136e89ff932df901bd6ed0515b549"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-24.mp4",
+                "saved": false,
+                "title": "Lecture 25: layout fixture",
+                "versions": [],
+                "video_key": "d08021a6ab57ca48ba741c2071f674df80cda36665dd4c11309460770ebdbf12"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-23.mp4",
+                "saved": false,
+                "title": "Lecture 24: layout fixture",
+                "versions": [],
+                "video_key": "3ba30c2d08abcef2dc2395a62c4cd6e2a5777a4449c721db3a589ca3bcacd8b9"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-22.mp4",
+                "saved": false,
+                "title": "Lecture 23: layout fixture",
+                "versions": [],
+                "video_key": "33623cbe9f82eb96b489dfae89b6f9e28d67f53080a9fbdef1bf482d86d5ee90"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-21.mp4",
+                "saved": false,
+                "title": "Lecture 22: layout fixture",
+                "versions": [],
+                "video_key": "52a8c88fd5c8e3b65fa522bf931a50e7379d219dd1ed0752d47d9083ed65b1f7"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-20.mp4",
+                "saved": false,
+                "title": "Lecture 21: layout fixture",
+                "versions": [],
+                "video_key": "342d1525b1050d4309d63adb1e5732952a5572309f2dc0530396809c23d92429"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-19.mp4",
+                "saved": false,
+                "title": "Lecture 20: layout fixture",
+                "versions": [],
+                "video_key": "0a139ae331147e721cccd5101e6a35a273b84724a4f5773d81a7fecc8adb2797"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-18.mp4",
+                "saved": false,
+                "title": "Lecture 19: layout fixture",
+                "versions": [],
+                "video_key": "85b5b09dc70b8a95413583101a7af511e4974de3a1db08d1ffdfd24a686cfab1"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-17.mp4",
+                "saved": false,
+                "title": "Lecture 18: layout fixture",
+                "versions": [],
+                "video_key": "b90801eb2cead18f045cb2ba948f23b39ebc265348021ada99f2d1ce07c5bf48"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-16.mp4",
+                "saved": false,
+                "title": "Lecture 17: layout fixture",
+                "versions": [],
+                "video_key": "6297bae8b6fad09b96a60c927aeacedd79b93afec68b9331526f4b3204a2b867"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-15.mp4",
+                "saved": false,
+                "title": "Lecture 16: layout fixture",
+                "versions": [],
+                "video_key": "bfb5d4f94252ad35a839315581d43206c397a983fda65bc2839444fb2f5a20a3"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-14.mp4",
+                "saved": false,
+                "title": "Lecture 15: layout fixture",
+                "versions": [],
+                "video_key": "dff972ac0b0ec0908566927081fe65022d6831f90320aa15e3e967ed9491ea50"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-13.mp4",
+                "saved": false,
+                "title": "Lecture 14: layout fixture",
+                "versions": [],
+                "video_key": "454336dd8200b45c42cf2f880a6093e789f7c0fddc06e1a3c6ca7df44c13cf39"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-12.mp4",
+                "saved": false,
+                "title": "Lecture 13: layout fixture",
+                "versions": [],
+                "video_key": "6258904b75ded2d092caadd025c9f89a22038fed3f15b7e7b979d5e957d19a66"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-11.mp4",
+                "saved": false,
+                "title": "Lecture 12: layout fixture",
+                "versions": [],
+                "video_key": "f0ca507b4dee8c174700607e4b946a0bf0a88001feb3f3d4f1919f1e3ea8e52c"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-10.mp4",
+                "saved": false,
+                "title": "Lecture 11: layout fixture",
+                "versions": [],
+                "video_key": "1b18d988ef801a9123581c51777ade598b3af62ff94cf66b0bedd2a33bd02940"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-9.mp4",
+                "saved": false,
+                "title": "Lecture 10: layout fixture",
+                "versions": [],
+                "video_key": "e5fbc1af180de8e11be30fe2753a17798d9132bca511cfa7be518af8a0a6d74b"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-8.mp4",
+                "saved": false,
+                "title": "Lecture 9: layout fixture",
+                "versions": [],
+                "video_key": "cda545a20c50ca5925aaf3a4714dc66cc9196744e50fd8078a9550b5fd4bd88f"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-7.mp4",
+                "saved": false,
+                "title": "Lecture 8: layout fixture",
+                "versions": [],
+                "video_key": "a18e60907bea950281a5940d9597692ef2619523d0c9dc1044922ab25eafb5b6"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-6.mp4",
+                "saved": false,
+                "title": "Lecture 7: layout fixture",
+                "versions": [],
+                "video_key": "32ee365a21fed81d3eb2e6fa12d37e67d0208923162896c468535071d1fe7f50"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-5.mp4",
+                "saved": false,
+                "title": "Lecture 6: layout fixture",
+                "versions": [],
+                "video_key": "e167e64df4bedacaee5bd458cf1068de853adedd9bfa19f2ea050e5bbe4d7e68"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-4.mp4",
+                "saved": false,
+                "title": "Lecture 5: layout fixture",
+                "versions": [],
+                "video_key": "e9a94bb22ab9b8087b625a1838552f1a23c1c6b7db9c5f67fb4881109d7be138"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-3.mp4",
+                "saved": false,
+                "title": "Lecture 4: layout fixture",
+                "versions": [],
+                "video_key": "8ccef6e61d3db819ec60b3d11306631e85e3e80d509f9772e863479859cb0664"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-2.mp4",
+                "saved": false,
+                "title": "Lecture 3: layout fixture",
+                "versions": [],
+                "video_key": "95a9a0defaf3faaaab0a2e9ce03b52cde6d089be60b790e197664f463c439e3d"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-1.mp4",
+                "saved": false,
+                "title": "Lecture 2: layout fixture",
+                "versions": [],
+                "video_key": "7f9f64c0432da690ad941cf98d080330e2c93e96430b82db0c4ef15a38606e35"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-0.mp4",
+                "saved": false,
+                "title": "Lecture 1: layout fixture",
+                "versions": [],
+                "video_key": "7f8ad22845bfe8710a373686f246fca2e960d074da023bcbee2b82c53adbfead"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "route": "/settings",
+          "status": 200,
+          "body": {
+            "favorite_voice_available": false,
+            "key_masked": null,
+            "key_set": false,
+            "translation_model": "gemini-3.1-flash-lite"
+          }
+        },
+        {
+          "method": "GET",
+          "route": "/browser",
+          "status": 200,
+          "body": {
+            "job": null,
+            "url": "http://127.0.0.1:8146/layout.mp4"
+          }
+        },
+        {
+          "method": "POST",
+          "route": "/browser/open",
+          "status": 400,
+          "body": {
+            "error": "bad_url",
+            "message": "http나 https 주소만 열 수 있습니다.",
+            "status": 400
+          }
+        },
+        {
+          "method": "GET",
+          "route": "/browser",
+          "status": 200,
+          "body": {
+            "job": null,
+            "url": "http://127.0.0.1:8146/layout.mp4"
+          }
+        },
+        {
+          "method": "POST",
+          "route": "/browser/open",
+          "status": 400,
+          "body": {
+            "error": "bad_url",
+            "message": "http나 https 주소만 열 수 있습니다.",
+            "status": 400
+          }
+        }
+      ]
+    },
+    {
+      "viewport": [
+        2560,
+        1440
+      ],
+      "results": [
+        {
+          "name": "video",
+          "viewport": [
+            2560,
+            1440
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "profile": "9716aba339a13f4fc15f2b559d976df7295d02cb7fd037aeddf0be8835107d27",
+          "scrollWidth": 2545,
+          "scrollHeight": 1440,
+          "nav": {
+            "x": 16,
+            "y": 0,
+            "width": 208,
+            "height": 60,
+            "right": 224,
+            "bottom": 60
+          },
+          "main": {
+            "x": 0,
+            "y": 61,
+            "width": 2545,
+            "height": 1378.984375,
+            "right": 2545,
+            "bottom": 1439.984375
+          },
+          "content": {
+            "x": 16,
+            "y": 77,
+            "width": 2394.65625,
+            "height": 1346.984375,
+            "right": 2410.65625,
+            "bottom": 1423.984375
+          },
+          "stage": {
+            "x": 16,
+            "y": 77,
+            "width": 2394.65625,
+            "height": 1346.984375,
+            "right": 2410.65625,
+            "bottom": 1423.984375
+          },
+          "firstCard": null,
+          "columns": 0,
+          "rail": null,
+          "account": null,
+          "keyCard": null,
+          "key": null,
+          "settingsGroups": [],
+          "footer": null,
+          "keyForm": null,
+          "workspace": null,
+          "keyRemove": null,
+          "youtubeLogout": null,
+          "youtubeSection": null,
+          "update": null,
+          "privacyInFooter": false,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": "page"
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": null
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": null
+            }
+          ],
+          "screenshot": "2560x1440-video.png",
+          "scroll": {
+            "y": 0,
+            "max": 0,
+            "width": 2545
+          }
+        },
+        {
+          "name": "library",
+          "viewport": [
+            2560,
+            1440
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "profile": "9716aba339a13f4fc15f2b559d976df7295d02cb7fd037aeddf0be8835107d27",
+          "scrollWidth": 2545,
+          "scrollHeight": 1440,
+          "nav": {
+            "x": 16,
+            "y": 0,
+            "width": 208,
+            "height": 60,
+            "right": 224,
+            "bottom": 60
+          },
+          "main": {
+            "x": 0,
+            "y": 61,
+            "width": 2545,
+            "height": 1006,
+            "right": 2545,
+            "bottom": 1067
+          },
+          "content": {
+            "x": 16,
+            "y": 77,
+            "width": 2513,
+            "height": 974,
+            "right": 2529,
+            "bottom": 1051
+          },
+          "stage": null,
+          "firstCard": {
+            "x": 296,
+            "y": 137,
+            "width": 208.890625,
+            "height": 216.5,
+            "right": 504.890625,
+            "bottom": 353.5
+          },
+          "columns": 10,
+          "rail": {
+            "x": 16,
+            "y": 77,
+            "width": 256,
+            "height": 202,
+            "right": 272,
+            "bottom": 279
+          },
+          "account": null,
+          "keyCard": null,
+          "key": null,
+          "settingsGroups": [],
+          "footer": null,
+          "keyForm": null,
+          "workspace": null,
+          "keyRemove": null,
+          "youtubeLogout": null,
+          "youtubeSection": null,
+          "update": null,
+          "privacyInFooter": false,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": null
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": "page"
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": null
+            }
+          ],
+          "screenshot": "2560x1440-library.png",
+          "scroll": {
+            "y": 0,
+            "max": 0,
+            "width": 2545
+          }
+        },
+        {
+          "name": "settings",
+          "viewport": [
+            2560,
+            1440
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "profile": "9716aba339a13f4fc15f2b559d976df7295d02cb7fd037aeddf0be8835107d27",
+          "scrollWidth": 2545,
+          "scrollHeight": 1440,
+          "nav": {
+            "x": 16,
+            "y": 0,
+            "width": 208,
+            "height": 60,
+            "right": 224,
+            "bottom": 60
+          },
+          "main": {
+            "x": 0,
+            "y": 61,
+            "width": 2545,
+            "height": 1379,
+            "right": 2545,
+            "bottom": 1440
+          },
+          "content": {
+            "x": 16,
+            "y": 77,
+            "width": 2513,
+            "height": 44.390625,
+            "right": 2529,
+            "bottom": 121.390625
+          },
+          "stage": null,
+          "firstCard": null,
+          "columns": 0,
+          "rail": null,
+          "account": {
+            "x": 16,
+            "y": 470.390625,
+            "width": 2513,
+            "height": 53,
+            "right": 2529,
+            "bottom": 523.390625
+          },
+          "keyCard": {
+            "x": 16,
+            "y": 145.390625,
+            "width": 1244.5,
+            "height": 276,
+            "right": 1260.5,
+            "bottom": 421.390625
+          },
+          "key": {
+            "x": 16,
+            "y": 222.390625,
+            "width": 808,
+            "height": 44,
+            "right": 824,
+            "bottom": 266.390625
+          },
+          "settingsGroups": [
+            {
+              "box": {
+                "x": 16,
+                "y": 145.390625,
+                "width": 1244.5,
+                "height": 276,
+                "right": 1260.5,
+                "bottom": 421.390625
+              },
+              "heading": {
+                "x": 16,
+                "y": 145.390625,
+                "width": 1244.5,
+                "height": 28,
+                "right": 1260.5,
+                "bottom": 173.390625
+              },
+              "background": "rgba(0, 0, 0, 0)",
+              "radius": "0px"
+            },
+            {
+              "box": {
+                "x": 1284.5,
+                "y": 145.390625,
+                "width": 1244.5,
+                "height": 276,
+                "right": 2529,
+                "bottom": 421.390625
+              },
+              "heading": {
+                "x": 1284.5,
+                "y": 145.390625,
+                "width": 1244.5,
+                "height": 28,
+                "right": 2529,
+                "bottom": 173.390625
+              },
+              "background": "rgba(0, 0, 0, 0)",
+              "radius": "0px"
+            },
+            {
+              "box": {
+                "x": 16,
+                "y": 470.390625,
+                "width": 2513,
+                "height": 53,
+                "right": 2529,
+                "bottom": 523.390625
+              },
+              "heading": {
+                "x": 16,
+                "y": 470.390625,
+                "width": 1244.5,
+                "height": 28,
+                "right": 1260.5,
+                "bottom": 498.390625
+              },
+              "background": "rgba(0, 0, 0, 0)",
+              "radius": "0px"
+            }
+          ],
+          "footer": {
+            "x": 16,
+            "y": 1361,
+            "width": 2513,
+            "height": 63,
+            "right": 2529,
+            "bottom": 1424
+          },
+          "keyForm": {
+            "x": 16,
+            "y": 222.390625,
+            "width": 960,
+            "height": 44,
+            "right": 976,
+            "bottom": 266.390625
+          },
+          "workspace": {
+            "x": 16,
+            "y": 145.390625,
+            "width": 2513,
+            "height": 378,
+            "right": 2529,
+            "bottom": 523.390625
+          },
+          "keyRemove": {
+            "x": 840.375,
+            "y": 377.390625,
+            "width": 135.625,
+            "height": 44,
+            "right": 976,
+            "bottom": 421.390625
+          },
+          "youtubeLogout": {
+            "x": 1449.75,
+            "y": 377.390625,
+            "width": 151.625,
+            "height": 44,
+            "right": 1601.375,
+            "bottom": 421.390625
+          },
+          "youtubeSection": {
+            "x": 1284.5,
+            "y": 145.390625,
+            "width": 1244.5,
+            "height": 276,
+            "right": 2529,
+            "bottom": 421.390625
+          },
+          "update": {
+            "x": 2393.375,
+            "y": 77.1875,
+            "width": 135.625,
+            "height": 44,
+            "right": 2529,
+            "bottom": 121.1875
+          },
+          "privacyInFooter": true,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": null
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": null
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": "page"
+            }
+          ],
+          "screenshot": "2560x1440-settings.png",
+          "scroll": {
+            "y": 0,
+            "max": 0,
+            "width": 2545
+          }
+        }
+      ],
+      "geometry": [
+        {
+          "notice": false,
+          "viewport": [
+            2560,
+            1440
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": null,
+          "profile": null,
+          "scrollWidth": 2545,
+          "scrollHeight": 1440,
+          "nav": {
+            "x": 16,
+            "y": 14.5,
+            "width": 208,
+            "height": 60,
+            "right": 224,
+            "bottom": 74.5
+          },
+          "main": {
+            "x": 0,
+            "y": 90,
+            "width": 2545,
+            "height": 1349.984375,
+            "right": 2545,
+            "bottom": 1439.984375
+          },
+          "content": {
+            "x": 16,
+            "y": 106,
+            "width": 2343.109375,
+            "height": 1317.984375,
+            "right": 2359.109375,
+            "bottom": 1423.984375
+          },
+          "stage": {
+            "x": 16,
+            "y": 106,
+            "width": 2343.109375,
+            "height": 1317.984375,
+            "right": 2359.109375,
+            "bottom": 1423.984375
+          },
+          "firstCard": null,
+          "columns": 0,
+          "rail": null,
+          "account": null,
+          "keyCard": null,
+          "key": null,
+          "settingsGroups": [],
+          "footer": null,
+          "keyForm": null,
+          "workspace": null,
+          "keyRemove": null,
+          "youtubeLogout": null,
+          "youtubeSection": null,
+          "update": null,
+          "privacyInFooter": false,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": "page"
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": null
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": null
+            }
+          ],
+          "video": {
+            "x": 16,
+            "y": 106,
+            "width": 2343.109375,
+            "height": 1317.984375
+          }
+        },
+        {
+          "notice": true,
+          "viewport": [
+            2560,
+            1440
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": null,
+          "profile": null,
+          "scrollWidth": 2545,
+          "scrollHeight": 1440,
+          "nav": {
+            "x": 16,
+            "y": 14.5,
+            "width": 208,
+            "height": 60,
+            "right": 224,
+            "bottom": 74.5
+          },
+          "main": {
+            "x": 0,
+            "y": 90,
+            "width": 2545,
+            "height": 1349.984375,
+            "right": 2545,
+            "bottom": 1439.984375
+          },
+          "content": {
+            "x": 16,
+            "y": 106,
+            "width": 2513,
+            "height": 47,
+            "right": 2529,
+            "bottom": 153
+          },
+          "stage": {
+            "x": 16,
+            "y": 169,
+            "width": 2231.109375,
+            "height": 1254.984375,
+            "right": 2247.109375,
+            "bottom": 1423.984375
+          },
+          "firstCard": null,
+          "columns": 0,
+          "rail": null,
+          "account": null,
+          "keyCard": null,
+          "key": null,
+          "settingsGroups": [],
+          "footer": null,
+          "keyForm": null,
+          "workspace": null,
+          "keyRemove": null,
+          "youtubeLogout": null,
+          "youtubeSection": null,
+          "update": null,
+          "privacyInFooter": false,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": "page"
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": null
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": null
+            }
+          ],
+          "video": {
+            "x": 16,
+            "y": 169,
+            "width": 2231.109375,
+            "height": 1254.984375
+          }
+        }
+      ],
+      "requests": [
+        {
+          "method": "GET",
+          "route": "/browser",
+          "status": 200,
+          "body": {
+            "job": null,
+            "url": "http://127.0.0.1:8146/layout.mp4"
+          }
+        },
+        {
+          "method": "GET",
+          "route": "/library/data",
+          "status": 200,
+          "body": {
+            "account_email": null,
+            "legacy_available": false,
+            "playlists": [
+              {
+                "entries": [
+                  "7f8ad22845bfe8710a373686f246fca2e960d074da023bcbee2b82c53adbfead",
+                  "7f9f64c0432da690ad941cf98d080330e2c93e96430b82db0c4ef15a38606e35",
+                  "95a9a0defaf3faaaab0a2e9ce03b52cde6d089be60b790e197664f463c439e3d",
+                  "8ccef6e61d3db819ec60b3d11306631e85e3e80d509f9772e863479859cb0664",
+                  "e9a94bb22ab9b8087b625a1838552f1a23c1c6b7db9c5f67fb4881109d7be138",
+                  "e167e64df4bedacaee5bd458cf1068de853adedd9bfa19f2ea050e5bbe4d7e68",
+                  "32ee365a21fed81d3eb2e6fa12d37e67d0208923162896c468535071d1fe7f50",
+                  "a18e60907bea950281a5940d9597692ef2619523d0c9dc1044922ab25eafb5b6",
+                  "cda545a20c50ca5925aaf3a4714dc66cc9196744e50fd8078a9550b5fd4bd88f",
+                  "e5fbc1af180de8e11be30fe2753a17798d9132bca511cfa7be518af8a0a6d74b",
+                  "1b18d988ef801a9123581c51777ade598b3af62ff94cf66b0bedd2a33bd02940",
+                  "f0ca507b4dee8c174700607e4b946a0bf0a88001feb3f3d4f1919f1e3ea8e52c",
+                  "6258904b75ded2d092caadd025c9f89a22038fed3f15b7e7b979d5e957d19a66",
+                  "454336dd8200b45c42cf2f880a6093e789f7c0fddc06e1a3c6ca7df44c13cf39",
+                  "dff972ac0b0ec0908566927081fe65022d6831f90320aa15e3e967ed9491ea50",
+                  "bfb5d4f94252ad35a839315581d43206c397a983fda65bc2839444fb2f5a20a3",
+                  "6297bae8b6fad09b96a60c927aeacedd79b93afec68b9331526f4b3204a2b867",
+                  "b90801eb2cead18f045cb2ba948f23b39ebc265348021ada99f2d1ce07c5bf48",
+                  "85b5b09dc70b8a95413583101a7af511e4974de3a1db08d1ffdfd24a686cfab1",
+                  "0a139ae331147e721cccd5101e6a35a273b84724a4f5773d81a7fecc8adb2797",
+                  "342d1525b1050d4309d63adb1e5732952a5572309f2dc0530396809c23d92429",
+                  "52a8c88fd5c8e3b65fa522bf931a50e7379d219dd1ed0752d47d9083ed65b1f7",
+                  "33623cbe9f82eb96b489dfae89b6f9e28d67f53080a9fbdef1bf482d86d5ee90",
+                  "3ba30c2d08abcef2dc2395a62c4cd6e2a5777a4449c721db3a589ca3bcacd8b9",
+                  "d08021a6ab57ca48ba741c2071f674df80cda36665dd4c11309460770ebdbf12",
+                  "37cf84e7a1540409f83e4bc5ad28f10f91d136e89ff932df901bd6ed0515b549",
+                  "46226803f90dc45ebaf03e7a44b4dad39237476f5f98b952656b3e3cbff07ce1",
+                  "47b81dc6f0fde44fc7371ace25affefa11d66e8dcd984dac706f03174fdd6088",
+                  "34299e0ba6c680a29a77d95e381a8afe8f15302f2fe1853de62d9800f926dc31",
+                  "8b92d8b3ea544cfd662f0bc057616f8828152cd486c7afd84436fa978943f952",
+                  "ef9441fbce187a34d74c658a8a0f2867c65aab48ef01c0f736d4c88a086e019b",
+                  "96640a99c8bb2a52e9180a76b049c55a6645ff1fd3e28d86f96df612edcbef4e",
+                  "37f0e8afc3498da582a3ac698f249025cba1b71e24ae36ab03143e5b5c717870",
+                  "b1a383b3dcfc57cd0a29123815a576ffa568b9d3ff387b802b71ee2c5686382b",
+                  "994372f7fbf40e452356b834ed3d435f3504156d2cee20b841452a1337c87710",
+                  "779e092e0938d44a35f709edffa2aa2cb9e4e8f4d86af3c819e682debcc6d328"
+                ],
+                "id": "0a43ed99-f59e-4720-878e-14661c638787",
+                "name": "Layout fixtures"
+              }
+            ],
+            "videos": [
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-35.mp4",
+                "saved": false,
+                "title": "Lecture 36: layout fixture",
+                "versions": [],
+                "video_key": "779e092e0938d44a35f709edffa2aa2cb9e4e8f4d86af3c819e682debcc6d328"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-34.mp4",
+                "saved": false,
+                "title": "Lecture 35: layout fixture",
+                "versions": [],
+                "video_key": "994372f7fbf40e452356b834ed3d435f3504156d2cee20b841452a1337c87710"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-33.mp4",
+                "saved": false,
+                "title": "Lecture 34: layout fixture",
+                "versions": [],
+                "video_key": "b1a383b3dcfc57cd0a29123815a576ffa568b9d3ff387b802b71ee2c5686382b"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-32.mp4",
+                "saved": false,
+                "title": "Lecture 33: layout fixture",
+                "versions": [],
+                "video_key": "37f0e8afc3498da582a3ac698f249025cba1b71e24ae36ab03143e5b5c717870"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-31.mp4",
+                "saved": false,
+                "title": "Lecture 32: layout fixture",
+                "versions": [],
+                "video_key": "96640a99c8bb2a52e9180a76b049c55a6645ff1fd3e28d86f96df612edcbef4e"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-30.mp4",
+                "saved": false,
+                "title": "Lecture 31: layout fixture",
+                "versions": [],
+                "video_key": "ef9441fbce187a34d74c658a8a0f2867c65aab48ef01c0f736d4c88a086e019b"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-29.mp4",
+                "saved": false,
+                "title": "Lecture 30: layout fixture",
+                "versions": [],
+                "video_key": "8b92d8b3ea544cfd662f0bc057616f8828152cd486c7afd84436fa978943f952"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-28.mp4",
+                "saved": false,
+                "title": "Lecture 29: layout fixture",
+                "versions": [],
+                "video_key": "34299e0ba6c680a29a77d95e381a8afe8f15302f2fe1853de62d9800f926dc31"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-27.mp4",
+                "saved": false,
+                "title": "Lecture 28: layout fixture",
+                "versions": [],
+                "video_key": "47b81dc6f0fde44fc7371ace25affefa11d66e8dcd984dac706f03174fdd6088"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-26.mp4",
+                "saved": false,
+                "title": "Lecture 27: layout fixture",
+                "versions": [],
+                "video_key": "46226803f90dc45ebaf03e7a44b4dad39237476f5f98b952656b3e3cbff07ce1"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-25.mp4",
+                "saved": false,
+                "title": "Lecture 26: layout fixture",
+                "versions": [],
+                "video_key": "37cf84e7a1540409f83e4bc5ad28f10f91d136e89ff932df901bd6ed0515b549"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-24.mp4",
+                "saved": false,
+                "title": "Lecture 25: layout fixture",
+                "versions": [],
+                "video_key": "d08021a6ab57ca48ba741c2071f674df80cda36665dd4c11309460770ebdbf12"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-23.mp4",
+                "saved": false,
+                "title": "Lecture 24: layout fixture",
+                "versions": [],
+                "video_key": "3ba30c2d08abcef2dc2395a62c4cd6e2a5777a4449c721db3a589ca3bcacd8b9"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-22.mp4",
+                "saved": false,
+                "title": "Lecture 23: layout fixture",
+                "versions": [],
+                "video_key": "33623cbe9f82eb96b489dfae89b6f9e28d67f53080a9fbdef1bf482d86d5ee90"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-21.mp4",
+                "saved": false,
+                "title": "Lecture 22: layout fixture",
+                "versions": [],
+                "video_key": "52a8c88fd5c8e3b65fa522bf931a50e7379d219dd1ed0752d47d9083ed65b1f7"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-20.mp4",
+                "saved": false,
+                "title": "Lecture 21: layout fixture",
+                "versions": [],
+                "video_key": "342d1525b1050d4309d63adb1e5732952a5572309f2dc0530396809c23d92429"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-19.mp4",
+                "saved": false,
+                "title": "Lecture 20: layout fixture",
+                "versions": [],
+                "video_key": "0a139ae331147e721cccd5101e6a35a273b84724a4f5773d81a7fecc8adb2797"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-18.mp4",
+                "saved": false,
+                "title": "Lecture 19: layout fixture",
+                "versions": [],
+                "video_key": "85b5b09dc70b8a95413583101a7af511e4974de3a1db08d1ffdfd24a686cfab1"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-17.mp4",
+                "saved": false,
+                "title": "Lecture 18: layout fixture",
+                "versions": [],
+                "video_key": "b90801eb2cead18f045cb2ba948f23b39ebc265348021ada99f2d1ce07c5bf48"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-16.mp4",
+                "saved": false,
+                "title": "Lecture 17: layout fixture",
+                "versions": [],
+                "video_key": "6297bae8b6fad09b96a60c927aeacedd79b93afec68b9331526f4b3204a2b867"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-15.mp4",
+                "saved": false,
+                "title": "Lecture 16: layout fixture",
+                "versions": [],
+                "video_key": "bfb5d4f94252ad35a839315581d43206c397a983fda65bc2839444fb2f5a20a3"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-14.mp4",
+                "saved": false,
+                "title": "Lecture 15: layout fixture",
+                "versions": [],
+                "video_key": "dff972ac0b0ec0908566927081fe65022d6831f90320aa15e3e967ed9491ea50"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-13.mp4",
+                "saved": false,
+                "title": "Lecture 14: layout fixture",
+                "versions": [],
+                "video_key": "454336dd8200b45c42cf2f880a6093e789f7c0fddc06e1a3c6ca7df44c13cf39"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-12.mp4",
+                "saved": false,
+                "title": "Lecture 13: layout fixture",
+                "versions": [],
+                "video_key": "6258904b75ded2d092caadd025c9f89a22038fed3f15b7e7b979d5e957d19a66"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-11.mp4",
+                "saved": false,
+                "title": "Lecture 12: layout fixture",
+                "versions": [],
+                "video_key": "f0ca507b4dee8c174700607e4b946a0bf0a88001feb3f3d4f1919f1e3ea8e52c"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-10.mp4",
+                "saved": false,
+                "title": "Lecture 11: layout fixture",
+                "versions": [],
+                "video_key": "1b18d988ef801a9123581c51777ade598b3af62ff94cf66b0bedd2a33bd02940"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-9.mp4",
+                "saved": false,
+                "title": "Lecture 10: layout fixture",
+                "versions": [],
+                "video_key": "e5fbc1af180de8e11be30fe2753a17798d9132bca511cfa7be518af8a0a6d74b"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-8.mp4",
+                "saved": false,
+                "title": "Lecture 9: layout fixture",
+                "versions": [],
+                "video_key": "cda545a20c50ca5925aaf3a4714dc66cc9196744e50fd8078a9550b5fd4bd88f"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-7.mp4",
+                "saved": false,
+                "title": "Lecture 8: layout fixture",
+                "versions": [],
+                "video_key": "a18e60907bea950281a5940d9597692ef2619523d0c9dc1044922ab25eafb5b6"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-6.mp4",
+                "saved": false,
+                "title": "Lecture 7: layout fixture",
+                "versions": [],
+                "video_key": "32ee365a21fed81d3eb2e6fa12d37e67d0208923162896c468535071d1fe7f50"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-5.mp4",
+                "saved": false,
+                "title": "Lecture 6: layout fixture",
+                "versions": [],
+                "video_key": "e167e64df4bedacaee5bd458cf1068de853adedd9bfa19f2ea050e5bbe4d7e68"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-4.mp4",
+                "saved": false,
+                "title": "Lecture 5: layout fixture",
+                "versions": [],
+                "video_key": "e9a94bb22ab9b8087b625a1838552f1a23c1c6b7db9c5f67fb4881109d7be138"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-3.mp4",
+                "saved": false,
+                "title": "Lecture 4: layout fixture",
+                "versions": [],
+                "video_key": "8ccef6e61d3db819ec60b3d11306631e85e3e80d509f9772e863479859cb0664"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-2.mp4",
+                "saved": false,
+                "title": "Lecture 3: layout fixture",
+                "versions": [],
+                "video_key": "95a9a0defaf3faaaab0a2e9ce03b52cde6d089be60b790e197664f463c439e3d"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-1.mp4",
+                "saved": false,
+                "title": "Lecture 2: layout fixture",
+                "versions": [],
+                "video_key": "7f9f64c0432da690ad941cf98d080330e2c93e96430b82db0c4ef15a38606e35"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-0.mp4",
+                "saved": false,
+                "title": "Lecture 1: layout fixture",
+                "versions": [],
+                "video_key": "7f8ad22845bfe8710a373686f246fca2e960d074da023bcbee2b82c53adbfead"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "route": "/settings",
+          "status": 200,
+          "body": {
+            "favorite_voice_available": false,
+            "key_masked": null,
+            "key_set": false,
+            "translation_model": "gemini-3.1-flash-lite"
+          }
+        },
+        {
+          "method": "GET",
+          "route": "/browser",
+          "status": 200,
+          "body": {
+            "job": null,
+            "url": "http://127.0.0.1:8146/layout.mp4"
+          }
+        },
+        {
+          "method": "POST",
+          "route": "/browser/open",
+          "status": 400,
+          "body": {
+            "error": "bad_url",
+            "message": "http나 https 주소만 열 수 있습니다.",
+            "status": 400
+          }
+        },
+        {
+          "method": "GET",
+          "route": "/browser",
+          "status": 200,
+          "body": {
+            "job": null,
+            "url": "http://127.0.0.1:8146/layout.mp4"
+          }
+        },
+        {
+          "method": "POST",
+          "route": "/browser/open",
+          "status": 400,
+          "body": {
+            "error": "bad_url",
+            "message": "http나 https 주소만 열 수 있습니다.",
+            "status": 400
+          }
+        }
+      ]
+    },
+    {
+      "viewport": [
+        384,
+        854
+      ],
+      "results": [
+        {
+          "name": "video",
+          "viewport": [
+            384,
+            854
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "profile": "9716aba339a13f4fc15f2b559d976df7295d02cb7fd037aeddf0be8835107d27",
+          "scrollWidth": 384,
+          "scrollHeight": 854,
+          "nav": {
+            "x": 0,
+            "y": 809,
+            "width": 384,
+            "height": 45,
+            "right": 384,
+            "bottom": 854
+          },
+          "main": {
+            "x": 0,
+            "y": 61,
+            "width": 384,
+            "height": 289,
+            "right": 384,
+            "bottom": 350
+          },
+          "content": {
+            "x": 8,
+            "y": 69,
+            "width": 368,
+            "height": 273,
+            "right": 376,
+            "bottom": 342
+          },
+          "stage": {
+            "x": 8,
+            "y": 69,
+            "width": 368,
+            "height": 273,
+            "right": 376,
+            "bottom": 342
+          },
+          "firstCard": null,
+          "columns": 0,
+          "rail": null,
+          "account": null,
+          "keyCard": null,
+          "key": null,
+          "settingsGroups": [],
+          "footer": null,
+          "keyForm": null,
+          "workspace": null,
+          "keyRemove": null,
+          "youtubeLogout": null,
+          "youtubeSection": null,
+          "update": null,
+          "privacyInFooter": false,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": "page"
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": null
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": null
+            }
+          ],
+          "screenshot": "384x854-video.png",
+          "scroll": {
+            "y": 0,
+            "max": 0,
+            "width": 384
+          }
+        },
+        {
+          "name": "library",
+          "viewport": [
+            384,
+            854
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "profile": "9716aba339a13f4fc15f2b559d976df7295d02cb7fd037aeddf0be8835107d27",
+          "scrollWidth": 384,
+          "scrollHeight": 3742,
+          "nav": {
+            "x": 0,
+            "y": 809,
+            "width": 384,
+            "height": 45,
+            "right": 384,
+            "bottom": 854
+          },
+          "main": {
+            "x": 0,
+            "y": 0,
+            "width": 384,
+            "height": 3694.390625,
+            "right": 384,
+            "bottom": 3694.390625
+          },
+          "content": {
+            "x": 16,
+            "y": 16,
+            "width": 352,
+            "height": 3662.390625,
+            "right": 368,
+            "bottom": 3678.390625
+          },
+          "stage": null,
+          "firstCard": {
+            "x": 16,
+            "y": 197.390625,
+            "width": 352,
+            "height": 87,
+            "right": 368,
+            "bottom": 284.390625
+          },
+          "columns": 1,
+          "rail": null,
+          "account": null,
+          "keyCard": null,
+          "key": null,
+          "settingsGroups": [],
+          "footer": null,
+          "keyForm": null,
+          "workspace": null,
+          "keyRemove": null,
+          "youtubeLogout": null,
+          "youtubeSection": null,
+          "update": null,
+          "privacyInFooter": false,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": null
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": "page"
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": null
+            }
+          ],
+          "screenshot": "384x854-library.png",
+          "scroll": {
+            "y": 2000,
+            "max": 2888,
+            "width": 384
+          }
+        },
+        {
+          "name": "settings",
+          "viewport": [
+            384,
+            854
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "profile": "9716aba339a13f4fc15f2b559d976df7295d02cb7fd037aeddf0be8835107d27",
+          "scrollWidth": 384,
+          "scrollHeight": 1175,
+          "nav": {
+            "x": 0,
+            "y": 809,
+            "width": 384,
+            "height": 45,
+            "right": 384,
+            "bottom": 854
+          },
+          "main": {
+            "x": 0,
+            "y": 0,
+            "width": 384,
+            "height": 1127.390625,
+            "right": 384,
+            "bottom": 1127.390625
+          },
+          "content": {
+            "x": 8,
+            "y": 8,
+            "width": 368,
+            "height": 44.390625,
+            "right": 376,
+            "bottom": 52.390625
+          },
+          "stage": null,
+          "firstCard": null,
+          "columns": 0,
+          "rail": null,
+          "account": {
+            "x": 8,
+            "y": 774.390625,
+            "width": 368,
+            "height": 177,
+            "right": 376,
+            "bottom": 951.390625
+          },
+          "keyCard": {
+            "x": 8,
+            "y": 76.390625,
+            "width": 368,
+            "height": 417,
+            "right": 376,
+            "bottom": 493.390625
+          },
+          "key": {
+            "x": 24,
+            "y": 190.390625,
+            "width": 264,
+            "height": 44,
+            "right": 288,
+            "bottom": 234.390625
+          },
+          "settingsGroups": [
+            {
+              "box": {
+                "x": 8,
+                "y": 76.390625,
+                "width": 368,
+                "height": 417,
+                "right": 376,
+                "bottom": 493.390625
+              },
+              "heading": {
+                "x": 24,
+                "y": 92.390625,
+                "width": 336,
+                "height": 28,
+                "right": 360,
+                "bottom": 120.390625
+              },
+              "background": "oklab(0.966476 -0.000875741 -0.00443137 / 0.05)",
+              "radius": "8px"
+            },
+            {
+              "box": {
+                "x": 8,
+                "y": 517.390625,
+                "width": 368,
+                "height": 233,
+                "right": 376,
+                "bottom": 750.390625
+              },
+              "heading": {
+                "x": 24,
+                "y": 533.390625,
+                "width": 336,
+                "height": 28,
+                "right": 360,
+                "bottom": 561.390625
+              },
+              "background": "oklab(0.966476 -0.000875741 -0.00443137 / 0.05)",
+              "radius": "8px"
+            },
+            {
+              "box": {
+                "x": 8,
+                "y": 774.390625,
+                "width": 368,
+                "height": 177,
+                "right": 376,
+                "bottom": 951.390625
+              },
+              "heading": {
+                "x": 24,
+                "y": 790.390625,
+                "width": 336,
+                "height": 28,
+                "right": 360,
+                "bottom": 818.390625
+              },
+              "background": "oklab(0.966476 -0.000875741 -0.00443137 / 0.05)",
+              "radius": "8px"
+            }
+          ],
+          "footer": {
+            "x": 8,
+            "y": 975.390625,
+            "width": 368,
+            "height": 144,
+            "right": 376,
+            "bottom": 1119.390625
+          },
+          "keyForm": {
+            "x": 24,
+            "y": 190.390625,
+            "width": 336,
+            "height": 44,
+            "right": 360,
+            "bottom": 234.390625
+          },
+          "workspace": {
+            "x": 8,
+            "y": 76.390625,
+            "width": 368,
+            "height": 875,
+            "right": 376,
+            "bottom": 951.390625
+          },
+          "keyRemove": {
+            "x": 24,
+            "y": 433.390625,
+            "width": 135.625,
+            "height": 44,
+            "right": 159.625,
+            "bottom": 477.390625
+          },
+          "youtubeLogout": {
+            "x": 189.25,
+            "y": 690.390625,
+            "width": 151.625,
+            "height": 44,
+            "right": 340.875,
+            "bottom": 734.390625
+          },
+          "youtubeSection": {
+            "x": 8,
+            "y": 517.390625,
+            "width": 368,
+            "height": 233,
+            "right": 376,
+            "bottom": 750.390625
+          },
+          "update": {
+            "x": 240.375,
+            "y": 8.1875,
+            "width": 135.625,
+            "height": 44,
+            "right": 376,
+            "bottom": 52.1875
+          },
+          "privacyInFooter": true,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": null
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": null
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": "page"
+            }
+          ],
+          "screenshot": "384x854-settings.png",
+          "scroll": {
+            "y": 321,
+            "max": 321,
+            "width": 384
+          }
+        }
+      ],
+      "geometry": [
+        {
+          "notice": false,
+          "viewport": [
+            384,
+            854
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": null,
+          "profile": null,
+          "scrollWidth": 384,
+          "scrollHeight": 854,
+          "nav": {
+            "x": 0,
+            "y": 809,
+            "width": 384,
+            "height": 45,
+            "right": 384,
+            "bottom": 854
+          },
+          "main": {
+            "x": 0,
+            "y": 111,
+            "width": 384,
+            "height": 289,
+            "right": 384,
+            "bottom": 400
+          },
+          "content": {
+            "x": 8,
+            "y": 119,
+            "width": 368,
+            "height": 273,
+            "right": 376,
+            "bottom": 392
+          },
+          "stage": {
+            "x": 8,
+            "y": 119,
+            "width": 368,
+            "height": 273,
+            "right": 376,
+            "bottom": 392
+          },
+          "firstCard": null,
+          "columns": 0,
+          "rail": null,
+          "account": null,
+          "keyCard": null,
+          "key": null,
+          "settingsGroups": [],
+          "footer": null,
+          "keyForm": null,
+          "workspace": null,
+          "keyRemove": null,
+          "youtubeLogout": null,
+          "youtubeSection": null,
+          "update": null,
+          "privacyInFooter": false,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": "page"
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": null
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": null
+            }
+          ],
+          "video": {
+            "x": 8,
+            "y": 119,
+            "width": 368,
+            "height": 207
+          }
+        },
+        {
+          "notice": true,
+          "viewport": [
+            384,
+            854
+          ],
+          "screenHead": "f5277edebf2d1b0281f404177299479f19f80c55",
+          "coreHead": null,
+          "profile": null,
+          "scrollWidth": 384,
+          "scrollHeight": 854,
+          "nav": {
+            "x": 0,
+            "y": 809,
+            "width": 384,
+            "height": 45,
+            "right": 384,
+            "bottom": 854
+          },
+          "main": {
+            "x": 0,
+            "y": 111,
+            "width": 384,
+            "height": 449,
+            "right": 384,
+            "bottom": 560
+          },
+          "content": {
+            "x": 8,
+            "y": 119,
+            "width": 368,
+            "height": 144,
+            "right": 376,
+            "bottom": 263
+          },
+          "stage": {
+            "x": 8,
+            "y": 279,
+            "width": 368,
+            "height": 273,
+            "right": 376,
+            "bottom": 552
+          },
+          "firstCard": null,
+          "columns": 0,
+          "rail": null,
+          "account": null,
+          "keyCard": null,
+          "key": null,
+          "settingsGroups": [],
+          "footer": null,
+          "keyForm": null,
+          "workspace": null,
+          "keyRemove": null,
+          "youtubeLogout": null,
+          "youtubeSection": null,
+          "update": null,
+          "privacyInFooter": false,
+          "navItems": [
+            {
+              "text": "영상",
+              "href": "/",
+              "current": "page"
+            },
+            {
+              "text": "보관함",
+              "href": "/library",
+              "current": null
+            },
+            {
+              "text": "설정",
+              "href": "/preferences",
+              "current": null
+            }
+          ],
+          "video": {
+            "x": 8,
+            "y": 279,
+            "width": 368,
+            "height": 207
+          }
+        }
+      ],
+      "requests": [
+        {
+          "method": "GET",
+          "route": "/browser",
+          "status": 200,
+          "body": {
+            "job": null,
+            "url": "http://127.0.0.1:8146/layout.mp4"
+          }
+        },
+        {
+          "method": "GET",
+          "route": "/library/data",
+          "status": 200,
+          "body": {
+            "account_email": null,
+            "legacy_available": false,
+            "playlists": [
+              {
+                "entries": [
+                  "7f8ad22845bfe8710a373686f246fca2e960d074da023bcbee2b82c53adbfead",
+                  "7f9f64c0432da690ad941cf98d080330e2c93e96430b82db0c4ef15a38606e35",
+                  "95a9a0defaf3faaaab0a2e9ce03b52cde6d089be60b790e197664f463c439e3d",
+                  "8ccef6e61d3db819ec60b3d11306631e85e3e80d509f9772e863479859cb0664",
+                  "e9a94bb22ab9b8087b625a1838552f1a23c1c6b7db9c5f67fb4881109d7be138",
+                  "e167e64df4bedacaee5bd458cf1068de853adedd9bfa19f2ea050e5bbe4d7e68",
+                  "32ee365a21fed81d3eb2e6fa12d37e67d0208923162896c468535071d1fe7f50",
+                  "a18e60907bea950281a5940d9597692ef2619523d0c9dc1044922ab25eafb5b6",
+                  "cda545a20c50ca5925aaf3a4714dc66cc9196744e50fd8078a9550b5fd4bd88f",
+                  "e5fbc1af180de8e11be30fe2753a17798d9132bca511cfa7be518af8a0a6d74b",
+                  "1b18d988ef801a9123581c51777ade598b3af62ff94cf66b0bedd2a33bd02940",
+                  "f0ca507b4dee8c174700607e4b946a0bf0a88001feb3f3d4f1919f1e3ea8e52c",
+                  "6258904b75ded2d092caadd025c9f89a22038fed3f15b7e7b979d5e957d19a66",
+                  "454336dd8200b45c42cf2f880a6093e789f7c0fddc06e1a3c6ca7df44c13cf39",
+                  "dff972ac0b0ec0908566927081fe65022d6831f90320aa15e3e967ed9491ea50",
+                  "bfb5d4f94252ad35a839315581d43206c397a983fda65bc2839444fb2f5a20a3",
+                  "6297bae8b6fad09b96a60c927aeacedd79b93afec68b9331526f4b3204a2b867",
+                  "b90801eb2cead18f045cb2ba948f23b39ebc265348021ada99f2d1ce07c5bf48",
+                  "85b5b09dc70b8a95413583101a7af511e4974de3a1db08d1ffdfd24a686cfab1",
+                  "0a139ae331147e721cccd5101e6a35a273b84724a4f5773d81a7fecc8adb2797",
+                  "342d1525b1050d4309d63adb1e5732952a5572309f2dc0530396809c23d92429",
+                  "52a8c88fd5c8e3b65fa522bf931a50e7379d219dd1ed0752d47d9083ed65b1f7",
+                  "33623cbe9f82eb96b489dfae89b6f9e28d67f53080a9fbdef1bf482d86d5ee90",
+                  "3ba30c2d08abcef2dc2395a62c4cd6e2a5777a4449c721db3a589ca3bcacd8b9",
+                  "d08021a6ab57ca48ba741c2071f674df80cda36665dd4c11309460770ebdbf12",
+                  "37cf84e7a1540409f83e4bc5ad28f10f91d136e89ff932df901bd6ed0515b549",
+                  "46226803f90dc45ebaf03e7a44b4dad39237476f5f98b952656b3e3cbff07ce1",
+                  "47b81dc6f0fde44fc7371ace25affefa11d66e8dcd984dac706f03174fdd6088",
+                  "34299e0ba6c680a29a77d95e381a8afe8f15302f2fe1853de62d9800f926dc31",
+                  "8b92d8b3ea544cfd662f0bc057616f8828152cd486c7afd84436fa978943f952",
+                  "ef9441fbce187a34d74c658a8a0f2867c65aab48ef01c0f736d4c88a086e019b",
+                  "96640a99c8bb2a52e9180a76b049c55a6645ff1fd3e28d86f96df612edcbef4e",
+                  "37f0e8afc3498da582a3ac698f249025cba1b71e24ae36ab03143e5b5c717870",
+                  "b1a383b3dcfc57cd0a29123815a576ffa568b9d3ff387b802b71ee2c5686382b",
+                  "994372f7fbf40e452356b834ed3d435f3504156d2cee20b841452a1337c87710",
+                  "779e092e0938d44a35f709edffa2aa2cb9e4e8f4d86af3c819e682debcc6d328"
+                ],
+                "id": "0a43ed99-f59e-4720-878e-14661c638787",
+                "name": "Layout fixtures"
+              }
+            ],
+            "videos": [
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-35.mp4",
+                "saved": false,
+                "title": "Lecture 36: layout fixture",
+                "versions": [],
+                "video_key": "779e092e0938d44a35f709edffa2aa2cb9e4e8f4d86af3c819e682debcc6d328"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-34.mp4",
+                "saved": false,
+                "title": "Lecture 35: layout fixture",
+                "versions": [],
+                "video_key": "994372f7fbf40e452356b834ed3d435f3504156d2cee20b841452a1337c87710"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-33.mp4",
+                "saved": false,
+                "title": "Lecture 34: layout fixture",
+                "versions": [],
+                "video_key": "b1a383b3dcfc57cd0a29123815a576ffa568b9d3ff387b802b71ee2c5686382b"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-32.mp4",
+                "saved": false,
+                "title": "Lecture 33: layout fixture",
+                "versions": [],
+                "video_key": "37f0e8afc3498da582a3ac698f249025cba1b71e24ae36ab03143e5b5c717870"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-31.mp4",
+                "saved": false,
+                "title": "Lecture 32: layout fixture",
+                "versions": [],
+                "video_key": "96640a99c8bb2a52e9180a76b049c55a6645ff1fd3e28d86f96df612edcbef4e"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-30.mp4",
+                "saved": false,
+                "title": "Lecture 31: layout fixture",
+                "versions": [],
+                "video_key": "ef9441fbce187a34d74c658a8a0f2867c65aab48ef01c0f736d4c88a086e019b"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-29.mp4",
+                "saved": false,
+                "title": "Lecture 30: layout fixture",
+                "versions": [],
+                "video_key": "8b92d8b3ea544cfd662f0bc057616f8828152cd486c7afd84436fa978943f952"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-28.mp4",
+                "saved": false,
+                "title": "Lecture 29: layout fixture",
+                "versions": [],
+                "video_key": "34299e0ba6c680a29a77d95e381a8afe8f15302f2fe1853de62d9800f926dc31"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-27.mp4",
+                "saved": false,
+                "title": "Lecture 28: layout fixture",
+                "versions": [],
+                "video_key": "47b81dc6f0fde44fc7371ace25affefa11d66e8dcd984dac706f03174fdd6088"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-26.mp4",
+                "saved": false,
+                "title": "Lecture 27: layout fixture",
+                "versions": [],
+                "video_key": "46226803f90dc45ebaf03e7a44b4dad39237476f5f98b952656b3e3cbff07ce1"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-25.mp4",
+                "saved": false,
+                "title": "Lecture 26: layout fixture",
+                "versions": [],
+                "video_key": "37cf84e7a1540409f83e4bc5ad28f10f91d136e89ff932df901bd6ed0515b549"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-24.mp4",
+                "saved": false,
+                "title": "Lecture 25: layout fixture",
+                "versions": [],
+                "video_key": "d08021a6ab57ca48ba741c2071f674df80cda36665dd4c11309460770ebdbf12"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-23.mp4",
+                "saved": false,
+                "title": "Lecture 24: layout fixture",
+                "versions": [],
+                "video_key": "3ba30c2d08abcef2dc2395a62c4cd6e2a5777a4449c721db3a589ca3bcacd8b9"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-22.mp4",
+                "saved": false,
+                "title": "Lecture 23: layout fixture",
+                "versions": [],
+                "video_key": "33623cbe9f82eb96b489dfae89b6f9e28d67f53080a9fbdef1bf482d86d5ee90"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-21.mp4",
+                "saved": false,
+                "title": "Lecture 22: layout fixture",
+                "versions": [],
+                "video_key": "52a8c88fd5c8e3b65fa522bf931a50e7379d219dd1ed0752d47d9083ed65b1f7"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-20.mp4",
+                "saved": false,
+                "title": "Lecture 21: layout fixture",
+                "versions": [],
+                "video_key": "342d1525b1050d4309d63adb1e5732952a5572309f2dc0530396809c23d92429"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-19.mp4",
+                "saved": false,
+                "title": "Lecture 20: layout fixture",
+                "versions": [],
+                "video_key": "0a139ae331147e721cccd5101e6a35a273b84724a4f5773d81a7fecc8adb2797"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-18.mp4",
+                "saved": false,
+                "title": "Lecture 19: layout fixture",
+                "versions": [],
+                "video_key": "85b5b09dc70b8a95413583101a7af511e4974de3a1db08d1ffdfd24a686cfab1"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-17.mp4",
+                "saved": false,
+                "title": "Lecture 18: layout fixture",
+                "versions": [],
+                "video_key": "b90801eb2cead18f045cb2ba948f23b39ebc265348021ada99f2d1ce07c5bf48"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-16.mp4",
+                "saved": false,
+                "title": "Lecture 17: layout fixture",
+                "versions": [],
+                "video_key": "6297bae8b6fad09b96a60c927aeacedd79b93afec68b9331526f4b3204a2b867"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-15.mp4",
+                "saved": false,
+                "title": "Lecture 16: layout fixture",
+                "versions": [],
+                "video_key": "bfb5d4f94252ad35a839315581d43206c397a983fda65bc2839444fb2f5a20a3"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-14.mp4",
+                "saved": false,
+                "title": "Lecture 15: layout fixture",
+                "versions": [],
+                "video_key": "dff972ac0b0ec0908566927081fe65022d6831f90320aa15e3e967ed9491ea50"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-13.mp4",
+                "saved": false,
+                "title": "Lecture 14: layout fixture",
+                "versions": [],
+                "video_key": "454336dd8200b45c42cf2f880a6093e789f7c0fddc06e1a3c6ca7df44c13cf39"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-12.mp4",
+                "saved": false,
+                "title": "Lecture 13: layout fixture",
+                "versions": [],
+                "video_key": "6258904b75ded2d092caadd025c9f89a22038fed3f15b7e7b979d5e957d19a66"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-11.mp4",
+                "saved": false,
+                "title": "Lecture 12: layout fixture",
+                "versions": [],
+                "video_key": "f0ca507b4dee8c174700607e4b946a0bf0a88001feb3f3d4f1919f1e3ea8e52c"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-10.mp4",
+                "saved": false,
+                "title": "Lecture 11: layout fixture",
+                "versions": [],
+                "video_key": "1b18d988ef801a9123581c51777ade598b3af62ff94cf66b0bedd2a33bd02940"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-9.mp4",
+                "saved": false,
+                "title": "Lecture 10: layout fixture",
+                "versions": [],
+                "video_key": "e5fbc1af180de8e11be30fe2753a17798d9132bca511cfa7be518af8a0a6d74b"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-8.mp4",
+                "saved": false,
+                "title": "Lecture 9: layout fixture",
+                "versions": [],
+                "video_key": "cda545a20c50ca5925aaf3a4714dc66cc9196744e50fd8078a9550b5fd4bd88f"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-7.mp4",
+                "saved": false,
+                "title": "Lecture 8: layout fixture",
+                "versions": [],
+                "video_key": "a18e60907bea950281a5940d9597692ef2619523d0c9dc1044922ab25eafb5b6"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-6.mp4",
+                "saved": false,
+                "title": "Lecture 7: layout fixture",
+                "versions": [],
+                "video_key": "32ee365a21fed81d3eb2e6fa12d37e67d0208923162896c468535071d1fe7f50"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-5.mp4",
+                "saved": false,
+                "title": "Lecture 6: layout fixture",
+                "versions": [],
+                "video_key": "e167e64df4bedacaee5bd458cf1068de853adedd9bfa19f2ea050e5bbe4d7e68"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-4.mp4",
+                "saved": false,
+                "title": "Lecture 5: layout fixture",
+                "versions": [],
+                "video_key": "e9a94bb22ab9b8087b625a1838552f1a23c1c6b7db9c5f67fb4881109d7be138"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-3.mp4",
+                "saved": false,
+                "title": "Lecture 4: layout fixture",
+                "versions": [],
+                "video_key": "8ccef6e61d3db819ec60b3d11306631e85e3e80d509f9772e863479859cb0664"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-2.mp4",
+                "saved": false,
+                "title": "Lecture 3: layout fixture",
+                "versions": [],
+                "video_key": "95a9a0defaf3faaaab0a2e9ce03b52cde6d089be60b790e197664f463c439e3d"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-1.mp4",
+                "saved": false,
+                "title": "Lecture 2: layout fixture",
+                "versions": [],
+                "video_key": "7f9f64c0432da690ad941cf98d080330e2c93e96430b82db0c4ef15a38606e35"
+              },
+              {
+                "active": false,
+                "deleting": false,
+                "duration_ms": 0,
+                "page_url": "http://127.0.0.1:8146/lecture-0.mp4",
+                "saved": false,
+                "title": "Lecture 1: layout fixture",
+                "versions": [],
+                "video_key": "7f8ad22845bfe8710a373686f246fca2e960d074da023bcbee2b82c53adbfead"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "route": "/settings",
+          "status": 200,
+          "body": {
+            "favorite_voice_available": false,
+            "key_masked": null,
+            "key_set": false,
+            "translation_model": "gemini-3.1-flash-lite"
+          }
+        },
+        {
+          "method": "GET",
+          "route": "/browser",
+          "status": 200,
+          "body": {
+            "job": null,
+            "url": "http://127.0.0.1:8146/layout.mp4"
+          }
+        },
+        {
+          "method": "POST",
+          "route": "/browser/open",
+          "status": 400,
+          "body": {
+            "error": "bad_url",
+            "message": "http나 https 주소만 열 수 있습니다.",
+            "status": 400
+          }
+        },
+        {
+          "method": "GET",
+          "route": "/browser",
+          "status": 200,
+          "body": {
+            "job": null,
+            "url": "http://127.0.0.1:8146/layout.mp4"
+          }
+        },
+        {
+          "method": "POST",
+          "route": "/browser/open",
+          "status": 400,
+          "body": {
+            "error": "bad_url",
+            "message": "http나 https 주소만 열 수 있습니다.",
+            "status": 400
+          }
+        }
+      ]
+    }
+  ]
+}

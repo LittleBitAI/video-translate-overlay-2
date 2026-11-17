@@ -1,0 +1,2324 @@
+{
+  "head": "938285973f01e1dd89710e3a476393b17d31f556",
+  "environment": {
+    "observedAt": "2026-11-17T09:29:48.358Z",
+    "platform": "win32",
+    "os": "Windows 11 Home",
+    "release": "10.0.26200",
+    "arch": "x64",
+    "node": "v24.18.0",
+    "playwright": "1.61.0",
+    "rust": "rustc 1.98.1 (48a229cea 2026-09-01)"
+  },
+  "treeSha256": "d021b360dd0946588421d084092dc2061d3e91b7829319a03cf6f6a45e77adb3",
+  "inputs": [
+    {
+      "path": ".cargo/config.toml",
+      "blob": "0ea305b595e0b970679b1cbfd135061aec684aa1"
+    },
+    {
+      "path": ".claude/settings.json",
+      "blob": "dc1b06907c969b77fedbe0207bdeec2bd3d30422"
+    },
+    {
+      "path": ".config/nextest.toml",
+      "blob": "56ee54c03e0a815c7d1cdebbabdbd33e3b43f903"
+    },
+    {
+      "path": ".gitattributes",
+      "blob": "95c1951cd30655419d3fc2cd7ee0e600ab42e93c"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "blob": "09ebc91a48d4801cda97f90d4878057f280a89e8"
+    },
+    {
+      "path": ".gitignore",
+      "blob": "89b2c91ef5b014955ea6d8413f9c317e2dd86228"
+    },
+    {
+      "path": "Cargo.lock",
+      "blob": "25b8ae0542980dccf31341143bd0eb19d95b29c3"
+    },
+    {
+      "path": "Cargo.toml",
+      "blob": "8312d4eed80cdf2fa51b371225ff30bd002e2a95"
+    },
+    {
+      "path": "DESIGN.md",
+      "blob": "b88c2eb65306d5d1e47a5940c18f7e0de93d0744"
+    },
+    {
+      "path": "LICENSE",
+      "blob": "57bc88a15a0ee8266c259b2667e64608d3f7e292"
+    },
+    {
+      "path": "README.md",
+      "blob": "18de85d7ffd845c5472e22ea4864af40457c2660"
+    },
+    {
+      "path": "contract-tests/Cargo.toml",
+      "blob": "cc4273d2adbd4d507e3595c5a32ed143f3205314"
+    },
+    {
+      "path": "contract-tests/fixtures/hls/index.m3u8",
+      "blob": "d95da5b95a2c183aac81a2eaa282e40ac5f76793"
+    },
+    {
+      "path": "contract-tests/fixtures/hls/seg0.aac",
+      "blob": "3ea02dcdb509612f06bd3b76d31a819c9dac7034"
+    },
+    {
+      "path": "contract-tests/fixtures/hls/seg1.aac",
+      "blob": "c75f1ef0d15774ef5a511ebf9c792ba921b7c147"
+    },
+    {
+      "path": "contract-tests/fixtures/hls/seg2.aac",
+      "blob": "d68d2a7f59856d4fdcefd1e06e25920db8772098"
+    },
+    {
+      "path": "contract-tests/src/lib.rs",
+      "blob": "672afd9e6b14ae5e9ebe06aa6edb68b4cec7c6aa"
+    },
+    {
+      "path": "contract-tests/tests/browser.rs",
+      "blob": "11f74b7b1f2de2ab069bb4f2e248e69a9b087c40"
+    },
+    {
+      "path": "contract-tests/tests/jobs.rs",
+      "blob": "1fe2d6ea107cd5db61cff0fcc90c2b434f72fd1e"
+    },
+    {
+      "path": "contract-tests/tests/library.rs",
+      "blob": "813e45b068bd4fc3e0a93034e403568792967357"
+    },
+    {
+      "path": "contract-tests/tests/playback.rs",
+      "blob": "2f9a582a23ce1b04e72284a4444917fdbd65527a"
+    },
+    {
+      "path": "contract-tests/tests/settings.rs",
+      "blob": "4592e2b41351a7d0d5e2668c285ab9adaf55604d"
+    },
+    {
+      "path": "contract-tests/tests/translation.rs",
+      "blob": "5b95c29e26563d0ffd840c1905d46d4aff4cd2ea"
+    },
+    {
+      "path": "contract-tests/tests/write_and_timing.rs",
+      "blob": "9d2fbcb7145de025b13a02ed740f7895edd910ad"
+    },
+    {
+      "path": "docs/branding/.nojekyll",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "docs/branding/index.html",
+      "blob": "14469f959697f3c494acc63f4bb75641dff687ee"
+    },
+    {
+      "path": "docs/branding/privacy.html",
+      "blob": "56c48e210baa23341d59c6d43aeb8990c47ac571"
+    },
+    {
+      "path": "docs/branding/style.css",
+      "blob": "53ec49e8cbbfb7a45ed6b1c8999f812ef5cf68f6"
+    },
+    {
+      "path": "docs/design/api.yaml",
+      "blob": "320bd08b6e99e9c861c82de4079cc4156cf6b09c"
+    },
+    {
+      "path": "docs/design/backend.md",
+      "blob": "6a0a5684dbf1f8ad5aef1d90bece057f9e5644a5"
+    },
+    {
+      "path": "docs/design/download-speed.md",
+      "blob": "555ea497d7e636428658d16a43cbb97dd6b3d849"
+    },
+    {
+      "path": "docs/design/frontend.md",
+      "blob": "2cbbc542101ebbe50b794b712f180728863d59e5"
+    },
+    {
+      "path": "docs/design/google-auth-setup.md",
+      "blob": "25dbe3081557abecb73b673c64abb1492fd577fa"
+    },
+    {
+      "path": "docs/design/library-acceptance.md",
+      "blob": "0e868c233ca235cb7f7bb63691c154c0c4162440"
+    },
+    {
+      "path": "docs/design/library-verification.md",
+      "blob": "649ef1dd606cccb934c56e416d3ef6a3fd93814c"
+    },
+    {
+      "path": "docs/design/local-network-sync.md",
+      "blob": "7690107e3aad72299cc366b466613e3cdc3f00af"
+    },
+    {
+      "path": "docs/design/mock/S1.html",
+      "blob": "21b47f5cf08d34b2e470e3635c5bf6e0939e8d3a"
+    },
+    {
+      "path": "docs/design/mock/S2.html",
+      "blob": "7524e71658befd51859490e8e16cea0c50c5f349"
+    },
+    {
+      "path": "docs/design/shots/S1-desktop.png",
+      "blob": "b77841857220cc335de029bfae9013fcde28ac19"
+    },
+    {
+      "path": "docs/design/shots/S1-phone.png",
+      "blob": "8a90a96d7ccb362a50b87b0b5827f11ac08dec90"
+    },
+    {
+      "path": "docs/design/shots/S2-desktop.png",
+      "blob": "015ecf193dafb03cc5143bb9aa6645a880e72279"
+    },
+    {
+      "path": "docs/design/shots/S2-phone.png",
+      "blob": "4c8626b163df020515abf54c2298cda2d4445117"
+    },
+    {
+      "path": "docs/design/shots/S3-desktop-edit.png",
+      "blob": "7dced1dc2a79f168ae103682b3da9f2c8507b695"
+    },
+    {
+      "path": "docs/design/shots/S3-desktop.png",
+      "blob": "062d65d4bbed2d5cd93dca78be2f123ceb0fba20"
+    },
+    {
+      "path": "docs/design/shots/S3-phone-add.png",
+      "blob": "1b9d43d4a78631980df0c770393b225093410a28"
+    },
+    {
+      "path": "docs/design/shots/S3-phone.png",
+      "blob": "01392bfe7a796a9b00881238c4cd6ee363fdedb6"
+    },
+    {
+      "path": "docs/design/transcription-speed.md",
+      "blob": "0cbaf02d86387fe8c840db9e66354955b3964d53"
+    },
+    {
+      "path": "docs/evidence/download-speed/README.md",
+      "blob": "de5efe48a6a5f57f1a66e86e13d2f53652e329a9"
+    },
+    {
+      "path": "docs/evidence/download-speed/app-c632ca1-overlay.json",
+      "blob": "14a5f0e91ed27d40052b70f5598e51a66f6aa074"
+    },
+    {
+      "path": "docs/evidence/download-speed/app-c632ca1-p7-writing-resume.json",
+      "blob": "ca186beb643dcbbd8d01960bd60257c51d1d3fed"
+    },
+    {
+      "path": "docs/evidence/download-speed/app-c632ca1-ready.json",
+      "blob": "7a83b9cd39eb344045fd829aae6d38fedd95852d"
+    },
+    {
+      "path": "docs/evidence/download-speed/app-c632ca1.log",
+      "blob": "d4bcef041dcbc33ef059b04e4bee12f78586dd84"
+    },
+    {
+      "path": "docs/evidence/download-speed/app-ec29dc8-overlay.json",
+      "blob": "161d43aeba29b86cc6291d7e38a9ccefa121b565"
+    },
+    {
+      "path": "docs/evidence/download-speed/app-ec29dc8.log",
+      "blob": "36f5943f564c30a3b1da684bfd40e523cc2378a3"
+    },
+    {
+      "path": "docs/evidence/download-speed/baseline-timing-lines.patch",
+      "blob": "dabb2a40fe8c7d07191b277001b4150c60c4f3e8"
+    },
+    {
+      "path": "docs/evidence/download-speed/offline-b152467.txt",
+      "blob": "8314d1226838a7498f3b0d9ca9adaa02eb0708ba"
+    },
+    {
+      "path": "docs/evidence/download-speed/offline-c632ca1.txt",
+      "blob": "3a9bf6eae89c78f0523e0f0cdf294df601e03c07"
+    },
+    {
+      "path": "docs/evidence/download-speed/phone-b152467-runs.txt",
+      "blob": "cf2fdffc9207c4b4a9b10da40ec79814c9fea511"
+    },
+    {
+      "path": "docs/evidence/download-speed/phone-baseline-runs.txt",
+      "blob": "067abdf3d488f96ca80bb8d51ff8c175ef0e872b"
+    },
+    {
+      "path": "docs/evidence/download-speed/phone-c632ca1-pieces.txt",
+      "blob": "45497e2bc1d55a87eaf4928df3a9d7a1363e456a"
+    },
+    {
+      "path": "docs/evidence/download-speed/phone-c632ca1-runs.txt",
+      "blob": "0b41b0e95ebb0d2ae9e62e37adf585e88130deb1"
+    },
+    {
+      "path": "docs/evidence/download-speed/phone-candidate-runs.txt",
+      "blob": "aacc6b75fcc131893e3b576982cd5eae154e66d8"
+    },
+    {
+      "path": "docs/evidence/download-speed/phone-ec29dc8-runs.txt",
+      "blob": "170fc946c26a3789df2e6a3cfa17b04c5a75ab9c"
+    },
+    {
+      "path": "docs/evidence/download-speed/windows-b152467-overlay.json",
+      "blob": "ab33fdc8b1e2187f9f801af4b8bd6139e47db4ab"
+    },
+    {
+      "path": "docs/evidence/download-speed/windows-b152467.log",
+      "blob": "c202f4ea036b24c1a8bac6fde7d8c682542ee224"
+    },
+    {
+      "path": "docs/evidence/lan-sync/README.md",
+      "blob": "4969bd5b89a641fbc520b105a9fda69707405fd4"
+    },
+    {
+      "path": "docs/evidence/lan-sync/catalog.json",
+      "blob": "1763c7cd14aa3b001da27eed5e43a8a7fa179b0f"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/README.md",
+      "blob": "aecf80670725517dce1b97035ca56026829c3758"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/account-mismatch.mjs.source",
+      "blob": "b34a615f89a1db4beab4500455d4ce432d81dcba"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/account-restore.mjs.source",
+      "blob": "e08563df309a84427fd544761eb24a175d021614"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/account-restored-flow.mjs.source",
+      "blob": "ec3e4e40f75429bd7de62e1cf64ca505c07b6b62"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/account-store-audit.py.source",
+      "blob": "1564d836ad962cf98e0be165741ecd79e109411f"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/account-two-phone.mjs.source",
+      "blob": "2c3ee70125f08717870d4205583cd6991211183e"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/account-two-transfer.mjs.source",
+      "blob": "9bf8df9f4741cc58cec7af2a78fab157028180a2"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/account-two-windows.mjs.source",
+      "blob": "f4730498a54b5d79f36dac3f4a56382a7fce7fdf"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/check-live.mjs.source",
+      "blob": "dfab583616e012963845914713feb8e08c2aea3f"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/close-windows.py.source",
+      "blob": "01e4765707488147edf40c27784b25f1485cf871"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/completed-flow.mjs.source",
+      "blob": "3a141d7d021a63184aabbaacfa113ccc1cf2593b"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/expected-alternate-windows.json",
+      "blob": "4b103d2ed1ab6c2ab3dc0e61661d9f748f0f00a0"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/expected-android.json",
+      "blob": "85fab27090abf4983975105c537f2c90af34e515"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/expected-windows.json",
+      "blob": "cc95a925b3d5dbafacde5ed0a891552d112a6acd"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/observe-android-policy.py.source",
+      "blob": "d62bb03c9f2edce41b574e6098d1f392e352a872"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/observe-windows-policy.ps1.source",
+      "blob": "db6629af2ad6124f06e556774c7ea26740fb865e"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/offline-prepare.mjs.source",
+      "blob": "23e8528e4edd43b9836922923bbb87c0c9af784d"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/online-delete-flow.mjs.source",
+      "blob": "19ed001a2fd98b7281c48cdfd7934fbd1d446776"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/phone-privacy-baseline.py.source",
+      "blob": "bc475ed70e95ad3fd3792f4c9e5fc95df475fd06"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/phone-privacy-retention.py.source",
+      "blob": "bc9a13284695a03bc971340b65aac0b03ba7a750"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/phone-query.py.source",
+      "blob": "b84fc71e941c9ab24e19b876793560628afe2e95"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/playback-flow.mjs.source",
+      "blob": "5eb74e7774f16c35f2d6d99828cac5dcba3beecd"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/privacy-native.mjs.source",
+      "blob": "cf636095ca7f4c4e47988e25921cbf633c91cc43"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/restart-flow.mjs.source",
+      "blob": "c08fac2e8df569e544f1c2e9ab0d83b7c292c605"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/screen-off-flow.mjs.source",
+      "blob": "eaa0949c83081fa8a926f20697cba6de0d829745"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/seed-completed.py.source",
+      "blob": "ad4655942c47418101a5020582490f7c580360d5"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/source-manifest.json",
+      "blob": "53f21b732bdb5175e20d1079a9809f143a0ae601"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/sql-fixture.c.source",
+      "blob": "1684fa8cdc42a56d2d13eb847cfa315238077da7"
+    },
+    {
+      "path": "docs/evidence/lan-sync/diagnostics/version-flow.mjs.source",
+      "blob": "bc3a92229ed7b08e54d5db0355200303f1b2407c"
+    },
+    {
+      "path": "docs/evidence/lan-sync/fresh-api.json",
+      "blob": "5e3fad2e2a94b26cc5bf9b96b2e83790ffb64272"
+    },
+    {
+      "path": "docs/evidence/lan-sync/fresh-browser.json",
+      "blob": "e1d27c8ecd56e114c9faf39d16f72c06cf7bfb63"
+    },
+    {
+      "path": "docs/evidence/lan-sync/fresh-live-command.json",
+      "blob": "11c45ae28bc6dad8bd355c5defa1ca470d413297"
+    },
+    {
+      "path": "docs/evidence/lan-sync/fresh-native.json",
+      "blob": "83149f757977950ccdc8b72fd4fe2d4b5f67d058"
+    },
+    {
+      "path": "docs/evidence/lan-sync/fresh-offline.json",
+      "blob": "031925ea00b4e9104a4cf84eb11cad61edbee0d9"
+    },
+    {
+      "path": "docs/evidence/lan-sync/fresh-projection.json",
+      "blob": "87ac4ba7edd05733d65808d99c32cdd2e4faf8c5"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/account-mismatch.json",
+      "blob": "7f987e8fb953460141854e49958b6f110d3b1cbe"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/account-restore-android.json",
+      "blob": "c4a76b574a0034345b699e8e13beace14f7ec1ca"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/account-restore-windows.json",
+      "blob": "b2a03cd4bf191fe9cbe939e469a1abcbc9b91c01"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/account-restored-flow.json",
+      "blob": "ef63de55413fac0cf77a6c9d2315c84cda7cf41b"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/account-store-audit.json",
+      "blob": "6e7a64cea27799cc5567aec4871c096316240d43"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/account-two-phone.json",
+      "blob": "609af038697b119603e573a9a05ff07e24c7fb6d"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/account-two-transfer.json",
+      "blob": "1d1d169ba35d3c72621dd4912950cbf340f3b918"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/account-two-windows.json",
+      "blob": "4daa72936beb2c0cd0933f12de53233e87f4cfc6"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/android-policy-native.json",
+      "blob": "e900aef786cd35f1d84e6dc986bed0acc4abbcb6"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/android-restart.json",
+      "blob": "ac5ffff618e02a1967c21dbc525386aa3f661ba3"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/completed-flow.json",
+      "blob": "a1830f5810cf95d9858b28d25f6d447ed85df990"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/home-flow.json",
+      "blob": "80ebdf159f9001d06e12bcba41e00eda32d6c984"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/offline-prepared.json",
+      "blob": "8f543fca13ee8907246a786fb3a92cd05a523eee"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/online-delete-flow.json",
+      "blob": "c91a27a8596588e2e6da5536a8d6e0cc68d1cd1a"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/phone-retention.json",
+      "blob": "de8787502c31dfae4b37d5429a0f2b2ec78c4d92"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/playback-flow.json",
+      "blob": "b206053d700d4acfd17f40e64679cfc9118c0040"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/publication-receipt.json",
+      "blob": "49ff9fbc05265f9dc08e34560bf8125d0e4adadb"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/round-one-api.json",
+      "blob": "4987b3409ee75f9f07d1052a09505bb541463c98"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/round-one-browser.json",
+      "blob": "cb5774a2972f5fa424eefa998b9c3c0ec257ca88"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/round-one-live.json",
+      "blob": "f15195df1730099430218f7d954a800849787680"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/round-one-native.json",
+      "blob": "c3b3591b491c4e2b36f1a76809bca614f5eda578"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/round-one-offline.log",
+      "blob": "31b476a06f6761a61f51218aa7811fca4676a271"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/round-one-projection.log",
+      "blob": "3939a3eff964b8359207760fa3999202d51efc3f"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/round-two-adb-unavailable.log",
+      "blob": "de6a087870469ac7e491587dbe1c3f97929a5f55"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/screen-off-flow.json",
+      "blob": "f2b076463f96c5d2b1b9b7da9d714d3396c2a334"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/version-flow.json",
+      "blob": "d3507383a22ce6cc99a8889e64374bdffcf5b1ca"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/windows-policy-native.json",
+      "blob": "772ad85cdc0d91255730c5ec97e0a572289905fe"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/windows-restart.json",
+      "blob": "65958da13ff21e1f6f59c38783f5f137120e5019"
+    },
+    {
+      "path": "docs/evidence/lan-sync/machine/windows-shutdown.json",
+      "blob": "0cadd4d1699138987398cdadec942cb2e31660c9"
+    },
+    {
+      "path": "docs/evidence/lan-sync/reused-completed-and-versions.json",
+      "blob": "f57c5b39a2ce5d60f4bdf36adc04b7d8ddd82d75"
+    },
+    {
+      "path": "docs/evidence/lan-sync/reused-deletion-and-restart.json",
+      "blob": "42ce577427b8ab357f3a7ac7ee4d80d8ffc5696a"
+    },
+    {
+      "path": "docs/evidence/lan-sync/reused-playback.json",
+      "blob": "33fc61d2fb2eb055b32cd75b78be13be6823507e"
+    },
+    {
+      "path": "docs/evidence/lan-sync/reused-policy-and-retention.json",
+      "blob": "7e6be919a12e6bed46dedea4e7839a50a4a1a104"
+    },
+    {
+      "path": "docs/evidence/lan-sync/reused-public-pages.json",
+      "blob": "3467fb717f1c888bd7b69e3a9cb9fced435c08d0"
+    },
+    {
+      "path": "docs/evidence/lan-sync/reused-screen-off.json",
+      "blob": "8ba1810f3af387304cfc6c5ef5060a65c5f61bc8"
+    },
+    {
+      "path": "docs/evidence/lan-sync/reused-two-real-accounts.json",
+      "blob": "c2a5602b96583f986a5491bb5ff2744659651004"
+    },
+    {
+      "path": "docs/evidence/library-rail/README.md",
+      "blob": "125f57b2c8fc57d5670f006364fabb309a3793c5"
+    },
+    {
+      "path": "docs/evidence/library-rail/android/android-library-add-412x842.png",
+      "blob": "352ef5b155f52b77e076c448dc05ce8f5a9225db"
+    },
+    {
+      "path": "docs/evidence/library-rail/android/android-library-edit-412x842.png",
+      "blob": "dfc56af7851004a0dd9c66da7b9f6ab0e60dd17a"
+    },
+    {
+      "path": "docs/evidence/library-rail/android/android-library-empty-playlist-412x842.png",
+      "blob": "846a4d65590ea8d7bf9676c3635e688f0a57421b"
+    },
+    {
+      "path": "docs/evidence/library-rail/android/android-library-playlist-412x842.png",
+      "blob": "f21706237b2566787b1ae51512d6d20ced4d26ed"
+    },
+    {
+      "path": "docs/evidence/library-rail/android/android-measured.json",
+      "blob": "033b067504d6dbb52bcdb07084201b76742cc7c4"
+    },
+    {
+      "path": "docs/evidence/library-rail/android/android-settings-412x842.png",
+      "blob": "f698cee292c9e7ccb99dfe91c60ad6cf207c3405"
+    },
+    {
+      "path": "docs/evidence/library-rail/android/android-watch-412x842.png",
+      "blob": "ee3c6c60eb8881793c8ccd77036a15165e318263"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/after-library-1280x720.png",
+      "blob": "08c43da4b095a569f6e5c209da4e704eb7a74dba"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/after-library-384x854.png",
+      "blob": "c8f8b78d6a75bbc2b95fa00af24e2c03e747bfac"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/after-library-add-1280x720.png",
+      "blob": "4ab19309d9d4040fe09c260b2aff2d6032e8949d"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/after-library-add-384x854.png",
+      "blob": "1b9d43d4a78631980df0c770393b225093410a28"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/after-library-edit-1280x720.png",
+      "blob": "7dced1dc2a79f168ae103682b3da9f2c8507b695"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/after-library-edit-384x854.png",
+      "blob": "de9db317d1fb5022a3bb15bd8f8723775926aee6"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/after-library-empty-playlist-1280x720.png",
+      "blob": "106f1f1bf4673cfbf47be8b3bf959dc8125c668b"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/after-library-empty-playlist-384x854.png",
+      "blob": "026e2a344b8be0163977e1b8ee3da67c7d5e1134"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/after-library-playlist-1280x720.png",
+      "blob": "062d65d4bbed2d5cd93dca78be2f123ceb0fba20"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/after-library-playlist-384x854.png",
+      "blob": "01392bfe7a796a9b00881238c4cd6ee363fdedb6"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/after-measured.json",
+      "blob": "bd9692eab178e9ee2c6154a54a48c519967657cb"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/after-settings-1280x720.png",
+      "blob": "015ecf193dafb03cc5143bb9aa6645a880e72279"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/after-settings-384x854.png",
+      "blob": "4c8626b163df020515abf54c2298cda2d4445117"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/after-watch-1280x720.png",
+      "blob": "b77841857220cc335de029bfae9013fcde28ac19"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/after-watch-384x854.png",
+      "blob": "8a90a96d7ccb362a50b87b0b5827f11ac08dec90"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/before-library-1280x720.png",
+      "blob": "b3f8ae200c6b61f02fcaa81e2287ffa24688515a"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/before-library-384x854.png",
+      "blob": "86a92f754c4ed7a4e94ecd6860813500ec7f6673"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/before-library-empty-playlist-1280x720.png",
+      "blob": "c0f3a458e71459ef48827390ed5929821a6cbfb1"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/before-library-empty-playlist-384x854.png",
+      "blob": "100b9ab8453722bf626c3fbc4fe33792081ffbc7"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/before-library-playlist-1280x720-full.png",
+      "blob": "c5e1c295536efff6eff6fc0e36e112cf2ad1bd31"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/before-library-playlist-1280x720.png",
+      "blob": "dbec6085110c7c992ee24d558037a65bb0d9fc81"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/before-library-playlist-384x854-full.png",
+      "blob": "a3f98307e45c4b8fd161c73be9607bc0d3d1b499"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/before-library-playlist-384x854.png",
+      "blob": "5e78813a0723a62bc40194fcfd457cd2c3b45a7d"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/before-measured.json",
+      "blob": "be9b415059d1fbcd798cfe338a8adc025433d81c"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/before-settings-1280x720.png",
+      "blob": "fc3d4ccf7f42b6577074a592196f4e21fff5bd20"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/before-settings-384x854.png",
+      "blob": "c60cdd8c88acc1b7b73971474a1d3fc14147f9a6"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/before-watch-1280x720.png",
+      "blob": "91784bd494526219f13352b451edb6328e3be3a3"
+    },
+    {
+      "path": "docs/evidence/library-rail/browser/before-watch-384x854.png",
+      "blob": "59f78be7e6dd9c56630ff02c1933df45f1c8426c"
+    },
+    {
+      "path": "docs/evidence/library-rail/design-pass-measure.json",
+      "blob": "cd899801584955442471619961daacc993697ff6"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android-blocked-attempt.json",
+      "blob": "ef8a2a90dc55044a520743608c341d07fc462bae"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/android-0.png",
+      "blob": "08b1111b2164ceb332708e107693b0efd5728e7c"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/android-1.png",
+      "blob": "77d215cdef291851bdab7e0ef4d9e265f6169fb5"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/android-2.png",
+      "blob": "a17ba21c3ad85359ed83b76e0744c1ba02e8a5a1"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/android-3.png",
+      "blob": "090d48ad519f9502527e8e260b87323336d98023"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/android-4.png",
+      "blob": "561ca2722b612d4c66a477aa8ad1d2e3a21ca088"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/android-5.png",
+      "blob": "75888aa5784973510f0f7b5b7fab4a33c17a3bcd"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/android-6.png",
+      "blob": "955453db47d9eaeaa0a4e55746429333fe0bc924"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/android-7.png",
+      "blob": "72a235df208a8e90b33feb9bd30c6648e31efbe6"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/android-focus.json",
+      "blob": "56d67075709a898725126d6454818a401e73a9f0"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/approval-used.json",
+      "blob": "0865ea53efa06e1307d8aba71dfa8ad9db9ec655"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/build-observation.json",
+      "blob": "a20081a3545f35907dfa1f178d3cf7976c0e8c39"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/deleted.json",
+      "blob": "bd7e45f34a171966a48542bd6b4a01dd9ddb5179"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/observations.json",
+      "blob": "bcd72af7afea4b9842cb00973cdbe3a885871e0b"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/organized.json",
+      "blob": "622690eb95e8548213b3ed2adf0db59c127c10af"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/playlist-removed.json",
+      "blob": "8f870b05882686aed76007e6398e78b56d4bdbc1"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/result.json",
+      "blob": "b1d3c7015d631947de83281ad5568b7892431bd8"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/saved-before.json",
+      "blob": "1100267baa31e8a9a276ac6d67b6b36870a7ce36"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/sessions.json",
+      "blob": "df70da982f74a3d9a8aeb350be24ce90ddb5d7e3"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/targets.json",
+      "blob": "7bc48ea0484f0f522da2c1c74ee7a36fa206c61c"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/webview-0.png",
+      "blob": "c6649eb41eb9680da63caad4e55f1f0e0edf2016"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/webview-1.png",
+      "blob": "1c1b13594e6b0f196bc9fb2c35278dfedeb2de2e"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/webview-2.png",
+      "blob": "67dfd6bfe119356819ed59a8962067b0a1dbefde"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/webview-3.png",
+      "blob": "f26b780b5067a68a0bc2565171ea9e31d8cad3d1"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/webview-4.png",
+      "blob": "d9d1eb72340b95fdbfe9c83007a9d300236d1fb8"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/android/webview-5.png",
+      "blob": "c87a780e03220c88537e759a04b3f2c17cc563ef"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/api.json",
+      "blob": "e4dd9106fb834d199b141a920019bf3c07ca05e4"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/browser.json",
+      "blob": "950c85118b7796baf4da9e748509d05ddb4860a2"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/browser/cancel-delete.png",
+      "blob": "19abba11330975aa0f5db9235312499732fb231e"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/browser/delete.png",
+      "blob": "f6efd68fe8bc7878af0198331b48c702d19958a8"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/browser/deleted.json",
+      "blob": "c9a49b7947eda4f62bf4ac30b7cda348046b8d54"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/browser/manual-link.png",
+      "blob": "1abe92e2380a5d088f66f2a478ca564dd895d16a"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/browser/organized.json",
+      "blob": "54535ebb4ac80ae104f6c3ffe9fa1ca48afeb080"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/browser/playlist-removed.json",
+      "blob": "d6f52040b6a6c533e6cccb09b18b5a2d07462909"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/browser/playlist-retention.png",
+      "blob": "ddb5b614602292412dbbb04df76bf32c0c32220e"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/browser/restart.png",
+      "blob": "28d4495d30ff193d49b09e1313203c355bac96ca"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/browser/saved-before.json",
+      "blob": "d0a8a8efcbcb22d858a83295c569086dd2707c25"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/browser/saved-reuse.png",
+      "blob": "d31e5a907bedd85e532406df539d61ab9351ecd6"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/windows/approval-used.json",
+      "blob": "0865ea53efa06e1307d8aba71dfa8ad9db9ec655"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/windows/build-observation.json",
+      "blob": "1eeb2acae60e471e5ccda5ecedf71a7359a0d6fc"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/windows/deleted.json",
+      "blob": "20e28cc162f471ffc0352f6fadc2a7a4df26731b"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/windows/observations.json",
+      "blob": "bcd72af7afea4b9842cb00973cdbe3a885871e0b"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/windows/organized.json",
+      "blob": "4bfd96267efd200cfb3a50d2f6994b67d15b32b1"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/windows/playlist-removed.json",
+      "blob": "f07d686ac807c43c0f79eb0829140ec51b900d39"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/windows/result.json",
+      "blob": "c8dd4ac252031b1df661117e4f3f94d67ef3bdbd"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/windows/saved-before.json",
+      "blob": "915a41f17f3d650ecda0ace5a650670bc7afefc1"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/windows/sessions.json",
+      "blob": "d4c668998b8583e100e0efdd2763b7fe941042fe"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/windows/targets.json",
+      "blob": "7bc48ea0484f0f522da2c1c74ee7a36fa206c61c"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/windows/webview-0.png",
+      "blob": "82e75cebca509fb74731f1b30652bdf85ee81c82"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/windows/webview-1.png",
+      "blob": "f2fdf4b2580cd5a0ce6c0b0a460a2931deaf1f61"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/windows/webview-2.png",
+      "blob": "98bbdf7f9c008b6093e9c8410cd88a91a2c53620"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/windows/webview-3.png",
+      "blob": "0bb5d2c42f128a4b38288919b3b33d2a1fa0f18b"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/windows/webview-4.png",
+      "blob": "df819a50cde86026a7f49350e3d9f8ddcc7af20e"
+    },
+    {
+      "path": "docs/evidence/library-rail/receipts/windows/webview-5.png",
+      "blob": "0b0bbac8a721056f7f41a1df153e199fb0db8b45"
+    },
+    {
+      "path": "docs/evidence/library-rail/windows/windows-library-add-1024x760.png",
+      "blob": "c83e2e37c69d10cf843b9c2ce8218717c10dcbc2"
+    },
+    {
+      "path": "docs/evidence/library-rail/windows/windows-library-edit-1024x760.png",
+      "blob": "74df27989b8ab14ec270020b87b1e7e17102500d"
+    },
+    {
+      "path": "docs/evidence/library-rail/windows/windows-library-empty-playlist-1024x760.png",
+      "blob": "2df7c5ebda9bdce7a951732467f1ec981d2c9ad2"
+    },
+    {
+      "path": "docs/evidence/library-rail/windows/windows-library-playlist-1024x760.png",
+      "blob": "77169e0f5b8b3e2e7c4403cb88b9cbc47ab29fdc"
+    },
+    {
+      "path": "docs/evidence/library-rail/windows/windows-measured.json",
+      "blob": "3d4b7582902d62ab41e71f04700ef20d886cf9c6"
+    },
+    {
+      "path": "docs/evidence/library-rail/windows/windows-settings-1024x760.png",
+      "blob": "07e4989b7d7d62cd18b33d7f501d69643d60725b"
+    },
+    {
+      "path": "docs/evidence/library-rail/windows/windows-watch-1024x760.png",
+      "blob": "13bd2886f46a80b7234dfdcb6501f137a9530f90"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/README.md",
+      "blob": "557bee0dd417d8c13e34a371769f2a7b694d378e"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/observations/bg-base3-thermal.txt",
+      "blob": "e77c92557e4c6b2f6a991102482c290b96cd0d5e"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/observations/bg-base3-timing.txt",
+      "blob": "dc1fc0fbbaad98fa2cd1b62f13b6721afdb7fbbd"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/observations/coldwarm-thermal.txt",
+      "blob": "b7782f95509d8200c9f1d5c165958732b53eb29d"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/observations/desktop-dd4a8c2-app.txt",
+      "blob": "fb58efa11385c6a6e96655210d0d207fa34505eb"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/observations/desktop-dd4a8c2-gemini.jsonl",
+      "blob": "5b8c932e022e5a0e7ddc682f542854af30cab1f8"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/observations/desktop-dd4a8c2-overlay.json",
+      "blob": "6150924d2e4ae1c9a5ba932efa3aefaf786420c4"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/observations/harness-baseline-cold-timing.txt",
+      "blob": "eccc2bc4ea9673bf1208ebe548b45a0d02ac0ee3"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/observations/harness-baseline-thermal.txt",
+      "blob": "3cb40e51c72dd2a1f14919f319db7d7ee0867515"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/observations/rs-new-timing.txt",
+      "blob": "0570e6a5712cfee66418747738a5534ca49cc6c9"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/observations/rs-upgrade-timing.txt",
+      "blob": "0c0ab70ce4a5650d332528d72a838f504a75385e"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/observations/tx-final-cpuset.txt",
+      "blob": "fe9b71d339972f245c5c41c0416ede227fd68368"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/observations/tx-final-thermal.txt",
+      "blob": "8e827c123b17931f27a6882375d016075a392bd1"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/observations/tx-final-timing.txt",
+      "blob": "2a1b56b113579f31a18c4884c99bebaabc4236d9"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/observations/tx-final3-cpuset.txt",
+      "blob": "0429eadff9e1036882091e1c6e31f05845100116"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/observations/tx-final3-thermal.txt",
+      "blob": "3e417fe73293d9ec3b0452ef9d440c72492895c4"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/observations/tx-final3-timing.txt",
+      "blob": "9f66c5ab7bca2ac150b06178559d47bed2250b06"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/transcripts/bg-base3-cues.json",
+      "blob": "4f0296709042829cbd4d5a4817d4c726737c9163"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/transcripts/coldwarm.json",
+      "blob": "233841bf07b6f9fb1dba1b108fdd1a2ef3988d21"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/transcripts/harness-baseline-cold.json",
+      "blob": "8f2f3d50e98f136d527d3ff0d403e7b1c02c9b5d"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/transcripts/pc-base-plan2.json",
+      "blob": "5595b55e31a5b28e272eb958b718e526ba1ea7b7"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/transcripts/pc-retry-plan2.json",
+      "blob": "4155f00e608a3375b016e6c98d151e8f58395ec1"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/transcripts/reference-large.json",
+      "blob": "e85ef3f1bd6102dd72e393a567ae21d03735085d"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/transcripts/rs-new-end.json",
+      "blob": "3de39351bed62aac7f65bc117333324998001101"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/transcripts/rs-new-killed.json",
+      "blob": "de3555575e6eb28132f027096b44e2e7dc366dce"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/transcripts/rs-upgrade-end.json",
+      "blob": "13fe72247b51fe6cbbc4cc4797c988853c41d6c7"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/transcripts/rs-upgrade-killed.json",
+      "blob": "345c78b539760372640b5797f9b9cfaf1b549f37"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/transcripts/seg-forced-1000.json",
+      "blob": "1736dc1757590724753fb1bd3fad851a157997c2"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/transcripts/seg-forced-2000.json",
+      "blob": "942a950db76026233f0710937b3cb6b7804fdf86"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/transcripts/seg-forced-3000.json",
+      "blob": "8fdd3ad311fe2bfe93ea44c7aededc10ca2cc8f2"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/transcripts/seg-forced-4000.json",
+      "blob": "d5d3d71640c820a46203fde0ce82d3625cc63ef8"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/transcripts/tune-forced-0.json",
+      "blob": "94233f2e1c83338f1ad130b3df51affaa9adb6e3"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/transcripts/tx-final-cues.json",
+      "blob": "da807c7f5ed1fa4be39a70e35f0858b0ad7bf8ff"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/data/transcripts/tx-final3-cues.json",
+      "blob": "ef5eca925f01d810d16e0d8992227258c6056c84"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/receipts/contract-jobs-translation-timing.txt",
+      "blob": "aa6fcc7fb6c97d0d6908b16fa7a2df227d3db093"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/receipts/evidence-reproduce.txt",
+      "blob": "0b099407f1870384e16199dc8388d4d68003d2f3"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/receipts/overlay-unsupported-cpu-notice.txt",
+      "blob": "e82f6d914a55f9ebb63e00c591af0e6ea3d60f11"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/receipts/rust-unit-audio-pipeline-stitch-gemini-store.txt",
+      "blob": "f4adec2fbc41ff2848747076261ed7ad7e790965"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/receipts/rust-whisper-feature-builds.txt",
+      "blob": "2bff6c84ce2bb79634712ae728a2519d918fc81b"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/receipts/screen-unsupported-cpu-notice.txt",
+      "blob": "e289bbe2b5e749b8c1004210d64ae2f16c9c60e5"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/scripts/cdp.mjs",
+      "blob": "e4877ac78c1bbcc997e73a7354a6cd2dc0bd34e8"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/scripts/cues-from-db.py",
+      "blob": "fe5117bfbde80967249ceadcff4eb02684b2623e"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/scripts/desktop-run.sh",
+      "blob": "a049b37e9241389a8b65f65afc2e788bfb7f04b8"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/scripts/desktop-watch.js",
+      "blob": "05c94e11921d6d4f345c38f9ef6318ac4277a272"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/scripts/focused-checks.sh",
+      "blob": "078cfbea120fbec2823515a5391438069ac3dfd0"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/scripts/gemini-stand-in.py",
+      "blob": "7d4659411290c75707dd2fa9bc32370c5b1d57bb"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/scripts/press-confirm.js",
+      "blob": "c6e7d0c69563a0a9aa49d5c2d0524b6132d959a5"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/scripts/reference.sh",
+      "blob": "9c11a7ff4ac633d94940e9cb183eac14df1328e4"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/scripts/reproduce.py",
+      "blob": "c9c9bf4ccaa33fa4bf311205b51c6f601369a615"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/scripts/restart.sh",
+      "blob": "521f511679fd04a3568b86be1618ec3baaa3c9ad"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/scripts/sanitize.py",
+      "blob": "e71e30f9410084a98aebb0505f9cba6a01dde103"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/scripts/spot.py",
+      "blob": "8844a3afa6549f51b3d15effba952f23c3523c08"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/scripts/start-run.sh",
+      "blob": "bf1ec6d801c94fe9ea0c639ebd37e41b4d71a7f9"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/scripts/thermal-poll.sh",
+      "blob": "eda3a2401af5bdb5e5021fad772807a94737198d"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/scripts/until-ready.sh",
+      "blob": "8ed84103c1edae5b1af94e3d6c3fb9cfe4bc556b"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/scripts/wer.py",
+      "blob": "279d7ef328a7efb036130279476c3394d76249c5"
+    },
+    {
+      "path": "docs/evidence/transcription-speed/scripts/writing-only.sh",
+      "blob": "c0230b26f8119ae74c70a01708f1782b4f72e74a"
+    },
+    {
+      "path": "docs/releases/0.1.7.md",
+      "blob": "4a54be11bfbad23b3e03885058f01a64f5dbd772"
+    },
+    {
+      "path": "docs/releases/0.1.8.md",
+      "blob": "82d6006b42f498c1f76bfd078c19843aac25bd95"
+    },
+    {
+      "path": "docs/releases/acceptance.md",
+      "blob": "6bd2e974020d97ca19f49db63c322d670d0eb9a5"
+    },
+    {
+      "path": "docs/releases/procedure.md",
+      "blob": "a3db472e29687fc8af98c71b8a85ea08704d7742"
+    },
+    {
+      "path": "e2e/seed.json",
+      "blob": "32b9ae3b1d29c3e74374691db33bc18074152791"
+    },
+    {
+      "path": "index.html",
+      "blob": "6051cc7e4edd98aa56ff67691ff908054e30389d"
+    },
+    {
+      "path": "overview.html",
+      "blob": "0d062f8de32ed102a33b9ee35d6186acc83909cd"
+    },
+    {
+      "path": "overview/guide.html",
+      "blob": "4382e67ee9d0f191147ea84aabb34b0004c7721c"
+    },
+    {
+      "path": "overview/img/android-library.webp",
+      "blob": "6bd7917855923248d94d1437727783532f030dcb"
+    },
+    {
+      "path": "overview/img/android-settings.webp",
+      "blob": "32ff6cff0f0b6211b50a10951182c1a96840e94e"
+    },
+    {
+      "path": "overview/img/sync-android-player.webp",
+      "blob": "3292ebb0aff3338d268251347677b99ad8c69615"
+    },
+    {
+      "path": "overview/img/sync-windows-player.webp",
+      "blob": "a963267df780374316d70e0c8cd40befc2b58f3d"
+    },
+    {
+      "path": "overview/img/windows-library.webp",
+      "blob": "cf38bd3140cb1404bbcfd5dbea4a773e768de984"
+    },
+    {
+      "path": "overview/install.html",
+      "blob": "b5c2043d4781e8465a27d223bfca6cc3bd400830"
+    },
+    {
+      "path": "overview/site.css",
+      "blob": "0750328a9f3ca58e700539cd49a8377e5b04ab01"
+    },
+    {
+      "path": "package-lock.json",
+      "blob": "88b275f11f2607f0e1f2c22cf296a3090c463d30"
+    },
+    {
+      "path": "package.json",
+      "blob": "7fb75bc367db3c0f1fc100fa13e2f3a8c3cc5007"
+    },
+    {
+      "path": "scripts/contract-tests.mjs",
+      "blob": "27e53ca24c2153aaa7fcae5cf4d3733c8416ec3d"
+    },
+    {
+      "path": "scripts/live.mjs",
+      "blob": "db07e64668aa86c0e158b1596ae37d61d39ec4f3"
+    },
+    {
+      "path": "scripts/package-release.ps1",
+      "blob": "09356ee9160f685c695eba4441c1ec15d00274db"
+    },
+    {
+      "path": "scripts/verification/fixture.mjs",
+      "blob": "937db3750753986dabe343501562e3d656012c08"
+    },
+    {
+      "path": "scripts/verification/library-scenario.mjs",
+      "blob": "8666a038d889999775503ab001d1316b88890e03"
+    },
+    {
+      "path": "scripts/verification/live-sync-evidence.mjs",
+      "blob": "753063cfc477c775d31b8d96a9b34d7ee535d55d"
+    },
+    {
+      "path": "scripts/verification/maximized-layout/browser.mjs",
+      "blob": "5a5fd500851379ffc3eabdea8adbb9d06fde3f9c"
+    },
+    {
+      "path": "scripts/verification/maximized-layout/capture.mjs",
+      "blob": "f2178a14265b5e70246ebac798ce04c8a8fe5950"
+    },
+    {
+      "path": "scripts/verification/maximized-layout/identity.mjs",
+      "blob": "a89e0349cb0f1c73297b469f9c3643a359d66b5f"
+    },
+    {
+      "path": "scripts/verification/maximized-layout/inspect.ps1",
+      "blob": "09b619356ae0bc96e9ab5d3fb80a83bc81d64dbc"
+    },
+    {
+      "path": "scripts/verification/maximized-layout/launch-windows.py",
+      "blob": "88bf633f32ee13f8f1504b7a2b594f8369631767"
+    },
+    {
+      "path": "scripts/verification/maximized-layout/native-state.ps1",
+      "blob": "89bdc3aa7b30f7c2ec1f9cbac675ef42cb444cee"
+    },
+    {
+      "path": "scripts/verification/maximized-layout/windows.mjs",
+      "blob": "3358049cbf82bdacf2e28efba787db0e2d7bdfdf"
+    },
+    {
+      "path": "scripts/verification/run.mjs",
+      "blob": "921a0d2ae335da9f7cfe51811c3ab0decc4cbbb2"
+    },
+    {
+      "path": "scripts/verification/seed.py",
+      "blob": "05b804cf5c1cf93d7d133607edd6a8aa9c7c1582"
+    },
+    {
+      "path": "scripts/verification/sync-evidence.mjs",
+      "blob": "5a580256baf9dcad3296c2aa5ff43daefde7049f"
+    },
+    {
+      "path": "scripts/verification/sync-native-evidence.mjs",
+      "blob": "b939a11066f59da3f0293a0c2178c3c7487b516e"
+    },
+    {
+      "path": "src-tauri/Cargo.toml",
+      "blob": "07649634f740e5911cb93a2de3e8d00e33289fa3"
+    },
+    {
+      "path": "src-tauri/README.md",
+      "blob": "4c0b812d079173c41010a2373881c175422864aa"
+    },
+    {
+      "path": "src-tauri/android/whisper.toolchain.cmake",
+      "blob": "ded1c151b202f3caa8d074e76181e73312897a4d"
+    },
+    {
+      "path": "src-tauri/build.rs",
+      "blob": "444b65247f9bd2adb4a5594a91376e3bf5297d61"
+    },
+    {
+      "path": "src-tauri/capabilities/main.json",
+      "blob": "942d28de08d8af24560b47f1efaa04036f2fcb3f"
+    },
+    {
+      "path": "src-tauri/capabilities/overlay-android.json",
+      "blob": "61f2d8253bf553eb2267da78c470ec29352eab7c"
+    },
+    {
+      "path": "src-tauri/capabilities/overlay.json",
+      "blob": "7e9cbac3164aeafb75676e1484210c351d341d66"
+    },
+    {
+      "path": "src-tauri/examples/download_timing.rs",
+      "blob": "e609439d93d991f322a37f667e658c88e581f1f2"
+    },
+    {
+      "path": "src-tauri/examples/transcribe_timing.rs",
+      "blob": "46a86517bd293ec540b81a7ab709825fc93cb2ce"
+    },
+    {
+      "path": "src-tauri/gen/android/.editorconfig",
+      "blob": "ebe51d3bfa4701e67ca2c77b074ab814a7d506e3"
+    },
+    {
+      "path": "src-tauri/gen/android/.gitignore",
+      "blob": "1c636c39a7506f77d15071ad26afcafc14f8c253"
+    },
+    {
+      "path": "src-tauri/gen/android/app/.gitignore",
+      "blob": "6c4d56b4a28784fdb17ba7cefa4ba2126bd03f71"
+    },
+    {
+      "path": "src-tauri/gen/android/app/build.gradle.kts",
+      "blob": "43419aa7389a758a7833c1a45477ebd7d7c83ea5"
+    },
+    {
+      "path": "src-tauri/gen/android/app/proguard-rules.pro",
+      "blob": "481bb434814107eb79d7a30b676d344b0df2f8ce"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/androidTest/java/dev/vto/overlay/YouTubeSessionTest.kt",
+      "blob": "efb58c9b8e2ac5026331577163afaf65525c8687"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/AndroidManifest.xml",
+      "blob": "4fa864e5ce69c2b238bc58124c6aa9c5ad5a2a98"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/GoogleAccount.kt",
+      "blob": "5989ca876eae1ec3454218b76fc0b08782c03b10"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/JobService.kt",
+      "blob": "1a69442530e6a944c679a7d2070c4c1ba06a9012"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/MainActivity.kt",
+      "blob": "558eee993fc340438f39d74a4df0b3e86ea7beb7"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/SyncService.kt",
+      "blob": "b7770362d752390d5cd5b5eb3f758b4d19d42212"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/VideoChromeClient.kt",
+      "blob": "13aced79d4a5da320af2068c705a72f6db0801aa"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/VtoPlugin.kt",
+      "blob": "49bf7f0db9a1b8da1d746260d9a3a725e60d249e"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml",
+      "blob": "2b068d11462a4b96669193de13a711a3a36220a0"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/drawable/ic_launcher_background.xml",
+      "blob": "07d5da9cbf141911847041df5d7b87f0dd5ef9d4"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/layout/activity_main.xml",
+      "blob": "4fc244418b5fe524789352d1b1b52d1b22045f3a"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+      "blob": "28f1aa119119336781390c2531c381499576ed59"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png",
+      "blob": "85d0c88af65bcef008faba29bfc02688883dda8c"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+      "blob": "28f1aa119119336781390c2531c381499576ed59"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+      "blob": "73e48dbfb7dc31ed1e951b77820af88b93fcc418"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png",
+      "blob": "13dd21476b5c7f69cdfb82969bce7150244c127f"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+      "blob": "73e48dbfb7dc31ed1e951b77820af88b93fcc418"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+      "blob": "1d98044f13bdd3afc7cb426644ae118688c03c14"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png",
+      "blob": "a888b336b5bc84b42c0c266ce9b8ec5d9eafed0b"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+      "blob": "1d98044f13bdd3afc7cb426644ae118688c03c14"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+      "blob": "081832466b4a17180fe9255fa0d3fcba2010592c"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png",
+      "blob": "a2a838e7b550ac82b12e73d71427c6ffea06a944"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+      "blob": "081832466b4a17180fe9255fa0d3fcba2010592c"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+      "blob": "b18bceb64d257ed31d50e65d7f2b98abcfb21158"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png",
+      "blob": "3f8a57f38e0273699c8cdd1012042bffdc38abce"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+      "blob": "b18bceb64d257ed31d50e65d7f2b98abcfb21158"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/values-night/themes.xml",
+      "blob": "f2b6cf287c382afd1bf8487ffd5f01faf742e46c"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/values/colors.xml",
+      "blob": "f8c6127d327620c93d2b2d00342a68e97b98a48d"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/values/strings.xml",
+      "blob": "d80323600d98ef514256693fd98a6cb2110c9f47"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/values/themes.xml",
+      "blob": "f2b6cf287c382afd1bf8487ffd5f01faf742e46c"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/xml/file_paths.xml",
+      "blob": "782d63b9932cb68dac12773dc25de54ab7ce1644"
+    },
+    {
+      "path": "src-tauri/gen/android/build.gradle.kts",
+      "blob": "6f96a1e6d6753f7bef0af33ce9d5b69350fe08ab"
+    },
+    {
+      "path": "src-tauri/gen/android/buildSrc/build.gradle.kts",
+      "blob": "cc6c9bc0f02091dfe12afa46a2a7e5ae0dafa2d8"
+    },
+    {
+      "path": "src-tauri/gen/android/buildSrc/src/main/java/dev/vto/overlay/kotlin/BuildTask.kt",
+      "blob": "3a293ef803104d891aa46596ad8f7a736b7485ea"
+    },
+    {
+      "path": "src-tauri/gen/android/buildSrc/src/main/java/dev/vto/overlay/kotlin/RustPlugin.kt",
+      "blob": "3309f1cc4b4435998e33df8d0be8e223108fb6cc"
+    },
+    {
+      "path": "src-tauri/gen/android/gradle.properties",
+      "blob": "9e6e7b95e80eba8a6b5e1367cbea39b8f14c9aee"
+    },
+    {
+      "path": "src-tauri/gen/android/gradle/wrapper/gradle-wrapper.jar",
+      "blob": "b1b8ef56b44f16b14dc800fa8103a6d89abb526f"
+    },
+    {
+      "path": "src-tauri/gen/android/gradle/wrapper/gradle-wrapper.properties",
+      "blob": "b2ee479e23661bf76d92f0a909924fad29c26c51"
+    },
+    {
+      "path": "src-tauri/gen/android/gradlew",
+      "blob": "249efbb032ce46a80c687c0723eb172e85f6a136"
+    },
+    {
+      "path": "src-tauri/gen/android/gradlew.bat",
+      "blob": "a51ec4f5886d3bb106b26724ee4507addbbe3fa8"
+    },
+    {
+      "path": "src-tauri/gen/android/settings.gradle",
+      "blob": "39391166fb1cbf120ba1e604338702f148eb7966"
+    },
+    {
+      "path": "src-tauri/icons/icon.ico",
+      "blob": "945016baed64a2a8a4a788944efd787190465c8e"
+    },
+    {
+      "path": "src-tauri/icons/icon.png",
+      "blob": "be3d01730a6de4f9bc2c3ea705c545e2f302abd1"
+    },
+    {
+      "path": "src-tauri/src/account.rs",
+      "blob": "7ce2624846413694d565ce8ad3f9bff6ed4a153f"
+    },
+    {
+      "path": "src-tauri/src/account_secrets.rs",
+      "blob": "ec3eaa76a338321ab703afb9cb436e71d935c7c9"
+    },
+    {
+      "path": "src-tauri/src/account_tests.rs",
+      "blob": "2b41437522a6d73284047d83dbf08790f2eb3e1c"
+    },
+    {
+      "path": "src-tauri/src/android.rs",
+      "blob": "424c63b8a14e7286cbeccf12e46cdfe30c31a72c"
+    },
+    {
+      "path": "src-tauri/src/api.rs",
+      "blob": "ba35f673233caacaf22e5708ce328a1ba373ad3c"
+    },
+    {
+      "path": "src-tauri/src/api_duration_tests.rs",
+      "blob": "22adda19c6e0b34e55fa93415d5d96e22de48a0f"
+    },
+    {
+      "path": "src-tauri/src/api_hold_tests.rs",
+      "blob": "3b3e45888c7579fa9ebdd4d1d60350e877a8b932"
+    },
+    {
+      "path": "src-tauri/src/api_key_tests.rs",
+      "blob": "ad1e11f21a9c6ba5d9b347ed496eaec2ee5c4fd4"
+    },
+    {
+      "path": "src-tauri/src/app.rs",
+      "blob": "210ae3d85dbee735f0a279147be6755b7e117f27"
+    },
+    {
+      "path": "src-tauri/src/app_toast_tests.rs",
+      "blob": "ca222ea39259aca410287ee76cdad1cb4b6bc26a"
+    },
+    {
+      "path": "src-tauri/src/audio.rs",
+      "blob": "dfaa7848ba39ebdfbb9bf7f680c2620c01dd4344"
+    },
+    {
+      "path": "src-tauri/src/audio_plan_tests.rs",
+      "blob": "7683b042bcf57f5c45f3ce1535e2a45aa4e2e0a8"
+    },
+    {
+      "path": "src-tauri/src/audio_quiet_and_cut_tests.rs",
+      "blob": "0a2b09c135cd4cb05ad674e3968a53cd861b676f"
+    },
+    {
+      "path": "src-tauri/src/bin/vto-contract-host.rs",
+      "blob": "26b9888b489914bc8e85159c1ced9964a60c93ea"
+    },
+    {
+      "path": "src-tauri/src/bin/vto-web.rs",
+      "blob": "7cae60bffe64954fd513ccd237d292f1a4638ad0"
+    },
+    {
+      "path": "src-tauri/src/commands.rs",
+      "blob": "4578cfed2695ecdf0fa1de9fd32a6e74df4d9356"
+    },
+    {
+      "path": "src-tauri/src/commands_android_tests.rs",
+      "blob": "663bae6cfe86b61f9a4519891e093d489040b684"
+    },
+    {
+      "path": "src-tauri/src/db.rs",
+      "blob": "f2abeff9cb5a5aae25e167d2b866ca89beb9ddce"
+    },
+    {
+      "path": "src-tauri/src/decode.rs",
+      "blob": "cbcd4570f88c4950edc1b41cd829d77465cf31de"
+    },
+    {
+      "path": "src-tauri/src/decode_container_gap_tests.rs",
+      "blob": "5380842fe7fbfd8509259a06c7f293c922e41d24"
+    },
+    {
+      "path": "src-tauri/src/decode_edit_tests.rs",
+      "blob": "104e87f4132add7b869347bf8997a0c2ce57ada7"
+    },
+    {
+      "path": "src-tauri/src/decode_fmp4_direct_tests.rs",
+      "blob": "0dce04edf4b363882ff42bc95e151e54b5b1aace"
+    },
+    {
+      "path": "src-tauri/src/decode_fmp4_gap_tests.rs",
+      "blob": "80232d761a806b52807c537aac585506cc9b15f7"
+    },
+    {
+      "path": "src-tauri/src/decode_fmp4_lead_tests.rs",
+      "blob": "c13d65c57f81dec35617c1f78fb4f52f98fd51cc"
+    },
+    {
+      "path": "src-tauri/src/decode_gap_tests.rs",
+      "blob": "b64c8880f89f6e4dab575899ed31c63464940df7"
+    },
+    {
+      "path": "src-tauri/src/decode_limits_tests.rs",
+      "blob": "25466672defd928bdbaa67ebf9f7c01ba8f1615f"
+    },
+    {
+      "path": "src-tauri/src/decode_tests.rs",
+      "blob": "9e1813a4bdef86b348b843af99a4bb2d82444510"
+    },
+    {
+      "path": "src-tauri/src/gemini.rs",
+      "blob": "dbfa35b3c993242b74fc6943e94935bdb51fcbc3"
+    },
+    {
+      "path": "src-tauri/src/gemini_key_tests.rs",
+      "blob": "88fd3623fb8fa0e4ed95fb885f6b525986d01f96"
+    },
+    {
+      "path": "src-tauri/src/google_auth.rs",
+      "blob": "6a49bb9d6f5b4bb16c1fc81ed16502957924c260"
+    },
+    {
+      "path": "src-tauri/src/google_auth_tests.rs",
+      "blob": "1309f1a6699fa44f5ae2a9a51539534ae1820691"
+    },
+    {
+      "path": "src-tauri/src/google_desktop.rs",
+      "blob": "c336d5d0c1ce3bed34324e213269c2b995c18ade"
+    },
+    {
+      "path": "src-tauri/src/google_desktop_tests.rs",
+      "blob": "ac0af8016018f58e4b0eca50a9313ecc17be46a0"
+    },
+    {
+      "path": "src-tauri/src/google_registration.rs",
+      "blob": "fc5bdf602f0076b4678eca3487dd4c6ba6f8469e"
+    },
+    {
+      "path": "src-tauri/src/http.rs",
+      "blob": "880ba3e018f397580c49b45361a990ab15232dfd"
+    },
+    {
+      "path": "src-tauri/src/http_chunked_tests.rs",
+      "blob": "2dc485f5d6767413501756d86bf07fc0439b14b1"
+    },
+    {
+      "path": "src-tauri/src/http_head_limits_tests.rs",
+      "blob": "86a70e9520d06be733a7cbc33c980723307c8572"
+    },
+    {
+      "path": "src-tauri/src/http_length_tests.rs",
+      "blob": "9228b0b960fd083b04ba8d58f2ae10d5a9fd74f2"
+    },
+    {
+      "path": "src-tauri/src/http_pin_tests.rs",
+      "blob": "2334c5f2f86cec66f420f81b43dd91a88533a825"
+    },
+    {
+      "path": "src-tauri/src/http_portable_tests.rs",
+      "blob": "74dadf43ef07e04ff8b1d9d999a0d3c5ee353205"
+    },
+    {
+      "path": "src-tauri/src/lib.rs",
+      "blob": "f46df525b24a79af78147e33d2cfa0de4a81fdb1"
+    },
+    {
+      "path": "src-tauri/src/library_api.rs",
+      "blob": "b54f2924dc2b84572185273f6dae366c7ee25c82"
+    },
+    {
+      "path": "src-tauri/src/library_scope.rs",
+      "blob": "854aeba6d3a66475de3725cd0269e6d07db54174"
+    },
+    {
+      "path": "src-tauri/src/library_store.rs",
+      "blob": "91fc9527930f98bcc93098c6811236ac782ee091"
+    },
+    {
+      "path": "src-tauri/src/library_store_tests.rs",
+      "blob": "dc9221a337f2d4b624a887551bcf992e7627e259"
+    },
+    {
+      "path": "src-tauri/src/main.rs",
+      "blob": "426f955ecf08bca48e727e0b3ca16308c72302f3"
+    },
+    {
+      "path": "src-tauri/src/media.rs",
+      "blob": "2d4ac0541a3f03f72389d036c73fd1b90ce13f15"
+    },
+    {
+      "path": "src-tauri/src/media_audio_group_tests.rs",
+      "blob": "ba957c65d24fdf60cd335e3567846d4e0486de51"
+    },
+    {
+      "path": "src-tauri/src/media_discontinuity_tests.rs",
+      "blob": "306053ecc31d6779c470c78539761fb748162443"
+    },
+    {
+      "path": "src-tauri/src/media_dns_tests.rs",
+      "blob": "a792d5326368289358f293532de47b12f73d9834"
+    },
+    {
+      "path": "src-tauri/src/media_hls_aes_tests.rs",
+      "blob": "5930c510bd85821ec5fcc752ad158e50d6e305d6"
+    },
+    {
+      "path": "src-tauri/src/media_hls_init_tests.rs",
+      "blob": "3235b38dbee90f5db25617f29e0643a7a4b95938"
+    },
+    {
+      "path": "src-tauri/src/media_hls_pieces_tests.rs",
+      "blob": "9bf83ff15832bbbe258890cc085acb519019ffd7"
+    },
+    {
+      "path": "src-tauri/src/media_hls_start_tests.rs",
+      "blob": "d26f164bd010101b2390d99d67c11137f0596c2c"
+    },
+    {
+      "path": "src-tauri/src/media_norange_tests.rs",
+      "blob": "ba2ff22b274adc20e7ad7e0fc67a7ca11856ffbc"
+    },
+    {
+      "path": "src-tauri/src/media_not_audio_tests.rs",
+      "blob": "0b835235a3bbaf8141be8e27b194a9d15c7ff051"
+    },
+    {
+      "path": "src-tauri/src/media_probe_tests.rs",
+      "blob": "c72f24b7b51bf9e5b1955a34bcfa8ed29e761d51"
+    },
+    {
+      "path": "src-tauri/src/media_ranged_tests.rs",
+      "blob": "c9905a5e505bd2ff0132c85dbbee32c8f4fd7a1c"
+    },
+    {
+      "path": "src-tauri/src/media_tracks_tests.rs",
+      "blob": "1a742c16e6c82272ec183978a9af1561f3fcdfb0"
+    },
+    {
+      "path": "src-tauri/src/media_webm_drm_tests.rs",
+      "blob": "5c784efbe27a9ee9ff87e37fa8e349d71dca9373"
+    },
+    {
+      "path": "src-tauri/src/pipeline.rs",
+      "blob": "94e9fa220d2a7d12f0b3530c461fec6ba69e44ac"
+    },
+    {
+      "path": "src-tauri/src/pipeline_audio_tests.rs",
+      "blob": "b443538c1c0f5a8728ff8696abdd8e4cadba4d47"
+    },
+    {
+      "path": "src-tauri/src/pipeline_boundary_tests.rs",
+      "blob": "b410a0d6f78177b6cddfd60dbb0d30782d30bff2"
+    },
+    {
+      "path": "src-tauri/src/pipeline_cost_tests.rs",
+      "blob": "8b1c33c09338a8b665f64cad974264d482f1a710"
+    },
+    {
+      "path": "src-tauri/src/pipeline_download_tests.rs",
+      "blob": "b2a9e7c2e280cb9a60add33fd6580b4a82af5f2f"
+    },
+    {
+      "path": "src-tauri/src/pipeline_glossary_tests.rs",
+      "blob": "921dc65fbea51f76660a7a000d5a1284107cf480"
+    },
+    {
+      "path": "src-tauri/src/pipeline_translate_tests.rs",
+      "blob": "65fef4a0050b096a7de31e7971a1adaff132d160"
+    },
+    {
+      "path": "src-tauri/src/pipeline_worker_tests.rs",
+      "blob": "fc768d11007b23feacbbf30352f73616ce224928"
+    },
+    {
+      "path": "src-tauri/src/platform.rs",
+      "blob": "f09ddbda30ae4d32bab8de38440229bcdd44c2a2"
+    },
+    {
+      "path": "src-tauri/src/screens.rs",
+      "blob": "2e372bc13121f1b2999f7db83367ee4365288e2f"
+    },
+    {
+      "path": "src-tauri/src/stitch.rs",
+      "blob": "2784a8041e951a2bb7e460297db5a9d1eea52841"
+    },
+    {
+      "path": "src-tauri/src/stitch_tests.rs",
+      "blob": "f5b7fcda54fac9cabc638a921700a843a419e29c"
+    },
+    {
+      "path": "src-tauri/src/store.rs",
+      "blob": "8b6c9659d5700e087c33f8ba8b52b8c4d6a0a5d5"
+    },
+    {
+      "path": "src-tauri/src/store_wal_tests.rs",
+      "blob": "fdc29d14caa325f748ac62630bfc2ebf7fb3acba"
+    },
+    {
+      "path": "src-tauri/src/sync.rs",
+      "blob": "95d9a06036f23e74128b94ffe5301e7444311a5f"
+    },
+    {
+      "path": "src-tauri/src/sync_channel.rs",
+      "blob": "93b96c40be7f8959866cd2d23a2ef047b0647210"
+    },
+    {
+      "path": "src-tauri/src/sync_channel_tests.rs",
+      "blob": "1e60030c2d16b66063f5aa5b03306ebafb55b52f"
+    },
+    {
+      "path": "src-tauri/src/sync_cleanup.rs",
+      "blob": "2ed15940b8b896556e9bf628428014e3513ae1ea"
+    },
+    {
+      "path": "src-tauri/src/sync_cleanup_tests.rs",
+      "blob": "3d3853fbfdca91c0436dec93408447913f829999"
+    },
+    {
+      "path": "src-tauri/src/sync_discovery.rs",
+      "blob": "12047be6e260889a59a2425535b1feb7d0cb72ce"
+    },
+    {
+      "path": "src-tauri/src/sync_discovery_tests.rs",
+      "blob": "74b66aa5a756bbbbbf8f99489fb9385c8bd21df8"
+    },
+    {
+      "path": "src-tauri/src/sync_local.rs",
+      "blob": "76ba8945c8b8f4db79bef0b2cbf05a0e4d6e446f"
+    },
+    {
+      "path": "src-tauri/src/sync_runtime.rs",
+      "blob": "7de54335509c3b5dc9e5c70de74b38781adbfd91"
+    },
+    {
+      "path": "src-tauri/src/sync_runtime_tests.rs",
+      "blob": "35e0597ffcdd6d42d1137b7ac27aa709a1459faa"
+    },
+    {
+      "path": "src-tauri/src/sync_store.rs",
+      "blob": "bcca1e832b09cd92fa2110af94474b39c63633d8"
+    },
+    {
+      "path": "src-tauri/src/sync_store_tests.rs",
+      "blob": "d55be863ba8820af7598c12c6141e5f8d8fef7f2"
+    },
+    {
+      "path": "src-tauri/src/sync_tests.rs",
+      "blob": "77af5049b5fb635dc33e5e1ad5cd1537b8ef9e57"
+    },
+    {
+      "path": "src-tauri/src/sync_tls.rs",
+      "blob": "9bfa218eebedc5c9ee2f38617e159e46eb91696f"
+    },
+    {
+      "path": "src-tauri/src/sync_tls_tests.rs",
+      "blob": "da97c36ecebc98d9a34aa15f192bf35bbe4849bd"
+    },
+    {
+      "path": "src-tauri/src/updates.rs",
+      "blob": "5aea5946e1582c0f7bf075d483e351ae9cbae13d"
+    },
+    {
+      "path": "src-tauri/src/updates_tests.rs",
+      "blob": "1f7d4b20fddbd00f1bde1f764a18f5e3cb68c6f4"
+    },
+    {
+      "path": "src-tauri/src/web.rs",
+      "blob": "93bc9c7731ef101c9a92b17f53195b74ca66e132"
+    },
+    {
+      "path": "src-tauri/src/web_tests.rs",
+      "blob": "e1b2b2ed797935c2dd2b988c727b285979f584cb"
+    },
+    {
+      "path": "src-tauri/src/whisper.rs",
+      "blob": "407e803bcb68e6833271a26374d0325c589e9dfb"
+    },
+    {
+      "path": "src-tauri/src/whisper_tests.rs",
+      "blob": "fb7c323e6ed0e375422a9a1b68b0c4f1e0f8ad90"
+    },
+    {
+      "path": "src-tauri/src/youtube.rs",
+      "blob": "9e0246e8ca8029254860094972d1b8c5ed4b415b"
+    },
+    {
+      "path": "src-tauri/src/youtube_live_tests.rs",
+      "blob": "93d1d721d97ecf27d37befcde86bc6f224b7c93c"
+    },
+    {
+      "path": "src-tauri/tauri.conf.json",
+      "blob": "adf39fb29dcaf1a202f567a6bd2c77faffde4378"
+    },
+    {
+      "path": "src-tauri/tests/audio_clock_probe.rs",
+      "blob": "97d2ef2d4396132111e05d2a1592f48711e925a4"
+    },
+    {
+      "path": "src-tauri/tests/decode_memory.rs",
+      "blob": "bc5a100c146dd2bb87f4e7ca8e4abee350fd8c76"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/cut.mp4",
+      "blob": "27ce1c373b8ac0fb9fe920e8424c6403a3509dbc"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/gap.mp4",
+      "blob": "f7dbec24c95690bc479c20429eb458f337f828b1"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/gap.ts",
+      "blob": "7cbe7b88be4554baff1fa83d76991d993b860e66"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/gap.webm",
+      "blob": "d75d4f1aa2f406ace57f8ca957cac911a6ec32e6"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/lead.mp4",
+      "blob": "99ad29c38736dd1a44e7f8d58710035dfe9e416b"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/skip.mp4",
+      "blob": "2ab4cea1523b29a3674545e02f92ec33e68797d1"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/tone.aac",
+      "blob": "0a84174859aee2dc8315628be4fc6e950d2ceca3"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/tone.m4a",
+      "blob": "b3bb48f1bf3c149d70c5bc1658a0e6c5201c29ab"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/tone.mp3",
+      "blob": "967f9169469dcb80f6bf87844955b1789c4ddb8f"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/tone.ts",
+      "blob": "f8789f0c0ba0cf5ac77c52e4f869055c68d02c91"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/trim.mp4",
+      "blob": "09cda31fbb114b4ed04001496c6c83894d3bf688"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/auth/README.md",
+      "blob": "98f10a837c89a388e417de3a3e2b65d03a6fe870"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/auth/test-only-rsa.pem",
+      "blob": "b7d5b5a445723d63129d441e88571e5c340ae7f2"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_disc/index.m3u8",
+      "blob": "c3f91de0de16e058bf067f960b72e796f28643ba"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_disc/seg0.ts",
+      "blob": "e279c80f89aace56baac81b8aa2e8d5653f8e3c3"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_disc/seg1.ts",
+      "blob": "aad58b5ea6cd5ebea206d68451b6a979303ff795"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_gap/init.mp4",
+      "blob": "4616f26bbbaa7d8a465f2fee92f574e7f01f1cfb"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_gap/seg0.m4s",
+      "blob": "e8c082fe6468e22bef1eebaa82a8df0357d7af0a"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_gap/seg1-late.m4s",
+      "blob": "ae5f6a898815b3957cd1783d4b0fdcf3021d69fe"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_lead/init-tfdt.mp4",
+      "blob": "308a58d5b52aeff0b14c9b7fecd9aa3999ea7879"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_lead/init.mp4",
+      "blob": "3b54b15d1547469fe47c3dd4be213219a9c82eab"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_lead/seg0-tfdt.m4s",
+      "blob": "a8f149df9e51adf50708cb090ab6305cb6647105"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_lead/seg0.m4s",
+      "blob": "cb35816a206175af8a68d3d1976069d8a2ecff9a"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_maps/a0.m4s",
+      "blob": "ca812878832d59143abc6f3f8d3240d5941324ee"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_maps/b0.m4s",
+      "blob": "15ec43d2682070ec7e2c0ce91db72e1a45ce1d45"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_maps/index.m3u8",
+      "blob": "bea2d73c9053bb038332a40ef569ef5591b77c78"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_maps/init-a.mp4",
+      "blob": "5968cc06274ef907fcc03145231dcf6423947471"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_maps/init-b.mp4",
+      "blob": "079fd9523e4fa5b6458a983acbc97c1cad16e02c"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/library-video.mp4",
+      "blob": "b5b6be5fced256c9f27e2699e7997b78089885e9"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/tracks/video-init.mp4",
+      "blob": "913d0d0f8afd2246d5e5c939ecee73f0f0e83c56"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/tracks/video.mp4",
+      "blob": "c37a88a285c632b47d7318cb45efe7330f336224"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/tracks/video.ts",
+      "blob": "e5259b88e4079e6da596dd0e88714831ab30867f"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/tracks/video.webm",
+      "blob": "8c5203ee074b5aedce42dc3d613fed5735c6854c"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/tracks/video0.m4s",
+      "blob": "6a7fb00a125a2c4a109240053867881a09b54e18"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/tracks/with-audio.webm",
+      "blob": "bddea805db074ea7ed101b8a44f724ca4f186e6a"
+    },
+    {
+      "path": "src-tauri/tests/whisper_model.rs",
+      "blob": "54666a3b6569d0f400f6e7c5db39c994a86f09a8"
+    },
+    {
+      "path": "src/overlay/index.ts",
+      "blob": "a6abdaeceff2144e6ae9a80b3770730b096b3d15"
+    },
+    {
+      "path": "src/overlay/inject.ts",
+      "blob": "17fe20b1ee6cec3860d3c35a10092bb5a564ebd6"
+    },
+    {
+      "path": "src/overlay/page.ts",
+      "blob": "28e95b76e9f25748a88223a7638bbc3a0fe5f1a3"
+    },
+    {
+      "path": "src/overlay/playback.ts",
+      "blob": "12b15b313e8ba734e12fef1a4930c1d52cf36b85"
+    },
+    {
+      "path": "src/overlay/signin.ts",
+      "blob": "e921ef11654df6269eb3d517d1a47a39908d4774"
+    },
+    {
+      "path": "src/ui/App.svelte",
+      "blob": "04b2fa7dfc0272b2b224017544e4618f53319449"
+    },
+    {
+      "path": "src/ui/GoogleAccount.svelte",
+      "blob": "713ac070171f61df9c736ab23db10ed152b94153"
+    },
+    {
+      "path": "src/ui/Library.svelte",
+      "blob": "477f8843f7adb32d2804ba425b55b6c5ff0a76f6"
+    },
+    {
+      "path": "src/ui/Link.svelte",
+      "blob": "b9e56f4c0673bc9270e8adc2bf5e51c5f3e4d7fa"
+    },
+    {
+      "path": "src/ui/Nav.svelte",
+      "blob": "32025ad882eeb9f545a04841c5fa22f1289f0b36"
+    },
+    {
+      "path": "src/ui/Overlay.svelte",
+      "blob": "c24dd57df73c6a8e5195528f6f5d0d9cf27a0684"
+    },
+    {
+      "path": "src/ui/Preferences.svelte",
+      "blob": "f6ff31e0aca9bd2238efb23fff740de15b834b12"
+    },
+    {
+      "path": "src/ui/Stage.svelte",
+      "blob": "294f30bc9378f852f743b45233e23685fec1f297"
+    },
+    {
+      "path": "src/ui/Thumb.svelte",
+      "blob": "a55d7bc057c7a4759e4b8e4107500204b6c5a213"
+    },
+    {
+      "path": "src/ui/Updates.svelte",
+      "blob": "7c9987c0b9b23d655f5e1c7055ed79dd9618f038"
+    },
+    {
+      "path": "src/ui/Watch.svelte",
+      "blob": "beabf082f3ee03d4e41b77b6d971199b609e5f25"
+    },
+    {
+      "path": "src/ui/api.ts",
+      "blob": "a1cbac720f0a530ef173461bd14049bab5400a01"
+    },
+    {
+      "path": "src/ui/app.css",
+      "blob": "3b12cec4934898776e3c8e18f1906e94a1adb477"
+    },
+    {
+      "path": "src/ui/main.ts",
+      "blob": "547406b971aa213d1d0480b1de05b9a3a3c38e5d"
+    },
+    {
+      "path": "src/ui/router.svelte.ts",
+      "blob": "10fe1045c0f2a2883c9f5e6d7ceef57730703823"
+    },
+    {
+      "path": "tests/branding.test.mjs",
+      "blob": "933035454ac35b3cf417b07caa571c6fa12fd72a"
+    },
+    {
+      "path": "tests/overlay/ad_media.test.ts",
+      "blob": "161bd9225ac28374e39d1dbb76f93993df741339"
+    },
+    {
+      "path": "tests/overlay/fixtures/ad.m3u8",
+      "blob": "6e700e2152a1ec6f0bbe442537e69600b53521ba"
+    },
+    {
+      "path": "tests/overlay/fixtures/frame.html",
+      "blob": "4e28c533096d5a0d6da8ebc447702a7b613e5314"
+    },
+    {
+      "path": "tests/overlay/fixtures/lecture.m3u8",
+      "blob": "5b3f716a785388f81c7a967134385bea1d775d6a"
+    },
+    {
+      "path": "tests/overlay/fixtures/master.m3u8",
+      "blob": "8c765c1168eaed0007ec5900ce69c33978c6d267"
+    },
+    {
+      "path": "tests/overlay/fixtures/outer.html",
+      "blob": "f9b089e2e0ef455a9b143d09b5decc43865f2aab"
+    },
+    {
+      "path": "tests/overlay/fixtures/trusted-types.html",
+      "blob": "c260025ec7058385b536ef42fc885c9a384035fb"
+    },
+    {
+      "path": "tests/overlay/frames.test.ts",
+      "blob": "f0e20504f595d24431a95517f42d12e7968a68b4"
+    },
+    {
+      "path": "tests/overlay/hidden_mount.test.ts",
+      "blob": "95a86c2f3bfeb185d336635f70b4726acd6b472d"
+    },
+    {
+      "path": "tests/overlay/inject_once.test.ts",
+      "blob": "e876bcf2dba31c39a513a91409457a82c3369bfb"
+    },
+    {
+      "path": "tests/overlay/media_url.test.ts",
+      "blob": "5848541ac96e0deee8b44045664584483d0d5449"
+    },
+    {
+      "path": "tests/overlay/mse_media_url.test.ts",
+      "blob": "4eee0cd4aa0f5310f25b7a69a640c29a1fab9612"
+    },
+    {
+      "path": "tests/overlay/overlay.test.ts",
+      "blob": "b6cf31aea896d3e5ec61711a3e2d4ce938c2716b"
+    },
+    {
+      "path": "tests/overlay/placement.test.ts",
+      "blob": "17283ac95b69e6c6ef657000c2a45ed403e9a80f"
+    },
+    {
+      "path": "tests/overlay/playback.test.ts",
+      "blob": "b713ca73cddcebc3aea2fd131fb4dfe941d85463"
+    },
+    {
+      "path": "tests/overlay/signin.test.ts",
+      "blob": "758eac1a80ffb472ecb4f4eb29c3e7973160ae7a"
+    },
+    {
+      "path": "tests/overlay/signin_http.test.ts",
+      "blob": "7c3ad208dce854a4373215ac0b298b23d37538c6"
+    },
+    {
+      "path": "tests/overlay/trusted_types.test.ts",
+      "blob": "e4aa12dc3f70b6ff3d24274f93d4f4ea73cd69f4"
+    },
+    {
+      "path": "tests/overlay/visible_video.test.ts",
+      "blob": "d9a90b0e619717d38f5031d18b703721a7f99c54"
+    },
+    {
+      "path": "tests/overlay/youtube_audio.test.ts",
+      "blob": "647370a258066958c47a26c6484418edf0d738aa"
+    },
+    {
+      "path": "tests/package-release.test.ps1",
+      "blob": "a4837d8703c55805b05a28f33def0718613c3ba2"
+    },
+    {
+      "path": "tests/sync-evidence.test.mjs",
+      "blob": "d112a237cef3b898bbc2116b3992236beb34d08a"
+    },
+    {
+      "path": "tests/ui/account-library.test.ts",
+      "blob": "a7da34ae9cc328ae818fb20262dbbb2b4e4f1941"
+    },
+    {
+      "path": "tests/ui/fake.ts",
+      "blob": "0fc675040c0f7ee48367c5a73342b48e817f3c93"
+    },
+    {
+      "path": "tests/ui/google-account.test.ts",
+      "blob": "8e2065f2dfcbf4c4ce3013e08433e9290feb17d8"
+    },
+    {
+      "path": "tests/ui/library-layout.test.ts",
+      "blob": "cbbbf962891ca0e7252c8a6cc01350bd93b745ef"
+    },
+    {
+      "path": "tests/ui/library.test.ts",
+      "blob": "e22a890d4e8a39c35a2f2c6fbc09d5c4e2c853c1"
+    },
+    {
+      "path": "tests/ui/preferences.test.ts",
+      "blob": "9bbd5e893426329b5f2fc978186a19ec395526b9"
+    },
+    {
+      "path": "tests/ui/subtitles.test.svelte.ts",
+      "blob": "297863e332f728c609f580873114ab68368a4538"
+    },
+    {
+      "path": "tests/ui/updates.test.ts",
+      "blob": "0d81eb35d24f62d5eacaf0474ea0e3c273c6f054"
+    },
+    {
+      "path": "tests/ui/watch.test.ts",
+      "blob": "705de64ad936ca1f82ecb40aa59687061df18534"
+    },
+    {
+      "path": "verification.json",
+      "blob": "3aa7f194e9b097cfb6fbbf8c3e0b1cd755c48b97"
+    },
+    {
+      "path": "vite.config.ts",
+      "blob": "68c8020a02cf7b245e1c107865a43ccf83e39ab1"
+    },
+    {
+      "path": "vite.overlay.config.ts",
+      "blob": "d81ed740eaec3f80d99739ee6c9de47f1653e027"
+    },
+    {
+      "path": "vitest.config.ts",
+      "blob": "dadf10a9f608ab771ab6b7f77295802d112cf7ec"
+    },
+    {
+      "path": "vitest.ui.config.ts",
+      "blob": "ddab02f7244ff248ddda23770a8be57df2d8d1cb"
+    }
+  ]
+}
