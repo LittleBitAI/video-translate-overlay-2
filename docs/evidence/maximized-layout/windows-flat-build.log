@@ -4,4 +4,4 @@ warning: linker stdout: C:\Users\dasdk\PycharmProjects\video-translate-overlay-2
   = note: `#[warn(linker_messages)]` on by default
 
 warning: `video-translate-overlay` (lib) generated 1 warning
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 38.11s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 36.85s

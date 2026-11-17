@@ -1,8 +1,8 @@
 # Maximized Windows layout evidence
 
-Candidate application and test sources: `700c30e290e15c32c527415b7187483971dad28a`.
+Candidate application and test sources: `d9d1df6f081a158bbb2adf561eed3758d77f60ad`.
 Evidence-only descendants do not change build inputs. User acceptance is pending.
-The earlier card and flat-row candidates were rejected; neither is accepted
+The earlier card, flat-row and capped hierarchy candidates were rejected; none is accepted
 design evidence. These focused checks do not claim the server-owned repository gate.
 
 ## Installed baseline
@@ -34,18 +34,24 @@ then returned the window to its original state and Library.
 - `iterations/hierarchy-first.png` and `hierarchy-first.json`: setup first,
   accounts together and privacy in the footer. Inspection at 2560 px found the
   fluid columns and account text too far apart.
-- `hierarchy-refined.json`: the corrected workspace measured at 1280, 1920,
-  2560 and 384 px before the source commit. The committed candidate is captured
-  in `browser/` and `windows/`.
+- `hierarchy-refined.json` and `rejected-capped-hierarchy.png`: the 1440 px
+  capped workspace at `700c30e`. The user rejected its remaining right margin,
+  unequal Gemini/YouTube bottom actions and subdued update control.
+- `reconstruction-first.json`: a fresh composition measured at 1920×1080 first,
+  then at 1280, 2560 and 384 px. The committed candidate is in `browser/` and
+  `windows/`. Revision-specific copies are
+  `browser/settings-1920x1080-d9d1df6.png` and
+  `windows/settings-maximized-d9d1df6.png`.
 
-The current desktop candidate places the Gemini key setup first and groups
-Google app account and YouTube session controls alongside it. Section headings
-share a top edge. A single quiet vertical rule separates the two tasks; there
-are no desktop card backgrounds or rounded section boxes. The workspace grows
-to 1440 px, while the key form stays within 672 px. Updates and privacy use
-secondary text actions in a footer below the controls, at the window's bottom
-when content fits. Privacy remains available before sign-in, opens the same
-fixed native policy and retains a retryable error.
+The current desktop candidate uses the available page width without an overall
+cap. Gemini setup and YouTube session controls occupy equal-height grid cells
+and share their top and bottom edges. Their bottom action rows align through
+flex layout, without fixed-height spacers. The key form and removal group can
+grow to 960 px. Google app-account sync occupies the next full-width row, with
+its description and status following the same two column edges. Update checking
+is a prominent outlined blue 44 px button in the top-right header. Privacy stays
+in the footer, available before sign-in with the same native opener and retry.
+There are no desktop card backgrounds or rounded section boxes.
 
 At narrow widths the same task order stacks, with the existing controls and
 confirmations. This hierarchy correction intentionally changes the earlier
@@ -60,18 +66,24 @@ with `PORT=8145` and the isolated
 were added without translation jobs.
 `node artifacts/maximized-layout/browser.mjs` clicked navigation, exercised
 wheel scrolling and library edit/add toggles, measured the DOM and captured
-all three screens. Both core and screen metadata identified `700c30e`.
+all three screens. Both core and screen metadata identified `d9d1df6`.
 
 | CSS viewport | Leading edge | Video stage | Library columns | Key form width | Horizontal overflow |
 | --- | --- | --- | --- | --- | --- |
-| 1280×720 | 16 px | 1109×624 | 4 | about 659 px | none |
-| 1920×1080 | 16 px | 1749×984 | 7 | 672 px | none |
-| 2560×1440 | 16 px | 2389×1344 | 10 | 672 px | none |
+| 1280×720 | 16 px | 1109×624 | 4 | 604.5 px | none |
+| 1920×1080 | 16 px | 1749×984 | 7 | 924.5 px | none |
+| 2560×1440 | 16 px | 2389×1344 | 10 | 960 px | none |
 | 384×854 | existing phone insets | 368×207 | 1, accordion | 336 px | none |
 
 The player remains 16:9 and ends within the viewport. The phone menu remains
 at y 809 with its existing 45 px height. `browser/` holds the current screenshots
 and measurements, including footer placement and the order of Settings groups.
+
+At 1920×1080 the workspace ends at x 1889: the remaining 31 px is the 16 px
+page inset plus the reserved 15 px scrollbar gutter. Both key removal and
+YouTube logout end at y 421.39. The update control is at y 77.19, 44 px high,
+with its right edge aligned to x 1889. The 1280 and 2560 px checks also verify
+equal action bottoms, the same right inset and a visible header update control.
 
 `node artifacts/maximized-layout/settings-confirmation.mjs` opened the actual
 key-removal confirmation at 1280, 768 and 384 px against a dummy key on the
@@ -85,7 +97,7 @@ Windows 11 Home build 26200, WebView2 157.0.4341.46, Playwright 1.61.0.
 passed with the repository's documented `LIBCLANG_PATH`. An initial earlier
 attempt without that setting failed to find libclang; the configured builds
 passed. The current executable SHA-256 is
-`0525e69788c0f68ba461c72f0578f3d5c92719a7d2dd5fc066af42ca2811ee34`.
+`ef1f02cf32d28475570053ec91048a6130ead394a9f2258eb552750b78dd728c`.
 
 `python artifacts/maximized-layout/launch-windows.py` launched the executable
 in the host's owned process context with fresh application and WebView2 profiles.
@@ -95,9 +107,13 @@ real IPC and exercised all three screens through actual native window changes.
 
 | Native state | CSS viewport | Library columns | Key form width | Settings footer |
 | --- | --- | --- | --- | --- |
-| Restored | 1024×760 | 3 | about 520 px | y 681–744 |
-| Maximized with native WindowPattern | 1920×1017 | 7 | 672 px | y 938–1001 |
-| Restored again | 1024×760 | 3 | about 520 px | y 681–744 |
+| Restored | 1024×760 | 3 | 476.5 px | y 681–744 |
+| Maximized with native WindowPattern | 1920×1017 | 7 | 924.5 px | y 938–1001 |
+| Restored again | 1024×760 | 3 | 476.5 px | y 681–744 |
+
+Native Gemini/YouTube action bottoms match at y 442.39 in both restored runs
+and y 421.39 while maximized. The update button stays 44 px high at y 77.19;
+the workspace retains the 16 px right inset in all three states.
 
 Navigation, wheel scrolling and layout checks passed in every state. No clipping,
 overlap, horizontal overflow or navigation change was observed. The current
@@ -118,8 +134,10 @@ Complete repository verification remains server-owned and pending.
 
 The cleanup audit covered all eight UI test files. No obsolete, duplicate or
 superseded test was found; none was removed. The existing layout table now
-checks the setup-first hierarchy, footer privacy placement, frameless desktop
-groups, large viewports and stacked narrow layout. The scroll regression keeps
+checks full-width layout, exact Gemini/YouTube bottom alignment, prominent header
+update checking, footer privacy, frameless desktop groups and stacked narrow
+layout. Assertions for the rejected width caps and old hierarchy were replaced
+in that table. The scroll regression keeps
 its assertions and uses 36 entries so the wider grid produces a scrolled page.
 Privacy opening/failure/retry, update checks, account state, key confirmation,
 deletion and subtitle tests still guard current behavior. No whole-directory
