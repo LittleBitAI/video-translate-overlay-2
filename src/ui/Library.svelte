@@ -366,7 +366,8 @@
   {:else if wide.current}
     <div class="grid grid-cols-[16rem_minmax(0,1fr)] items-start gap-6">
       <aside class="sticky top-0 max-h-dvh space-y-4 overflow-y-auto pb-4">
-        <div>
+        <!-- As tall as the pane's toolbar, so the first playlist and the first card share a top edge. -->
+        <div class="flex min-h-11 flex-col justify-center">
           <h1 class="text-2xl font-semibold">보관함</h1>
           {#if accountEmail}<p class="mt-1 truncate text-sm text-ink/70">Google 계정: <bdi>{accountEmail}</bdi></p>{/if}
         </div>

@@ -42,10 +42,12 @@ earlier manual `VTO_APP_DATA_DIR` override remains available. Before mutations,
 the host checks a digest of the app's actual data directory as well as its
 revision. The app exposes no plaintext data-directory path to site pages.
 
-The shared UI scenario creates and renames playlists, changes order and
-membership, reopens saved subtitles, restarts the process, cancels deletion,
-confirms deletion from multiple playlists, and manually opens an untranslated
-entry. Offline checks separately cover active jobs, failed file cleanup,
+The shared UI scenario creates playlists and adds saved videos and a link
+through the add panel, renames, reorders and removes in edit mode (one entry
+moves two places with a single drag of its handle), reopens saved subtitles from
+a card, restarts the process, cancels deletion, confirms deletion from multiple
+playlists, and manually opens an untranslated entry. It selects playlists in
+either layout: the rail of a wide window or the accordion rows of a phone. Offline checks separately cover active jobs, failed file cleanup,
 stale replies and old notification links.
 
 ## Prepare and approve a candidate
