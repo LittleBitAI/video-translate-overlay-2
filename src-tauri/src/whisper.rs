@@ -1,5 +1,6 @@
 //! On-device speech: quantized multilingual base on Android, large-v3-turbo
-//! on desktop. Model downloads are checked against a pinned SHA-256.
+//! on desktop, on the GPU where the PC has one (Windows: Vulkan). Model
+//! downloads are checked against a pinned SHA-256.
 
 use crate::http::{self, Request};
 use crate::{Segment, Transcriber, Word};
@@ -7,7 +8,7 @@ use sha2::{Digest, Sha256};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicI32, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Duration;
 use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperSegment, WhisperState};
 
@@ -56,8 +57,11 @@ impl Whisper {
     fn state(&self) -> Result<std::sync::MutexGuard<'_, Option<(WhisperState, i32)>>, String> {
         let mut state = self.state.lock().unwrap();
         if state.is_none() {
+            // Flash attention stays off: with beam search on Vulkan it made 5
+            // minutes of a lecture take 500 s on an RTX 3080, against 15 s without.
             let c = WhisperContext::new_with_params(&self.path, WhisperContextParameters::default())
                 .map_err(|e| format!("cannot load {}: {e}", self.path.display()))?;
+            crate::log(format!("speech model on {}", gpu().unwrap_or_else(|| "the CPU".into())));
             let eot = c.token_eot();
             *state = Some((c.create_state().map_err(|e| e.to_string())?, eot));
         }
@@ -147,8 +151,8 @@ impl Transcriber for Whisper {
         // times over 22 s). Such a window alone is decoded again with whisper's
         // temperature fallback, which retries a looping part. whisper.cpp seeds
         // its sampling on every call, so the retry gives the same text each time.
-        if self.mobile && segs.iter().any(|s| crate::stitch::collapse_repeats(&s.text) != s.text) {
-            let mut params = inference_params(true);
+        if greedy(self.mobile) && segs.iter().any(|s| crate::stitch::collapse_repeats(&s.text) != s.text) {
+            let mut params = inference_params(self.mobile);
             params.set_temperature_inc(0.2);
             return decode(state, eot, self.language().as_deref(), params, pcm, progress);
         }
@@ -237,12 +241,42 @@ fn words(s: &WhisperSegment, eot: i32, duration_ms: i64) -> Vec<Word> {
     out.into_iter().map(|(a, b, t)| Word { start_ms: a, end_ms: b, text: String::from_utf8_lossy(&t).into_owned() }).collect()
 }
 
+/// The GPU whisper.cpp runs the model on: the first GPU or integrated GPU its
+/// backends list, the one `whisper_backend_init_gpu` takes. None on a build
+/// without a GPU backend (Android) or a PC without a usable GPU.
+pub fn gpu() -> Option<String> {
+    static GPU: OnceLock<Option<String>> = OnceLock::new();
+    extern "C" {
+        fn ggml_backend_dev_count() -> usize;
+        fn ggml_backend_dev_get(index: usize) -> *mut std::ffi::c_void;
+        fn ggml_backend_dev_type(device: *mut std::ffi::c_void) -> std::ffi::c_int;
+        fn ggml_backend_dev_description(device: *mut std::ffi::c_void) -> *const std::ffi::c_char;
+    }
+    const GPU_TYPES: [std::ffi::c_int; 2] = [1, 2]; // GGML_BACKEND_DEVICE_TYPE_GPU, _IGPU
+    GPU.get_or_init(|| unsafe {
+        (0..ggml_backend_dev_count()).map(|i| ggml_backend_dev_get(i)).find(|&d| GPU_TYPES.contains(&ggml_backend_dev_type(d))).map(|d| {
+            let name = ggml_backend_dev_description(d);
+            if name.is_null() { "a GPU".into() } else { std::ffi::CStr::from_ptr(name).to_string_lossy().into_owned() }
+        })
+    })
+    .clone()
+}
+
+/// Whether windows are decoded greedily with no temperature retries: on the
+/// phone, and on a PC without a GPU. A PC with a GPU uses beam search (on an
+/// RTX 3080, 21 times faster than real time, and it got terms greedy missed).
+fn greedy(mobile: bool) -> bool {
+    mobile || gpu().is_none()
+}
+
 fn inference_params(mobile: bool) -> FullParams<'static, 'static> {
-    let strategy = if mobile { SamplingStrategy::Greedy { best_of: 1 } } else { SamplingStrategy::BeamSearch { beam_size: 5, patience: -1.0 } };
+    let strategy = if greedy(mobile) { SamplingStrategy::Greedy { best_of: 1 } } else { SamplingStrategy::BeamSearch { beam_size: 5, patience: -1.0 } };
     let mut params = FullParams::new(strategy);
     params.set_n_threads(std::thread::available_parallelism().map(|n| n.get().min(if mobile { 4 } else { 8 })).unwrap_or(4) as i32);
-    if mobile {
-        // Six temperature passes and five decoder candidates make difficult speech stall a phone.
+    if greedy(mobile) {
+        // Six temperature passes and five decoder candidates make difficult
+        // speech stall a CPU: large-v3-turbo with them took 2 h 14 min for a
+        // 20-minute video on an i7-12700F. A looping window alone is retried.
         params.set_temperature_inc(0.0);
     }
     params

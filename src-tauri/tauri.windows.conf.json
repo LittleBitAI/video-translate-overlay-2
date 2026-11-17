@@ -1,0 +1,9 @@
+{
+  "bundle": {
+    "resources": {
+      "windows/vulkan-1.dll": "vulkan-1.dll",
+      "windows/vulkan-loader-LICENSE.txt": "licenses/vulkan-loader-LICENSE.txt",
+      "windows/vulkan-loader-cJSON-NOTICE.txt": "licenses/vulkan-loader-cJSON-NOTICE.txt"
+    }
+  }
+}
