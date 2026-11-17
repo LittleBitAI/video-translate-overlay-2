@@ -191,29 +191,31 @@ table.cases td:first-child{white-space:normal}
 .stats li{display:grid;gap:.5rem;align-content:start;padding-top:1.25rem;border-top:2px solid var(--ink)}
 .stats .num{font:700 clamp(2.75rem,4.2vw,4rem)/1 var(--serif);letter-spacing:-.02em;color:var(--accent);font-variant-numeric:tabular-nums}
 .stats .num small{font-size:.45em;margin-inline-start:.15em;color:var(--soft)}
-.stats b,.limits b{font-size:1.0625rem;font-weight:650;line-height:1.5}
+.stats b{font-size:1.0625rem;font-weight:650;line-height:1.5}
 .stats b{margin-top:.35rem}
 .src{margin-top:1.75rem}
 
-/* 글과 휴대폰 캡처를 나란히 — 글은 왼쪽 선, 캡처는 오른쪽 단의 시작에 붙인다 */
-.media{display:grid;grid-template-columns:var(--split);column-gap:var(--gap);align-items:center}
+/* 글과 휴대폰 캡처를 나란히 — 글은 왼쪽 선, 캡처는 오른쪽 단의 시작에 붙인다. 위쪽을 맞춰 제목이 빈 칸 가운데 뜨지 않게 */
+.media{display:grid;grid-template-columns:var(--split);column-gap:var(--gap);align-items:start}
 .media .txt{max-width:36rem}
 .media h2{margin-bottom:1.5rem}
 .media .cap{margin-top:1.25rem}
 figure.phone{width:min(16rem,100%);justify-self:start}
 
-/* 아직 안 되는 것 — 두 단 목록 */
-.limits{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:var(--gap)}
-.limits li{display:grid;gap:.3rem;align-content:start;padding-block:1.1rem;border-top:1px solid var(--rule)}
-.limits span{color:var(--soft)}
+/* 기기 공유 — 글은 읽는 폭, 조건은 체크 목록, 두 기기 재생 화면은 같은 높이로 나란히 */
+.chapter > .txt{max-width:44rem}
+.txt .checks{list-style:none;margin:1.25rem 0 1.5rem;padding:0;display:grid;gap:.5rem}
+.checks li{position:relative;padding-inline-start:1.6rem}
+.checks li::before{content:"✓";position:absolute;inset-inline-start:0;color:var(--accent);font-weight:700}
+.pair{margin-top:2.5rem}
+.pair-row{display:grid;grid-template-columns:1280fr 572fr;gap:1rem}
+.pair-row > div{display:grid;gap:.5rem}
+.pair-row img{width:100%;height:auto;border-radius:var(--r-lg);border:1px solid var(--edge)}
 
-/* 만든 순서 — 날짜 한 칸, 한 줄, 읽는 폭 */
-.timeline{list-style:none;margin:0;padding:0;max-width:52rem}
-.timeline li{display:grid;grid-template-columns:5rem minmax(0,1fr);gap:1rem;align-items:baseline;padding-block:.8rem;border-top:1px solid var(--rule)}
-.timeline li:last-child{border-bottom:1px solid var(--rule)}
-.timeline time{font:500 .875rem var(--mono);color:var(--faint)}
+/* 아직 안 되는 것 — 읽는 폭의 평범한 목록 */
+.plainlist{margin:0;padding-inline-start:1.2em;max-width:46rem;display:grid;gap:.6rem}
 
-.end-cta .lead{max-width:40rem;margin-bottom:2rem}
+.end-cta .go + .cap{margin-top:1.25rem}
 
 /* 한 단짜리 단계 — 번호, 제목, 본문, 보조 설명 */
 .pagehead:not(.split){padding-bottom:clamp(2rem,5vh,3.5rem)}
@@ -237,7 +239,7 @@ figure.phone{width:min(16rem,100%);justify-self:start}
 .platforms .steps1{margin-top:.5rem}
 
 @media (max-width:960px){
-  .stats,.limits,.platforms{grid-template-columns:minmax(0,1fr)}
+  .stats,.platforms{grid-template-columns:minmax(0,1fr)}
   .stats{gap:2.25rem}
   .media{grid-template-columns:minmax(0,1fr);row-gap:2rem}
   figure.phone{width:min(17rem,100%)}
@@ -245,4 +247,5 @@ figure.phone{width:min(16rem,100%);justify-self:start}
 }
 @media (max-width:600px){
   .hero .go .btn,.end-cta .go .btn{flex:1 1 100%;justify-content:center}
+  .pair-row{grid-template-columns:minmax(0,1fr)}
 }

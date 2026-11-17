@@ -67,60 +67,53 @@
 
   <section class="chapter media">
     <div class="txt">
-      <h2>한 번 번역하면 다시 볼 때는 공짜</h2>
-      <p>번역한 강연은 <span class="ui">보관함</span>에 남습니다. 제목이나 주소로 찾고, 카드를 누르면 저장된 자막과 함께 바로 열립니다. 받아쓰기도 번역도 다시 하지 않으니 비용이 들지 않습니다.</p>
-      <p>강연은 주제별 재생목록으로 묶을 수 있습니다. 휴대폰에서는 재생목록을 누르면 그 아래로 영상이 펼쳐지고, 넓은 창에서는 왼쪽 목록과 오른쪽 썸네일로 나뉩니다.</p>
+      <h2>다시 볼 때는 번역하지 않습니다</h2>
+      <p>영상감지로 만든 자막은 기기에 저장되고, 영상은 <span class="ui">보관함</span>에 주제별 재생목록으로 정리해 둘 수 있습니다. 다시 열면 저장된 자막이 바로 뜹니다. 받아쓰기도 번역도 다시 하지 않으니 번역비가 들지 않습니다.</p>
+      <p>카드마다 저장 자막이 있는지 적혀 있습니다. <span class="ui">자막 없음</span>인 영상은 열기만 해서는 번역이 시작되지 않습니다. 번역비는 영상감지를 누를 때만 듭니다.</p>
     </div>
     <figure class="vis shot phone">
-      <a class="zoom" href="overview/img/android-library.webp"><img src="overview/img/android-library.webp" width="720" height="1471" alt="Android 앱 보관함. 딥러닝 기초 재생목록이 펼쳐져 그 아래에 영상 네 개가 썸네일과 함께 보이고, 아래쪽에 영상, 보관함, 설정 메뉴 막대가 있다" loading="lazy"></a>
-      <figcaption>Android 보관함. 재생목록을 누르면 바로 아래에 펼쳐집니다.</figcaption>
+      <a class="zoom" href="overview/img/android-library.webp"><img src="overview/img/android-library.webp" width="720" height="1471" alt="Android 앱 보관함. 딥러닝 기초 재생목록이 펼쳐져 영상 네 개가 썸네일과 함께 보이고, 각 카드에 자막 없음, 열어도 번역하지 않음이라고 적혀 있다" loading="lazy"></a>
+      <figcaption>재생목록을 펼친 Android 보관함. 아직 영상감지를 누르지 않은 영상이라 <span class="ui">자막 없음</span>으로 보입니다.</figcaption>
     </figure>
   </section>
 
-  <section class="chapter media">
+  <section class="chapter">
+    <h2>PC에서 만든 자막을 휴대폰에서</h2>
     <div class="txt">
-      <h2>PC에서 번역한 강연을 휴대폰에서</h2>
-      <p>두 기기에서 같은 Google 계정으로 로그인하고 PC 앱을 켜 두면, 같은 네트워크 안에서 보관함과 재생목록, 보던 위치가 맞춰집니다.</p>
-      <p>중간에 서버는 없습니다. Google 계정은 두 기기가 같은 사람 것인지 확인하는 데만 쓰고, 기록은 기기끼리 암호화된 연결로 직접 주고받습니다. Gemini 개인키와 유튜브 로그인은 옮기지 않습니다.</p>
-      <p class="cap">휴대폰이 모바일 데이터에 있으면 집 PC에 닿지 않아 맞춰지지 않습니다. 두 기기 모두 0.1.8 이상이어야 합니다.</p>
+      <p>집 PC에서 번역해 둔 강연을 휴대폰에서 이어 볼 수 있습니다. 보관함, 재생목록, 보던 위치가 두 기기에서 맞춰집니다. 필요한 건 세 가지입니다.</p>
+      <ul class="checks">
+        <li>두 기기 모두 0.1.8 이상</li>
+        <li><span class="ui">설정</span>에서 같은 Google 계정으로 로그인</li>
+        <li>PC 앱을 켜 두고, 휴대폰은 같은 Wi-Fi에</li>
+      </ul>
+      <p class="cap">중간에 서버는 없습니다. 기기끼리 암호화된 연결로 직접 주고받고, Google 계정은 두 기기가 같은 사람 것인지 확인하는 데만 씁니다. Gemini 개인키와 유튜브 로그인은 옮기지 않습니다.</p>
     </div>
-    <figure class="vis shot phone">
-      <a class="zoom" href="overview/img/android-settings.webp"><img src="overview/img/android-settings.webp" width="720" height="1471" alt="Android 앱 설정 화면. 맨 위 Google 앱 계정 칸에 기기간 연결에 쓰는 계정이며 유튜브 로그인과 별개라는 설명과 Google 계정으로 로그인 버튼이 있고, 그 아래 앱 업데이트와 개인키 칸이 있다" loading="lazy"></a>
-      <figcaption>설정의 Google 앱 계정. 유튜브 로그인과는 별개입니다.</figcaption>
+    <figure class="pair full">
+      <div class="pair-row">
+        <div><img src="overview/img/sync-windows-player.webp" width="1280" height="360" alt="Windows 앱 재생 화면 아래쪽. windows 저장 자막 둘째 구간이라는 자막이 떠 있다" loading="lazy"><span class="lab">Windows에서 저장</span></div>
+        <div><img src="overview/img/sync-android-player.webp" width="572" height="360" alt="Android 앱 재생 화면 아래쪽. 같은 자막 windows 저장 자막 둘째 구간이 떠 있다" loading="lazy"><span class="lab">Android에서 재생</span></div>
+      </div>
+      <figcaption>2026-11-15 동기화 검증 화면. 3초짜리 시험 영상에 Windows에서 저장한 자막이 Android 재생 화면에도 그대로 뜹니다.</figcaption>
     </figure>
   </section>
 
   <section class="chapter">
     <h2>아직 안 되는 것</h2>
-    <ul class="limits full">
-      <li><b>라이브 방송, DRM 영상, DASH 영상</b><span>지원하지 않습니다. 유튜브와 내려받을 수 있는 일반 영상, 지원 형식의 HLS만 됩니다.</span></li>
-      <li><b>다른 앱 위의 자막</b><span>자막은 이 앱 안에서 연 영상 위에만 뜹니다. 유튜브 앱이나 Chrome 위에는 띄우지 않습니다.</span></li>
-      <li><b>실시간 자막</b><span>자막은 강연 전체를 처리한 뒤에 뜹니다. 보면서 바로 번역되지는 않습니다.</span></li>
-      <li><b>휴대폰 받아쓰기 정확도</b><span>휴대폰은 속도 때문에 60MB짜리 작은 모델을 씁니다. 억양이 강하거나 잡음이 많으면 PC보다 틀리기 쉽습니다.</span></li>
+    <ul class="plainlist">
+      <li>자막은 강연 전체를 처리한 뒤에 뜹니다. 보면서 실시간으로 번역하지는 않습니다.</li>
+      <li>자막은 이 앱 안에서 연 영상 위에만 뜹니다. 유튜브 앱이나 Chrome 위에는 띄우지 않습니다.</li>
+      <li>라이브 방송, DRM 영상, DASH 영상은 열 수 없습니다.</li>
+      <li>휴대폰은 속도 때문에 60MB짜리 작은 받아쓰기 모델을 씁니다. 억양이 강하거나 잡음이 많은 강연은 PC보다 자주 틀립니다.</li>
     </ul>
   </section>
 
-  <section class="chapter">
-    <h2>만든 순서</h2>
-    <ol class="timeline full">
-      <li><time>11-13</time><span>영상감지 한 번으로 받아쓰기, 번역, 알림까지 이어지는 첫 버전</span></li>
-      <li><time>11-13</time><span>PC 없이 휴대폰만으로 실행. 모델을 574MB에서 60MB로 줄이고, 자막이 앞뒤로 밀리던 번역을 한 줄씩 번역하도록 고침</span></li>
-      <li><time>11-14</time><span>보관함과 주제별 재생목록</span></li>
-      <li><time>11-14</time><span>0.1.7: 승인된 새 버전이 나오면 앱 안에서 알림</span></li>
-      <li><time>11-15</time><span>같은 Google 계정의 PC와 휴대폰이 서버 없이 보관함 공유</span></li>
-      <li><time>11-16</time><span>오디오를 조각으로 받아 30분 걸리던 다운로드가 6초로</span></li>
-      <li><time>11-17</time><span>0.1.8: 휴대폰 자막 준비 80분에서 41분으로, 보관함 개편</span></li>
-    </ol>
-  </section>
-
   <section class="chapter end-cta">
-    <h2>설치는 파일 하나</h2>
-    <p class="lead">Android는 APK를, Windows는 설치 파일을 받아 실행하면 됩니다. 이미 0.1.7을 쓰고 있다면 앱이 새 버전을 알려 줍니다.</p>
+    <h2>0.1.8 내려받기</h2>
     <div class="go">
-      <a class="btn primary" href="overview/install.html">설치 방법 보기</a>
-      <a class="btn" href="overview/guide.html">사용법 보기</a>
-      <a class="btn" href="https://github.com/LittleBitAI/video-translate-overlay-2">GitHub에서 소스 보기</a>
+      <a class="btn primary" href="https://github.com/LittleBitAI/video-translate-overlay-2/releases/download/v0.1.8/video-translate-overlay-0.1.8-arm64.apk">Android APK 받기</a>
+      <a class="btn" href="https://github.com/LittleBitAI/video-translate-overlay-2/releases/download/v0.1.8/video-translate-overlay-0.1.8-windows-x64-setup.exe">Windows 설치 파일 받기</a>
     </div>
+    <p class="cap">처음이라면 <a href="overview/install.html">설치 방법</a>과 <a href="overview/guide.html">사용법</a>을 보세요. 버전별 변경 내용은 <a href="https://github.com/LittleBitAI/video-translate-overlay-2/releases">GitHub Releases</a>에 있습니다.</p>
   </section>
 
   <footer class="foot">한 사람이 매일 쓰면서 고치는 앱입니다. 질문이나 버그는 <a href="https://github.com/LittleBitAI/video-translate-overlay-2/issues">GitHub 이슈</a>로 남겨 주세요.</footer>
