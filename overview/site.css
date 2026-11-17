@@ -234,3 +234,20 @@ figure.phone{width:100%}
 @media (max-width:600px){
   .hero .go .btn,.end-cta .go .btn{flex:1 1 100%;justify-content:center}
 }
+
+/* 숫자로 보면 — 바꾸기 전 그대로: 판 폭을 세 칸으로 채우고 원래 간격, 측정 출처는 아래 한 줄.
+   다시 볼 때는 — 그 세 칸과 같은 선에 놓는다. 글은 앞 두 칸, 휴대폰 캡처는 셋째 칸 선에서 원래 크기·비율 그대로. */
+@media (min-width:961px){
+
+  .stats,.media{grid-template-columns:repeat(3,minmax(0,1fr));column-gap:var(--gap3)}
+
+  .media > .txt{grid-column:1 / span 2}
+  .media > figure.phone{grid-column:3 / span 1;width:min(16rem,100%)}
+}
+.stats li{display:grid;gap:.5rem;align-content:start;padding-top:1.25rem;border-top:2px solid var(--ink)}
+.src{margin-top:1.75rem}
+.stats{list-style:none;margin:0;padding:0}
+.chapter:has(> .stats) > h2{max-width:44rem}
+:root{--gap3:clamp(2.5rem,4.5vw,5.5rem)}
+.stats{row-gap:var(--gap3)}
+@media (max-width:960px){.stats{row-gap:2.25rem}}

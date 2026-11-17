@@ -135,11 +135,14 @@ screen, or the install page.
   Every block starts on one of its four lines; no section invents its own
   split. Reading text spans two columns (`--half`), a portrait phone capture
   takes one column (the third beside text), a landscape capture takes two or
-  three. The four steps take one column each; the three numbers take columns
-  one to three and their measurement source the fourth. Below 960px the grid
-  becomes one column; below 600px the download buttons go full width.
-  Check in a browser: at 1440 and 1100px every grid child's left edge is
-  on a column line, and nothing overflows at 1440 or 400px.
+  three. The four steps take one column each. Two sections are the exception,
+  chosen by the user on 2026-11-17: the three numbers fill the page in three
+  equal columns with the measurement source as one line below them, and the
+  library section below uses the same three columns, text across the first
+  two and the 16rem phone capture starting on the third (the 41분 line). Below
+  960px every grid becomes one column; below 600px the download buttons go
+  full width. Check in a browser: at 1440 and 1100px every grid child's left
+  edge is on a column line of its grid, and nothing overflows at 1440 or 400px.
 - Only real captures are used, uncropped and at their own aspect ratio. A
   portrait phone screen is never cut into a landscape strip. Nothing is drawn
   to look like the app.
