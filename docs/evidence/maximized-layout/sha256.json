@@ -1,8 +1,8 @@
 {
-  "README.md": "57d8c98f6a3d38032c22796c62cf7f3212c2f55ab3720a24a297d0bcd0e4b33e",
+  "README.md": "bc777eb2162dfb9fde9523645d9ab74bc6e48d73d3dddedbd21d9e25d57bc5ac",
   "baseline/browser.json": "59d97c9f7baa8a4885692f129d7e3459a1f599f2a0f7454e3778d763564f3c9e",
-  "baseline/windows.json": "e2a16cb8a430c4dc88280aa924b744b1089b42ce08b8ec81ef4a39dc0883b3ac",
-  "browser-flat-checks.log": "c759c3f1abb429fad8f91a79ff6b9fee7f3148c70a4019a23757c57e36f1aa8c",
+  "baseline/windows.json": "701b48701b93b1a81d3eb7b1e2b2199d41820f7d80c0bf2996b2d8d5e19a6699",
+  "browser-flat-checks.log": "0f3138438bcb291de0f653883aa676df72fbde4b9410ee4f28186f56584626ce",
   "browser/1280x720-key-confirmation.png": "e9c487ed3130140ff7bccee5252d5fbd747ca938b5d46ffee5e65ac6514cd8c9",
   "browser/1280x720-library.png": "c1e77ebd177c1d329a60e3cfe8a874cc2495b47b3c9b80563543e9639096d8ee",
   "browser/1280x720-settings.png": "2b02e867a7fce5b3b574809980be0602e10e77da89281ce8607e1e57a480aaf1",
@@ -23,14 +23,14 @@
   "browser/384x854.json": "6243cc2bbb6a8294fb2c27727e498fe67c2b1cc9578a9497ea98fdf531107154",
   "browser/768x720-key-confirmation.png": "4d274cace93842b7dbba7ecc5dbc89cbceb4cb7be2fb8b68ea602fcf58822c86",
   "browser/key-confirmation.json": "bf2345b45e11ee85c82aff8ccfd5942b1628d80970e303807ba56d5501ddd8fb",
-  "confirmation-checks.log": "5478a0cf64d771a2eef3efe90ffc18f40b2163421fd8b95900210e7aee6eb618",
-  "final-focused-tests.log": "d052f3b8a2274a6768413b5a0efb278de547168240c41f2fee4229cebd161100",
+  "confirmation-checks.log": "ea0e1a475972e6848f83a5833c7c43c6ddcd98675abeab63f0ebf422eb95a3ff",
+  "final-focused-tests.log": "60f5f7b4d415c91732857c1d454552c4f23e70c7f56a984d0e5291cec8229070",
   "iterations/flat-first.json": "72a6811f2f0f319670c257257d6abd284e9258f4a40cf07795c361bc71c6d96c",
   "iterations/flat-first.png": "213da7c7631d5bbe5da04193a4c4d0ea2e3764554215ec2b044db75b2741d6b3",
   "iterations/flat-refined.json": "afdfd12c077432fa1e245fbd362d29c2d29636a35a0d9d32c85bd9d883a88718",
   "iterations/rejected-cards.png": "f17af51f8763e44509d39eedb0270f904ed3c69cf47b6656a2f157b4c97386c0",
-  "native-flat-checks.log": "d24e619170a4ec1109379763e508462c51e90f0ca7dd34757a1ed85500ab3a7a",
-  "windows-flat-build.log": "ca4ff9acb1a2abdbd8f80fb6e4c6928854b4211e0fb64c8d4ef4160218a13cc7",
+  "native-flat-checks.log": "67ed9e61db3445bc32aa036df0854939fd71c4c78538f5e1903706f8d56c7064",
+  "windows-flat-build.log": "62d5bf19272d8d2a189afd95d17c673d94e81f5ad52878edee11d22b3679a622",
   "windows/0-normal-library.png": "a4cb43f349b5a99a9f74394d9b6cd665daa4e46e7fcb5f9fd78bd7f2bc3af570",
   "windows/0-normal-settings.png": "89c118459122f6d242895487f4a47c82b57e8a1e240f5285a6acb80b367f88c7",
   "windows/0-normal-video.png": "d237f2f65f073fdb61edf37b70b55b361a105469d347b207494235aff3e9d8e0",
@@ -40,5 +40,5 @@
   "windows/2-normal-library.png": "0806b7697971a8964784334e396221d18fe11f3da3105f208dd6a0984eba1263",
   "windows/2-normal-settings.png": "89c118459122f6d242895487f4a47c82b57e8a1e240f5285a6acb80b367f88c7",
   "windows/2-normal-video.png": "d237f2f65f073fdb61edf37b70b55b361a105469d347b207494235aff3e9d8e0",
-  "windows/measurements.json": "4ec265a86c9ca3cb7db12d2b3dee7234d181c04717b2e3d5ef198e3cc1cb3886"
+  "windows/measurements.json": "3f179cdfdd3401901c5400dc8d64ca098bc8b92a713125aff16cf6ba94455edc"
 }

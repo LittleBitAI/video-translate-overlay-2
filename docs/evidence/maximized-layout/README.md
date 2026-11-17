@@ -112,4 +112,5 @@ uses 36 entries so the wider grid still produces a genuinely scrolled page.
 State, account, deletion, subtitle and update checks continue to guard current
 behavior. No whole-directory pytest or complete repository gate was run here.
 
-`sha256.json` pins the retained screenshots, measurements and focused logs.
+`sha256.json` pins the committed screenshots, measurements and focused logs;
+text hashes use the repository's LF line endings.
