@@ -50,24 +50,6 @@
   .video-stage {
     max-width: calc((100dvh - 6rem) * 16 / 9);
   }
-  .settings-row {
-    display: grid;
-    grid-template-columns: minmax(12rem, 24rem) minmax(22rem, 1fr);
-    gap: 24px;
-    max-width: calc(24rem + 24px + 42rem);
-    padding: 24px 0;
-    border-radius: 0;
-    background: transparent;
-  }
-  .settings-row + .settings-row {
-    border-block-start: 1px solid color-mix(in srgb, var(--color-ink) 10%, transparent);
-  }
-  .settings-row > div {
-    min-width: 0;
-  }
-  .settings-row > div:last-child {
-    max-width: 42rem;
-  }
 }
 
 /* A bar for work with no percent to show: a segment that runs across the track. */

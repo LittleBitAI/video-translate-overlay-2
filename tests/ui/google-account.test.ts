@@ -20,6 +20,8 @@ test.each([384, 1280])('privacy access at %i px uses a fixed native opener and k
   const root = open('/preferences');
   await vi.waitFor(() => expect(button(root, '개인정보처리방침')).toBeTruthy());
   expect(button(root, '개인정보처리방침').getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+  expect(button(root, '개인정보처리방침').closest('footer')).not.toBeNull();
+  expect($(root, 'section[aria-label="Google 앱 계정"]')!.contains(button(root, '개인정보처리방침'))).toBe(false);
   button(root, '개인정보처리방침').click();
   await vi.waitFor(() => expect(text(root)).toContain('개인정보처리방침을 열지 못했습니다'));
   expect(text(root)).not.toContain('private platform');

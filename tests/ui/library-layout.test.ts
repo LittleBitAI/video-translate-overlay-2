@@ -267,19 +267,25 @@ test.each([[1280, 720], [1920, 1080], [2560, 1440], [768, 720], [384, 854]])('at
       if (path === '/preferences') {
         const account = $(root, 'section[aria-label="Google 앱 계정"]')!.getBoundingClientRect();
         const key = $(root, '#api-key')!.closest('section')!.getBoundingClientRect();
-        expect(account.left).toBe(16);
-        expect(key.top).toBeGreaterThanOrEqual(account.bottom);
-        const sections = $$(root, '.settings-row');
-        const bodyLeft = sections[0].lastElementChild!.getBoundingClientRect().left;
-        for (const section of sections) {
-          expect(section.querySelector('h2')!.getBoundingClientRect().left).toBe(16);
-          expect(section.lastElementChild!.getBoundingClientRect().left).toBe(bodyLeft);
-          expect(section.lastElementChild!.getBoundingClientRect().width).toBeLessThanOrEqual(672);
-          expect(getComputedStyle(section).backgroundColor).toBe('rgba(0, 0, 0, 0)');
-          expect(getComputedStyle(section).borderRadius).toBe('0px');
+        expect(key.left).toBe(16);
+        expect($(root, '#api-key')!.closest('form')!.getBoundingClientRect().width).toBeLessThanOrEqual(672);
+        if (width >= 1024) {
+          expect(account.top).toBe(key.top);
+          expect(account.left).toBeGreaterThan(key.right);
+          for (const section of $$(root, '.settings-section')) {
+            expect(getComputedStyle(section).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+            expect(getComputedStyle(section).borderRadius).toBe('0px');
+          }
+        } else {
+          expect(account.top).toBeGreaterThan(key.bottom);
         }
-        expect($$(root, 'h2').map(text)).toEqual(['Google 앱 계정', '앱 업데이트', '개인키', '유튜브 로그인']);
       }
+    }
+    if (path === '/preferences') {
+      expect($$(root, 'h2').map(text)).toEqual(['Gemini 개인키', 'Google 앱 계정', '유튜브 로그인', '앱 업데이트']);
+      const footer = $(root, 'main footer')!;
+      expect(footer.getBoundingClientRect().top).toBeGreaterThanOrEqual(Math.max(...$$(root, '.settings-section').map(section => section.getBoundingClientRect().bottom)));
+      expect(text(footer)).toContain('개인정보처리방침');
     }
     expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(width);
   }

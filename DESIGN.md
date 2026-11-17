@@ -61,12 +61,14 @@ separate centered width limits. The library grid uses the available width;
 its 16 rem rail, 13 rem minimum cards and 768 px accordion split stay the same.
 The video stage stays left-aligned at 16:9, growing within the width and the
 height below the menu so the player and its overlay fit together. Desktop
-Settings uses flat horizontal rows: a heading and explanation at the leading
-edge, with status, fields and actions aligned in a shared control column.
-Descriptions grow to 24 rem and controls to 42 rem, separated by 24 px. Quiet
-rules separate rows; there are no desktop card backgrounds or rounded section
-boxes. Below 768 px the existing cards, section order and spacing remain.
-Empty space after the readable settings rows remains empty.
+Settings puts Gemini setup first. From 1024 px its frameless workspace has
+the key form on the leading side and Google app account plus YouTube session
+controls together on the other. Both start at the same top edge, separated
+by one quiet rule and 24 px of inset. The workspace grows to 90 rem; key fields
+stay within 42 rem. Smaller windows stack these tasks in the same reading
+order and retain the existing control behavior. Updates and privacy sit in a
+secondary footer, below the task controls and at the window's bottom when the
+content fits. Extra space remains empty rather than becoming decorative boxes.
 
 Use the existing approved charcoal theater palette C1. Blue identifies actions
 and the selected place; yellow identifies errors, processing and permanent
@@ -105,7 +107,7 @@ confirm sign-out and preserve existing saved data. A signed-in identity alone
 must not appear as an established sync connection. Account responses must match
 the captured account generation as well as the screen generation.
 
-Keep a 44 px privacy-policy control in that same account section, available
+Keep a 44 px privacy-policy control in the Settings footer, available
 before sign-in. Its native action opens only the published policy in the
 platform browser and shows a retryable error without changing account state.
 

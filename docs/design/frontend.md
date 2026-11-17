@@ -29,13 +29,16 @@ the established rail, grid and phone accordion; extra desktop width adds grid
 columns. The video stage keeps its 16:9 ratio and fits the height below the menu
 without changing the overlay's subtitle sizing.
 
-From 768 px, Settings uses flat rows instead of cards: the section heading and
-explanation lead, while status, inputs and actions share a second alignment
-edge. Descriptions grow to 24 rem; controls stay within 42 rem, with 24 px
-between them. Quiet separators end with the readable content instead of
-extending across unused screen space. The key-removal action and its warning
-share a compact desktop row. Below 768 px, the existing cards, section order
-and spacing remain. The approved palette, type scale and navigation are unchanged.
+Settings starts with Gemini setup. From 1024 px, the key form and the grouped
+Google app/YouTube account controls share a top edge in a frameless workspace,
+separated by a quiet vertical rule and 24 px inset. The workspace grows to
+90 rem, while the key form stays within 42 rem. Below 1024 px these tasks stack
+in the same reading order, preserving their existing controls and confirmations.
+The secondary footer holds updates and privacy; when content fits, it sits at
+the window's bottom. Privacy remains available before sign-in and retains the
+fixed native opener and retryable error. The approved palette and shared
+navigation are unchanged. The user rejected the earlier card layout and the
+flat-row revision; those captures are historical, not accepted final designs.
 
 ## 기능을 둔 자리
 
@@ -167,7 +170,7 @@ reopens the video to use that response. It does not start a paid translation.
 The development build's Google app account section is separate from Gemini
 credentials and YouTube sign-in. It shows account identity and native connection
 recovery, confirms sign-out, and preserves local libraries. A 44 px privacy
-control is available before sign-in: native P18 opens only the published policy
+control in the secondary footer is available before sign-in: native P18 opens only the published policy
 in the external browser, while HTTP screens use a normal HTTPS link. Opening it
 does not change the selected account or last-opened video. Failures remain
 retryable without exposing platform diagnostics.
