@@ -111,10 +111,16 @@ whether to install. Success means one of the two download buttons in the first
 screen, or the install page.
 
 - Order of the intro page: claim and downloads with the Windows library capture,
-  the four steps behind 영상감지, three measured numbers with their source, two
-  text-and-phone sections (library, PC and phone sharing), what does not work
-  yet, a dated build log, and the closing install links. Each heading states a
-  user outcome, not a development story.
+  the four steps behind 영상감지, three measured numbers with their source, the
+  library (text beside the Android library capture), PC and phone sharing
+  (conditions as a check list, then the Windows and Android player captures of
+  the same synced subtitle), what does not work yet as plain sentences, and the
+  two download buttons again. Each heading states a user outcome, not a
+  development story. No build log: version history lives in GitHub Releases.
+- Copy must agree with its capture. When a capture shows `자막 없음`, the text
+  explains that state instead of claiming saved subtitles. Body text does not
+  narrate what the capture already shows, and a caption does not repeat the
+  body. A number appears once in the stats and is not restated below.
 - Voice is 합니다체, short sentences, app terms exactly as on screen. App
   button and menu names use the `.ui` chip (sans, 600), never `code`, because
   they are screen words, not code.
