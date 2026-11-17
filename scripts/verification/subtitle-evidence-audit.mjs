@@ -26,7 +26,7 @@ assert.equal(runtime.native.find(state => state.name === 'fullscreen-short').fon
 assert.deepEqual(runtime.browser.map(state => state.viewport), [[1280,720], [1920,1080], [384,854]]);
 for (const owner of [runtime.ownership, runtime.browserOwnership]) {
   assert.equal(owner.ancestry.at(-1).pid, owner.rootPid);
-  assert(owner.listeners.every(address => address === '127.0.0.1'));
+  assert.deepEqual([owner.listeners].flat(), ['127.0.0.1']);
 }
 for (const digest of [runtime.exe.sha256, runtime.browserExe.sha256, runtime.nativeCueDigest]) assert.match(digest, /^[a-f0-9]{64}$/);
 const captures = read('captures.json');
