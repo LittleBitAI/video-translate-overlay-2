@@ -8,6 +8,10 @@ for a 1920×1080 video area. The accepted captures are
 in `captures.json`. These are focused execution checks; the server-owned
 repository gate and final hosted CI have not been run by this session.
 
+The packet above describes the accepted implementation. For the reviewed
+candidate, use the fresh, source-bound packet under "Review round 1" below.
+The original receipt is retained as history and is not current runtime evidence.
+
 ## Player and build
 
 The installed baseline is Windows 0.1.8 at
@@ -118,3 +122,68 @@ The public repository has an active Windows CI workflow, so final verification
 belongs to hosted CI under the server's control. These checks do not claim that
 gate. No release installer, live YouTube session or physical Android device was
 tested; no release was published.
+
+## Review round 1: source-bound runtime and offline evidence
+
+The review refused the original packet because its receipt identified an older
+revision and did not retain a binding to the reviewed `f68351a` candidate. The
+repair changes verification only. The application and existing subtitle tests
+are unchanged from the user's accepted rendering; `review-1/source-binding.json`
+records the compared paths, revisions and empty application/test diff.
+
+The fresh producer is `be8b00b36acd794630d6a3f9d782778d40e9a776`.
+Both Windows and browser executables were rebuilt from that commit. The native
+core, native screens, browser core, browser screens and runtime collector all
+report that same revision in `review-1/runtime.json`. Its environment, executable
+hashes, isolated profile digest and both debugging/server listener ancestries
+are retained alongside seven actual Windows states and three browser viewports.
+The same fullscreen, resize, seek, pause, Korean wrapping, control-clearance and
+unchanged-cue assertions were collected again. Runtime and offline results from
+the original packet are not reused.
+
+`scripts/verification/subtitle-binding.mjs` records a digest of the producer's
+tracked Git tree. It excludes only wiki metadata, this acceptance document and
+the `review-1` output directory. Application code, tests, manifests, locks,
+build scripts, fixture helpers, runtime collectors and the binding/audit scripts
+remain included. The read-only audit recomputes that tree at the producer and
+at the candidate's current HEAD. It refuses missing binding data, altered
+digests and any change to an included input. An evidence-only commit can
+therefore retain results without claiming its executables were restamped.
+The packet does not attempt to contain its own future commit identifier.
+
+The binding regression test rejects the original unbound receipt. A table of
+revision and receipt forms checks acceptance of unchanged inputs and rejection
+of mismatched inputs; a second table checks that executable verification scripts
+and test files remain inside the binding scope. Run it with
+`node --test scripts/verification/subtitle-binding.test.mjs`.
+
+`review-1/focused.json` pins the same producer, exact commands, exit statuses
+and hashes of the retained logs: three binding tests, 43 injected-overlay tests
+and 41 local-screen tests passed. The test cleanup audit retains these checks
+because the binding, renderer geometry and source-clock behavior are distinct
+current regressions; no tests or stale skips were removed.
+
+The first packet-audit attempt exposed a reader error: PowerShell reported one
+listener as a string, while the audit expected an array. That failed attempt is
+preserved under `review-1/attempt-1`, including its source identity and failure
+record. The reader now normalizes both forms before checking the single allowed
+loopback address. Final builds, focused tests and runtime captures were produced
+again after that last verifier change.
+
+Run `node scripts/verification/subtitle-evidence-audit.mjs` on the candidate to
+check the source binding, runtime producer identities, retained geometry,
+listener ownership, ten capture hashes and all focused log hashes. Its output
+names both the candidate HEAD and the producer revision. The actual audit result
+is retained in `review-1/audit.log`.
+
+For a fresh execution, the earlier reproduction steps still apply. Set
+`SUBTITLE_OUTPUT=artifacts/subtitle-scaling-review-1-final` for both the native
+launcher and runtime collector and seed the browser profile under that same
+directory. A new output directory avoids overwriting a previous native profile.
+
+`review-1/source-binding.json` distinguishes reused user acceptance from fresh
+execution evidence and the server owner's earlier gate report at `f68351a`.
+The repair does not claim that earlier gate for the repaired candidate and does
+not dispatch final verification. The server owns the next checks and final
+hosted CI. Live YouTube, a physical phone, installer packaging and release
+publication remain outside these focused runs.

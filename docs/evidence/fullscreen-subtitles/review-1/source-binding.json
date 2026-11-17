@@ -1,0 +1,36 @@
+{
+  "reviewedHead": "f68351a35fb9baf9df48debe1634e19f954807cc",
+  "producerHead": "be8b00b36acd794630d6a3f9d782778d40e9a776",
+  "runtimeReuse": false,
+  "offlineReuse": false,
+  "acceptanceReuse": {
+    "sourceApplicationHead": "aedada2c3e6c1aef9470359ca59c18a9b126b2d9",
+    "acceptedAt": "2026-11-17",
+    "decision": "Accept readability (Recommended)",
+    "comparedPaths": [
+      "src",
+      "src-tauri",
+      "tests",
+      "Cargo.toml",
+      "Cargo.lock",
+      "package.json",
+      "package-lock.json",
+      "vite.config.ts",
+      "vite.overlay.config.ts",
+      "vitest.config.ts",
+      "vitest.ui.config.ts"
+    ],
+    "changedPaths": [],
+    "reason": "Application and existing subtitle tests are unchanged; only verification producers and evidence binding were repaired."
+  },
+  "ownerReports": [
+    {
+      "owner": "wiki-agent server",
+      "revision": "f68351a35fb9baf9df48debe1634e19f954807cc",
+      "result": "gate passed",
+      "source": "User message before PR summary",
+      "reusedForRepair": false
+    }
+  ],
+  "finalVerification": "Pending server-owned hosted CI; no final verification dispatched or retried by implementation."
+}

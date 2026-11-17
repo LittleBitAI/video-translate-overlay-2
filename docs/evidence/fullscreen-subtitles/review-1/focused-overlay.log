@@ -1,0 +1,37 @@
+오전 12:13:05 [vite-plugin-svelte] no Svelte config found at C:/Users/dasdk/PycharmProjects/video-translate-overlay-2 - using default configuration.
+
+ RUN  v5.1.0 C:/Users/dasdk/PycharmProjects/video-translate-overlay-2
+
+ ✓ |chromium| tests/overlay/placement.test.ts (4 tests) 320ms
+ ✓ |chromium| tests/overlay/trusted_types.test.ts (1 test) 471ms
+   ✓ video detection and sign-in controls work under YouTube-style Trusted Types enforcement 470ms
+ ✓ |chromium| tests/overlay/hidden_mount.test.ts (1 test) 2249ms
+   ✓ test_an_overlay_mounted_while_hidden_loads_the_existing_job_when_the_page_is_shown 2248ms
+ ✓ |chromium| tests/overlay/frames.test.ts (1 test) 3069ms
+   ✓ test_a_video_in_an_iframe_gets_the_overlay 3068ms
+ ✓ |chromium| tests/overlay/overlay.test.ts (36 tests) 32048ms
+   ✓ the downloading stage names the speech model while it is fetched, then the audio 1044ms
+   ✓ deleting another video preserves cues through a failed refresh: ready 1051ms
+   ✓ deleting another video preserves cues through a failed refresh: failed 1053ms
+   ✓ deletion before the first job response cannot revive that video 1032ms
+   ✓ deletion after consent still rejects a late creation response 1043ms
+   ✓ confirmed recreation owns the attempt while waiting for media across interval polling 1215ms
+   ✓ confirmed recreation owns the attempt while waiting for advertisement across interval polling 1377ms
+   ✓ confirmed recreation owns the attempt while waiting for advertisement across visibility polling 374ms
+   ✓ confirmed recreation owns the attempt while waiting for creation across interval polling 1221ms
+   ✓ confirmed recreation owns the attempt while waiting for retranslation across interval polling 1163ms
+   ✓ a failed explicit attempt releases polling and allows retry: media 1121ms
+   ✓ a failed explicit attempt releases polling and allows retry: request 1057ms
+   ✓ a failed explicit attempt releases polling and allows retry: refusal 1126ms
+   ✓ a visible saved overlay notices deletion from another screen without a native event 1055ms
+   ✓ completed subtitles remain available after retranslation failure: retry 3125ms
+   ✓ test_overlay_follows_seek_and_pause 312ms
+   ✓ test_overlay_fits_phone_and_desktop_screens 12169ms
+   ✓ test_subtitles_hide_during_ad_and_return 636ms
+
+ Test Files  5 passed (5)
+      Tests  43 passed (43)
+   Start at  00:13:05
+   Duration  33.02s (tests 95%, worker 5%)
+
+JUNIT report written to C:/Users/dasdk/PycharmProjects/video-translate-overlay-2/target/vitest/junit.xml

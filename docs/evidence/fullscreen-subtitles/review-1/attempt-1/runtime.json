@@ -1,0 +1,445 @@
+{
+  "head": "aafbc96585292a104b3c9e5d78dda66d403ece90",
+  "sourceBinding": {
+    "head": "aafbc96585292a104b3c9e5d78dda66d403ece90",
+    "inputTreeSha256": "84bfab9add47704ac9dca9fee625a72c3f4b5911dc812f8812f12e5dd6b91c1c",
+    "exclusions": [
+      ".wiki/",
+      "docs/evidence/fullscreen-subtitles/review-1/",
+      "docs/evidence/fullscreen-subtitles/README.md"
+    ]
+  },
+  "at": "2026-11-17T15:09:38.758Z",
+  "environment": {
+    "os": "Windows 11 Home",
+    "release": "10.0.26200",
+    "node": "v24.18.0"
+  },
+  "native": [
+    {
+      "name": "restored-short",
+      "viewport": [
+        1280,
+        800
+      ],
+      "image": {
+        "left": 0,
+        "top": 40,
+        "width": 1280,
+        "height": 720
+      },
+      "subtitle": {
+        "x": 401.09375,
+        "y": 618.234375,
+        "width": 477.8125,
+        "height": 61.765625,
+        "top": 618.234375,
+        "right": 878.90625,
+        "bottom": 680,
+        "left": 401.09375
+      },
+      "text": "저장된 어텐션 자막입니다.",
+      "font": 38.4,
+      "scroll": [
+        478,
+        478
+      ],
+      "time": 0.5,
+      "paused": true,
+      "duration": 3,
+      "fullscreen": false,
+      "overflow": false
+    },
+    {
+      "name": "fullscreen-short",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "image": {
+        "left": 0,
+        "top": 0,
+        "width": 1920,
+        "height": 1080
+      },
+      "subtitle": {
+        "x": 606.640625,
+        "y": 875.375,
+        "width": 706.703125,
+        "height": 88.625,
+        "top": 875.375,
+        "right": 1313.34375,
+        "bottom": 964,
+        "left": 606.640625
+      },
+      "text": "저장된 어텐션 자막입니다.",
+      "font": 57.6,
+      "scroll": [
+        707,
+        707
+      ],
+      "time": 0.5,
+      "paused": true,
+      "duration": 3,
+      "fullscreen": true,
+      "overflow": false
+    },
+    {
+      "name": "fullscreen-long",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "image": {
+        "left": 0,
+        "top": 0,
+        "width": 1920,
+        "height": 1080
+      },
+      "subtitle": {
+        "x": 8,
+        "y": 633.5,
+        "width": 1904,
+        "height": 330.5,
+        "top": 633.5,
+        "right": 1912,
+        "bottom": 964,
+        "left": 8
+      },
+      "text": "이 강의에서는 트랜스포머의 어텐션 메커니즘이 긴 문맥에서 어떻게 계산량을 줄이는지, 그리고 그 과정에서 생기는 근사 오차를 어떻게 다루는지 차례대로 설명합니다.\n두 번째 줄도 영상 안에 표시합니다.",
+      "font": 57.6,
+      "scroll": [
+        1904,
+        1904
+      ],
+      "time": 1.5,
+      "paused": true,
+      "duration": 3,
+      "fullscreen": true,
+      "overflow": false
+    },
+    {
+      "name": "seek-back",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "image": {
+        "left": 0,
+        "top": 0,
+        "width": 1920,
+        "height": 1080
+      },
+      "subtitle": {
+        "x": 606.640625,
+        "y": 875.375,
+        "width": 706.703125,
+        "height": 88.625,
+        "top": 875.375,
+        "right": 1313.34375,
+        "bottom": 964,
+        "left": 606.640625
+      },
+      "text": "저장된 어텐션 자막입니다.",
+      "font": 57.6,
+      "scroll": [
+        707,
+        707
+      ],
+      "time": 0.6,
+      "paused": true,
+      "duration": 3,
+      "fullscreen": true,
+      "overflow": false
+    },
+    {
+      "name": "letterboxed-long",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "image": {
+        "left": 192,
+        "top": 0,
+        "width": 1536,
+        "height": 864
+      },
+      "subtitle": {
+        "x": 200,
+        "y": 503.609375,
+        "width": 1520,
+        "height": 266,
+        "top": 503.609375,
+        "right": 1720,
+        "bottom": 769.609375,
+        "left": 200
+      },
+      "text": "이 강의에서는 트랜스포머의 어텐션 메커니즘이 긴 문맥에서 어떻게 계산량을 줄이는지, 그리고 그 과정에서 생기는 근사 오차를 어떻게 다루는지 차례대로 설명합니다.\n두 번째 줄도 영상 안에 표시합니다.",
+      "font": 46.08,
+      "scroll": [
+        1520,
+        1520
+      ],
+      "time": 1.6,
+      "paused": true,
+      "duration": 3,
+      "fullscreen": true,
+      "overflow": false
+    },
+    {
+      "name": "exit-long",
+      "viewport": [
+        1280,
+        800
+      ],
+      "image": {
+        "left": 0,
+        "top": 40,
+        "width": 1280,
+        "height": 720
+      },
+      "subtitle": {
+        "x": 8,
+        "y": 456.9375,
+        "width": 1264,
+        "height": 223.0625,
+        "top": 456.9375,
+        "right": 1272,
+        "bottom": 680,
+        "left": 8
+      },
+      "text": "이 강의에서는 트랜스포머의 어텐션 메커니즘이 긴 문맥에서 어떻게 계산량을 줄이는지, 그리고 그 과정에서 생기는 근사 오차를 어떻게 다루는지 차례대로 설명합니다.\n두 번째 줄도 영상 안에 표시합니다.",
+      "font": 38.4,
+      "scroll": [
+        1264,
+        1264
+      ],
+      "time": 1.6,
+      "paused": true,
+      "duration": 3,
+      "fullscreen": false,
+      "overflow": false
+    },
+    {
+      "name": "resized-long",
+      "viewport": [
+        960,
+        600
+      ],
+      "image": {
+        "left": 0,
+        "top": 30,
+        "width": 960,
+        "height": 540
+      },
+      "subtitle": {
+        "x": 8,
+        "y": 338.75,
+        "width": 944,
+        "height": 169.25,
+        "top": 338.75,
+        "right": 952,
+        "bottom": 508,
+        "left": 8
+      },
+      "text": "이 강의에서는 트랜스포머의 어텐션 메커니즘이 긴 문맥에서 어떻게 계산량을 줄이는지, 그리고 그 과정에서 생기는 근사 오차를 어떻게 다루는지 차례대로 설명합니다.\n두 번째 줄도 영상 안에 표시합니다.",
+      "font": 28.8,
+      "scroll": [
+        944,
+        944
+      ],
+      "time": 1.6,
+      "paused": true,
+      "duration": 3,
+      "fullscreen": false,
+      "overflow": false
+    }
+  ],
+  "browser": [
+    {
+      "name": "1280x720",
+      "viewport": [
+        1280,
+        720
+      ],
+      "image": {
+        "left": 16.008680555555543,
+        "top": 77,
+        "width": 1114.638888888889,
+        "height": 626.984375
+      },
+      "subtitle": {
+        "x": 378.75,
+        "y": 578.484375,
+        "width": 389.125,
+        "height": 54.8125,
+        "top": 578.484375,
+        "right": 767.875,
+        "bottom": 633.296875,
+        "left": 378.75
+      },
+      "text": "다른 영상의 자막입니다.",
+      "font": 33.4392,
+      "scroll": [
+        389,
+        389
+      ],
+      "time": 0.5,
+      "paused": true,
+      "duration": 3,
+      "fullscreen": false,
+      "overflow": false
+    },
+    {
+      "name": "1920x1080",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "image": {
+        "left": 16.00868055555543,
+        "top": 76.99999999999994,
+        "width": 1754.6388888888891,
+        "height": 986.9843750000001
+      },
+      "subtitle": {
+        "x": 593.890625,
+        "y": 875.609375,
+        "width": 598.828125,
+        "height": 81.6875,
+        "top": 875.609375,
+        "right": 1192.71875,
+        "bottom": 957.296875,
+        "left": 593.890625
+      },
+      "text": "다른 영상의 자막입니다.",
+      "font": 52.6392,
+      "scroll": [
+        599,
+        599
+      ],
+      "time": 0.5,
+      "paused": true,
+      "duration": 3,
+      "fullscreen": false,
+      "overflow": false
+    },
+    {
+      "name": "384x854",
+      "viewport": [
+        384,
+        854
+      ],
+      "image": {
+        "left": 8,
+        "top": 69.00000000000001,
+        "width": 368,
+        "height": 206.99999999999997
+      },
+      "subtitle": {
+        "x": 103.546875,
+        "y": 192.40625,
+        "width": 176.90625,
+        "height": 27.59375,
+        "top": 192.40625,
+        "right": 280.453125,
+        "bottom": 220,
+        "left": 103.546875
+      },
+      "text": "다른 영상의 자막입니다.",
+      "font": 14,
+      "scroll": [
+        177,
+        177
+      ],
+      "time": 0.5,
+      "paused": true,
+      "duration": 3,
+      "fullscreen": false,
+      "overflow": false
+    }
+  ],
+  "identity": {
+    "head": "aafbc96585292a104b3c9e5d78dda66d403ece90",
+    "profile": "170c1eacdaab22fd8c3a1b66ceba0ac7dc010cccb2809a8ae35071f79807c9f4",
+    "screen": "aafbc96585292a104b3c9e5d78dda66d403ece90"
+  },
+  "exe": {
+    "sha256": "99622379223253f8bb25208d8df232735bca44190c55a9812df638fb7b972402"
+  },
+  "ownership": {
+    "ancestry": [
+      {
+        "command": "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe\" --embedded-browser-webview=1 --webview-exe-name=video-translate-overlay.exe --webview-exe-version=0.1.8 --user-data-dir=\"C:\\Users\\dasdk\\PycharmProjects\\video-translate-overlay-2\\artifacts\\subtitle-scaling-review-1\\windows-final\\profile\\webview\\EBWebView\" --noerrdialogs --embedded-browser-webview-dpi-awareness=2 --autoplay-policy=no-user-gesture-required --disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --remote-debugging-address=127.0.0.1 --remote-debugging-port=9251 --lang=ko-KR --mojo-named-platform-channel-pipe=33736.23972.9125745958111715649 /pfhostedapp:25cef50cae6df5aa8b1bfe79b87d7f0f46e44a7e",
+        "created": "2026-11-17T15:09:07.4930450Z",
+        "pid": 30448,
+        "image": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe",
+        "parent": 33736
+      },
+      {
+        "command": "C:\\Users\\dasdk\\PycharmProjects\\video-translate-overlay-2\\target\\debug\\video-translate-overlay.exe",
+        "created": "2026-11-17T15:09:06.6129230Z",
+        "pid": 33736,
+        "image": "C:\\Users\\dasdk\\PycharmProjects\\video-translate-overlay-2\\target\\debug\\video-translate-overlay.exe",
+        "parent": 28648
+      }
+    ],
+    "listenerVersion": null,
+    "created": "2026-11-17T15:09:06.6129230Z",
+    "pid": 33736,
+    "rootPid": 33736,
+    "image": "C:\\Users\\dasdk\\PycharmProjects\\video-translate-overlay-2\\target\\debug\\video-translate-overlay.exe",
+    "port": 9251,
+    "listeners": "127.0.0.1"
+  },
+  "webview": "157.0.4341.46",
+  "restoredWindow": {
+    "geometry": [
+      0,
+      0,
+      1296,
+      839
+    ],
+    "pid": 33736,
+    "hwnd": 2689348,
+    "state": "Normal"
+  },
+  "resizedWindow": {
+    "pid": 33736,
+    "geometry": [
+      0,
+      0,
+      976,
+      639
+    ],
+    "state": "Normal",
+    "hwnd": 2689348
+  },
+  "nativeCueDigest": "6b8536b72f7e282156f9999155df69b246f7dc53ff5d9003df14f6c780f28696",
+  "browserCore": {
+    "head": "aafbc96585292a104b3c9e5d78dda66d403ece90",
+    "pid": 25828
+  },
+  "browserExe": {
+    "sha256": "9a32c9eb609a4cb0c046698ae32afc4aa5b17b130bb6812c5738a8260bacbca3"
+  },
+  "browserOwnership": {
+    "created": "2026-11-17T15:09:06.2074530Z",
+    "ancestry": [
+      {
+        "created": "2026-11-17T15:09:06.2074530Z",
+        "image": "C:\\Users\\dasdk\\PycharmProjects\\video-translate-overlay-2\\target\\debug\\vto-web.exe",
+        "command": "\"C:\\Users\\dasdk\\PycharmProjects\\video-translate-overlay-2\\target\\debug\\vto-web.exe\" --stand-ins",
+        "pid": 25828,
+        "parent": 20920
+      }
+    ],
+    "image": "C:\\Users\\dasdk\\PycharmProjects\\video-translate-overlay-2\\target\\debug\\vto-web.exe",
+    "rootPid": 25828,
+    "listeners": "127.0.0.1",
+    "port": 8157,
+    "listenerVersion": null,
+    "pid": 25828
+  },
+  "browserScreen": "aafbc96585292a104b3c9e5d78dda66d403ece90"
+}

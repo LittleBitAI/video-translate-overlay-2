@@ -1,0 +1,10 @@
+{
+  "nativeExited": true,
+  "remainingListeners": 0,
+  "nativeProcess": 27380,
+  "ports": [
+    8157,
+    8159,
+    9251
+  ]
+}
