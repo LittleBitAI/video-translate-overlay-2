@@ -132,65 +132,69 @@
   onDestroy(() => generation++);
 </script>
 
-<section class="rounded-lg bg-ink/5 p-4 sm:p-6" aria-label="Google 앱 계정" aria-busy={loading || sending}>
-  <h2 class="text-lg font-semibold">Google 앱 계정</h2>
-  <p class="mt-1 text-sm text-ink/70">기기간 연결에 사용할 계정입니다. 유튜브 로그인과는 별개이며, Gemini 개인키와 쿠키를 동기화하지 않습니다.</p>
-  {#if !native || account?.state === 'unsupported'}
-    <p class="mt-2 text-sm text-ink/70">Windows 또는 Android 앱에서 Google 계정을 연결해 주세요.</p>
-  {:else if loading}
-    <p class="mt-2 text-sm text-ink/70" role="status">Google 계정 확인 중</p>
-  {:else}
-    {#if account?.state === 'signed_in'}
-      <p class="mt-2 break-words text-base" role="status">연결한 Google 계정: <bdi>{account.email}</bdi></p>
-      {#if account.connection && connectionText[account.connection.state]}
-        <p class="mt-2 text-sm text-ink/70" role="status">{connectionText[account.connection.state]}</p>
-        {#if account.connection.state === 'authentication_required'}
-          <button type="button" class="{outline} mt-4" disabled={sending || needsReload} onclick={() => change('sign-in')}>Google 로그인 갱신</button>
-        {/if}
-      {:else if !account.sync_ready}
-        <p class="mt-1 text-sm text-ink/70">Google 계정은 연결됐습니다. 기기간 동기화는 아직 연결되지 않았습니다.</p>
-      {/if}
-    {:else if account?.state === 'signing_in'}
-      <p class="mt-2 text-base" role="status">Google 화면에서 로그인을 완료해 주세요.</p>
-    {:else if account?.state === 'loading'}
-      <p class="mt-2 text-sm text-ink/70" role="status">저장한 Google 계정을 확인하는 중입니다.</p>
-    {:else if account?.state === 'expired'}
-      <p class="mt-2 text-sm text-accent" role="status">기기의 Google 연결이 만료됐습니다. 다시 로그인해 주세요. 이 계정의 저장한 보관함은 계속 열 수 있습니다.</p>
-    {:else if account?.error === 'Google Desktop registration is missing or invalid'}
-      <p class="mt-2 text-sm text-accent" role="status">앱 제공자가 Google 로그인 등록 정보를 수정해야 합니다. 수정된 앱에서 다시 시도해 주세요.</p>
-    {:else if account?.state === 'unavailable' || account?.error}
-      <p class="mt-2 text-sm text-accent" role="status">Google 로그인을 완료하지 못했습니다. 계정과 네트워크를 확인한 뒤 다시 시도해 주세요.</p>
-    {:else if account}
-      <p class="mt-2 text-sm text-ink/70" role="status">연결한 Google 계정이 없습니다.</p>
-    {/if}
-
-    {#if failure}
-      <p class="mt-2 text-sm text-accent" role="alert">{failure}</p>
-    {/if}
-    {#if needsReload}
-      <button type="button" class="{outline} mt-4" disabled={sending} onclick={load}>계정 상태 다시 불러오기</button>
-    {:else if account && !['loading', 'unsupported'].includes(account.state)}
-      {#if account.state === 'signing_in'}
-        <button type="button" class="{outline} mt-4" disabled={sending} onclick={() => change('sign-out')}>Google 로그인 취소</button>
-      {:else if account.state !== 'signed_in'}
-        <button type="button" class="{outline} mt-4" disabled={sending} onclick={() => change('sign-in')}>Google 계정으로 로그인</button>
-      {:else if confirming}
-        <div class="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-accent/60 p-2" role="alertdialog" aria-label="Google 계정 로그아웃 확인">
-          <p class="min-w-0 flex-1 text-sm">이 계정의 연결을 중지할까요? 저장한 데이터와 유튜브 로그인은 유지됩니다.</p>
-          <button type="button" class={outline} disabled={sending} onclick={() => change('sign-out')}>Google 로그아웃 확인</button>
-          <button type="button" class={outline} disabled={sending} onclick={() => confirming = false}>그만두기</button>
-        </div>
-      {:else}
-        <button type="button" class="{outline} mt-4" disabled={sending} onclick={() => confirming = true}>Google 계정 로그아웃</button>
-      {/if}
-    {/if}
-  {/if}
-  <div class="mt-4">
-    {#if native}
-      <button type="button" class={outline} disabled={privacyOpening} onclick={openPrivacy}>개인정보처리방침</button>
+<section class="settings-row rounded-lg bg-ink/5 p-4 sm:p-6" aria-label="Google 앱 계정" aria-busy={loading || sending}>
+  <div>
+    <h2 class="text-lg font-semibold">Google 앱 계정</h2>
+    <p class="mt-1 text-sm text-ink/70">기기간 연결에 사용할 계정입니다. 유튜브 로그인과는 별개이며, Gemini 개인키와 쿠키를 동기화하지 않습니다.</p>
+  </div>
+  <div>
+    {#if !native || account?.state === 'unsupported'}
+      <p class="mt-2 text-sm text-ink/70">Windows 또는 Android 앱에서 Google 계정을 연결해 주세요.</p>
+    {:else if loading}
+      <p class="mt-2 text-sm text-ink/70" role="status">Google 계정 확인 중</p>
     {:else}
-      <a class="inline-flex min-h-11 items-center text-primary underline" href="https://littlebitai.github.io/video-translate-overlay-2/privacy.html" target="_blank" rel="noopener noreferrer">개인정보처리방침</a>
+      {#if account?.state === 'signed_in'}
+        <p class="mt-2 break-words text-base" role="status">연결한 Google 계정: <bdi>{account.email}</bdi></p>
+        {#if account.connection && connectionText[account.connection.state]}
+          <p class="mt-2 text-sm text-ink/70" role="status">{connectionText[account.connection.state]}</p>
+          {#if account.connection.state === 'authentication_required'}
+            <button type="button" class="{outline} mt-4" disabled={sending || needsReload} onclick={() => change('sign-in')}>Google 로그인 갱신</button>
+          {/if}
+        {:else if !account.sync_ready}
+          <p class="mt-1 text-sm text-ink/70">Google 계정은 연결됐습니다. 기기간 동기화는 아직 연결되지 않았습니다.</p>
+        {/if}
+      {:else if account?.state === 'signing_in'}
+        <p class="mt-2 text-base" role="status">Google 화면에서 로그인을 완료해 주세요.</p>
+      {:else if account?.state === 'loading'}
+        <p class="mt-2 text-sm text-ink/70" role="status">저장한 Google 계정을 확인하는 중입니다.</p>
+      {:else if account?.state === 'expired'}
+        <p class="mt-2 text-sm text-accent" role="status">기기의 Google 연결이 만료됐습니다. 다시 로그인해 주세요. 이 계정의 저장한 보관함은 계속 열 수 있습니다.</p>
+      {:else if account?.error === 'Google Desktop registration is missing or invalid'}
+        <p class="mt-2 text-sm text-accent" role="status">앱 제공자가 Google 로그인 등록 정보를 수정해야 합니다. 수정된 앱에서 다시 시도해 주세요.</p>
+      {:else if account?.state === 'unavailable' || account?.error}
+        <p class="mt-2 text-sm text-accent" role="status">Google 로그인을 완료하지 못했습니다. 계정과 네트워크를 확인한 뒤 다시 시도해 주세요.</p>
+      {:else if account}
+        <p class="mt-2 text-sm text-ink/70" role="status">연결한 Google 계정이 없습니다.</p>
+      {/if}
+
+      {#if failure}
+        <p class="mt-2 text-sm text-accent" role="alert">{failure}</p>
+      {/if}
+      {#if needsReload}
+        <button type="button" class="{outline} mt-4" disabled={sending} onclick={load}>계정 상태 다시 불러오기</button>
+      {:else if account && !['loading', 'unsupported'].includes(account.state)}
+        {#if account.state === 'signing_in'}
+          <button type="button" class="{outline} mt-4" disabled={sending} onclick={() => change('sign-out')}>Google 로그인 취소</button>
+        {:else if account.state !== 'signed_in'}
+          <button type="button" class="{outline} mt-4" disabled={sending} onclick={() => change('sign-in')}>Google 계정으로 로그인</button>
+        {:else if confirming}
+          <div class="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-accent/60 p-2" role="alertdialog" aria-label="Google 계정 로그아웃 확인">
+            <p class="min-w-0 flex-1 text-sm">이 계정의 연결을 중지할까요? 저장한 데이터와 유튜브 로그인은 유지됩니다.</p>
+            <button type="button" class={outline} disabled={sending} onclick={() => change('sign-out')}>Google 로그아웃 확인</button>
+            <button type="button" class={outline} disabled={sending} onclick={() => confirming = false}>그만두기</button>
+          </div>
+        {:else}
+          <button type="button" class="{outline} mt-4" disabled={sending} onclick={() => confirming = true}>Google 계정 로그아웃</button>
+        {/if}
+      {/if}
     {/if}
-    {#if privacyError}<p class="mt-2 text-sm text-accent" role="alert">{privacyError}</p>{/if}
+    <div class="mt-4">
+      {#if native}
+        <button type="button" class={outline} disabled={privacyOpening} onclick={openPrivacy}>개인정보처리방침</button>
+      {:else}
+        <a class="inline-flex min-h-11 items-center text-primary underline" href="https://littlebitai.github.io/video-translate-overlay-2/privacy.html" target="_blank" rel="noopener noreferrer">개인정보처리방침</a>
+      {/if}
+      {#if privacyError}<p class="mt-2 text-sm text-accent" role="alert">{privacyError}</p>{/if}
+    </div>
   </div>
 </section>

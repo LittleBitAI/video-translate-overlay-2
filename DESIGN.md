@@ -60,11 +60,13 @@ Desktop navigation and page content share a 16 px leading inset instead of
 separate centered width limits. The library grid uses the available width;
 its 16 rem rail, 13 rem minimum cards and 768 px accordion split stay the same.
 The video stage stays left-aligned at 16:9, growing within the width and the
-height below the menu so the player and its overlay fit together. Settings
-use two top-aligned columns from 1024 px: Google account and updates in the
-first, Gemini key and YouTube sign-in in the second. Each column is at most
-42 rem wide for readable fields and text. Smaller windows retain the original
-single-column order. Empty space after these settings groups remains empty.
+height below the menu so the player and its overlay fit together. Desktop
+Settings uses flat horizontal rows: a heading and explanation at the leading
+edge, with status, fields and actions aligned in a shared control column.
+Descriptions grow to 24 rem and controls to 42 rem, separated by 24 px. Quiet
+rules separate rows; there are no desktop card backgrounds or rounded section
+boxes. Below 768 px the existing cards, section order and spacing remain.
+Empty space after the readable settings rows remains empty.
 
 Use the existing approved charcoal theater palette C1. Blue identifies actions
 and the selected place; yellow identifies errors, processing and permanent

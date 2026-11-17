@@ -230,7 +230,7 @@ const everyScreen = (url: string | null = null) => api(c => {
   return [200, {url, job:null}];
 });
 
-test.each([[1280, 720], [1920, 1080], [2560, 1440], [384, 854]])('at %i px the shared menu sits in the same place on every screen and marks the current one', async (width, height) => {
+test.each([[1280, 720], [1920, 1080], [2560, 1440], [768, 720], [384, 854]])('at %i px the shared menu sits in the same place on every screen and marks the current one', async (width, height) => {
   await page.viewport(width, height);
   everyScreen();
   const root = open('/');
@@ -268,10 +268,16 @@ test.each([[1280, 720], [1920, 1080], [2560, 1440], [384, 854]])('at %i px the s
         const account = $(root, 'section[aria-label="Google 앱 계정"]')!.getBoundingClientRect();
         const key = $(root, '#api-key')!.closest('section')!.getBoundingClientRect();
         expect(account.left).toBe(16);
-        expect(key.top).toBe(account.top);
-        expect(key.left).toBeGreaterThanOrEqual(account.right + 16);
-        expect(account.width).toBeLessThanOrEqual(672);
-        expect(key.width).toBeLessThanOrEqual(672);
+        expect(key.top).toBeGreaterThanOrEqual(account.bottom);
+        const sections = $$(root, '.settings-row');
+        const bodyLeft = sections[0].lastElementChild!.getBoundingClientRect().left;
+        for (const section of sections) {
+          expect(section.querySelector('h2')!.getBoundingClientRect().left).toBe(16);
+          expect(section.lastElementChild!.getBoundingClientRect().left).toBe(bodyLeft);
+          expect(section.lastElementChild!.getBoundingClientRect().width).toBeLessThanOrEqual(672);
+          expect(getComputedStyle(section).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+          expect(getComputedStyle(section).borderRadius).toBe('0px');
+        }
         expect($$(root, 'h2').map(text)).toEqual(['Google 앱 계정', '앱 업데이트', '개인키', '유튜브 로그인']);
       }
     }

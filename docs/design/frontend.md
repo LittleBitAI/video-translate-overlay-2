@@ -29,10 +29,13 @@ the established rail, grid and phone accordion; extra desktop width adds grid
 columns. The video stage keeps its 16:9 ratio and fits the height below the menu
 without changing the overlay's subtitle sizing.
 
-From 1024 px, Settings groups Google account and updates in one column and the
-Gemini key and YouTube sign-in in another, aligned at the top. Each column is
-at most 42 rem wide. Below that width, the sections retain their existing order
-in one column. The approved palette, type scale and navigation are unchanged.
+From 768 px, Settings uses flat rows instead of cards: the section heading and
+explanation lead, while status, inputs and actions share a second alignment
+edge. Descriptions grow to 24 rem; controls stay within 42 rem, with 24 px
+between them. Quiet separators end with the readable content instead of
+extending across unused screen space. The key-removal action and its warning
+share a compact desktop row. Below 768 px, the existing cards, section order
+and spacing remain. The approved palette, type scale and navigation are unchanged.
 
 ## 기능을 둔 자리
 
