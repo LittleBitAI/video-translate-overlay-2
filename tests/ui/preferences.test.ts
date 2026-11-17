@@ -53,7 +53,7 @@ test('a late connection result belongs only to the settings screen that started 
   const s2 = open('/preferences');
   await vi.waitFor(() => expect(button(s2, '유튜브 계정 연결').disabled).toBe(false));
   button(s2, '유튜브 계정 연결').click();
-  button(s2, '← 영상으로').click();
+  button(s2, '영상').click();
   await vi.waitFor(() => expect(text(s2)).toContain('영상 주소를 넣으면'));
   button(s2, '설정').click();
   await vi.waitFor(() => expect(button(s2, '유튜브 계정 연결').disabled).toBe(false));

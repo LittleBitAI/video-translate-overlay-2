@@ -189,7 +189,7 @@ test('an initial account response cannot publish into a replacement settings scr
   native(() => ++reads === 1 ? new Promise<Account>(resolve => release = resolve) : signedOut());
   const root = open('/preferences');
   await vi.waitFor(() => expect(reads).toBe(1));
-  button(root, '← 영상으로').click();
+  button(root, '영상').click();
   await vi.waitFor(() => expect(text(root)).toContain('영상 주소를 넣으면'));
   button(root, '설정').click();
   await vi.waitFor(() => expect(text(root)).toContain('연결한 Google 계정이 없습니다'));
