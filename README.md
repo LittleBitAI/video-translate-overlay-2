@@ -37,21 +37,31 @@ signing continuity, and first-publication acceptance.
 
 ## Saved videos and topic playlists
 
-Open `보관함` beside the address bar to find videos by title or source URL.
-`저장 자막 있음` means the existing subtitles reopen without transcription or
-translation. Completed translations from earlier versions appear automatically;
-their cue timestamps and recorded costs stay unchanged. The original video still
-needs its source site and internet access.
+`영상`, `보관함` and `설정` sit in the same menu on every screen: tabs at the top
+of a wide window, a bar at the bottom of a phone. In `보관함`, choose `전체 영상`
+or a playlist to see its videos as thumbnail cards. On a wide window, including
+the Windows app, the playlists stay in a list on the left and the videos fill
+the right. On a phone, tapping a playlist opens its videos directly under it;
+tapping it again closes it. Search by title or source URL. Each card shows the
+duration when known, the site and whether saved subtitles exist. Tap a card to
+open the video. `저장 자막 있음` means the existing subtitles reopen without
+transcription or translation. YouTube cards show YouTube's thumbnail, loaded from
+YouTube's image server; other sites show a tile with the site name. Completed
+translations from earlier versions appear automatically; their cue timestamps
+and recorded costs stay unchanged. The original video still needs its source
+site and internet access.
 
-Create a topic playlist, select it, and add a saved video or an HTTP(S) video link.
-You may enter a recognizable name for a new link. Use the arrow buttons to reorder
-playlists or entries, `이름 바꾸기` to rename a playlist, and `영상 열기` to manually
-open a chosen video. A video may belong to several playlists. Removing an entry
-or deleting a playlist keeps the video's translation. Adding or opening a link
-does not start translation. Press `영상감지` to translate explicitly; the existing
-API-key checks and cost limit apply.
+`추가` adds a saved video from a thumbnail list or an HTTP(S) video link to the
+chosen playlist. You may enter a recognizable name for a new link. `+ 새 재생목록`
+creates a playlist. `편집` shows each video's full address and the controls to
+drag or use `위로` / `아래로` to reorder playlists and videos, rename or delete a
+playlist, remove a video from a playlist, and delete a video; `완료` hides them.
+A video may belong to several playlists. Removing an entry or deleting a
+playlist keeps the video's translation. Adding or opening a link does not start
+translation. Press `영상감지` to translate explicitly; the existing API-key
+checks and cost limit apply.
 
-`영상 삭제` first names the video and asks for confirmation. Confirming permanently
+In `편집`, `영상 삭제` first names the video and asks for confirmation. Confirming permanently
 removes its transcript, translated cues, glossary, job history, per-video files,
 and memberships in every playlist. The playlists, other videos, speech models,
 and credentials remain. A running video cannot be deleted. If file cleanup fails,
@@ -94,8 +104,8 @@ background service is active. Reopening catches up after interruption; a
 force-stopped app receives nothing until reopened. The original device library
 stays separate until its import is confirmed.
 
-If concurrent work leaves several completed subtitle versions, the library's
-saved-version selector retains each response. Select one and reopen the video
+If concurrent work leaves several completed subtitle versions, the card counts
+them and the saved-version selector in `편집` retains each response. Select one and reopen the video
 to use its original cue times and recorded cost. Selecting a saved version
 does not transcribe or call Gemini; its selection also synchronizes.
 Selecting an older response does not reduce the recorded cost used by the

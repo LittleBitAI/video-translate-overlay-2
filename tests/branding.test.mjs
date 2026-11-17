@@ -38,6 +38,7 @@ try{
     assert.equal(new URL(page.url()).pathname,prefix+'privacy.html');
     await page.getByRole('heading',{level:1,name:'Video Translate Overlay privacy policy'}).waitFor();
     assert((await page.textContent('main')).includes('GitHub logs and stores visitors'));
+    assert((await page.textContent('main')).includes("loads it from YouTube's image server (i.ytimg.com)"));
     const privacyContact=await nav.getByRole('link',{name:'Support',exact:true}).getAttribute('href');
     await nav.getByRole('link',{name:'Home',exact:true}).click();
     assert.equal(new URL(page.url()).pathname,prefix);

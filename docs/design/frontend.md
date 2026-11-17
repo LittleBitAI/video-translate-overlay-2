@@ -9,6 +9,18 @@
 ![S1 desktop](shots/S1-desktop.png)
 ![S1 phone](shots/S1-phone.png)
 
+## Navigation between screens
+
+The three screens share one menu, 영상 (`/`), 보관함 (`/library`) and 설정
+(`/preferences`), in the same place on each (`src/ui/Nav.svelte`). From a
+768 px window width it is a row of tabs at the left of the top bar; the current
+tab is semibold with a blue underline on the bar's edge. Below 768 px it is a
+bottom tab bar of three 44 px targets that pads itself by the safe-area inset,
+with a blue top bar on the current tab. The current tab carries
+`aria-current="page"`. The address field sits in the top bar on `/` only. The
+library no longer has its own 영상 열기 link and settings no longer has
+← 영상으로; on `/`, 영상 열기 still names the button in a ready notice.
+
 ## 기능을 둔 자리
 
 | 기능 | 주인이 고른 칸 | 놓인 화면 |
@@ -25,19 +37,98 @@
 
 ### S3 `/library` — find saved translations and manually select topic videos
 
-The address bar links to `보관함`. The screen uses the approved C1 palette and
-existing type/spacing tokens in `DESIGN.md`. It has a title/source search, saved
-subtitle availability, ordered topic playlists, and explicit open/delete actions.
-Playlist selection reveals rename/delete, saved-video selection, and link entry.
-Arrow buttons reorder playlists and entries without requiring drag gestures.
+People come here to reopen a translated lecture or to go through a topic
+playlist; activating a playlist shows its videos at once. The screen uses the
+approved C1 palette and existing type/spacing tokens in `DESIGN.md`.
+
+| Window | Layout |
+| --- | --- |
+| 768 px and wider | A 16 rem rail of 전체 영상 and every playlist (cover, name, count; the selected one tinted with a blue edge and `aria-current`) beside a pane with the selected list's heading, the toolbar and a grid of video cards |
+| Below 768 px | One column: heading, toolbar, then one row per list; tapping a row expands its cards directly under it (`aria-expanded`) and closes any other; the open row is pinned to the top while its cards scroll |
+
+![S3 desktop, a playlist selected](shots/S3-desktop.png)
+![S3 phone, a playlist expanded](shots/S3-phone.png)
+
+A card is the button that opens its video through P1, as the old 영상 열기
+button did: a 16:9 thumbnail (YouTube's image for a YouTube video ID; for other
+sites or a failed load, a tile with the host and a play mark), the duration when
+known, a two-line title, the site name and the status. A playlist's cover is its
+first video's thumbnail.
+
+The toolbar holds only the search, 추가 and 편집. Edit mode (편집, then 완료)
+lists the videos in one column, thumbnail beside title, because a grid card is
+too narrow for its controls. It shows the full address on each entry, the
+saved-version selector, a drag handle
+and labeled 위로 / 아래로 on playlists and entries, the selected playlist's
+rename field and 재생목록 삭제, and 목록에서 빼기 and 영상 삭제 on cards. A drop
+sends one P11 move of any number of places; the buttons are the keyboard path.
+The add panel holds a saved-video picker with thumbnails, the link field with an
+optional name and the cost note, and + 새 재생목록, which selects the new list.
+
+![S3 desktop, edit mode](shots/S3-desktop-edit.png)
+![S3 phone, add panel](shots/S3-phone-add.png)
 
 Loading has a status announcement; failed reads show the error and a retry;
 an empty library explains translation and playlist links; empty playlists and
 empty searches give distinct guidance. Errors never masquerade as an empty list.
+A refresh after a change keeps the shown library and scroll position until it
+answers; the loading state appears only before the first answer and after an
+account change.
 Permanent video deletion uses a focused inline confirmation naming the video,
 the data removed, and possible future API costs. Playlist deletion explains that
 saved translations remain. Processing videos disable deletion; failed file
 cleanup keeps a retryable row and hides subtitles.
+
+#### Design pass, 2026-11-17
+
+The five steps of the `design-pass` skill, in order, on the stand-in server
+(`node scripts/live.mjs --stand-ins`) seeded with five YouTube lectures, one
+link from another site and three playlists (one empty).
+
+0. Purpose. Who: a person returning to translated lectures. To do: find one, or
+   go through a topic playlist. Success: the chosen video opens on the watch
+   screen with its saved subtitles. This rules out a playlist page and keeps
+   management off the default view.
+1. `DESIGN.md` and the sketch. Components and the 768 px split are recorded
+   there; C1 and the 14/16/20/28 px scale are unchanged.
+2. Measurement in Chromium, after the last layout change (values in px). Headless
+   Chromium draws classic scrollbars, so from 768 px the reserved 15 px gutter
+   narrows the page; the phone layout reserves none:
+
+   | Viewport | Main padding | Menu | Heading | First list item | Toolbar | First card | Card / thumbnail | Overflow |
+   | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+   | 1280×720 | 16 | x 73, y 0, h 60 | x 73, y 81, 28 | x 73, y 137, 256 × 61, pad 8 | x 353, y 77, h 44 (search 288, 추가 66, 편집 66) | x 353, y 137 | 269 × 254 / 269 × 151 | none (1,265 of 1,265) |
+   | 1009×720 | 16 | x 16, y 0, h 60 | x 16, y 81, 28 | x 16, y 137, 256 × 61, pad 8 | x 296, y 77, h 80 (heading on its own line below 1024) | x 296, y 173 | 217 × 224 / 217 × 122 | none (994 of 994) |
+   | 384×854 | 16 | bottom, y 809, h 45 (44 + border) | x 16, y 16, 28 | x 16, y 128, 352 × 61, pad 8 | x 16, y 68, h 44 (search 204, 추가 66, 편집 66) | x 16, y 266 | 352 × 90 / 144 × 81 | none (384 of 384) |
+
+   Before the change the first card of a selected playlist was at y 1,237
+   (1280×720) and y 1,483 (384×854). One finding was fixed: the first rail item
+   sat 8 px above the first card (129 against 137), so the rail heading block
+   now takes the toolbar's 44 px height. The same-role check reported only
+   text-driven widths (tab labels, duration badges, the chevron's path). 편집,
+   완료, 추가 and 닫기 each toggled the expected state when pressed; delete and
+   confirmation buttons were checked by reading their handlers and through
+   `tests/ui/library.test.ts`.
+
+   The same states were then captured in the Windows debug app (a 1,024 × 760
+   viewport; first card at x 296, y 137, no overflow) and the Android API 34
+   emulator (412 × 842; first card at y 266, no overflow). Two findings were
+   fixed. In the Windows window a grid card is about 210 px wide, so in edit
+   mode its address broke mid-word and its buttons wrapped onto four lines;
+   edit mode is now a one-column list, and from 768 px the page reserves the
+   scrollbar's gutter so the toolbar no longer shifts 15 px when the longer
+   edit view starts to scroll. The Android WebView (Chrome 113) drew Tailwind's default
+   placeholder colour, a `currentcolor` mix, as transparent, which left the
+   search field blank; the library's inputs now set the same placeholder
+   colour as the address and key fields. The before and after captures from
+   all three are in `docs/evidence/library-rail/`.
+3. Type. Four levels with one meaning each: 28 the page heading, 20 the pane and
+   panel headings, 16 controls and names (semibold for card titles and the
+   selected list), 14 site, count, status and duration.
+4. Colour. The person kept C1 when it was offered for this change; selection uses
+   the primary blue at 15 % and a 4 px edge, hover uses the ink at 5 %.
+5. Leftover space. A short playlist leaves the grid's lower area empty on wide
+   windows. There is no value worth placing there, so it stays empty.
 
 Requests use screen generations to drop late results after navigation or refresh.
 Native deletion invalidates open views; browser tabs use BroadcastChannel. Saved
@@ -50,9 +141,9 @@ or an earlier seek cancels a delayed resume. It saves actual position through
 existing P7 modes and never applies later remote position updates to playback
 already controlled on this device. It does not start, pause or change speed.
 
-Videos with multiple retained completed responses show a native saved-version
-select control. It names the current response and orders recent selection or
-completion first. Selection is disabled during processing/deletion; the user
+Videos with multiple retained completed responses count them on the card and
+show a native saved-version select control in edit mode. It names the current
+response and orders recent selection or completion first. Selection is disabled during processing/deletion; the user
 reopens the video to use that response. It does not start a paid translation.
 
 ### S2 `/preferences` — 개인키를 넣거나 지우고 유튜브 로그아웃을 하는 설정 화면

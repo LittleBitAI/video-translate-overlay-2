@@ -1,0 +1,420 @@
+{
+ "head": "27ca19436155d401ed567f65bc27f149d141907b",
+ "flow": "library-browser",
+ "environment_id": "vto-disposable-library-83777f7",
+ "test_scope": "session",
+ "build_head": "27ca19436155d401ed567f65bc27f149d141907b",
+ "browser_tool": "playwright-chromium",
+ "observations": [
+  {
+   "id": "saved-reuse",
+   "expected": "Saved subtitles retain their times and cost without a translation request",
+   "actual": "Saved subtitles retain their times and cost without a translation request",
+   "pass": true
+  },
+  {
+   "id": "restart",
+   "expected": "Playlist names, order and memberships survive a process restart",
+   "actual": "Playlist names, order and memberships survive a process restart",
+   "pass": true
+  },
+  {
+   "id": "cancel-delete",
+   "expected": "Cancelling named permanent deletion preserves the saved translation",
+   "actual": "Cancelling named permanent deletion preserves the saved translation",
+   "pass": true
+  },
+  {
+   "id": "delete",
+   "expected": "Confirmed deletion removes the video from every playlist and preserves unrelated data",
+   "actual": "Confirmed deletion removes the video from every playlist and preserves unrelated data",
+   "pass": true
+  },
+  {
+   "id": "playlist-retention",
+   "expected": "Removing a playlist preserves its saved translations and other playlists",
+   "actual": "Removing a playlist preserves its saved translations and other playlists",
+   "pass": true
+  },
+  {
+   "id": "manual-link",
+   "expected": "Opening an untranslated playlist entry leaves translation unstarted",
+   "actual": "Opening an untranslated playlist entry leaves translation unstarted",
+   "pass": true
+  }
+ ],
+ "requests": [
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/assets/index-BbfkL9Z8.js",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/assets/index-BrQ97mRL.css",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/browser",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/videos/f1cf83abf7ca74fb7a5e29c258ad7a0a106479ccc5819c38a590d1571835f983/subtitles",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/jobs?page_url=http%3A%2F%2F127.0.0.1%3A8137%2Fsaved.mp4",
+   "status": 200
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8136/browser/open",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/browser",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/videos/f1cf83abf7ca74fb7a5e29c258ad7a0a106479ccc5819c38a590d1571835f983/subtitles",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/videos/f1cf83abf7ca74fb7a5e29c258ad7a0a106479ccc5819c38a590d1571835f983/subtitles",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/jobs?page_url=http%3A%2F%2F127.0.0.1%3A8137%2Fsaved.mp4",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/assets/index-BrQ97mRL.css",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/assets/index-BbfkL9Z8.js",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/browser",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/videos/f1cf83abf7ca74fb7a5e29c258ad7a0a106479ccc5819c38a590d1571835f983/subtitles",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/videos/21a330e2215ea33e2f83de0152369c65a4b77a6b8e28240ad6d768cf1643c917/subtitles",
+   "status": 200
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/library/data",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/videos/21a330e2215ea33e2f83de0152369c65a4b77a6b8e28240ad6d768cf1643c917/subtitles",
+   "status": 200
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8136/browser/open",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/browser",
+   "status": 200
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8136/jobs?page_url=http%3A%2F%2F127.0.0.1%3A8137%2Funtranslated.mp4",
+   "status": 404
+  }
+ ],
+ "actions": [
+  {
+   "action": "saved-reuse",
+   "expected": "Saved subtitles retain their times and cost without a translation request",
+   "actual": "Saved subtitles retain their times and cost without a translation request"
+  },
+  {
+   "action": "restart",
+   "expected": "Playlist names, order and memberships survive a process restart",
+   "actual": "Playlist names, order and memberships survive a process restart"
+  },
+  {
+   "action": "cancel-delete",
+   "expected": "Cancelling named permanent deletion preserves the saved translation",
+   "actual": "Cancelling named permanent deletion preserves the saved translation"
+  },
+  {
+   "action": "delete",
+   "expected": "Confirmed deletion removes the video from every playlist and preserves unrelated data",
+   "actual": "Confirmed deletion removes the video from every playlist and preserves unrelated data"
+  },
+  {
+   "action": "playlist-retention",
+   "expected": "Removing a playlist preserves its saved translations and other playlists",
+   "actual": "Removing a playlist preserves its saved translations and other playlists"
+  },
+  {
+   "action": "manual-link",
+   "expected": "Opening an untranslated playlist entry leaves translation unstarted",
+   "actual": "Opening an untranslated playlist entry leaves translation unstarted"
+  }
+ ]
+}

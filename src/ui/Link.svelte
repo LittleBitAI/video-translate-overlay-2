@@ -2,7 +2,7 @@
   import type { Snippet } from 'svelte';
   import { go } from './router.svelte';
 
-  let { href, class: cls = '', children }: { href: string; class?: string; children: Snippet } = $props();
+  let { href, class: cls = '', current = false, children }: { href: string; class?: string; current?: boolean; children: Snippet } = $props();
 
   function follow(e: MouseEvent) {
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
@@ -11,4 +11,4 @@
   }
 </script>
 
-<a {href} class={cls} onclick={follow}>{@render children()}</a>
+<a {href} class={cls} aria-current={current ? 'page' : undefined} onclick={follow}>{@render children()}</a>

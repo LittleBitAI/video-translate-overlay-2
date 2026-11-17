@@ -1,0 +1,596 @@
+{
+ "1280x720": {
+  "viewport": [
+   1280,
+   720
+  ],
+  "scrollWidth": 1265,
+  "nav": {
+   "x": 73,
+   "y": 0,
+   "w": 208,
+   "h": 60
+  },
+  "tabs": [
+   {
+    "x": 73,
+    "y": 0,
+    "w": 64,
+    "h": 60
+   },
+   {
+    "x": 137,
+    "y": 0,
+    "w": 80,
+    "h": 60
+   },
+   {
+    "x": 217,
+    "y": 0,
+    "w": 64,
+    "h": 60
+   }
+  ],
+  "main": {
+   "x": 57,
+   "y": 61,
+   "w": 1152,
+   "h": 615,
+   "padding": "16px"
+  },
+  "h1": {
+   "x": 73,
+   "y": 81,
+   "w": 256,
+   "h": 36,
+   "fontSize": "28px"
+  },
+  "rows": [
+   {
+    "x": 73,
+    "y": 137,
+    "w": 256,
+    "h": 61,
+    "padding": "8px"
+   },
+   {
+    "x": 73,
+    "y": 202,
+    "w": 256,
+    "h": 61,
+    "padding": "8px"
+   },
+   {
+    "x": 73,
+    "y": 267,
+    "w": 256,
+    "h": 61,
+    "padding": "8px"
+   },
+   {
+    "x": 73,
+    "y": 332,
+    "w": 256,
+    "h": 61,
+    "padding": "8px"
+   }
+  ],
+  "toolbar": {
+   "x": 353,
+   "y": 77,
+   "w": 840,
+   "h": 44,
+   "controls": [
+    {
+     "x": 757,
+     "y": 77,
+     "w": 288,
+     "h": 44
+    },
+    {
+     "x": 1053,
+     "y": 77,
+     "w": 66,
+     "h": 44
+    },
+    {
+     "x": 1127,
+     "y": 77,
+     "w": 66,
+     "h": 44
+    }
+   ]
+  },
+  "cards": [
+   {
+    "x": 353,
+    "y": 137,
+    "w": 269,
+    "h": 254,
+    "thumb": {
+     "x": 353,
+     "y": 137,
+     "w": 269,
+     "h": 151
+    },
+    "title": "16px"
+   },
+   {
+    "x": 638,
+    "y": 137,
+    "w": 269,
+    "h": 254,
+    "thumb": {
+     "x": 638,
+     "y": 137,
+     "w": 269,
+     "h": 151
+    },
+    "title": "16px"
+   },
+   {
+    "x": 923,
+    "y": 137,
+    "w": 269,
+    "h": 254,
+    "thumb": {
+     "x": 923,
+     "y": 137,
+     "w": 269,
+     "h": 152
+    },
+    "title": "16px"
+   },
+   {
+    "x": 353,
+    "y": 407,
+    "w": 269,
+    "h": 253,
+    "thumb": {
+     "x": 353,
+     "y": 407,
+     "w": 269,
+     "h": 151
+    },
+    "title": "16px"
+   }
+  ],
+  "firstCardInView": true,
+  "disagreements": {
+   "A.inline-flex.min-h-11.items-center": [
+    "pad=0px 16px gap=normal w=64",
+    "pad=0px 16px gap=normal w=80"
+   ],
+   "card:SPAN.absolute.right-1.bottom-1": [
+    "pad=0px 4px gap=normal w=42",
+    "pad=0px 4px gap=normal w=53"
+   ]
+  },
+  "wiring": [
+   {
+    "name": "편집",
+    "after": {
+     "edit": true,
+     "add": false
+    }
+   },
+   {
+    "name": "완료",
+    "after": {
+     "edit": false,
+     "add": false
+    }
+   },
+   {
+    "name": "추가",
+    "after": {
+     "edit": false,
+     "add": true
+    }
+   },
+   {
+    "name": "닫기",
+    "after": {
+     "edit": false,
+     "add": false
+    }
+   }
+  ]
+ },
+ "1009x720": {
+  "viewport": [
+   1009,
+   720
+  ],
+  "scrollWidth": 994,
+  "nav": {
+   "x": 16,
+   "y": 0,
+   "w": 208,
+   "h": 60
+  },
+  "tabs": [
+   {
+    "x": 16,
+    "y": 0,
+    "w": 64,
+    "h": 60
+   },
+   {
+    "x": 80,
+    "y": 0,
+    "w": 80,
+    "h": 60
+   },
+   {
+    "x": 160,
+    "y": 0,
+    "w": 64,
+    "h": 60
+   }
+  ],
+  "main": {
+   "x": 0,
+   "y": 61,
+   "w": 994,
+   "h": 592,
+   "padding": "16px"
+  },
+  "h1": {
+   "x": 16,
+   "y": 81,
+   "w": 256,
+   "h": 36,
+   "fontSize": "28px"
+  },
+  "rows": [
+   {
+    "x": 16,
+    "y": 137,
+    "w": 256,
+    "h": 61,
+    "padding": "8px"
+   },
+   {
+    "x": 16,
+    "y": 202,
+    "w": 256,
+    "h": 61,
+    "padding": "8px"
+   },
+   {
+    "x": 16,
+    "y": 267,
+    "w": 256,
+    "h": 61,
+    "padding": "8px"
+   },
+   {
+    "x": 16,
+    "y": 332,
+    "w": 256,
+    "h": 61,
+    "padding": "8px"
+   }
+  ],
+  "toolbar": {
+   "x": 296,
+   "y": 77,
+   "w": 682,
+   "h": 80,
+   "controls": [
+    {
+     "x": 296,
+     "y": 113,
+     "w": 288,
+     "h": 44
+    },
+    {
+     "x": 592,
+     "y": 113,
+     "w": 66,
+     "h": 44
+    },
+    {
+     "x": 666,
+     "y": 113,
+     "w": 66,
+     "h": 44
+    }
+   ]
+  },
+  "cards": [
+   {
+    "x": 296,
+    "y": 173,
+    "w": 217,
+    "h": 224,
+    "thumb": {
+     "x": 296,
+     "y": 173,
+     "w": 217,
+     "h": 122
+    },
+    "title": "16px"
+   },
+   {
+    "x": 529,
+    "y": 173,
+    "w": 217,
+    "h": 224,
+    "thumb": {
+     "x": 529,
+     "y": 173,
+     "w": 217,
+     "h": 122
+    },
+    "title": "16px"
+   },
+   {
+    "x": 761,
+    "y": 173,
+    "w": 217,
+    "h": 224,
+    "thumb": {
+     "x": 761,
+     "y": 173,
+     "w": 217,
+     "h": 122
+    },
+    "title": "16px"
+   },
+   {
+    "x": 296,
+    "y": 413,
+    "w": 217,
+    "h": 224,
+    "thumb": {
+     "x": 296,
+     "y": 413,
+     "w": 217,
+     "h": 122
+    },
+    "title": "16px"
+   }
+  ],
+  "firstCardInView": true,
+  "disagreements": {
+   "A.inline-flex.min-h-11.items-center": [
+    "pad=0px 16px gap=normal w=64",
+    "pad=0px 16px gap=normal w=80"
+   ],
+   "card:SPAN.absolute.right-1.bottom-1": [
+    "pad=0px 4px gap=normal w=42",
+    "pad=0px 4px gap=normal w=53"
+   ]
+  },
+  "wiring": [
+   {
+    "name": "편집",
+    "after": {
+     "edit": true,
+     "add": false
+    }
+   },
+   {
+    "name": "완료",
+    "after": {
+     "edit": false,
+     "add": false
+    }
+   },
+   {
+    "name": "추가",
+    "after": {
+     "edit": false,
+     "add": true
+    }
+   },
+   {
+    "name": "닫기",
+    "after": {
+     "edit": false,
+     "add": false
+    }
+   }
+  ]
+ },
+ "384x854": {
+  "viewport": [
+   384,
+   854
+  ],
+  "scrollWidth": 384,
+  "nav": {
+   "x": 0,
+   "y": 809,
+   "w": 384,
+   "h": 45
+  },
+  "tabs": [
+   {
+    "x": 0,
+    "y": 810,
+    "w": 128,
+    "h": 44
+   },
+   {
+    "x": 128,
+    "y": 810,
+    "w": 128,
+    "h": 44
+   },
+   {
+    "x": 256,
+    "y": 810,
+    "w": 128,
+    "h": 44
+   }
+  ],
+  "main": {
+   "x": 0,
+   "y": 0,
+   "w": 384,
+   "h": 804,
+   "padding": "16px"
+  },
+  "h1": {
+   "x": 16,
+   "y": 16,
+   "w": 352,
+   "h": 36,
+   "fontSize": "28px"
+  },
+  "rows": [
+   {
+    "x": 16,
+    "y": 128,
+    "w": 352,
+    "h": 61,
+    "padding": "8px"
+   },
+   {
+    "x": 16,
+    "y": 197,
+    "w": 352,
+    "h": 61,
+    "padding": "8px"
+   },
+   {
+    "x": 16,
+    "y": 658,
+    "w": 352,
+    "h": 61,
+    "padding": "8px"
+   },
+   {
+    "x": 16,
+    "y": 727,
+    "w": 352,
+    "h": 61,
+    "padding": "8px"
+   }
+  ],
+  "toolbar": {
+   "x": 16,
+   "y": 68,
+   "w": 352,
+   "h": 44,
+   "controls": [
+    {
+     "x": 16,
+     "y": 68,
+     "w": 204,
+     "h": 44
+    },
+    {
+     "x": 228,
+     "y": 68,
+     "w": 66,
+     "h": 44
+    },
+    {
+     "x": 302,
+     "y": 68,
+     "w": 66,
+     "h": 44
+    }
+   ]
+  },
+  "cards": [
+   {
+    "x": 16,
+    "y": 266,
+    "w": 352,
+    "h": 90,
+    "thumb": {
+     "x": 16,
+     "y": 266,
+     "w": 144,
+     "h": 81
+    },
+    "title": "16px"
+   },
+   {
+    "x": 16,
+    "y": 364,
+    "w": 352,
+    "h": 90,
+    "thumb": {
+     "x": 16,
+     "y": 364,
+     "w": 144,
+     "h": 81
+    },
+    "title": "16px"
+   },
+   {
+    "x": 16,
+    "y": 462,
+    "w": 352,
+    "h": 90,
+    "thumb": {
+     "x": 16,
+     "y": 462,
+     "w": 144,
+     "h": 81
+    },
+    "title": "16px"
+   },
+   {
+    "x": 16,
+    "y": 560,
+    "w": 352,
+    "h": 90,
+    "thumb": {
+     "x": 16,
+     "y": 560,
+     "w": 144,
+     "h": 81
+    },
+    "title": "16px"
+   }
+  ],
+  "firstCardInView": true,
+  "disagreements": {
+   "row:path.": [
+    "pad=0px gap=normal w=9",
+    "pad=0px gap=normal w=8"
+   ],
+   "card:SPAN.absolute.right-1.bottom-1": [
+    "pad=0px 4px gap=normal w=42",
+    "pad=0px 4px gap=normal w=53"
+   ]
+  },
+  "wiring": [
+   {
+    "name": "편집",
+    "after": {
+     "edit": true,
+     "add": false
+    }
+   },
+   {
+    "name": "완료",
+    "after": {
+     "edit": false,
+     "add": false
+    }
+   },
+   {
+    "name": "추가",
+    "after": {
+     "edit": false,
+     "add": true
+    }
+   },
+   {
+    "name": "닫기",
+    "after": {
+     "edit": false,
+     "add": false
+    }
+   }
+  ]
+ }
+}

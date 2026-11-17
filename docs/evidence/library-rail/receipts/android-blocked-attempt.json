@@ -1,0 +1,8 @@
+{
+ "head": "27ca19436155d401ed567f65bc27f149d141907b",
+ "flow": "library-android",
+ "blocked": {
+  "prerequisite": "native",
+  "reason": "Command failed: ~\\anaconda3\\python.exe ~\\PycharmProjects\\wiki-agent\\tool\\android_owned.py adb ~\\PycharmProjects\\video-translate-overlay-2\\artifacts\\library-rail\\flow-android shell 'pidof' 'dev.vto.overlay'\nTraceback (most recent call last):\r\n  File \"~\\PycharmProjects\\wiki-agent\\tool\\android_owned.py\", line 544, in <module>\r\n    sys.exit(main(sys.argv[1:]))\r\n             ~~~~^^^^^^^^^^^^^^\r\n  File \"~\\PycharmProjects\\wiki-agent\\tool\\android_owned.py\", line 528, in main\r\n    sys.stdout.buffer.write(call(folder, rest, binary=True))\r\n                            ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"~\\PycharmProjects\\wiki-agent\\tool\\android_owned.py\", line 275, in call\r\n    raise ValueError(f\"adb {' '.join(args[:2])} failed: {done.stderr.decode('utf-8', 'replace').strip()[:300]}\")\r\nValueError: adb shell 'pidof' failed: \r\n"
+ }
+}

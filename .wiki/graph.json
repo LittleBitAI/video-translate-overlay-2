@@ -94,6 +94,11 @@
    "kind": "link"
   },
   {
+   "a": "docs/evidence/library-rail/README.md",
+   "b": "docs/design/frontend.md",
+   "kind": "link"
+  },
+  {
    "a": "docs/releases/acceptance.md",
    "b": "docs/releases/0.1.7.md",
    "kind": "link"
@@ -187,13 +192,14 @@
  ],
  "orphans": [
   "docs/design/library-acceptance.md",
-  "docs/design/library-verification.md"
+  "docs/design/library-verification.md",
+  "docs/evidence/library-rail/README.md"
  ],
  "counts": {
-  "docs": 17,
+  "docs": 18,
   "linked": 12,
   "read": 3,
-  "orphans": 2,
+  "orphans": 3,
   "pages": 7,
   "decisions": 9,
   "injectable_decisions": 1

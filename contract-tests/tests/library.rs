@@ -89,6 +89,85 @@ fn playlist_crud_order_and_untranslated_links_persist_without_paid_calls() {
 }
 
 #[test]
+fn moves_span_several_places_in_one_request_and_clamp_at_the_ends() {
+    let mut app = App::new(Options::default());
+    app.launch();
+    let ids: Vec<String> = ["One", "Two", "Three", "Four"].iter().map(|n| playlist(&mut app, n)).collect();
+    let names = |app: &mut App| -> Vec<String> {
+        library(app)["playlists"].as_array().unwrap().iter().map(|p| p["name"].as_str().unwrap().to_string()).collect()
+    };
+    change(&mut app, json!({"action":"move_playlist","playlist_id":ids[3],"delta":-3}));
+    assert_eq!(names(&mut app), ["Four", "One", "Two", "Three"]);
+    change(&mut app, json!({"action":"move_playlist","playlist_id":ids[3],"delta":2}));
+    assert_eq!(names(&mut app), ["One", "Two", "Four", "Three"]);
+    change(&mut app, json!({"action":"move_playlist","playlist_id":ids[0],"delta":99}));
+    assert_eq!(names(&mut app), ["Two", "Four", "Three", "One"]);
+    change(&mut app, json!({"action":"move_playlist","playlist_id":ids[0],"delta":-99}));
+    assert_eq!(names(&mut app), ["One", "Two", "Four", "Three"]);
+    let pages = ["https://lectures.example.org/1", "https://lectures.example.org/2", "https://lectures.example.org/3", "https://lectures.example.org/4"];
+    for page in pages {
+        change(&mut app, json!({"action":"add_entry","playlist_id":ids[0],"page_url":page}));
+    }
+    let keys: Vec<Value> = library(&mut app)["playlists"][0]["entries"].as_array().unwrap().clone();
+    let entries = |app: &mut App| library(app)["playlists"][0]["entries"].as_array().unwrap().clone();
+    change(&mut app, json!({"action":"move_entry","playlist_id":ids[0],"video_key":keys[3],"delta":-2}));
+    assert_eq!(entries(&mut app), [keys[0].clone(), keys[3].clone(), keys[1].clone(), keys[2].clone()]);
+    change(&mut app, json!({"action":"move_entry","playlist_id":ids[0],"video_key":keys[0],"delta":3}));
+    assert_eq!(entries(&mut app), [keys[3].clone(), keys[1].clone(), keys[2].clone(), keys[0].clone()]);
+    change(&mut app, json!({"action":"move_entry","playlist_id":ids[0],"video_key":keys[2],"delta":-10}));
+    assert_eq!(entries(&mut app), [keys[2].clone(), keys[3].clone(), keys[1].clone(), keys[0].clone()]);
+    let before = library(&mut app);
+    for bad in [json!(0), json!(null), json!("2")] {
+        let r = app.app_call("POST", "/library/data", json!({"action":"move_entry","playlist_id":ids[0],"video_key":keys[0],"delta":bad}));
+        assert_eq!(r.body["error"], "bad_move", "{r:?}");
+    }
+    assert_eq!(library(&mut app), before);
+}
+
+/// Property: any accepted delta, however large, moves the item to `clamp(from + delta)` computed
+/// without overflow, for playlists and entries alike; a value outside i64 is refused unchanged.
+#[test]
+fn moves_at_the_integer_limits_clamp_instead_of_overflowing() {
+    let mut app = App::new(Options::default());
+    app.launch();
+    let ids: Vec<String> = ["One", "Two", "Three"].iter().map(|n| playlist(&mut app, n)).collect();
+    for page in ["https://lectures.example.org/1", "https://lectures.example.org/2", "https://lectures.example.org/3"] {
+        change(&mut app, json!({"action":"add_entry","playlist_id":ids[0],"page_url":page}));
+    }
+    // (delta, place the middle item ends at), starting each time from the original order.
+    let table = [(i64::MAX, 2), (i64::MAX - 1, 2), (i64::MIN, 0), (i64::MIN + 1, 0), (2, 2), (-2, 0)];
+    let playlist_order = |app: &mut App| -> Vec<String> {
+        library(app)["playlists"].as_array().unwrap().iter().map(|p| p["id"].as_str().unwrap().to_string()).collect()
+    };
+    let entries = |app: &mut App| library(app)["playlists"].as_array().unwrap().iter()
+        .find(|p| p["id"] == ids[0].as_str()).unwrap()["entries"].as_array().unwrap().clone();
+    let start_playlists = playlist_order(&mut app);
+    let start_entries = entries(&mut app);
+    for (delta, to) in table {
+        let mid = start_playlists[1].clone();
+        change(&mut app, json!({"action":"move_playlist","playlist_id":mid,"delta":delta}));
+        assert_eq!(playlist_order(&mut app)[to], mid, "move_playlist by {delta}");
+        // Back to the original order before the next row.
+        let at = playlist_order(&mut app).iter().position(|p| *p == mid).unwrap() as i64;
+        if at != 1 { change(&mut app, json!({"action":"move_playlist","playlist_id":mid,"delta":1 - at})); }
+        assert_eq!(playlist_order(&mut app), start_playlists);
+
+        let key = start_entries[1].clone();
+        change(&mut app, json!({"action":"move_entry","playlist_id":ids[0],"video_key":key,"delta":delta}));
+        assert_eq!(entries(&mut app)[to], key, "move_entry by {delta}");
+        let at = entries(&mut app).iter().position(|k| *k == key).unwrap() as i64;
+        if at != 1 { change(&mut app, json!({"action":"move_entry","playlist_id":ids[0],"video_key":key,"delta":1 - at})); }
+        assert_eq!(entries(&mut app), start_entries);
+    }
+    let before = library(&mut app);
+    for action in ["move_playlist", "move_entry"] {
+        let r = app.app_call("POST", "/library/data", json!({"action":action,"playlist_id":ids[0],"video_key":start_entries[1],"delta":u64::MAX}));
+        assert_eq!(r.body["error"], "bad_move", "{action}: {r:?}");
+    }
+    assert_eq!(library(&mut app), before);
+}
+
+#[test]
 fn deletion_confirmation_retry_and_multiple_memberships_preserve_unrelated_data() {
     let mut app = App::new(Options::default());
     app.launch();

@@ -36,8 +36,8 @@ try {
     const read = ()=>page.evaluate(g=>window.__TAURI_INTERNALS__.invoke('get_library',{account_generation:g}),account.generation);
     const initial=await read();assert(initial.playlists.length>=2);assert(initial.playlists.every(p=>p.name.startsWith('LAN ')),'Only labeled acceptance fixtures may be renamed');
     assert(initial.videos.every(v=>!v.active));
-    const back=page.locator('a[href="/"]');if(await back.count())await back.click();
-    if(!(await page.getByRole('heading',{name:'보관함',exact:true}).count()))await page.getByRole('link',{name:'보관함',exact:true}).click();
+    await page.getByRole('navigation',{name:'주 메뉴'}).getByRole('link',{name:'보관함',exact:true}).click();
+    await page.getByLabel('제목 또는 주소 검색').waitFor();
     devices.push({name,page,read,account,initial});
     observations.push({name:`${name} native identity`,pass:true,actual:{core:built,screen:built,connection:account.connection.state,generation:account.generation,engine:browser.version()}});
   }
@@ -45,14 +45,20 @@ try {
   observations.push({name:'matching signed-in account',pass:true,actual:true});
   for(let i=0;i<2;i++) {
     const source=devices[i],target=devices[1-i],list=source.initial.playlists[i];
-    const select = async name => source.page.getByRole('button',{name:`${name} (${list.entries.length})`,exact:true}).click();
+    const rowName = name => `${name} 영상 ${list.entries.length}개`;
+    // A second tap closes an open accordion row, so only a closed or unselected row is tapped.
+    const select = async name => {
+      const row = source.page.getByRole('button',{name:rowName(name),exact:true});
+      if (await row.getAttribute('aria-expanded')!=='true' && await row.getAttribute('aria-current')!=='true') await row.click();
+    };
     const rename = async name => {await source.page.getByLabel('재생목록 이름',{exact:true}).fill(name);await source.page.getByRole('button',{name:'이름 바꾸기',exact:true}).click();};
     const marker=`LAN review ${source.name} ${Date.now()}`;
     await select(list.name);
+    if (!(await source.page.getByRole('button',{name:'완료',exact:true}).count())) await source.page.getByRole('button',{name:'편집',exact:true}).click();
     try {
       const start=Date.now();await rename(marker);
       await wait(target.read,data=>data.playlists.some(p=>p.id===list.id&&p.name===marker));
-      await target.page.getByRole('button',{name:`${marker} (${list.entries.length})`,exact:true}).waitFor();
+      await target.page.getByRole('button',{name:rowName(marker),exact:true}).waitFor();
       observations.push({name:`${source.name} UI change reaches peer SQLite and UI`,pass:true,actual:{delivery_ms:Date.now()-start,manual_sync:false}});
     } finally {
       await rename(list.name);

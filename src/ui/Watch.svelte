@@ -3,7 +3,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { inApp, request } from './api';
-  import Link from './Link.svelte';
+  import Nav from './Nav.svelte';
   import type { Job } from './Overlay.svelte';
   import Stage from './Stage.svelte';
 
@@ -96,8 +96,8 @@
   });
 </script>
 
-<header class="border-b border-ink/10 bg-surface">
-  <form class="mx-auto flex max-w-5xl items-center gap-2 p-2 sm:p-4" onsubmit={submit} novalidate>
+<Nav>
+  <form class="flex items-center gap-2 p-2 md:px-0" onsubmit={submit} novalidate>
     <label class="sr-only" for="address">영상 주소</label>
     <input
       id="address"
@@ -116,13 +116,11 @@
       class="min-h-11 shrink-0 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-surface disabled:opacity-60"
       disabled={opening}>{opening ? '여는 중' : '열기'}</button
     >
-    <Link href="/library" class="inline-flex min-h-11 shrink-0 items-center rounded-lg border border-ink/30 px-2 text-base">보관함</Link>
-    <Link href="/preferences" class="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg border border-ink/30 px-4 text-base">설정</Link>
   </form>
   {#if addressError}
-    <p id="address-error" role="alert" class="mx-auto max-w-5xl px-2 pb-2 text-sm text-accent sm:px-4">{addressError}</p>
+    <p id="address-error" role="alert" class="px-2 pb-2 text-sm text-accent md:px-0">{addressError}</p>
   {/if}
-</header>
+</Nav>
 
 <main class="mx-auto max-w-5xl p-2 sm:p-4">
   {#if readyNotice}

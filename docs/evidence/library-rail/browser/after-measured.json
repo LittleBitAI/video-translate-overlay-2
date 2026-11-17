@@ -1,0 +1,20 @@
+{
+  "384x854": {
+    "firstCard": {
+      "x": 16,
+      "y": 266.390625,
+      "width": 352,
+      "height": 90
+    },
+    "scrollWidth": 384
+  },
+  "1280x720": {
+    "firstCard": {
+      "x": 352.5,
+      "y": 137,
+      "width": 269.328125,
+      "height": 253.5
+    },
+    "scrollWidth": 1265
+  }
+}

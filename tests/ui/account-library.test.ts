@@ -15,6 +15,10 @@ test.each([384, 1280])('retained subtitle versions at %i px can be selected with
     selected = 'old'; return [200, {changed:true}];
   });
   const root = open('/library');
+  await vi.waitFor(() => expect(text(root)).toContain('전체 영상'));
+  if (width < 768) button(root, '전체 영상 영상 1개').click();
+  await vi.waitFor(() => expect(text(root)).toContain('저장본 2개'));
+  button(root, '편집').click();
   await vi.waitFor(() => expect(text(root)).toContain('저장된 자막 2개'));
   const select = $(root, 'select[aria-label="Retained lecture 저장 자막 선택"]') as HTMLSelectElement;
   expect(select.value).toBe('new');
@@ -68,6 +72,9 @@ test('account changes discard a deletion confirmation and late library rows befo
     return [200, { account_generation:owner, videos:owner === 1 ? [video] : [], playlists:[] }];
   });
   const root = open('/library');
+  await vi.waitFor(() => expect(text(root)).toContain('전체 영상 영상 1개'));
+  button(root, '전체 영상 영상 1개').click();
+  button(root, '편집').click();
   await vi.waitFor(() => expect(text(root)).toContain(video.title));
   button(root, '영상 삭제').click();
   await vi.waitFor(() => expect($(root, '[role="alertdialog"]')).not.toBeNull());

@@ -35,17 +35,20 @@ desktop with fresh application and WebView2 profiles. On Android it launches
 a new emulator with writable disk images inside the attempt directory,
 installs the approved debug APK, and seeds that installation. It does not
 attach to an existing emulator, physical phone or user's app process. The
-approved AVD supplies a template, not the test's writable data.
+host writes its own AVD around the approved API 34 system image; the image
+supplies a template, not the test's writable data.
 
 The debug Windows app honors the host's `WIKI_NATIVE_PROFILE` contract; the
 earlier manual `VTO_APP_DATA_DIR` override remains available. Before mutations,
 the host checks a digest of the app's actual data directory as well as its
 revision. The app exposes no plaintext data-directory path to site pages.
 
-The shared UI scenario creates and renames playlists, changes order and
-membership, reopens saved subtitles, restarts the process, cancels deletion,
-confirms deletion from multiple playlists, and manually opens an untranslated
-entry. Offline checks separately cover active jobs, failed file cleanup,
+The shared UI scenario creates playlists and adds saved videos and a link
+through the add panel, renames, reorders and removes in edit mode (one entry
+moves two places with a single drag of its handle), reopens saved subtitles from
+a card, restarts the process, cancels deletion, confirms deletion from multiple
+playlists, and manually opens an untranslated entry. It selects playlists in
+either layout: the rail of a wide window or the accordion rows of a phone. Offline checks separately cover active jobs, failed file cleanup,
 stale replies and old notification links.
 
 ## Prepare and approve a candidate
@@ -92,14 +95,16 @@ Approve the following native scope using absolute paths and measured hashes:
       "profile": "disposable-library-android",
       "adb": {"path": "C:/absolute/path/adb.exe", "sha256": "64 lowercase hexadecimal characters"},
       "emulator": {"path": "C:/absolute/path/emulator.exe", "sha256": "64 lowercase hexadecimal characters"},
-      "avd": "installed API 34 x86-64 AVD template name"
+      "image": {"path": "C:/absolute/path/sdk/system-images/android-34/google_apis/x86_64", "sha256": "android_owned.image_digest of that folder"}
     }
   }
 }
 ```
 
-`Get-FileHash -Algorithm SHA256` measures an asset; lowercase its hash for
-approval. A rebuild requires updated approval. Stale binaries fail the
+`Get-FileHash -Algorithm SHA256` measures a file; lowercase its hash for
+approval. The system image is a folder, so its digest comes from wiki-agent's
+`android_owned.image_digest`. Empty optional fields are refused, so a Windows
+entry carries no Android keys. A rebuild requires updated approval. Stale binaries fail the
 running-build check even when filenames match. Machine-specific approval
 and environment files stay ignored by Git.
 

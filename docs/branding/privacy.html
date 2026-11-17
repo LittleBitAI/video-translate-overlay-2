@@ -21,7 +21,7 @@
   </header>
   <main id="main">
     <h1>Video Translate Overlay privacy policy</h1>
-    <p>Last updated: 2026-11-15.</p>
+    <p>Last updated: 2026-11-17.</p>
     <p>This notice describes Video Translate Overlay on Windows and Android. Sections about Google app sign-in and local-network synchronization apply to builds containing those features. The approved 0.1.7 release does not contain them.</p>
     <h2>Google account information</h2>
     <p>When you choose Google app sign-in, Google supplies basic identity information: your verified email address, a stable account identifier, and a signed identity token. The app uses this information to display the selected account, separate its local library from other accounts, and verify device identity for nearby synchronization. It requests identity scopes only. It does not request Google Drive, Gmail or YouTube data through this app sign-in.</p>
@@ -35,6 +35,7 @@
     <h2>Transcription, translation and other network requests</h2>
     <p>Speech recognition runs on the device. When you explicitly request translation, the app sends transcript text, translation context and glossary content to Google's Gemini API using your own API key. Google processes those requests under the terms and data practices applicable to your Gemini account. Signing in to the app or opening a saved translation does not itself request a new transcription or Gemini translation.</p>
     <p>Gemini API keys use Windows Credential Manager or Android Keystore-backed storage. They are not part of the synchronized library. YouTube sign-in uses the app browser's separate session, whose cookies stay in its local WebView profile. The app also connects to media sources, speech-model download sources and the approved GitHub Releases channel when those features are used. Those services receive the network requests needed for the selected operation.</p>
+    <p>The library shows a preview image for each saved YouTube video. The app loads it from YouTube's image server (<code>i.ytimg.com</code>) using the video's ID, so that server receives the request, including your IP address and which video's image is shown. Videos from other sites show a placeholder made on the device; the app does not fetch preview images from those sites.</p>
     <h2>Retention and your controls</h2>
     <p>Signing out stops that app's account transfers and removes its saved sign-in credential. Previously synchronized library copies remain local to their accounts. Signing out does not erase other devices. Changes to your Google account or permissions elsewhere do not immediately invalidate the app's existing thirty-day local device enrollment; sign out in the app on the relevant devices to stop their transfers.</p>
     <p>Confirmed video deletion removes the video's stored transcript, subtitle responses, glossary, job history, managed per-video files and playlist memberships. Connected devices apply the deletion; disconnected devices apply it after reconnecting. Durable deletion markers and synchronization receipts remain to prevent stale copies from resurrecting deleted records. File-cleanup failures remain visible for retry. Deleting a playlist or removing one entry keeps the underlying translation.</p>

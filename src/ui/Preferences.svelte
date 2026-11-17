@@ -2,7 +2,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import { inApp, request } from './api';
-  import Link from './Link.svelte';
+  import Nav from './Nav.svelte';
   import GoogleAccount from './GoogleAccount.svelte';
 
   type Settings = { key_set: boolean; key_masked: string | null; translation_model: string };
@@ -118,14 +118,10 @@
   </div>
 {/snippet}
 
-<header class="border-b border-ink/10">
-  <div class="mx-auto flex max-w-2xl items-center gap-4 p-4">
-    <Link href="/" class="inline-flex min-h-11 items-center rounded-lg border border-ink/30 px-4 text-base">← 영상으로</Link>
-    <h1 class="text-lg font-semibold">설정</h1>
-  </div>
-</header>
+<Nav />
 
 <main class="mx-auto flex max-w-2xl flex-col gap-4 p-2 sm:p-4">
+  <h1 class="px-2 pt-2 text-2xl font-semibold sm:px-0">설정</h1>
   <GoogleAccount />
   <section class={card}>
     <h2 class="text-lg font-semibold">앱 업데이트</h2>

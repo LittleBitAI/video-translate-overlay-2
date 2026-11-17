@@ -9,23 +9,59 @@ typography:
   sizes: [14, 16, 20, 28]
 spacing: [4, 8, 16, 24]
 rounded: [8]
-components: [address-bar, library-list, playlist-list, confirmation]
+components: [shared-menu, address-bar, playlist-rail, playlist-accordion, video-card, edit-mode, add-panel, confirmation]
 ---
 
 # Local video library
 
-People return here to reopen a translated lecture or manually choose a video
-from a topic playlist. Success is the selected video opening in the existing
-browser with its saved subtitles. The library at `/library` has a title/link
+People return here to reopen a translated lecture or to go through a topic
+playlist. Success is the chosen video opening on the watch screen with its
+saved subtitles. Activating a playlist shows its videos at once, with no
+scrolling and no second screen. The library at `/library` has a title/link
 search, saved availability, and ordered topic playlists. It does not need a
-dashboard or another video detail screen.
+dashboard, a playlist page or another video detail screen.
 
-Use the existing approved charcoal theater palette C1. Blue identifies actions;
-yellow identifies errors and permanent deletion warnings. The existing system
-font uses 28 px for the page heading, 20 px for playlist headings, 16 px for
-controls and titles, and 14 px for source links and availability. Controls have
-at least 44 px touch targets. Rows and controls wrap at phone widths; links wrap
-without hiding their destination.
+From a 768 px window width (the Windows window, a tablet or a phone held
+sideways) a 16 rem left rail lists 전체 영상 and every playlist with a cover,
+its name and its video count. The selected one has a blue left edge and tint
+and `aria-current`. The right pane shows its videos as a grid of cards no
+narrower than 13 rem. The rail stays in place while the grid scrolls, and the
+rail header is as tall as the pane's toolbar so the first playlist and the
+first card share a top edge. Below 768 px the screen is one column: tapping a
+playlist row expands its videos directly under it (`aria-expanded`), tapping
+again closes it, and one row is open at a time. The open row stays pinned to
+the top while its videos scroll. A search with no row open shows 전체 영상.
+
+A video card is a 16:9 thumbnail with the duration in its corner when known,
+the title clamped to two lines, the site name and the saved, processing or
+cleanup-pending status. A YouTube thumbnail comes from YouTube's image server by
+the stored video ID. Other sites, and any image that fails to load, get a tile
+with the site host and a play mark. Cards show the site name, not the address:
+the full address appears in edit mode. Activating a card opens the video
+through the same request as before. A playlist's cover is its first video's
+thumbnail, or the tile when it is empty. Wide cards stack the thumbnail over the
+text; phone cards put a 144 px thumbnail beside it.
+
+The default view has only the search, 추가 and 편집. 편집 (then 완료) lists the
+videos in one column, thumbnail beside title, and reveals a drag handle and visibly labeled 위로 / 아래로 on playlists and entries, the
+rename field, 목록에서 빼기, 영상 삭제 and 재생목록 삭제. Dropping a handle sends
+one move of however many places it crossed; the buttons move one place and are
+the keyboard path. 추가 opens a panel with a saved-video picker showing
+thumbnails, a link field with an optional name and the cost note, and
++ 새 재생목록, which selects the playlist it creates. A refresh after a change
+keeps the shown library and scroll position until the new answer arrives.
+
+영상, 보관함 and 설정 share one menu in the same place on every screen: tabs at
+the left of the top bar from 768 px, a bottom tab bar with 44 px targets and the
+safe-area inset below that. The current one has `aria-current="page"`, weight
+and a blue bar. The address field stays only on `/`.
+
+Use the existing approved charcoal theater palette C1. Blue identifies actions
+and the selected place; yellow identifies errors, processing and permanent
+deletion. The existing system font uses 28 px for the page heading, 20 px for
+the pane and panel headings, 16 px for controls, playlist names and (semibold)
+card titles, and 14 px for site names, counts, status and durations. Controls
+have at least 44 px touch targets.
 
 Signed-out library requests select the original device database; Google sign-in
 selects a separate account-owned local database. An explicit import confirmation
@@ -42,8 +78,9 @@ keeps a retry action. Playback views recheck saved availability, discard older
 subtitle responses, and clear cues after deletion. Untranslated links can be
 organized and opened without creating a translation job.
 
-Several completed responses appear in one native saved-version selector, using
-the existing input styling and 44 px target. Selecting a response preserves its
+Several completed responses are counted on the card's status line and appear in
+one native saved-version selector in edit mode, using the existing input
+styling and 44 px target. Selecting a response preserves its
 cue times and cost and requires reopening the video. Initial playback may resume
 once at the saved position; user input cancels delayed resume and later remote
 position changes never move a player already controlled here.
