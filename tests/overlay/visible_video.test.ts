@@ -161,7 +161,9 @@ test.each(FRAMED)('test_a_frame_video_counts_only_by_its_part_in_view_through_ev
     return (nested ? (d?.getElementById('player') as HTMLIFrameElement | null)?.contentDocument : d) ?? null;
   };
   const overlayIn = (d: Document | null) => !!d?.querySelector('[data-vto="overlay"]');
-  await expect.poll(() => player()?.readyState === 'complete' && !!player()?.querySelector('video'), { timeout: 10_000 }).toBe(true);
+  // Loading the fixture frames is setup, not what is checked: the test server has
+  // been measured stalling for up to 26 s while the PC's disk was busy.
+  await expect.poll(() => player()?.readyState === 'complete' && !!player()?.querySelector('video'), { timeout: 45_000 }).toBe(true);
 
   if (want === 'player') {
     await expect.poll(() => overlayIn(player()), { timeout: 10_000 }).toBe(true);
@@ -172,4 +174,4 @@ test.each(FRAMED)('test_a_frame_video_counts_only_by_its_part_in_view_through_ev
     expect(overlayIn(document), 'the lecture in view keeps the overlay').toBe(true);
     expect(overlayIn(player()), 'the player out of view gets none').toBe(false);
   }
-});
+}, 90_000);

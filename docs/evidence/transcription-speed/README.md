@@ -399,6 +399,11 @@ PC above:
 | [`screen-unsupported-cpu-notice`](receipts/screen-unsupported-cpu-notice.txt) | the watch screen's tests | 0 | 14 |
 
 These are focused checks, not the repository gate, which the server runs.
+After them, only `tests/overlay/visible_video.test.ts` changed (the `tests`
+tree): its framed cases wait up to 45 s instead of 10 s for the fixture
+frames to load, because the test server was measured stalling for up to 26 s
+while the PC's disk was busy. No assertion changed; the overlay suite passed
+74 of 74 with it.
 
 The contract translation tests failed in an earlier receipt run (3 of 5,
 then 3 of 8 repeated runs) while the PC's search indexer and antivirus kept
