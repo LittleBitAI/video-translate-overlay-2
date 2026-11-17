@@ -29,16 +29,17 @@ the established rail, grid and phone accordion; extra desktop width adds grid
 columns. The video stage keeps its 16:9 ratio and fits the height below the menu
 without changing the overlay's subtitle sizing.
 
-Settings starts with Gemini setup. From 1024 px, the key form and the grouped
-Google app/YouTube account controls share a top edge in a frameless workspace,
-separated by a quiet vertical rule and 24 px inset. The workspace grows to
-90 rem, while the key form stays within 42 rem. Below 1024 px these tasks stack
-in the same reading order, preserving their existing controls and confirmations.
-The secondary footer holds updates and privacy; when content fits, it sits at
-the window's bottom. Privacy remains available before sign-in and retains the
-fixed native opener and retryable error. The approved palette and shared
-navigation are unchanged. The user rejected the earlier card layout and the
-flat-row revision; those captures are historical, not accepted final designs.
+Settings is reconstructed at 1920×1080 with no overall width cap. Gemini setup
+and YouTube session controls occupy an equal-height grid row from 1024 px;
+their bottom actions align through flex layout, without fixed blank spacers.
+The key form and removal group can grow to 60 rem. Google app-account sync is
+the next full-width row. Update checking is a prominent 44 px control at the
+header's trailing edge, aligned with the page's right inset. Privacy remains
+in the secondary footer and stays available before sign-in with the same fixed
+native opener and retryable error. Below 1024 px the tasks stack, preserving
+their controls and confirmations. The palette and shared navigation are
+unchanged. Earlier card, flat-row and capped hierarchy revisions were rejected;
+their captures are historical, not accepted final designs.
 
 ## 기능을 둔 자리
 

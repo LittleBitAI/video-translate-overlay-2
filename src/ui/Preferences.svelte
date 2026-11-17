@@ -135,14 +135,17 @@
 <Nav />
 
 <main class="flex flex-col gap-6 p-2 sm:p-4 md:min-h-[calc(100dvh-61px)]">
-  <h1 class="px-2 pt-2 text-2xl font-semibold sm:px-0">설정</h1>
-  <div class="grid w-full max-w-[90rem] items-start gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-    <section class={section} aria-busy={screen === 'loading'}>
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <h1 class="px-2 pt-2 text-2xl font-semibold sm:px-0">설정</h1>
+    <button type="button" class="inline-flex min-h-11 items-center rounded-lg border border-primary/60 px-4 py-2 text-base font-semibold text-primary hover:bg-primary/10" onclick={() => window.dispatchEvent(new Event('vto-check-updates'))}>업데이트 확인</button>
+  </div>
+  <div class="grid w-full items-stretch gap-6 lg:grid-cols-2">
+    <section class="{section} lg:flex lg:flex-col" aria-busy={screen === 'loading'}>
       <div>
         <h2 class="text-lg font-semibold">Gemini 개인키</h2>
         <p class="mt-1 text-sm text-ink/70">개인키는 이 기기에만 저장됩니다. 번역 비용은 개인키 주인에게 청구됩니다.</p>
       </div>
-      <div class="max-w-2xl">
+      <div class="max-w-[60rem]">
         {#if screen === 'error'}
           <!-- The saved settings did not load: its own box, apart from the field, whose place is for a key's own errors. -->
           <div role="alert" class="my-2 flex flex-wrap items-center gap-2 rounded-lg border border-accent p-2">
@@ -151,7 +154,7 @@
           </div>
         {/if}
 
-        <form class="mt-6 max-w-2xl" onsubmit={save} novalidate>
+        <form class="mt-6" onsubmit={save} novalidate>
           <label for="api-key" class="sr-only">Gemini 개인키</label>
           <div class="mt-1 flex gap-2">
             <input
@@ -209,59 +212,57 @@
             <dd>{s.translation_model}</dd>
           </dl>
         {/if}
-
-        <hr class="my-4 border-ink/15 md:hidden" />
-        <div class="md:mt-4 md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-start md:gap-4">
-          <p class="mb-4 text-sm md:mb-0 {s.key_set ? 'text-ink/70' : 'text-ink/40'}">지우면 이 기기에서 사라지고, 영상감지 버튼을 누를 때 개인키를 넣으라는 안내가 뜹니다.</p>
-          {#if asking === 'delete'}
-            {@render confirmRow('delete', '개인키를 지울까요?', '지우기', 'delete-api-key')}
-          {:else}
-            <button type="button" data-feature="delete-api-key" class={outline} disabled={!s.key_set || screen !== 'ready'} onclick={() => ask('delete')}>
-              개인키 지우기
-            </button>
-          {/if}
-        </div>
+      </div>
+      <hr class="my-4 border-ink/15 lg:hidden" />
+      <div class="mt-4 w-full max-w-[60rem] md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-end md:gap-4 lg:mt-auto lg:pt-6">
+        <p class="mb-4 text-sm md:mb-0 {s.key_set ? 'text-ink/70' : 'text-ink/40'}">지우면 이 기기에서 사라지고, 영상감지 버튼을 누를 때 개인키를 넣으라는 안내가 뜹니다.</p>
+        {#if asking === 'delete'}
+          {@render confirmRow('delete', '개인키를 지울까요?', '지우기', 'delete-api-key')}
+        {:else}
+          <button type="button" data-feature="delete-api-key" class={outline} disabled={!s.key_set || screen !== 'ready'} onclick={() => ask('delete')}>
+            개인키 지우기
+          </button>
+        {/if}
       </div>
     </section>
-    <div class="min-w-0 space-y-6 lg:border-s lg:border-ink/10 lg:ps-6">
+    <section class="{section} lg:flex lg:flex-col">
+      <div>
+        <h2 class="text-lg font-semibold">유튜브 로그인</h2>
+        <p class="mt-1 text-sm text-ink/70">
+          한 번 로그인하면 앱에 저장한 세션으로 다음 영상을 엽니다. 로그인은 구글 화면에서 진행하며, 앱은 비밀번호를 받거나 저장하지 않습니다.
+        </p>
+        <p class="mt-1 text-sm text-ink/70">휴대폰의 유튜브 앱과는 별도 로그인입니다. 구글이 앱 내 로그인을 차단하면 계정을 연결할 수 없습니다.</p>
+      </div>
+      <div class="mt-4 flex flex-wrap items-end gap-2 lg:mt-auto lg:pt-6">
+        {#if inApp()}
+          <button type="button" class="{outline}" disabled={connecting || busy || screen !== 'ready'} onclick={connectYoutube}>
+            {connecting ? '계정 화면 여는 중' : '유튜브 계정 연결'}
+          </button>
+        {:else}
+          <a class="{outline} inline-flex items-center" href={youtubeSignIn} target="_blank" rel="noopener noreferrer">유튜브 계정 연결</a>
+        {/if}
+        {#if asking === 'logout'}
+          {@render confirmRow('logout', '유튜브에서 로그아웃할까요?', '로그아웃', 'youtube-logout')}
+        {:else}
+          <button type="button" data-feature="youtube-logout" class="{outline}" disabled={connecting || busy || screen !== 'ready'} onclick={() => ask('logout')}>
+            유튜브 로그아웃
+          </button>
+        {/if}
+      </div>
+    </section>
+    <div class="min-w-0 lg:col-span-2 lg:border-t lg:border-ink/10 lg:pt-6">
       <GoogleAccount />
-      <section class="{section} lg:border-t lg:border-ink/10 lg:pt-6">
-        <div>
-          <h2 class="text-lg font-semibold">유튜브 로그인</h2>
-          <p class="mt-1 text-sm text-ink/70">
-            한 번 로그인하면 앱에 저장한 세션으로 다음 영상을 엽니다. 로그인은 구글 화면에서 진행하며, 앱은 비밀번호를 받거나 저장하지 않습니다.
-          </p>
-          <p class="mt-1 text-sm text-ink/70">휴대폰의 유튜브 앱과는 별도 로그인입니다. 구글이 앱 내 로그인을 차단하면 계정을 연결할 수 없습니다.</p>
-        </div>
-        <div class="mt-4 flex flex-wrap items-center gap-2">
-          {#if inApp()}
-            <button type="button" class="{outline}" disabled={connecting || busy || screen !== 'ready'} onclick={connectYoutube}>
-              {connecting ? '계정 화면 여는 중' : '유튜브 계정 연결'}
-            </button>
-          {:else}
-            <a class="{outline} inline-flex items-center" href={youtubeSignIn} target="_blank" rel="noopener noreferrer">유튜브 계정 연결</a>
-          {/if}
-          {#if asking === 'logout'}
-            {@render confirmRow('logout', '유튜브에서 로그아웃할까요?', '로그아웃', 'youtube-logout')}
-          {:else}
-            <button type="button" data-feature="youtube-logout" class="{outline}" disabled={connecting || busy || screen !== 'ready'} onclick={() => ask('logout')}>
-              유튜브 로그아웃
-            </button>
-          {/if}
-        </div>
-      </section>
     </div>
   </div>
   {#if done || failed}
     <p role="status" class="text-sm {failed ? 'text-accent' : 'text-ink/80'}">{failed || done}</p>
   {/if}
-  <footer class="mt-auto flex w-full max-w-[90rem] flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t border-ink/10 pt-4">
+  <footer class="mt-auto flex w-full flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t border-ink/10 pt-4">
     <section aria-label="앱 업데이트" class="flex flex-wrap items-center gap-4">
       <div>
         <h2 class="text-sm font-semibold">앱 업데이트</h2>
         <p class="mt-1 text-sm text-ink/70">승인된 새 버전과 추가 기능을 확인합니다. 닫은 버전도 다시 볼 수 있습니다.</p>
       </div>
-      <button type="button" class="inline-flex min-h-11 items-center px-2 text-sm text-ink/70 underline underline-offset-4 hover:text-ink" onclick={() => window.dispatchEvent(new Event('vto-check-updates'))}>업데이트 확인</button>
     </section>
     <div>
       {#if inApp()}

@@ -120,7 +120,7 @@
   onDestroy(() => generation++);
 </script>
 
-<section class="settings-section min-w-0 max-lg:rounded-lg max-lg:bg-ink/5 max-lg:p-4 sm:max-lg:p-6 lg:max-w-2xl" aria-label="Google 앱 계정" aria-busy={loading || sending}>
+<section class="settings-section min-w-0 max-lg:rounded-lg max-lg:bg-ink/5 max-lg:p-4 sm:max-lg:p-6 lg:grid lg:grid-cols-2 lg:gap-6" aria-label="Google 앱 계정" aria-busy={loading || sending}>
   <div>
     <h2 class="text-lg font-semibold">Google 앱 계정</h2>
     <p class="mt-1 text-sm text-ink/70">기기간 연결에 사용할 계정입니다. 유튜브 로그인과는 별개이며, Gemini 개인키와 쿠키를 동기화하지 않습니다.</p>

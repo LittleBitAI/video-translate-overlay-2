@@ -268,10 +268,20 @@ test.each([[1280, 720], [1920, 1080], [2560, 1440], [768, 720], [384, 854]])('at
         const account = $(root, 'section[aria-label="Google 앱 계정"]')!.getBoundingClientRect();
         const key = $(root, '#api-key')!.closest('section')!.getBoundingClientRect();
         expect(key.left).toBe(16);
-        expect($(root, '#api-key')!.closest('form')!.getBoundingClientRect().width).toBeLessThanOrEqual(672);
+        expect($(root, '#api-key')!.closest('form')!.getBoundingClientRect().width).toBeLessThanOrEqual(960);
         if (width >= 1024) {
-          expect(account.top).toBe(key.top);
-          expect(account.left).toBeGreaterThan(key.right);
+          const youtube = $(root, '[data-feature="youtube-logout"]')!;
+          const youtubeSection = youtube.closest('section')!.getBoundingClientRect();
+          const workspace = $(root, '#api-key')!.closest('section')!.parentElement!.getBoundingClientRect();
+          const update = button(root, '업데이트 확인').getBoundingClientRect();
+          expect(youtubeSection.top).toBe(key.top);
+          expect(youtubeSection.bottom).toBe(key.bottom);
+          expect(youtube.getBoundingClientRect().bottom).toBe($(root, '[data-feature="delete-api-key"]')!.getBoundingClientRect().bottom);
+          expect(workspace.width).toBe(main.getBoundingClientRect().width - 32);
+          expect(update.right).toBe(workspace.right);
+          expect(update.height).toBeGreaterThanOrEqual(44);
+          expect(update.top).toBeLessThan(130);
+          expect(account.top).toBeGreaterThan(key.bottom);
           for (const section of $$(root, '.settings-section')) {
             expect(getComputedStyle(section).backgroundColor).toBe('rgba(0, 0, 0, 0)');
             expect(getComputedStyle(section).borderRadius).toBe('0px');
@@ -282,7 +292,7 @@ test.each([[1280, 720], [1920, 1080], [2560, 1440], [768, 720], [384, 854]])('at
       }
     }
     if (path === '/preferences') {
-      expect($$(root, 'h2').map(text)).toEqual(['Gemini 개인키', 'Google 앱 계정', '유튜브 로그인', '앱 업데이트']);
+      expect($$(root, 'h2').map(text)).toEqual(['Gemini 개인키', '유튜브 로그인', 'Google 앱 계정', '앱 업데이트']);
       const footer = $(root, 'main footer')!;
       expect(footer.getBoundingClientRect().top).toBeGreaterThanOrEqual(Math.max(...$$(root, '.settings-section').map(section => section.getBoundingClientRect().bottom)));
       expect(text(footer)).toContain('개인정보처리방침');

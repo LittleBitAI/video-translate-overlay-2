@@ -61,14 +61,15 @@ separate centered width limits. The library grid uses the available width;
 its 16 rem rail, 13 rem minimum cards and 768 px accordion split stay the same.
 The video stage stays left-aligned at 16:9, growing within the width and the
 height below the menu so the player and its overlay fit together. Desktop
-Settings puts Gemini setup first. From 1024 px its frameless workspace has
-the key form on the leading side and Google app account plus YouTube session
-controls together on the other. Both start at the same top edge, separated
-by one quiet rule and 24 px of inset. The workspace grows to 90 rem; key fields
-stay within 42 rem. Smaller windows stack these tasks in the same reading
-order and retain the existing control behavior. Updates and privacy sit in a
-secondary footer, below the task controls and at the window's bottom when the
-content fits. Extra space remains empty rather than becoming decorative boxes.
+Settings is composed at 1920×1080 using the available width, with 16 px page
+insets and no overall width cap. From 1024 px Gemini setup and YouTube session
+controls share one grid row with equal-height sections. Their final actions
+share a bottom edge; the layout uses content height and flex alignment rather
+than a fixed spacer. The key form and removal group can grow to 60 rem. Google
+app-account synchronization occupies the next full-width row. Update checking
+is a prominent 44 px button at the header's trailing edge. Privacy stays in the
+secondary footer. Smaller windows stack the tasks with their existing controls
+and confirmations. Desktop sections have no decorative card backgrounds.
 
 Use the existing approved charcoal theater palette C1. Blue identifies actions
 and the selected place; yellow identifies errors, processing and permanent
