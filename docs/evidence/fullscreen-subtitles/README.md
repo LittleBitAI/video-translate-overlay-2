@@ -187,3 +187,28 @@ The repair does not claim that earlier gate for the repaired candidate and does
 not dispatch final verification. The server owns the next checks and final
 hosted CI. Live YouTube, a physical phone, installer packaging and release
 publication remain outside these focused runs.
+
+## Review round 2: retain the comparison with the reviewed candidate
+
+The previous retained audit log named only the producer's own revision. A later
+console audit had compared the evidence with the candidate, but that output was
+not committed. This packet now retains an actual audit execution for reviewed
+commit `8e53d39bf066e0c92d8011f351a5ac46115dcd00` in `review-1/audit.log`.
+`review-1/source-binding.json` names that reviewed commit and explicitly marks
+the runtime and offline runs as reused from `be8b00b`.
+
+`review-1/reviewed-head.json` retains the execution time, current environment,
+producer and candidate input digests, the exact excluded changes, reused build
+identities, and hashes of the fresh audit and binding-test output. Both input
+digests are identical. The three binding regression tests passed again; the
+runtime, browser, desktop, API and 84 renderer-test observations are reused,
+not presented as fresh executions. User readability acceptance is also reused.
+The earlier server gate report remains an owner report for its original commit,
+not a gate pass for this repair.
+
+After each evidence-only correction, the implementation runs the audit again
+after committing and names that final HEAD in its completion report. The
+committed log records the reviewed candidate; the post-commit report records
+the new evidence-only commit. This avoids claiming that a committed file can
+contain its own future commit identifier. No application or verifier source
+changed in this round, and final verification remains server-owned.

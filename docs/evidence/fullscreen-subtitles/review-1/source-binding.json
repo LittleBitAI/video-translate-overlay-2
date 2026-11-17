@@ -1,8 +1,8 @@
 {
-  "reviewedHead": "f68351a35fb9baf9df48debe1634e19f954807cc",
+  "reviewedHead": "8e53d39bf066e0c92d8011f351a5ac46115dcd00",
   "producerHead": "be8b00b36acd794630d6a3f9d782778d40e9a776",
-  "runtimeReuse": false,
-  "offlineReuse": false,
+  "runtimeReuse": true,
+  "offlineReuse": true,
   "acceptanceReuse": {
     "sourceApplicationHead": "aedada2c3e6c1aef9470359ca59c18a9b126b2d9",
     "acceptedAt": "2026-11-17",
@@ -32,5 +32,10 @@
       "reusedForRepair": false
     }
   ],
-  "finalVerification": "Pending server-owned hosted CI; no final verification dispatched or retried by implementation."
+  "finalVerification": "Pending server-owned hosted CI; no final verification dispatched or retried by implementation.",
+  "previousReviewedHeads": [
+    "f68351a35fb9baf9df48debe1634e19f954807cc"
+  ],
+  "reuseValidation": "reviewed-head.json",
+  "reuseReason": "All tracked application, test, build, fixture and verifier inputs have identical digests; changes are confined to the declared evidence outputs and acceptance prose."
 }
