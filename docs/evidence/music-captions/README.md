@@ -93,7 +93,7 @@ repetition at 36:52–37:05, without repairing that video.
 
 The exact original music window and its context contain no detected speech.
 Both speech models now return no captions for that window and retain the
-spoken introduction. The first spoken cue starts at 9,320 ms with the phone's
+spoken introduction. The first spoken cue starts at 9,040 ms with the phone's
 decoding and 9,280 ms with the desktop model, within the existing 300 ms
 tolerance of the saved 9,100 ms speech onset. Quiet speech, speech mixed with
 music, genuine rhythmic speech, reused detector state and reopening also pass.
@@ -136,7 +136,13 @@ and voice-offset check; the final pipeline has no decoded-word filter.
 The opt-in inference tests still require local audio and model files, so their
 ignore reasons remain valid; the new regression was explicitly run above.
 
-The server owns the repository gate and final verification. Windows playback
-of the repaired version remains required; the native UI transport was
-unavailable in this implementation session. No installer or release was
-published, and no physical Android inference run is claimed for this change.
+On 2026-11-18 the user selected `Playback checks passed (Recommended)` after
+being asked to reopen this MIT lecture in Windows, confirm no captions during
+0–8 seconds and normal Korean speech captions during 9–20 seconds, check
+seek/pause, and restart the app to confirm the repaired selection persists.
+This is the user's confirmation of actual Windows playback, not an automated
+desktop observation; the session's native UI transport was unavailable.
+
+The server owns the repository gate and final verification, which remain
+pending. No installer or release was published, and no physical Android
+inference run is claimed for this change.

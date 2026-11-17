@@ -50,7 +50,21 @@
     "reopened": true,
     "integrity_check": "ok"
   },
-  "windows_playback": "pending user verification; native UI transport unavailable",
+  "windows_playback": {
+    "status": "passed",
+    "method": "user confirmation",
+    "confirmed_option": "Playback checks passed (Recommended)",
+    "recorded_at": "2026-11-17T23:49:57.542079+00:00",
+    "checks": [
+      "Windows lecture reopened",
+      "no captions at 0\u20138 seconds",
+      "normal Korean speech captions at 9\u201320 seconds",
+      "seek and pause",
+      "app restart retains repaired selection"
+    ],
+    "automated_desktop_observation": false
+  },
   "final_verification": "server-owned, pending",
-  "baseline_commit": "cd81109bc4c8be7ab81ff2e5d6dc74de83c7a1d3"
+  "baseline_commit": "cd81109bc4c8be7ab81ff2e5d6dc74de83c7a1d3",
+  "implementation_commit": "c6c5aeb"
 }
