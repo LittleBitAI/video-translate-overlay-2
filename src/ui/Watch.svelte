@@ -122,7 +122,7 @@
   {/if}
 </Nav>
 
-<main class="mx-auto max-w-5xl p-2 sm:p-4">
+<main class="p-2 sm:p-4">
   {#if readyNotice}
     <div role="status" class="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-accent/60 p-2 text-sm">
       <p class="min-w-0 flex-1 break-words">{readyNotice.text}</p>
@@ -133,7 +133,7 @@
   {/if}
 
   {#if screen === 'loading'}
-    <div aria-busy="true" aria-label="불러오는 중" class="relative aspect-video w-full overflow-hidden rounded-lg bg-ink/10">
+    <div aria-busy="true" aria-label="불러오는 중" class="video-stage relative aspect-video w-full overflow-hidden rounded-lg bg-ink/10">
       <div class="absolute inset-0 flex flex-col justify-between p-2">
         <div class="flex items-start justify-between gap-2">
           <div data-feature="job-progress" class="w-48 max-w-[60%] rounded-lg bg-surface/90 p-2 text-sm">
@@ -173,7 +173,7 @@
       <Stage url={opened} job={openedJob} />
     {/key}
   {:else}
-    <div class="flex aspect-video w-full items-center justify-center rounded-lg border border-dashed border-ink/30 p-6 text-center">
+    <div class="video-stage flex aspect-video w-full items-center justify-center rounded-lg border border-dashed border-ink/30 p-6 text-center">
       <p class="text-base text-ink/80">영상 주소를 넣으면 여기에서 열립니다</p>
     </div>
   {/if}

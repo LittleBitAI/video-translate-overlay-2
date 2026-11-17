@@ -45,6 +45,13 @@
   }
 }
 
+/* Keep the desktop player and its overlay at 16:9 within the height below the menu. */
+@media (min-width: 768px) {
+  .video-stage {
+    max-width: calc((100dvh - 6rem) * 16 / 9);
+  }
+}
+
 /* A bar for work with no percent to show: a segment that runs across the track. */
 .vto-indeterminate {
   animation: vto-run 1.2s ease-in-out infinite;

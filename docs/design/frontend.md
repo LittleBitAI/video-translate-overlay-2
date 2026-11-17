@@ -21,6 +21,19 @@ with a blue top bar on the current tab. The current tab carries
 library no longer has its own 영상 열기 link and settings no longer has
 ← 영상으로; on `/`, 영상 열기 still names the button in a ready notice.
 
+### Maximized desktop layout
+
+The desktop menu and all three pages start at the same 16 px inset. The page
+containers no longer have separate centered maximum widths. The library keeps
+the established rail, grid and phone accordion; extra desktop width adds grid
+columns. The video stage keeps its 16:9 ratio and fits the height below the menu
+without changing the overlay's subtitle sizing.
+
+From 1024 px, Settings groups Google account and updates in one column and the
+Gemini key and YouTube sign-in in another, aligned at the top. Each column is
+at most 42 rem wide. Below that width, the sections retain their existing order
+in one column. The approved palette, type scale and navigation are unchanged.
+
 ## 기능을 둔 자리
 
 | 기능 | 주인이 고른 칸 | 놓인 화면 |

@@ -56,6 +56,16 @@ the left of the top bar from 768 px, a bottom tab bar with 44 px targets and the
 safe-area inset below that. The current one has `aria-current="page"`, weight
 and a blue bar. The address field stays only on `/`.
 
+Desktop navigation and page content share a 16 px leading inset instead of
+separate centered width limits. The library grid uses the available width;
+its 16 rem rail, 13 rem minimum cards and 768 px accordion split stay the same.
+The video stage stays left-aligned at 16:9, growing within the width and the
+height below the menu so the player and its overlay fit together. Settings
+use two top-aligned columns from 1024 px: Google account and updates in the
+first, Gemini key and YouTube sign-in in the second. Each column is at most
+42 rem wide for readable fields and text. Smaller windows retain the original
+single-column order. Empty space after these settings groups remains empty.
+
 Use the existing approved charcoal theater palette C1. Blue identifies actions
 and the selected place; yellow identifies errors, processing and permanent
 deletion. The existing system font uses 28 px for the page heading, 20 px for

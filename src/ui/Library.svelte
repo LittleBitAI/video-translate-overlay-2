@@ -364,7 +364,7 @@
 {/snippet}
 
 <Nav />
-<main bind:this={root} class="mx-auto max-w-6xl p-4">
+<main bind:this={root} class="p-4">
   {#if screen === 'loading'}
     <h1 class="text-2xl font-semibold">보관함</h1>
     <p role="status" aria-busy="true" class="mt-4">보관함 불러오는 중…</p>
