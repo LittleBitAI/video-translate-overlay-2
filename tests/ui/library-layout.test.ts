@@ -307,19 +307,25 @@ test.each([[1280, 720], [1920, 1080], [2560, 1440], [768, 720], [384, 854]])('at
   expect($$(root, 'a').filter(a => text(a) === '영상 열기')).toHaveLength(0);
 });
 
-test.each([[1280, 720], [2560, 1440], [384, 854]])('at %i px an opened video and its overlay share a visible 16:9 stage', async (width, height) => {
+test.each([1280, 1920, 2560, 384].flatMap(width => ['loading', 'empty', 'media', 'youtube', 'page'].map(state =>
+  [width, width === 384 ? 854 : width === 1280 ? 720 : width === 1920 ? 1080 : 1440, state] as const
+)))('at %i px and %i px high the %s state keeps a visible 16:9 frame', async (width, height, state) => {
   await page.viewport(width, height);
-  everyScreen('https://lectures.example.org/layout.mp4');
+  if (state === 'loading') api(() => 'hang');
+  else everyScreen(state === 'empty' ? null : state === 'youtube' ? 'https://www.youtube.com/watch?v=abcDEF12345'
+    : state === 'page' ? 'https://lectures.example.org/lecture' : 'https://lectures.example.org/layout.mp4');
   const root = open('/');
-  await vi.waitFor(() => expect($(root, 'video')).not.toBeNull());
-  const frame = $(root, 'video')!.getBoundingClientRect();
+  if (state !== 'loading') await vi.waitFor(() => expect($(root, '[aria-busy="true"]')).toBeNull());
   const stage = $(root, '.video-stage')!.getBoundingClientRect();
+  const frame = ($(root, '.video-stage > .aspect-video') ?? $(root, '.video-stage'))!.getBoundingClientRect();
   expect(frame.width / frame.height).toBeCloseTo(16 / 9, 1);
   expect(frame.width).toBeCloseTo(stage.width, 1);
   expect(frame.bottom).toBeLessThanOrEqual(height);
   expect(frame.right).toBeLessThanOrEqual(width);
-  const overlay = $(root, '.pointer-events-none')!.getBoundingClientRect();
-  expect(overlay.width).toBeCloseTo(frame.width, 1);
-  expect(overlay.height).toBeCloseTo(frame.height, 1);
+  const overlay = $(root, '.pointer-events-none')?.getBoundingClientRect();
+  if (overlay) {
+    expect(overlay.width).toBeCloseTo(frame.width, 1);
+    expect(overlay.height).toBeCloseTo(frame.height, 1);
+  }
   expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(width);
 });

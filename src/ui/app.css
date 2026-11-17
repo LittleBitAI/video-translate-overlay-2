@@ -45,10 +45,10 @@
   }
 }
 
-/* Keep the desktop player and its overlay at 16:9 within the height below the menu. */
+/* Messages above the stage consume height too; leave the main's bottom padding. */
 @media (min-width: 768px) {
   .video-stage {
-    max-width: calc((100dvh - 6rem) * 16 / 9);
+    max-width: calc(max(0px, 100dvh - var(--stage-top, 5rem) - 1rem) * 16 / 9);
   }
 }
 

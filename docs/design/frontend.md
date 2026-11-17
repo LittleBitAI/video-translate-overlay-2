@@ -26,8 +26,10 @@ library no longer has its own 영상 열기 link and settings no longer has
 The desktop menu and all three pages start at the same 16 px inset. The page
 containers no longer have separate centered maximum widths. The library keeps
 the established rail, grid and phone accordion; extra desktop width adds grid
-columns. The video stage keeps its 16:9 ratio and fits the height below the menu
-without changing the overlay's subtitle sizing.
+columns. The video stage keeps its 16:9 ratio and fits the height below its actual
+position, including address errors and ready notices above it, without changing
+the overlay's subtitle sizing. Desktop fitting rechecks after content and window
+resizes; the narrow-screen layout remains unchanged.
 
 Settings is reconstructed at 1920×1080 with no overall width cap. Gemini setup
 and YouTube session controls occupy an equal-height grid row from 1024 px;

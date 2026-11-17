@@ -20,6 +20,19 @@
   /** The app's ready notice for a video, while this screen is open (the OS one is shown too). */
   let readyNotice = $state<{ text: string; url: string } | null>(null);
 
+  function fitStage(node: HTMLElement) {
+    let frame = 0;
+    const resize = () => {
+      const stage = node.querySelector('.video-stage');
+      if (stage) node.style.setProperty('--stage-top', `${stage.getBoundingClientRect().top + scrollY}px`);
+    };
+    const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(resize); };
+    const observer = new ResizeObserver(schedule);
+    observer.observe(node);
+    window.addEventListener('resize', schedule);
+    return { destroy() { observer.disconnect(); cancelAnimationFrame(frame); window.removeEventListener('resize', schedule); } };
+  }
+
   /** Google's account screen, shown before the first YouTube video: where it goes on to. */
   const gateNext = $derived.by(() => {
     try {
@@ -96,6 +109,7 @@
   });
 </script>
 
+<div use:fitStage>
 <Nav>
   <form class="flex items-center gap-2 p-2 md:px-0" onsubmit={submit} novalidate>
     <label class="sr-only" for="address">영상 주소</label>
@@ -178,3 +192,4 @@
     </div>
   {/if}
 </main>
+</div>
