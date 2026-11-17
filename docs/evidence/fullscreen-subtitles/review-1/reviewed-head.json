@@ -1,21 +1,29 @@
 {
-  "at": "2026-11-17T21:38:20.960Z",
-  "reviewedHead": "31b5d9ebe5fb26005909b520e3513aff5751cf41",
+  "at": "2026-11-17T21:44:54.650Z",
+  "reviewedHead": "f09023a34907cdf0af11007613595729c9f385bb",
   "producerHead": "be8b00b36acd794630d6a3f9d782778d40e9a776",
   "environment": {
     "os": "Windows 11 Home",
     "release": "10.0.26200",
     "node": "v24.18.0"
   },
-  "maintenanceComparison": {
-    "fromHead": "5ce5fede78aba38a6ed2da3729a965bf4be27a06",
-    "toHead": "31b5d9ebe5fb26005909b520e3513aff5751cf41",
-    "changedPaths": [
-      ".wiki/corpus.json",
-      ".wiki/graph.json"
+  "documentIndexValidation": {
+    "name": "test_document_index_matches_current_markdown",
+    "result": "PASS",
+    "documents": 21,
+    "otherEntriesChecked": 20,
+    "fields": [
+      "title",
+      "heads",
+      "chars"
     ],
-    "changedIncludedPaths": [],
-    "result": "PASS: the two excluded wiki index changes preserve the execution-input digest"
+    "target": "docs/evidence/fullscreen-subtitles/README.md",
+    "previousCharacters": 12253,
+    "currentCharacters": 13791,
+    "requiredHeading": "Review round 4: bind the merge-maintenance candidate",
+    "corpusSha256": "79cc56b059e09e3eeec3eaf57d361569e005c2beecc0de8d9bc07371a550fe5e",
+    "markdownSha256": "e8f65bcbc67aa6a9b38c13e92753ba708ad8ba42b8a73ce4da04555760c30c36",
+    "generator": "python C:/Users/dasdk/PycharmProjects/wiki-agent/tool/corpus.py --project C:/Users/dasdk/PycharmProjects/video-translate-overlay-2 --write"
   },
   "sourceComparison": {
     "producer": {
@@ -28,7 +36,7 @@
       ]
     },
     "reviewed": {
-      "head": "31b5d9ebe5fb26005909b520e3513aff5751cf41",
+      "head": "f09023a34907cdf0af11007613595729c9f385bb",
       "inputTreeSha256": "7abea7747ccdebebd32604bb7cdc5b3b16740648aba80ea7bf2b52a17264860d",
       "exclusions": [
         ".wiki/",
@@ -107,22 +115,22 @@
         "sha256": "4eddb4486fcd499f67e3e128a4937e1f422cca85fa93f48ac394892d9205b390"
       }
     },
-    "reason": "Application, test, build, fixture and verifier inputs have identical digests at the producer, pre-maintenance candidate and merge-maintenance HEAD. Runtime scenarios and 84 renderer tests are reused."
+    "reason": "Only the generated document index and declared evidence outputs change in this repair. All application, test, build, fixture and verifier input digests remain identical; runtime scenarios and 84 renderer tests are reused."
   },
   "freshChecks": [
     {
       "command": "node --test scripts/verification/subtitle-binding.test.mjs",
       "exitCode": 0,
       "log": "binding-reviewed-head.log",
-      "sha256": "d1064b9dc769afb4a710172948ac4d8ff726603d830c829d77d6a864507ac720",
-      "result": "3 tests passed; changed or incomplete bindings refused across the property table."
+      "sha256": "dba576fc7eab1359ab1158648c523a4600d20eb4098ae5870daca899ef486289",
+      "result": "3 binding tests passed."
     },
     {
       "command": "node scripts/verification/subtitle-evidence-audit.mjs",
       "exitCode": 0,
       "log": "audit.log",
-      "sha256": "66e7ad85e14e81c5f36f52606d8a8b9916a421ef154ca9950932ba62e728b259",
-      "result": "PASS: runtime, API, browser, desktop and offline evidence bound to HEAD 31b5d9ebe5fb26005909b520e3513aff5751cf41; producer be8b00b36acd794630d6a3f9d782778d40e9a776; 10 capture hashes verified"
+      "sha256": "d2bbcd94602175a202b58827db4e1f251d7ba57e582896af9cd7b28459f45027",
+      "result": "PASS: runtime, API, browser, desktop and offline evidence bound to HEAD f09023a34907cdf0af11007613595729c9f385bb; producer be8b00b36acd794630d6a3f9d782778d40e9a776; 10 capture hashes verified"
     }
   ]
 }

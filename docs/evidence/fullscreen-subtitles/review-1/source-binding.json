@@ -1,5 +1,5 @@
 {
-  "reviewedHead": "31b5d9ebe5fb26005909b520e3513aff5751cf41",
+  "reviewedHead": "f09023a34907cdf0af11007613595729c9f385bb",
   "producerHead": "be8b00b36acd794630d6a3f9d782778d40e9a776",
   "runtimeReuse": true,
   "offlineReuse": true,
@@ -35,8 +35,9 @@
   "finalVerification": "Pending server-owned hosted CI; no final verification dispatched or retried by implementation.",
   "previousReviewedHeads": [
     "f68351a35fb9baf9df48debe1634e19f954807cc",
-    "8e53d39bf066e0c92d8011f351a5ac46115dcd00"
+    "8e53d39bf066e0c92d8011f351a5ac46115dcd00",
+    "31b5d9ebe5fb26005909b520e3513aff5751cf41"
   ],
   "reuseValidation": "reviewed-head.json",
-  "reuseReason": "Application, test, build, fixture and verifier inputs have identical digests at the producer, pre-maintenance candidate and merge-maintenance HEAD. Runtime scenarios and 84 renderer tests are reused."
+  "reuseReason": "Only the generated document index and declared evidence outputs change in this repair. All application, test, build, fixture and verifier input digests remain identical; runtime scenarios and 84 renderer tests are reused."
 }
