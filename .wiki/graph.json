@@ -114,6 +114,11 @@
    "kind": "link"
   },
   {
+   "a": "docs/releases/acceptance.md",
+   "b": "docs/releases/0.1.8.md",
+   "kind": "link"
+  },
+  {
    "a": "docs/releases/procedure.md",
    "b": "docs/design/google-auth-setup.md",
    "kind": "link"

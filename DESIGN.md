@@ -102,3 +102,31 @@ Google identity use on the homepage, and read the complete data practices on
 the privacy page. They reuse C1 and the 14/16/20/28 px type scale. A 70ch reading
 column, wrapping navigation, 44 px navigation targets and normal document flow
 serve both phone and desktop. They have no forms, scripts or account dashboard.
+
+## Overview site
+
+`overview.html`, `overview/guide.html` and `overview/install.html` are the
+Korean introduction. Its reader has found the repository and wants to decide
+whether to install. Success means one of the two download buttons in the first
+screen, or the install page.
+
+- Order of the intro page: claim and downloads with the Windows library capture,
+  the four steps behind 영상감지, three measured numbers with their source, two
+  text-and-phone sections (library, PC and phone sharing), what does not work
+  yet, a dated build log, and the closing install links. Each heading states a
+  user outcome, not a development story.
+- Voice is 합니다체, short sentences, app terms exactly as on screen. App
+  button and menu names use the `.ui` chip (sans, 600), never `code`, because
+  they are screen words, not code.
+- Colour stays the app's blue, chosen by the user on 2026-11-17 over a subtitle
+  amber and an ink-only option: `#2c66cc` on the light `#f5f4f1` ground (4.9:1)
+  and `#4f8cff` on the dark `#14161a` ground (5.6:1). It marks big numbers,
+  step numbers and links, so the page reads as the same product as the captures.
+- Type levels: serif display h1, serif h2, serif stat number, sans lead,
+  sans body, sans item title (17px, 650), sans caption, mono date and label.
+  One level carries one meaning.
+- Layout: text always starts on the page's left edge. Phone captures sit at
+  16rem at the start of the right column and never alternate sides. Below
+  960px every grid becomes one column; below 600px the download buttons go full
+  width. No horizontal overflow at 1440 or 400px.
+- Only real captures are used. Nothing is drawn to look like the app.
