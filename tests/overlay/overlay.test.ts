@@ -578,7 +578,7 @@ test('a fifteen-minute timeline and repeated backward seeks keep the source cloc
 
 test('test_overlay_fits_phone_and_desktop_screens', async () => {
   const sequences: string[][] = [];
-  for (const [w, h] of [[384, 854], [1280, 720]]) {
+  for (const [w, h] of [[384, 854], [1280, 720], [1920, 1080]]) {
     await page.viewport(w, h);
     expect([innerWidth, innerHeight]).toEqual([w, h]);
     const p = makePlayer(MAIN_MS / 1000);
@@ -629,11 +629,51 @@ test('test_overlay_fits_phone_and_desktop_screens', async () => {
     handle.destroy();
   }
   expect(sequences[0]).toEqual(sequences[1]);
+  expect(sequences[0]).toEqual(sequences[2]);
   const steps = sequences[0];
   const post = steps.indexOf('POST /jobs');
   expect(post, `no POST /jobs in ${steps}`).toBeGreaterThanOrEqual(0);
   expect(steps.indexOf('GET /jobs', post), `no polling after POST /jobs in ${steps}`).toBeGreaterThan(post);
   expect(steps.lastIndexOf(`GET /videos/${VIDEO_KEY}/subtitles`)).toBeGreaterThan(steps.indexOf('GET /jobs', post));
+});
+
+test('subtitles scale with the visible image through restore, letterboxing and seek', async () => {
+  await page.viewport(1920, 1080);
+  const p = makePlayer(MAIN_MS / 1000);
+  p.player.style.maxWidth = 'none';
+  p.video.style.objectFit = 'contain';
+  let image = [1920, 1080];
+  Object.defineProperty(p.video, 'videoWidth', {get: () => image[0]});
+  Object.defineProperty(p.video, 'videoHeight', {get: () => image[1]});
+  const cues = [CUES[0], {...LONG_CUE, start_ms: 5000, end_ms: 8000, text_ko: `${LONG_CUE.text_ko}\n${CUES[1].text_ko}`}];
+  const backend = fakeBackend(c => c.path === '/jobs' ? {status: 200, body: job('ready', 100)}
+    : {status: 200, body: subtitlesBody(cues)});
+  await mountOverlay({video: p.video, pageUrl: YT, title: TITLE, mediaUrl: null, request: backend.request});
+  for (const [width, height, iw, ih] of [[640, 360, 1920, 1080], [1920, 1080, 1920, 1080],
+    [1920, 1080, 1440, 1080], [1920, 1080, 2520, 1080], [800, 450, 1920, 1080], [384, 216, 1920, 1080]]) {
+    image = [iw, ih];
+    p.player.style.width = `${width}px`;
+    p.player.style.height = `${height}px`;
+    p.video.dispatchEvent(new Event('loadedmetadata'));
+    for (const cue of cues) {
+      p.seek(cue.start_ms / 1000 + 0.1);
+      p.pause();
+      await expect.poll(shownSubtitle).toBe(cue.text_ko);
+      const sub = deepAll('[data-vto="subtitle"]')[0] as HTMLElement;
+      const scale = Math.min(width / iw, height / ih);
+      const w = iw * scale, h = ih * scale;
+      const expected = Math.max(14, Math.min(w * 0.03, h * 0.055));
+      await expect.poll(() => parseFloat(getComputedStyle(sub).fontSize)).toBeCloseTo(expected, 1);
+      const bounds = sub.getBoundingClientRect();
+      const left = (width - w) / 2, top = (height - h) / 2;
+      expect(bounds.left).toBeGreaterThanOrEqual(left);
+      expect(bounds.right).toBeLessThanOrEqual(left + w);
+      expect(bounds.top).toBeGreaterThanOrEqual(deepAll('[data-vto="detect"]')[0].getBoundingClientRect().bottom);
+      expect(bounds.bottom).toBeLessThanOrEqual(top + h - h * 0.1);
+      expect(sub.scrollWidth).toBeLessThanOrEqual(sub.clientWidth + 1);
+    }
+  }
+  expect(p.writes).toEqual([]);
 });
 
 test('test_subtitles_hide_during_ad_and_return', async () => {

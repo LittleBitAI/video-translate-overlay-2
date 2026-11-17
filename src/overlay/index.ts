@@ -8,6 +8,7 @@
 
 export type Reply = { status: number; body: any };
 import { watchPlayback } from './playback';
+import { videoArea, SUBTITLE_SIZE } from './geometry';
 export type Request = (method: string, path: string, body?: unknown) => Promise<Reply>;
 export type Cue = { seq: number; start_ms: number; end_ms: number; text_ko: string };
 
@@ -56,7 +57,7 @@ const CSS = `
 .root.loose { justify-content: flex-end; align-items: center; padding: 0 16px; }
 .sub { pointer-events: none; align-self: center; max-width: 100%; box-sizing: border-box; padding: 4px 10px; border-radius: 4px;
   margin-bottom: calc(var(--h, 0px) * 0.1);
-  background: rgba(0, 0, 0, 0.78); color: #fff; font-size: clamp(14px, calc(var(--w, 100vw) * 0.03), 26px); line-height: 1.4;
+  background: rgba(0, 0, 0, 0.78); color: #fff; font-size: ${SUBTITLE_SIZE}; line-height: 1.4;
   text-align: center; overflow-wrap: anywhere; word-break: keep-all; white-space: pre-wrap; }
 .loose .sub { order: -1; margin-bottom: 0; }
 .bar { pointer-events: auto; align-self: flex-start; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; max-width: 100%; }
@@ -111,11 +112,7 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
     // Request the player container from our button: video-only fullscreen cannot paint sibling subtitles.
     const parent = full && full !== video && full.contains(video) ? full : document.body ?? document.documentElement;
     if (host.parentNode !== parent) parent.append(host);
-    const r = video.getBoundingClientRect();
-    const left = Math.max(0, r.left);
-    const top = Math.max(0, r.top);
-    const w = Math.min(innerWidth, r.right) - left;
-    const h = Math.min(innerHeight, r.bottom) - top;
+    const { left, top, width: w, height: h } = videoArea(video);
     const loose = !(w >= 160 && h >= 90);
     const key = loose ? 'loose' : `${left},${top},${w},${h}`;
     if (key === placed) return;
@@ -123,7 +120,7 @@ export function mountOverlay({ video, pageUrl, title, mediaUrl, request }: Overl
     root.classList.toggle('loose', loose);
     const s = root.style;
     if (loose) {
-      s.cssText = 'left:0;right:0;bottom:16px';
+      s.cssText = `left:0;right:0;bottom:16px;--w:${innerWidth}px;--h:${innerHeight}px`;
     } else {
       s.cssText = `left:${left}px;top:${top}px;width:${w}px;height:${h}px`;
       s.setProperty('--w', `${w}px`);
