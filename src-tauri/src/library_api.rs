@@ -31,8 +31,8 @@ pub(super) fn library_action_in(library: &crate::library_scope::Library<'_>, act
         return Err(err(404, "no_playlist", "재생목록이 없습니다. 다시 불러와 주세요."));
     }
     let delta = action["delta"].as_i64().unwrap_or(0);
-    if matches!(op, "move_playlist" | "move_entry") && ![-1, 1].contains(&delta) {
-        return Err(err(400, "bad_move", "위나 아래로 한 칸씩 이동해 주세요."));
+    if matches!(op, "move_playlist" | "move_entry") && delta == 0 {
+        return Err(err(400, "bad_move", "옮길 칸 수를 정해 주세요."));
     }
     match op {
         "create_playlist" => store.create_playlist(&new_job_id(), name)?,

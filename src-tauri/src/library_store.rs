@@ -182,8 +182,10 @@ impl Store {
             };
             let mut ids = rows.iter().map(|r| r[0].text()).collect::<Vec<_>>();
             let from = ids.iter().position(|v| v == key.unwrap_or(id)).ok_or("missing item")?;
+            // Any step, clamped at the ends; the items between shift by one place.
             let to = (from as i64 + delta).clamp(0, ids.len() as i64 - 1) as usize;
-            ids.swap(from, to);
+            let moved = ids.remove(from);
+            ids.insert(to, moved);
             for (i, value) in ids.iter().enumerate() {
                 if key.is_some() {
                     if db.execute("UPDATE playlist_entry SET position=? WHERE playlist_id=? AND video_key=? AND position!=?", p![i as i64,id,value,i as i64])? != 0 {

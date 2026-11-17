@@ -656,6 +656,35 @@ fn ordinary_library_mutations_publish_and_incoming_projection_does_not_echo() {
 }
 
 #[test]
+fn multi_place_moves_reach_the_peer_in_the_same_order() {
+    let a = Profile::new();
+    let b = Profile::new();
+    let first = a.journal();
+    let second = b.journal();
+    let store = first.library().unwrap();
+    for id in ["one", "two", "three"] {
+        store.create_playlist(id, id).unwrap();
+    }
+    let keys: Vec<String> = (0..3)
+        .map(|n| {
+            let page = format!("https://lectures.example.org/{n}");
+            let key = crate::api::video_key(&url::Url::parse(&page).unwrap());
+            store.add_entry("one", &key, &page, "other", &format!("Lecture {n}")).unwrap();
+            key
+        })
+        .collect();
+    send(&first, &second);
+    store.move_library_item("three", None, -2).unwrap();
+    store.move_library_item("one", Some(&keys[0]), 2).unwrap();
+    send(&first, &second);
+    let mine = store.library().unwrap();
+    let ids: Vec<&str> = mine["playlists"].as_array().unwrap().iter().map(|p| p["id"].as_str().unwrap()).collect();
+    assert_eq!(ids, ["three", "one", "two"]);
+    assert_eq!(mine["playlists"][1]["entries"], serde_json::json!([keys[1], keys[2], keys[0]]));
+    assert_eq!(mine, second.library().unwrap().library().unwrap());
+}
+
+#[test]
 fn job_completion_cannot_adopt_a_deletion_received_after_the_job_started() {
     let a = Profile::new();
     let b = Profile::new();

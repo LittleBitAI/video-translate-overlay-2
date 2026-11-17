@@ -83,7 +83,7 @@ cancels a delayed resume. Later remote position updates never seek that player.
 
 P10 (`get_library`, `GET /library/data`) reads existing video/job/cue rows without
 backfill or retranscription. P11 (`library_action`, `POST /library/data`) handles
-playlist CRUD, adjacent reorder, membership changes, and confirmed video deletion.
+playlist CRUD, reorder by any number of places in one transaction, membership changes, and confirmed video deletion.
 Both are restricted to the app's own screens. Site overlays retain only P6–P8.
 `docs/design/api.yaml` defines the action bodies and errors.
 

@@ -89,6 +89,42 @@ fn playlist_crud_order_and_untranslated_links_persist_without_paid_calls() {
 }
 
 #[test]
+fn moves_span_several_places_in_one_request_and_clamp_at_the_ends() {
+    let mut app = App::new(Options::default());
+    app.launch();
+    let ids: Vec<String> = ["One", "Two", "Three", "Four"].iter().map(|n| playlist(&mut app, n)).collect();
+    let names = |app: &mut App| -> Vec<String> {
+        library(app)["playlists"].as_array().unwrap().iter().map(|p| p["name"].as_str().unwrap().to_string()).collect()
+    };
+    change(&mut app, json!({"action":"move_playlist","playlist_id":ids[3],"delta":-3}));
+    assert_eq!(names(&mut app), ["Four", "One", "Two", "Three"]);
+    change(&mut app, json!({"action":"move_playlist","playlist_id":ids[3],"delta":2}));
+    assert_eq!(names(&mut app), ["One", "Two", "Four", "Three"]);
+    change(&mut app, json!({"action":"move_playlist","playlist_id":ids[0],"delta":99}));
+    assert_eq!(names(&mut app), ["Two", "Four", "Three", "One"]);
+    change(&mut app, json!({"action":"move_playlist","playlist_id":ids[0],"delta":-99}));
+    assert_eq!(names(&mut app), ["One", "Two", "Four", "Three"]);
+    let pages = ["https://lectures.example.org/1", "https://lectures.example.org/2", "https://lectures.example.org/3", "https://lectures.example.org/4"];
+    for page in pages {
+        change(&mut app, json!({"action":"add_entry","playlist_id":ids[0],"page_url":page}));
+    }
+    let keys: Vec<Value> = library(&mut app)["playlists"][0]["entries"].as_array().unwrap().clone();
+    let entries = |app: &mut App| library(app)["playlists"][0]["entries"].as_array().unwrap().clone();
+    change(&mut app, json!({"action":"move_entry","playlist_id":ids[0],"video_key":keys[3],"delta":-2}));
+    assert_eq!(entries(&mut app), [keys[0].clone(), keys[3].clone(), keys[1].clone(), keys[2].clone()]);
+    change(&mut app, json!({"action":"move_entry","playlist_id":ids[0],"video_key":keys[0],"delta":3}));
+    assert_eq!(entries(&mut app), [keys[3].clone(), keys[1].clone(), keys[2].clone(), keys[0].clone()]);
+    change(&mut app, json!({"action":"move_entry","playlist_id":ids[0],"video_key":keys[2],"delta":-10}));
+    assert_eq!(entries(&mut app), [keys[2].clone(), keys[3].clone(), keys[1].clone(), keys[0].clone()]);
+    let before = library(&mut app);
+    for bad in [json!(0), json!(null), json!("2")] {
+        let r = app.app_call("POST", "/library/data", json!({"action":"move_entry","playlist_id":ids[0],"video_key":keys[0],"delta":bad}));
+        assert_eq!(r.body["error"], "bad_move", "{r:?}");
+    }
+    assert_eq!(library(&mut app), before);
+}
+
+#[test]
 fn deletion_confirmation_retry_and_multiple_memberships_preserve_unrelated_data() {
     let mut app = App::new(Options::default());
     app.launch();
