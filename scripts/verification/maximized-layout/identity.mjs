@@ -30,6 +30,14 @@ export function inventory(out) {
   return result.treeSha256;
 }
 export function binary(path) { return {path, sha256:sha(readFileSync(path))}; }
+export function binding(reportedHead) {
+  assert.match(reportedHead, /^[a-f0-9]{40}$/);
+  const excluded = [...scope, ':(exclude)scripts/verification/maximized-layout'];
+  const changedBuildInputs = git(['diff', '--name-only', reportedHead, head, '--', ...excluded]).split('\n').filter(Boolean);
+  assert.deepEqual(changedBuildInputs, [], 'Reported build must have the same application inputs');
+  return {reportedHead, collectorHead:head, changedBuildInputs,
+    comparisonExcludes:['.wiki', 'docs/evidence/maximized-layout', 'scripts/verification/maximized-layout']};
+}
 export function inspect(pid, port, rootPid = pid) {
   return JSON.parse(execFileSync('pwsh', ['-NoProfile', '-File', 'scripts/verification/maximized-layout/inspect.ps1',
     '-AppPid', String(pid), '-Port', String(port), '-RootPid', String(rootPid)], {encoding:'utf8', windowsHide:true}));

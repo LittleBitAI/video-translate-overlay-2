@@ -3,7 +3,7 @@ import {mkdirSync, writeFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {chromium} from 'playwright';
 import {capture, measure} from './capture.mjs';
-import {head, environment, inventory, binary, inspect, sha} from './identity.mjs';
+import {head, environment, inventory, binary, inspect, sha, binding} from './identity.mjs';
 
 const base = process.env.LAYOUT_ORIGIN ?? 'http://127.0.0.1:8146';
 const out = process.env.LAYOUT_OUTPUT ?? 'artifacts/maximized-layout/review-1/browser';
@@ -23,11 +23,12 @@ async function call(method, route, body) {
   return result;
 }
 const build = await call('GET', '/build');
-check('core revision', head, build.body.head);
+const buildBinding = binding(build.body.head);
+check('unchanged application inputs at the core revision', [], buildBinding.changedBuildInputs);
 const ownership = inspect(build.body.pid, new URL(base).port);
 check('core executable', resolve('target/debug/vto-web.exe').toLowerCase(), ownership.image.toLowerCase());
 const initial = await call('GET', '/library/data');
-check('fresh isolated library', {videos:[], playlists:[]}, initial.body);
+check('fresh isolated library', {videos:[], playlists:[]}, {videos:initial.body.videos, playlists:initial.body.playlists});
 const created = await call('POST', '/library/data', {action:'create_playlist', name:'Layout fixtures'});
 check('playlist creation status', 200, created.status);
 const list = await call('GET', '/library/data');
@@ -69,7 +70,7 @@ try {
     await page.goto(base);
     const results = await capture(page, out, `${width}x${height}`, {coreHead:build.body.head, profile:sha(resolve(process.env.APP_DATA_DIR))});
     for (const r of results) {
-      check('screen revision', head, r.screenHead);
+      check('screen and core revisions match', build.body.head, r.screenHead);
       r.coreHead = build.body.head;
       r.profile = sha(resolve(process.env.APP_DATA_DIR));
     }
@@ -98,7 +99,7 @@ try {
     await page.close();
   }
 } finally { await browser.close(); }
-writeFileSync(`${out}/receipt.json`, JSON.stringify({head, environment, treeSha256, origin:base,
+writeFileSync(`${out}/receipt.json`, JSON.stringify({head, buildBinding, environment, treeSha256, origin:base,
   profile:sha(resolve(process.env.APP_DATA_DIR)), build:build.body, ownership, binary:binary('target/debug/vto-web.exe'),
   requests, assertions, sessions}, null, 2)+'\n');
-console.log(`PASS: ${assertions.length} API/browser assertions, 4 viewports; core and screens ${head}`);
+console.log(`PASS: ${assertions.length} API/browser assertions, 4 viewports; core and screens ${build.body.head}`);

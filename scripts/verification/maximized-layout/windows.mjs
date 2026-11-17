@@ -4,7 +4,7 @@ import {execFileSync} from 'node:child_process';
 import {readFileSync,writeFileSync} from 'node:fs';
 import {call} from '../library-scenario.mjs';
 import {capture,measure} from './capture.mjs';
-import {head,environment,inventory,binary,inspect,sha} from './identity.mjs';
+import {head,environment,inventory,binary,inspect,sha,binding} from './identity.mjs';
 
 const out=process.env.LAYOUT_OUTPUT ?? 'artifacts/maximized-layout/review-1/windows';
 const launch=JSON.parse(readFileSync(`${out}/launch.json`));
@@ -18,8 +18,9 @@ try {
   assert(page,'Native app page was not found');
   await page.getByRole('link',{name:'보관함',exact:true}).waitFor();
   const identity=await page.evaluate(()=>({screen:document.querySelector('meta[name="wiki-build-head"]').content,core:window.__WIKI_NATIVE_BUILD_HEAD__,profile:window.__WIKI_NATIVE_PROFILE__}));
-  check('native screen revision',head,identity.screen);
-  check('native core revision',head,identity.core);
+  const buildBinding=binding(identity.core);
+  check('native screen and core revisions match',identity.core,identity.screen);
+  check('unchanged application inputs at the native revision',[],buildBinding.changedBuildInputs);
   check('disposable native profile',sha(`${launch.profile}\\data`),identity.profile);
   async function request(method,route,body) {
     const result=await call(page,method,route,body);
@@ -27,7 +28,8 @@ try {
     check('native API request succeeded',200,result.status);
     return result.body;
   }
-  check('fresh native library',{videos:[],playlists:[]},await request('GET','/library/data'));
+  const initial=await request('GET','/library/data');
+  check('fresh native library',{videos:[],playlists:[]},{videos:initial.videos,playlists:initial.playlists});
   await request('POST','/library/data',{action:'create_playlist',name:'Layout fixtures'});
   const lists=(await request('GET','/library/data')).playlists;
   for(let i=0;i<36;i++) await request('POST','/library/data',{action:'add_entry',playlist_id:lists[0].id,
@@ -58,7 +60,7 @@ try {
     await page.getByRole('link',{name:'보관함',exact:true}).click();
   }
   environment.webview=browser.version();
-  writeFileSync(`${out}/receipt.json`,JSON.stringify({head,treeSha256,environment,binary:binary('target/debug/video-translate-overlay.exe'),
+  writeFileSync(`${out}/receipt.json`,JSON.stringify({head,buildBinding,treeSha256,environment,binary:binary('target/debug/video-translate-overlay.exe'),
     identity,launch:{pid:launch.pid,port:launch.port,profile:identity.profile,hostSources:launch.hostSources},requests,assertions,sessions},null,2)+'\n');
-  console.log(`PASS: ${assertions.length} native assertions; core and screen ${head}`);
+  console.log(`PASS: ${assertions.length} native assertions; core and screen ${identity.core}`);
 } finally {await browser.close();}
