@@ -33,8 +33,9 @@ test('local subtitles scale with their player and wrap inside a letterboxed imag
       expect(r.left).toBeGreaterThanOrEqual((width - imageWidth) / 2);
       expect(r.right).toBeLessThanOrEqual((width + imageWidth) / 2);
       expect(r.top).toBeGreaterThanOrEqual(target.querySelector('[data-feature="detect-video"]')!.getBoundingClientRect().bottom);
-      expect(r.bottom).toBeLessThanOrEqual(height);
+      expect(r.bottom).toBeLessThanOrEqual(height - Math.max(48, height * 0.1));
       expect(sub.scrollWidth).toBeLessThanOrEqual(sub.clientWidth + 1);
+      expect(sub.scrollHeight).toBeLessThanOrEqual(sub.clientHeight + 1);
     });
   }
 });

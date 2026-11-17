@@ -56,7 +56,7 @@ const CSS = `
   font-family: system-ui, "Noto Sans KR", sans-serif; }
 .root.loose { justify-content: flex-end; align-items: center; padding: 0 16px; }
 .sub { pointer-events: none; align-self: center; max-width: 100%; box-sizing: border-box; padding: 4px 10px; border-radius: 4px;
-  margin-bottom: calc(var(--h, 0px) * 0.1);
+  margin-bottom: max(48px, calc(var(--h, 0px) * 0.1));
   background: rgba(0, 0, 0, 0.78); color: #fff; font-size: ${SUBTITLE_SIZE}; line-height: 1.4;
   text-align: center; overflow-wrap: anywhere; word-break: keep-all; white-space: pre-wrap; }
 .loose .sub { order: -1; margin-bottom: 0; }

@@ -669,8 +669,9 @@ test('subtitles scale with the visible image through restore, letterboxing and s
       expect(bounds.left).toBeGreaterThanOrEqual(left);
       expect(bounds.right).toBeLessThanOrEqual(left + w);
       expect(bounds.top).toBeGreaterThanOrEqual(deepAll('[data-vto="detect"]')[0].getBoundingClientRect().bottom);
-      expect(bounds.bottom).toBeLessThanOrEqual(top + h - h * 0.1);
+      expect(bounds.bottom).toBeLessThanOrEqual(top + h - Math.max(48, h * 0.1));
       expect(sub.scrollWidth).toBeLessThanOrEqual(sub.clientWidth + 1);
+      expect(sub.scrollHeight).toBeLessThanOrEqual(sub.clientHeight + 1);
     }
   }
   expect(p.writes).toEqual([]);
