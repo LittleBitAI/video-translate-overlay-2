@@ -56,7 +56,9 @@ known, a two-line title, the site name and the status. A playlist's cover is its
 first video's thumbnail.
 
 The toolbar holds only the search, 추가 and 편집. Edit mode (편집, then 완료)
-shows the full address on each card, the saved-version selector, a drag handle
+lists the videos in one column, thumbnail beside title, because a grid card is
+too narrow for its controls. It shows the full address on each entry, the
+saved-version selector, a drag handle
 and labeled 위로 / 아래로 on playlists and entries, the selected playlist's
 rename field and 재생목록 삭제, and 목록에서 빼기 and 영상 삭제 on cards. A drop
 sends one P11 move of any number of places; the buttons are the keyboard path.
@@ -89,13 +91,15 @@ link from another site and three playlists (one empty).
    management off the default view.
 1. `DESIGN.md` and the sketch. Components and the 768 px split are recorded
    there; C1 and the 14/16/20/28 px scale are unchanged.
-2. Measurement in Chromium, after the last layout change (values in px):
+2. Measurement in Chromium, after the last layout change (values in px). Headless
+   Chromium draws classic scrollbars, so from 768 px the reserved 15 px gutter
+   narrows the page; the phone layout reserves none:
 
    | Viewport | Main padding | Menu | Heading | First list item | Toolbar | First card | Card / thumbnail | Overflow |
    | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-   | 1280×720 | 16 | x 80, y 0, h 60 | x 80, y 81, 28 | x 80, y 137, 256 × 61, pad 8 | x 360, y 77, h 44 (search 288, 추가 66, 편집 66) | x 360, y 137 | 269 × 254 / 269 × 151 | none |
-   | 1009×720 | 16 | x 16, y 0, h 60 | x 16, y 81, 28 | x 16, y 137, 256 × 61, pad 8 | x 296, y 77, h 80 (heading on its own line below 1024) | x 296, y 173 | 222 × 227 / 222 × 125 | none |
-   | 384×854 | 16 | bottom, y 809, h 45 (44 + border) | x 16, y 16, 28 | x 16, y 128, 352 × 61, pad 8 | x 16, y 68, h 44 (search 204, 추가 66, 편집 66) | x 16, y 266 | 352 × 90 / 144 × 81 | none |
+   | 1280×720 | 16 | x 73, y 0, h 60 | x 73, y 81, 28 | x 73, y 137, 256 × 61, pad 8 | x 353, y 77, h 44 (search 288, 추가 66, 편집 66) | x 353, y 137 | 269 × 254 / 269 × 151 | none (1,265 of 1,265) |
+   | 1009×720 | 16 | x 16, y 0, h 60 | x 16, y 81, 28 | x 16, y 137, 256 × 61, pad 8 | x 296, y 77, h 80 (heading on its own line below 1024) | x 296, y 173 | 217 × 224 / 217 × 122 | none (994 of 994) |
+   | 384×854 | 16 | bottom, y 809, h 45 (44 + border) | x 16, y 16, 28 | x 16, y 128, 352 × 61, pad 8 | x 16, y 68, h 44 (search 204, 추가 66, 편집 66) | x 16, y 266 | 352 × 90 / 144 × 81 | none (384 of 384) |
 
    Before the change the first card of a selected playlist was at y 1,237
    (1280×720) and y 1,483 (384×854). One finding was fixed: the first rail item
@@ -105,6 +109,19 @@ link from another site and three playlists (one empty).
    완료, 추가 and 닫기 each toggled the expected state when pressed; delete and
    confirmation buttons were checked by reading their handlers and through
    `tests/ui/library.test.ts`.
+
+   The same states were then captured in the Windows debug app (a 1,024 × 760
+   viewport; first card at x 296, y 137, no overflow) and the Android API 34
+   emulator (412 × 842; first card at y 266, no overflow). Two findings were
+   fixed. In the Windows window a grid card is about 210 px wide, so in edit
+   mode its address broke mid-word and its buttons wrapped onto four lines;
+   edit mode is now a one-column list, and from 768 px the page reserves the
+   scrollbar's gutter so the toolbar no longer shifts 15 px when the longer
+   edit view starts to scroll. The Android WebView (Chrome 113) drew Tailwind's default
+   placeholder colour, a `currentcolor` mix, as transparent, which left the
+   search field blank; the library's inputs now set the same placeholder
+   colour as the address and key fields. The before and after captures from
+   all three are in `docs/evidence/library-rail/`.
 3. Type. Four levels with one meaning each: 28 the page heading, 20 the pane and
    panel headings, 16 controls and names (semibold for card titles and the
    selected list), 14 site, count, status and duration.

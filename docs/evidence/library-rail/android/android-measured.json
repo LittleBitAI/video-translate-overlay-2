@@ -1,0 +1,19 @@
+{
+ "size": "412x842",
+ "firstCard": {
+  "x": 16,
+  "y": 266.3988037109375,
+  "width": 380.19049072265625,
+  "height": 90
+ },
+ "scrollWidth": 412,
+ "url": "http://tauri.localhost/preferences",
+ "shots": [
+  "artifacts/library-rail/shots/android-library-playlist-412x842.png",
+  "artifacts/library-rail/shots/android-library-edit-412x842.png",
+  "artifacts/library-rail/shots/android-library-add-412x842.png",
+  "artifacts/library-rail/shots/android-library-empty-playlist-412x842.png",
+  "artifacts/library-rail/shots/android-watch-412x842.png",
+  "artifacts/library-rail/shots/android-settings-412x842.png"
+ ]
+}

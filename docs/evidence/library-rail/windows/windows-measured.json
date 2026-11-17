@@ -1,0 +1,19 @@
+{
+ "size": "1024x760",
+ "firstCard": {
+  "x": 296,
+  "y": 137,
+  "width": 221.65625,
+  "height": 226.6875
+ },
+ "scrollWidth": 1009,
+ "url": "http://tauri.localhost/preferences",
+ "shots": [
+  "artifacts/library-rail/shots/windows-library-playlist-1024x760.png",
+  "artifacts/library-rail/shots/windows-library-edit-1024x760.png",
+  "artifacts/library-rail/shots/windows-library-add-1024x760.png",
+  "artifacts/library-rail/shots/windows-library-empty-playlist-1024x760.png",
+  "artifacts/library-rail/shots/windows-watch-1024x760.png",
+  "artifacts/library-rail/shots/windows-settings-1024x760.png"
+ ]
+}

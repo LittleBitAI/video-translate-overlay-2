@@ -42,8 +42,8 @@ through the same request as before. A playlist's cover is its first video's
 thumbnail, or the tile when it is empty. Wide cards stack the thumbnail over the
 text; phone cards put a 144 px thumbnail beside it.
 
-The default view has only the search, 추가 and 편집. 편집 (then 완료) reveals a
-drag handle and visibly labeled 위로 / 아래로 on playlists and entries, the
+The default view has only the search, 추가 and 편집. 편집 (then 완료) lists the
+videos in one column, thumbnail beside title, and reveals a drag handle and visibly labeled 위로 / 아래로 on playlists and entries, the
 rename field, 목록에서 빼기, 영상 삭제 and 재생목록 삭제. Dropping a handle sends
 one move of however many places it crossed; the buttons move one place and are
 the keyboard path. 추가 opens a panel with a saved-video picker showing
