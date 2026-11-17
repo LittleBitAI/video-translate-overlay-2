@@ -302,14 +302,15 @@
 
 {#snippet videoList()}
   {#if visible.length}
-    <ol class="grid gap-2 md:grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] md:gap-4">
+    <!-- Edit mode is one column: a card is too narrow for its address and controls on one line each. -->
+    <ol class="grid gap-2 {editing ? '' : 'md:grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] md:gap-4'}">
       {#each visible as video (video.video_key)}
         {@const reorderable = editing && !!playlist}
         <li data-video-key={video.video_key} data-drag={reorderable ? 'entry' : undefined} data-key={video.video_key}
           class="flex min-w-0 flex-col gap-2 rounded-lg {drag?.kind === 'entry' && drag.over === video.video_key ? 'ring-2 ring-primary' : ''} {drag?.key === video.video_key ? 'opacity-60' : ''} {editing ? 'border border-ink/20 p-2' : ''}">
-          <button class="flex w-full min-w-0 gap-3 rounded-lg text-left hover:bg-ink/5 disabled:opacity-60 md:flex-col md:gap-2" disabled={busy || video.deleting}
+          <button class="flex w-full min-w-0 gap-3 rounded-lg text-left hover:bg-ink/5 disabled:opacity-60 {editing ? '' : 'md:flex-col md:gap-2'}" disabled={busy || video.deleting}
             aria-label={`${video.title} 영상 열기`} aria-describedby={`status-${video.video_key}`} onclick={() => openVideo(video)}>
-            <span class="relative block w-36 shrink-0 md:w-full">
+            <span class="relative block w-36 shrink-0 {editing ? 'md:w-48' : 'md:w-full'}">
               <Thumb videoKey={video.video_key} pageUrl={video.page_url} />
               {#if (video.duration_ms ?? 0) > 0}<span class="absolute right-1 bottom-1 rounded bg-surface/90 px-1 text-sm">{duration(video.duration_ms!)}</span>{/if}
             </span>

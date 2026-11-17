@@ -23,6 +23,8 @@
     background: var(--color-surface);
     color: var(--color-ink);
     color-scheme: dark;
+    /* A scrollbar appearing (edit mode, a long list) must not shift the layout sideways. */
+    scrollbar-gutter: stable;
   }
   body {
     min-height: 100dvh;
