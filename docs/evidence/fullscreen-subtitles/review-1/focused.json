@@ -26,8 +26,11 @@
     {
       "command": "node node_modules/vitest/vitest.mjs run -c vitest.ui.config.ts tests/ui/subtitles.test.svelte.ts tests/ui/watch.test.ts",
       "log": "focused-screens.log",
-      "sha256": "4a3cb15d1e06f10d5304296a940d7cac6e3a7dd404f0737e4ac6916303b81d37",
-      "exitCode": 0
+      "sha256": "38cd727459cd42979c4c312257b03ba8f82744c327e69bccc63cc628ca348525",
+      "exitCode": 0,
+      "originalSha256": "4a3cb15d1e06f10d5304296a940d7cac6e3a7dd404f0737e4ac6916303b81d37",
+      "originalRevision": "3ee4aca6e0fa4dfad1d92ba2c2d4e48369279545",
+      "normalization": "Removed trailing blank lines and retained one final LF; test output and exit status are unchanged."
     }
   ]
 }
