@@ -30,6 +30,16 @@
   },
   {
    "a": "README.md",
+   "b": "docs/design/transcription-speed.md",
+   "kind": "link"
+  },
+  {
+   "a": "README.md",
+   "b": "docs/releases/0.1.8.md",
+   "kind": "link"
+  },
+  {
+   "a": "README.md",
    "b": "docs/releases/procedure.md",
    "kind": "link"
   },
@@ -101,6 +111,11 @@
   {
    "a": "docs/releases/acceptance.md",
    "b": "docs/releases/0.1.7.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/releases/acceptance.md",
+   "b": "docs/releases/0.1.8.md",
    "kind": "link"
   },
   {
@@ -196,12 +211,12 @@
   "docs/evidence/library-rail/README.md"
  ],
  "counts": {
-  "docs": 18,
-  "linked": 12,
+  "docs": 19,
+  "linked": 13,
   "read": 3,
   "orphans": 3,
   "pages": 7,
-  "decisions": 9,
-  "injectable_decisions": 1
+  "decisions": 12,
+  "injectable_decisions": 2
  }
 }

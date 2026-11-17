@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>사용법 · 영상 번역 오버레이</title>
+<meta name="description" content="영상 번역 오버레이에서 자막을 만들고, 보관함과 재생목록을 쓰고, PC와 휴대폰을 잇는 방법">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Serif+KR:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+
+<header class="bar">
+  <div class="bar-in">
+    <a class="brand" href="../overview.html">영상 번역 오버레이</a>
+    <nav class="nav" aria-label="사이트">
+      <a href="../overview.html">소개</a>
+      <a href="guide.html" aria-current="page">사용법</a>
+      <a href="install.html">설치법</a>
+    </nav>
+    <a class="gh" href="https://github.com/LittleBitAI/video-translate-overlay-2">GitHub ↗</a>
+  </div>
+</header>
+
+<main class="sheet">
+
+  <section class="pagehead">
+    <span class="lab">사용법</span>
+    <h1>첫 자막까지 네 단계</h1>
+    <p class="lead">메뉴는 <span class="ui">영상</span> <span class="ui">보관함</span> <span class="ui">설정</span> 세 개입니다. 넓은 창에서는 위쪽 탭, 휴대폰에서는 아래쪽 막대에 있습니다. 아직 설치 전이라면 <a href="install.html">설치 방법</a>부터 보세요.</p>
+  </section>
+
+  <section class="chapter split steps-with-shot">
+    <ol class="steps1">
+      <li>
+        <h3>개인키 저장</h3>
+        <p><span class="ui">설정</span>의 개인키 칸에 본인 Gemini API 키를 붙여 넣고 <span class="ui">저장</span>을 누릅니다. 번역비는 이 키의 주인에게 청구됩니다. 키를 넣기 전에는 영상감지를 눌러도 작업이 시작되지 않습니다.</p>
+        <p class="cap">키는 Android Keystore나 Windows 자격 증명 관리자에 암호화해 저장하고, 화면에는 끝 네 글자만 보입니다. 다른 기기로 옮기지 않습니다.</p>
+      </li>
+      <li>
+        <h3>유튜브 로그인 <span class="opt">필요할 때만</span></h3>
+        <p>로그인해야 보이는 영상이 있다면 <span class="ui">설정 → 유튜브 계정 연결</span>에서 한 번 로그인합니다. 로그인하지 않아도 영상은 열립니다.</p>
+        <p class="cap">휴대폰의 유튜브 앱이나 Chrome과는 따로인 세션입니다. 앱은 Google 비밀번호를 받지도 저장하지도 않습니다.</p>
+      </li>
+      <li>
+        <h3>영상을 열고 영상감지</h3>
+        <p><span class="ui">영상</span>에서 주소를 열고, 영상 위의 <span class="ui">영상감지</span>를 누릅니다. 그다음엔 앱을 내려 둬도 됩니다. 진행 알림이 떠 있는 동안 계속 처리합니다.</p>
+        <p class="cap">처음 한 번은 약 60MB짜리 음성 인식 모델을 내려받습니다. 갤럭시 S21+에서 한 시간 강연은 영상감지부터 자막 준비까지 41분 걸렸습니다.</p>
+      </li>
+      <li>
+        <h3>알림을 눌러 보기</h3>
+        <p>자막 준비 알림을 누르고 재생합니다. 일시 정지와 건너뛰기도 따라가고, 광고로 보이는 구간에서는 자막을 숨깁니다.</p>
+        <p class="cap"><span class="ui">전체화면</span>은 영상과 자막을 함께 가로로 키웁니다. <span class="ui">화면복귀</span>나 뒤로가기로 나옵니다.</p>
+      </li>
+    </ol>
+    <figure class="vis shot phone">
+      <a class="zoom" href="img/android-settings.webp"><img src="img/android-settings.webp" width="720" height="1471" alt="Android 앱 설정 화면. Google 앱 계정, 앱 업데이트, 개인키 칸이 차례로 있고, 개인키 칸에 Gemini 개인키 입력란과 저장 버튼이 있다" loading="lazy"></a>
+      <figcaption><span class="ui">설정</span> 화면. 맨 아래 개인키 칸에 키를 넣습니다.</figcaption>
+    </figure>
+  </section>
+
+  <section class="chapter">
+    <h2>보관함과 재생목록</h2>
+    <div class="cols">
+      <div class="txt">
+        <p><span class="ui">보관함</span>에서 <span class="ui">전체 영상</span>이나 재생목록을 고르면 영상이 썸네일 카드로 보입니다. <span class="ui">저장 자막 있음</span>이 붙은 카드는 누르면 바로 자막과 함께 열리고, 비용이 들지 않습니다.</p>
+        <p><span class="ui">추가</span>로 저장된 영상이나 영상 링크를 재생목록에 넣고, <span class="ui">+ 새 재생목록</span>으로 목록을 만듭니다. 링크를 넣기만 해서는 번역이 시작되지 않습니다.</p>
+      </div>
+      <div class="txt">
+        <p><span class="ui">편집</span>을 누르면 끌어서 순서를 바꾸고, 재생목록 이름을 바꾸거나 지우고, 영상을 목록에서 빼거나 지울 수 있습니다.</p>
+        <p><span class="ui">영상 삭제</span>는 이름을 보여 주고 한 번 더 묻습니다. 확인하면 그 영상의 자막과 작업 기록이 모든 재생목록에서 사라집니다. 다른 영상, 모델, 개인키는 그대로입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter">
+    <h2>PC와 휴대폰 잇기</h2>
+    <div class="cols">
+      <div class="txt">
+        <p>두 기기 모두 0.1.8 이상이어야 합니다. 각 기기의 <span class="ui">설정 → Google 계정으로 로그인</span>에서 같은 계정으로 로그인하고, PC 앱을 켜 둔 채 같은 네트워크에 두면 보관함, 재생목록, 보던 위치가 맞춰집니다.</p>
+        <p>로그인 전부터 있던 보관함은 따로 남습니다. 옮기려면 <span class="ui">기존 보관함 가져오기</span>를 누르세요. 원본은 지우지 않고 복사합니다.</p>
+      </div>
+      <div class="txt">
+        <p class="cap">이 Google 로그인은 기기끼리 서로를 확인하는 데만 씁니다. 유튜브 로그인과는 별개이고, Gemini 개인키와 쿠키는 옮기지 않습니다. 기기 로그인은 최대 30일 유지됩니다.</p>
+        <p class="cap">연결된 동안 Android에는 연결 알림이 떠 있습니다. 앱을 강제 종료하면 다시 열 때까지 아무것도 받지 않습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter">
+    <h2>이럴 땐 이렇게</h2>
+    <table class="plain cases">
+      <thead><tr><th>이럴 땐</th><th>이렇게</th></tr></thead>
+      <tbody>
+        <tr><td>0.1.5 이하에서 만든 자막이 앞뒤로 밀려 있다</td><td>그 영상에서 <span class="ui">다시 번역</span>을 누르세요. 받아쓰기와 시각은 그대로 두고 번역만 새로 합니다. 번역비가 다시 들고, 이전 비용과 합쳐 한도를 계산합니다.</td></tr>
+        <tr><td>번역이 중간에 멈췄다</td><td>영상 1시간에 약 1,000원인 비용 상한에 닿았을 수 있습니다. 코드에 넣은 단가와 환율로 계산한 값입니다.</td></tr>
+        <tr><td>Google이 앱 안 로그인을 막는다</td><td>유튜브 로그인은 건너뛰어도 영상을 열 수 있습니다.</td></tr>
+        <tr><td>다른 기기에 보관함이 안 보인다</td><td>두 기기가 0.1.8 이상인지, 같은 Google 계정인지, PC 앱이 켜져 있고 같은 네트워크에 있는지 확인하세요. 휴대폰이 모바일 데이터에 있으면 PC에 닿지 않습니다.</td></tr>
+        <tr><td>닫은 새 버전 알림을 다시 보고 싶다</td><td><span class="ui">설정 → 업데이트 확인</span>을 누르세요.</td></tr>
+        <tr><td>앱을 강제 종료했다</td><td>다시 열면 저장해 둔 지점부터 이어서 처리합니다.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <nav class="pager" aria-label="앞뒤 장">
+    <a href="../overview.html"><span class="lab">← 앞</span><b>소개</b></a>
+    <a class="next" href="install.html"><span class="lab">다음 →</span><b>설치법</b></a>
+  </nav>
+</main>
+
+</body>
+</html>

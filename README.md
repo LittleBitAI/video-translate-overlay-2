@@ -4,11 +4,13 @@
 
 Android 앱은 PC 없이 실행합니다. 화면, 처리 코어, 음성 인식 엔진을 APK에 포함합니다. PC 프로그램이나 개발 서버를 켤 필요가 없습니다. 영상 다운로드, 최초 모델 다운로드, Gemini 번역에는 인터넷이 필요합니다.
 
+만든 이유와 순서, 사용법, 설치법은 한국어 소개 페이지 [`overview.html`](overview.html)에 정리했습니다. 이야기, [사용법](overview/guide.html), [설치법](overview/install.html) 세 장입니다.
+
 ## Android에서 시작하기
 
 Android 7.0 이상, ARM64 기기가 대상입니다. 갤럭시 S21 시리즈도 이 규격에 해당합니다.
 
-1. Download the approved [ARM64 APK 0.1.7](https://github.com/LittleBitAI/video-translate-overlay-2/releases/download/v0.1.7/video-translate-overlay-0.1.7-arm64.apk) from GitHub Releases. Install it over the existing app without uninstalling. Allow installation from that source if Android requests it.
+1. Download the approved [ARM64 APK 0.1.8](https://github.com/LittleBitAI/video-translate-overlay-2/releases/download/v0.1.8/video-translate-overlay-0.1.8-arm64.apk) from GitHub Releases. Install it over the existing app without uninstalling. Allow installation from that source if Android requests it.
 2. 앱을 열고 `설정`에서 본인 Gemini API 키를 저장합니다. 번역 비용은 키 소유자에게 청구됩니다.
 3. 유튜브 계정을 사용할 경우 `설정 → 유튜브 계정 연결`에서 한 번 로그인합니다. 이후 영상은 같은 앱 브라우저의 세션을 사용합니다. 로그인 없이도 영상을 열 수 있습니다.
 4. 첫 화면에서 영상 주소를 열고, 영상 위 `영상감지`를 누릅니다. 처음에는 약 60MB 음성 인식 모델을 내려받습니다. 0.1.4로 업데이트한 뒤에도 새 모델을 한 번 받습니다. 모델 외에 오디오와 작업 자료를 저장할 공간도 필요합니다.
@@ -19,8 +21,10 @@ Android 7.0 이상, ARM64 기기가 대상입니다. 갤럭시 S21 시리즈도 
 Approved installers are distributed through GitHub Releases. Local build outputs
 in `artifacts/` are not committed. The Android release APK retains the development
 signing key used by existing installations; store signing is separate. The
-[approved 0.1.7 release](https://github.com/LittleBitAI/video-translate-overlay-2/releases/tag/v0.1.7)
-contains anonymously downloadable Android and Windows installers.
+[approved 0.1.8 release](https://github.com/LittleBitAI/video-translate-overlay-2/releases/tag/v0.1.8)
+contains anonymously downloadable Android and Windows installers. It adds
+Google-account sharing over the local network, faster audio downloads, faster
+phone transcription and the library rail; see [its notes](docs/releases/0.1.8.md).
 
 ## Approved release updates
 
@@ -30,7 +34,7 @@ open your device's download or dismiss that version. `설정 → 업데이트 �
 again and can reveal a dismissed version. Downloads and installation are manual;
 automatic failures do not interrupt video use. Installations through 0.1.6 need
 one manual upgrade, keeping the existing app installed to retain local data.
-Windows users can download the [0.1.7 x64 installer](https://github.com/LittleBitAI/video-translate-overlay-2/releases/download/v0.1.7/video-translate-overlay-0.1.7-windows-x64-setup.exe)
+Windows users can download the [0.1.8 x64 installer](https://github.com/LittleBitAI/video-translate-overlay-2/releases/download/v0.1.8/video-translate-overlay-0.1.8-windows-x64-setup.exe)
 and install it for the same Windows user, keeping the existing app data.
 The [release procedure](docs/releases/procedure.md) defines approval, packaging,
 signing continuity, and first-publication acceptance.
@@ -69,11 +73,13 @@ subtitles are hidden and `삭제 다시 시도` lets you finish cleanup. Transla
 deleted video later requires a new confirmation and may incur API costs.
 
 The library and playlists use the existing local SQLite database on Android and
-Windows. They persist after restart. The published 0.1.7 release keeps separate
-device libraries. There is no cloud sync, automatic next-video playback, or
+Windows. They persist after restart. Without Google sign-in each device keeps
+its own library. There is no cloud sync, automatic next-video playback, or
 original-video offline copy.
 
-The development branch adds a separate Google app account under Settings.
+## Sharing between Windows and Android (0.1.8)
+
+0.1.8 adds a separate Google app account under Settings.
 Signing in selects that account's local library; signing out returns to the
 original device library. `기존 보관함 가져오기` offers a confirmed copy of the
 original completed translations, links and playlists into the displayed Google
@@ -81,7 +87,7 @@ account. The original data, cue times and recorded costs remain intact. It does
 not copy unfinished jobs, Gemini credentials or YouTube cookies. A job already
 started on this device continues in its original library after account changes.
 The selected device sign-in lasts at most thirty days; expiry stops transfers
-while preserving local account-library access. The development app now starts
+while preserving local account-library access. The app starts
 an automatic LAN controller with durable remote deletion cleanup and playback
 position synchronization. Opening a saved video may resume it once where the
 player permits seeking; user input takes priority over a delayed saved position.
@@ -93,11 +99,12 @@ the approved branding fields. The server-owned gate remains pending; see
 
 The [app homepage](https://littlebitai.github.io/video-translate-overlay-2/) and
 [privacy policy](https://littlebitai.github.io/video-translate-overlay-2/privacy.html)
-describe Google identity and local-network data handling. The development
-settings screen also opens the policy independently of Google sign-in.
+describe Google identity and local-network data handling. The settings screen
+also opens the policy independently of Google sign-in.
 
-Both devices need a build containing LAN synchronization. An older preview that
-supports only Google sign-in cannot connect. Keep the PC app running and use the
+Both devices need 0.1.8 or later. 0.1.7 and an older preview that supports only
+Google sign-in cannot connect. No server is involved: Google sign-in only proves
+both devices belong to the same account, and they exchange records directly. Keep the PC app running and use the
 same reachable local network; Ethernet on the PC and Wi-Fi on the phone can work
 together. Android keeps an ongoing connection notification while its native
 background service is active. Reopening catches up after interruption; a
@@ -133,7 +140,7 @@ the model, unit prices and per-hour limit are unchanged.
 
 ## Faster audio downloads
 
-The development build receives a video's audio file in 10 MiB pieces when the
+Since 0.1.8 the app receives a video's audio file in 10 MiB pieces when the
 server marks which version of the file it is sending; otherwise it receives the
 file in one piece, as before. YouTube
 sends a single whole-file request at only about twice the playback speed. On a
@@ -143,6 +150,18 @@ and subtitle timing are unchanged. While the speech model downloads for the
 first time, progress shows `음성 인식 모델 준비 중` instead of the audio
 download. Measurements and limits are in
 [download speed](docs/design/download-speed.md).
+
+## Faster phone transcription (0.1.8)
+
+On a Galaxy S21+, a one-hour lecture went from pressing `영상감지` to ready
+subtitles in 41.2 minutes, down from about 79–84 minutes. The speech model is
+unchanged (`base q5_1`, greedy). The speech engine uses the phone CPU's
+dot-product instructions, audio is split into fuller windows at sustained
+pauses, a cut through speech overlaps by about one second and keeps the words
+once, and translation keeps eight requests in flight (18.0 to 2.2 minutes).
+The word error rate against the large reference went from 5.40 % to 5.33 %.
+These are single measured runs on one lecture; see
+[transcription speed](docs/design/transcription-speed.md).
 
 ## 모바일 받아쓰기 최적화
 
@@ -177,7 +196,7 @@ cargo test --release -p video-translate-overlay --features whisper --lib whisper
 
 앱은 API 사용량으로 비용을 추정하고, 영상 1시간당 1,000원 기준을 넘으면 추가 번역 요청을 중단합니다. 이는 코드에 설정한 단가와 환율에 따른 제한입니다. 실제 청구액을 보장하지 않으며, 이미 보낸 요청의 비용은 발생할 수 있습니다.
 
-API 키는 Android Keystore로 암호화해 저장합니다. Windows 앱은 자격 증명 관리자를 사용합니다. 설정 화면에는 끝 네 글자만 표시하고, 키 삭제도 지원합니다. PC와 휴대폰의 키·작업·자막은 각각 저장하며 자동 동기화하지 않습니다.
+API 키는 Android Keystore로 암호화해 저장합니다. Windows 앱은 자격 증명 관리자를 사용합니다. 설정 화면에는 끝 네 글자만 표시하고, 키 삭제도 지원합니다. API 키, 유튜브 쿠키, 진행 중인 작업은 기기마다 따로 저장하며 다른 기기로 옮기지 않습니다. 같은 Google 앱 계정으로 로그인하면 완성된 자막, 재생목록, 재생 위치만 같은 네트워크의 기기끼리 직접 주고받습니다.
 
 유튜브 로그인은 Google 화면에서 진행합니다. 로그인 쿠키는 앱의 WebView 프로필에 저장하며, Android에서 앱을 백그라운드로 보낼 때 디스크에 반영합니다. 로그인 후 영상으로 돌아오면 로그인 화면 대신 영상 주소를 기억합니다. 설정의 `유튜브 로그아웃`은 쿠키와 사이트 자료를 지웁니다.
 
