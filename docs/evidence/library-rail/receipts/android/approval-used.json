@@ -1,0 +1,15 @@
+{
+ "note": "In-memory approval used by this run; the stored local approval file was read, not changed.",
+ "stored_binary_sha256": {
+  "vto-windows": "977eb81c33a9ea3710a3ecb7214774aa5c549968addbd6c1ddc42f63a50f9f98",
+  "vto-android": "ea340fa3dc1ea93586f366e6d992b2799c8f62f084cb04a84dc6bdf377e678f4"
+ },
+ "measured_binary_sha256": {
+  "vto-windows": "ff1de12564989e39c1f9514f688f7d974f2e3703d46daec08a5cebe09d69dc3f",
+  "vto-android": "316c8d7dbf45ebc140613a51de4085c0ffda1a4960d1961cf8f3b7345a6d2a13"
+ },
+ "android_system_image": {
+  "path": "sdk/system-images/android-34/google_apis/x86_64",
+  "sha256": "e57156de187e771c1382e76b77f7c0e2f42cfbc22d5eaa26d2347ff0f29bd250"
+ }
+}

@@ -58,3 +58,41 @@ Both were fixed before these captures; the design record describes them.
 - Android: the WebView (Chrome 113) drew Tailwind's default placeholder colour
   as transparent, leaving the search field blank. The library's inputs now set
   their placeholder colour explicitly.
+
+## Runtime receipts at `27ca194`
+
+`receipts/` holds the four registered library flows, run at
+`27ca19436155d401ed567f65bc27f149d141907b` (the head after the review-round
+fixes for move clamping and list reveal) with a clean tree. Each receipt
+names that head; nothing in it is reused from an earlier run.
+
+| File | Flow | What it records |
+| --- | --- | --- |
+| `api.json` | `library-api`, `node scripts/verification/run.mjs api` | 26 real requests to the runner's own `vto-web --stand-ins` on port 8136 (method, URL, status) and four observations, each with expected and actual values: reuse, persistence-delete, no-automatic-translation, playlist-retention |
+| `browser.json`, `browser/` | `library-browser`, `node scripts/verification/run.mjs browser` | build head `27ca194` reported by the server's `GET /build`, browser tool `playwright-chromium`, 68 requests, six actions and six observations with expected and actual values, and a screenshot plus data snapshot per step |
+| `windows/` | `library-windows`, wiki-agent's owned WebView driver | `result.json` with build head `27ca194`, the binary's SHA-256, the driver `owned-webview-v1`, the environment revisions (Windows 11 26200, Playwright 1.61.0), eight native sessions (process, listener, window geometry and DPI at launch and at each assertion) and six observations; every listed artifact is copied here and matches its recorded SHA-256 |
+| `android/` | `library-android`, the same driver on a disposable API 34 x86-64 emulator | the same fields, plus emulator process, build fingerprint digest, focus records and a device screenshot per checkpoint |
+
+All four passed: 4 of 4 API observations and 6 of 6 for each of browser,
+Windows and Android.
+
+Two things about how the native flows ran:
+
+- Approval. The local approval file (ignored by Git) still names binaries
+  from older builds and an AVD name the current driver refuses. Each run
+  built its request from an in-memory copy with the freshly measured binary
+  hashes and the system image's digest; `*/approval-used.json` lists both
+  sets of hashes. The stored file was not changed.
+- A blocked Android attempt. The first Android run at this head stopped
+  during launch: after the app's process, devtools socket and forward were
+  found, the driver's next process check returned nothing
+  (`android-blocked-attempt.json`). The app's own log showed it running at
+  that moment. The single rerun on the same build passed and is the receipt
+  in `android/`.
+
+Reuse of the captures. The captures above were taken at `f20eef0`. Between
+it and `27ca194` the screens changed only in what happens after a playlist
+is activated (the page returns to the list's start); the store change
+saturates large move values. Neither changes how any captured state looks.
+The commit that adds these receipts changes only files under
+`docs/evidence/`, none of which is a build input of any flow.
