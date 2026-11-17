@@ -3,9 +3,9 @@
     "width": 1280,
     "height": 720,
     "dialog": {
-      "x": 424,
-      "y": 614.390625,
-      "width": 672,
+      "x": 16,
+      "y": 386.390625,
+      "width": 659.453125,
       "height": 62
     },
     "cancellationPreservesKey": true
@@ -14,10 +14,10 @@
     "width": 768,
     "height": 720,
     "dialog": {
-      "x": 385,
-      "y": 656.390625,
-      "width": 352,
-      "height": 66
+      "x": 40,
+      "y": 410.390625,
+      "width": 672,
+      "height": 62
     },
     "cancellationPreservesKey": true
   },
@@ -26,7 +26,7 @@
     "height": 854,
     "dialog": {
       "x": 24,
-      "y": 489.390625,
+      "y": 384.390625,
       "width": 336,
       "height": 66
     },

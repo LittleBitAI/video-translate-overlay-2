@@ -175,8 +175,8 @@ in the external browser, while HTTP screens use a normal HTTPS link. Opening it
 does not change the selected account or last-opened video. Failures remain
 retryable without exposing platform diagnostics.
 
-![S2 desktop](shots/S2-desktop.png)
-![S2 phone](shots/S2-phone.png)
+![S2 desktop candidate, acceptance pending](../evidence/maximized-layout/windows/1-maximized-settings.png)
+![S2 phone candidate, acceptance pending](../evidence/maximized-layout/browser/384x854-settings.png)
 
 ## 색 배합 (하나를 고른다)
 

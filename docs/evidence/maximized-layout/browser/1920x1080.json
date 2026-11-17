@@ -5,7 +5,7 @@
       1920,
       1080
     ],
-    "screenHead": "5c83f9a61d98fd225c2117f89abe47b6556af896",
+    "screenHead": "700c30e290e15c32c527415b7187483971dad28a",
     "coreHead": null,
     "profile": null,
     "scrollWidth": 1905,
@@ -48,7 +48,10 @@
     "account": null,
     "keyCard": null,
     "key": null,
-    "settingsRows": [],
+    "settingsGroups": [],
+    "footer": null,
+    "keyForm": null,
+    "privacyInFooter": false,
     "navItems": [
       {
         "text": "영상",
@@ -79,7 +82,7 @@
       1920,
       1080
     ],
-    "screenHead": "5c83f9a61d98fd225c2117f89abe47b6556af896",
+    "screenHead": "700c30e290e15c32c527415b7187483971dad28a",
     "coreHead": null,
     "profile": null,
     "scrollWidth": 1905,
@@ -129,7 +132,10 @@
     "account": null,
     "keyCard": null,
     "key": null,
-    "settingsRows": [],
+    "settingsGroups": [],
+    "footer": null,
+    "keyForm": null,
+    "privacyInFooter": false,
     "navItems": [
       {
         "text": "영상",
@@ -160,7 +166,7 @@
       1920,
       1080
     ],
-    "screenHead": "5c83f9a61d98fd225c2117f89abe47b6556af896",
+    "screenHead": "700c30e290e15c32c527415b7187483971dad28a",
     "coreHead": null,
     "profile": null,
     "scrollWidth": 1905,
@@ -177,160 +183,125 @@
       "x": 0,
       "y": 61,
       "width": 1905,
-      "height": 810.390625,
+      "height": 1019,
       "right": 1905,
-      "bottom": 871.390625
+      "bottom": 1080
     },
     "content": {
       "x": 16,
       "y": 77,
       "width": 1873,
-      "height": 60.390625,
+      "height": 44.390625,
       "right": 1889,
-      "bottom": 137.390625
+      "bottom": 121.390625
     },
     "stage": null,
     "firstCard": null,
     "columns": 0,
     "rail": null,
     "account": {
-      "x": 16,
-      "y": 137.390625,
-      "width": 1080,
-      "height": 137,
-      "right": 1096,
-      "bottom": 274.390625
+      "x": 837.359375,
+      "y": 145.390625,
+      "width": 618.640625,
+      "height": 103,
+      "right": 1456,
+      "bottom": 248.390625
     },
     "keyCard": {
       "x": 16,
-      "y": 397.390625,
-      "width": 1080,
+      "y": 145.390625,
+      "width": 772.359375,
       "height": 268,
-      "right": 1096,
-      "bottom": 665.390625
+      "right": 788.359375,
+      "bottom": 413.390625
     },
     "key": {
-      "x": 424,
-      "y": 450.390625,
+      "x": 16,
+      "y": 222.390625,
       "width": 520,
       "height": 44,
-      "right": 944,
-      "bottom": 494.390625
+      "right": 536,
+      "bottom": 266.390625
     },
-    "settingsRows": [
+    "settingsGroups": [
       {
         "box": {
           "x": 16,
-          "y": 137.390625,
-          "width": 1080,
-          "height": 137,
-          "right": 1096,
-          "bottom": 274.390625
-        },
-        "heading": {
-          "x": 16,
-          "y": 161.390625,
-          "width": 384,
-          "height": 28,
-          "right": 400,
-          "bottom": 189.390625
-        },
-        "body": {
-          "x": 424,
-          "y": 161.390625,
-          "width": 672,
-          "height": 89,
-          "right": 1096,
-          "bottom": 250.390625
-        },
-        "background": "rgba(0, 0, 0, 0)",
-        "radius": "0px"
-      },
-      {
-        "box": {
-          "x": 16,
-          "y": 274.390625,
-          "width": 1080,
-          "height": 123,
-          "right": 1096,
-          "bottom": 397.390625
-        },
-        "heading": {
-          "x": 16,
-          "y": 299.390625,
-          "width": 384,
-          "height": 28,
-          "right": 400,
-          "bottom": 327.390625
-        },
-        "body": {
-          "x": 424,
-          "y": 299.390625,
-          "width": 672,
-          "height": 74,
-          "right": 1096,
-          "bottom": 373.390625
-        },
-        "background": "rgba(0, 0, 0, 0)",
-        "radius": "0px"
-      },
-      {
-        "box": {
-          "x": 16,
-          "y": 397.390625,
-          "width": 1080,
+          "y": 145.390625,
+          "width": 772.359375,
           "height": 268,
-          "right": 1096,
-          "bottom": 665.390625
+          "right": 788.359375,
+          "bottom": 413.390625
         },
         "heading": {
           "x": 16,
-          "y": 422.390625,
-          "width": 384,
+          "y": 145.390625,
+          "width": 772.359375,
           "height": 28,
-          "right": 400,
-          "bottom": 450.390625
-        },
-        "body": {
-          "x": 424,
-          "y": 422.390625,
-          "width": 672,
-          "height": 219,
-          "right": 1096,
-          "bottom": 641.390625
+          "right": 788.359375,
+          "bottom": 173.390625
         },
         "background": "rgba(0, 0, 0, 0)",
         "radius": "0px"
       },
       {
         "box": {
-          "x": 16,
-          "y": 665.390625,
-          "width": 1080,
-          "height": 190,
-          "right": 1096,
-          "bottom": 855.390625
+          "x": 837.359375,
+          "y": 145.390625,
+          "width": 618.640625,
+          "height": 103,
+          "right": 1456,
+          "bottom": 248.390625
         },
         "heading": {
-          "x": 16,
-          "y": 690.390625,
-          "width": 384,
+          "x": 837.359375,
+          "y": 145.390625,
+          "width": 618.640625,
           "height": 28,
-          "right": 400,
-          "bottom": 718.390625
+          "right": 1456,
+          "bottom": 173.390625
         },
-        "body": {
-          "x": 424,
-          "y": 690.390625,
-          "width": 672,
-          "height": 141,
-          "right": 1096,
-          "bottom": 831.390625
+        "background": "rgba(0, 0, 0, 0)",
+        "radius": "0px"
+      },
+      {
+        "box": {
+          "x": 837.359375,
+          "y": 272.390625,
+          "width": 618.640625,
+          "height": 205,
+          "right": 1456,
+          "bottom": 477.390625
+        },
+        "heading": {
+          "x": 837.359375,
+          "y": 297.390625,
+          "width": 618.640625,
+          "height": 28,
+          "right": 1456,
+          "bottom": 325.390625
         },
         "background": "rgba(0, 0, 0, 0)",
         "radius": "0px"
       }
     ],
+    "footer": {
+      "x": 16,
+      "y": 1001,
+      "width": 1440,
+      "height": 63,
+      "right": 1456,
+      "bottom": 1064
+    },
+    "keyForm": {
+      "x": 16,
+      "y": 222.390625,
+      "width": 672,
+      "height": 44,
+      "right": 688,
+      "bottom": 266.390625
+    },
+    "privacyInFooter": true,
     "navItems": [
       {
         "text": "영상",
