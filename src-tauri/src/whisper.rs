@@ -159,6 +159,10 @@ impl Transcriber for Whisper {
         Ok(segs)
     }
 
+    fn unload(&self) {
+        *self.state.lock().unwrap() = None;
+    }
+
     fn language(&self) -> Option<String> {
         self.language.lock().unwrap().clone()
     }

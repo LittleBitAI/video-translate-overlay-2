@@ -113,7 +113,10 @@ fn run_job(core: &Core, store: &Store, job: Job) {
         }
         if stage == "writing" {
             let fresh = store.job(&job.id)?.ok_or("job vanished")?;
-            write(&cx, &fresh)?;
+            // The model (1.5 GB for large-v3-turbo) is not kept through translation and idle time.
+            let written = write(&cx, &fresh);
+            core.svc.transcriber.unload();
+            written?;
         }
         // A job that already notified only has its ready mark left to write.
         if !store.job(&job.id)?.is_some_and(|j| j.notified) {

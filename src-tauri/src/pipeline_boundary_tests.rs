@@ -21,9 +21,13 @@ struct Heard {
     script: Script,
     calls: Arc<AtomicUsize>,
     fail_at: Option<usize>,
+    unloads: Arc<AtomicUsize>,
 }
 
 impl Transcriber for Heard {
+    fn unload(&self) {
+        self.unloads.fetch_add(1, Ordering::SeqCst);
+    }
     fn transcribe(&self, pcm: &[f32], _: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String> {
         if Some(self.calls.fetch_add(1, Ordering::SeqCst)) == self.fail_at {
             return Err("killed".into());
@@ -143,7 +147,7 @@ fn job_at_writing(name: &str, plan: i64, raw: &[i16]) -> Core {
 /// Writes the job with a model that fails at call `fail_at`, if any; how many calls it got.
 fn write_with(core: &mut Core, pcm: &[i16], script: &Script, fail_at: Option<usize>) -> (Result<(), Stop>, usize) {
     let calls = Arc::new(AtomicUsize::new(0));
-    core.svc.transcriber = Box::new(Heard { source: pcm.to_vec(), script: script.clone(), calls: calls.clone(), fail_at });
+    core.svc.transcriber = Box::new(Heard { source: pcm.to_vec(), script: script.clone(), calls: calls.clone(), fail_at, unloads: Default::default() });
     let cx = Ctx { core, store: &core.store, title: "Talk".into(), page_url: String::new() };
     let job = core.store.job("j").unwrap().unwrap();
     let got = write(&cx, &job);
@@ -216,4 +220,17 @@ fn a_job_made_before_plans_resumes_on_its_own_windows() {
     assert_eq!(core.store.job("j").unwrap().unwrap().written_regions, 2);
     assert_eq!(write_with(&mut core, &pcm, &script, None), (Ok(()), windows - 2));
     assert_eq!(cues(&core), cues(&whole));
+}
+
+#[test]
+fn the_model_is_released_when_writing_ends_either_way() {
+    let (raw, pcm, script) = lecture(audio::PLAN);
+    for (name, fail_at) in [("release-done", None), ("release-failed", Some(1))] {
+        let mut core = job_at_writing(name, audio::PLAN, &raw);
+        let unloads = Arc::new(AtomicUsize::new(0));
+        core.svc.transcriber = Box::new(Heard { source: pcm.clone(), script: script.clone(), calls: Default::default(), fail_at, unloads: unloads.clone() });
+        run_job(&core, &core.store, core.store.job("j").unwrap().unwrap());
+        assert_eq!(unloads.load(Ordering::SeqCst), 1, "{name}");
+        assert_ne!(core.store.job("j").unwrap().unwrap().stage, "writing", "{name}: the job left writing");
+    }
 }
