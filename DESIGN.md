@@ -131,8 +131,15 @@ screen, or the install page.
 - Type levels: serif display h1, serif h2, serif stat number, sans lead,
   sans body, sans item title (17px, 650), sans caption, mono date and label.
   One level carries one meaning.
-- Layout: text always starts on the page's left edge. Phone captures sit at
-  16rem at the start of the right column and never alternate sides. Below
-  960px every grid becomes one column; below 600px the download buttons go full
-  width. No horizontal overflow at 1440 or 400px.
-- Only real captures are used. Nothing is drawn to look like the app.
+- Layout: one four-column grid (`--cols`, one `--gap`) for all three pages.
+  Every block starts on one of its four lines; no section invents its own
+  split. Reading text spans two columns (`--half`), a portrait phone capture
+  takes one column (the third beside text), a landscape capture takes two or
+  three. The four steps take one column each; the three numbers take columns
+  one to three and their measurement source the fourth. Below 960px the grid
+  becomes one column; below 600px the download buttons go full width.
+  Check in a browser: at 1440 and 1100px every grid child's left edge is
+  on a column line, and nothing overflows at 1440 or 400px.
+- Only real captures are used, uncropped and at their own aspect ratio. A
+  portrait phone screen is never cut into a landscape strip. Nothing is drawn
+  to look like the app.
