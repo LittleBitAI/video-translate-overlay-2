@@ -64,6 +64,11 @@
    "kind": "link"
   },
   {
+   "a": "docs/design/frontend.md",
+   "b": "docs/evidence/maximized-layout/README.md",
+   "kind": "link"
+  },
+  {
    "a": "docs/design/google-auth-setup.md",
    "b": "docs/evidence/lan-sync/README.md",
    "kind": "link"
@@ -211,8 +216,8 @@
   "docs/evidence/library-rail/README.md"
  ],
  "counts": {
-  "docs": 19,
-  "linked": 13,
+  "docs": 20,
+  "linked": 14,
   "read": 3,
   "orphans": 3,
   "pages": 7,
