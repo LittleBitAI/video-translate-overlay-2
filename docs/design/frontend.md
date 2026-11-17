@@ -176,8 +176,12 @@ in the external browser, while HTTP screens use a normal HTTPS link. Opening it
 does not change the selected account or last-opened video. Failures remain
 retryable without exposing platform diagnostics.
 
-![S2 desktop candidate, acceptance pending](../evidence/maximized-layout/windows/settings-maximized-d9d1df6.png)
-![S2 phone candidate, acceptance pending](../evidence/maximized-layout/browser/384x854-settings.png)
+The user accepted the 1920×1080 reconstruction on 2026-11-17. Its rendered
+evidence and focused checks are recorded in
+`docs/evidence/maximized-layout/README.md`.
+
+![S2 accepted desktop reconstruction](../evidence/maximized-layout/windows/settings-maximized-d9d1df6.png)
+![S2 narrow layout at 384×854](../evidence/maximized-layout/browser/384x854-settings.png)
 
 ## 색 배합 (하나를 고른다)
 

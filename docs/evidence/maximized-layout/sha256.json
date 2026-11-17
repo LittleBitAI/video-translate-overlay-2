@@ -36,7 +36,7 @@
   "iterations/rejected-cards.png": "f17af51f8763e44509d39eedb0270f904ed3c69cf47b6656a2f157b4c97386c0",
   "iterations/rejected-flat-rows.png": "d1446cab2e0365db6e69f1fa9dcd72892c1ba50ccad97e4e2ec90a89181b5d11",
   "native-flat-checks.log": "67ed9e61db3445bc32aa036df0854939fd71c4c78538f5e1903706f8d56c7064",
-  "README.md": "0340944436be50705d0d0cbbd86a14ad6ab98ca889f47290620d7b84423d3756",
+  "README.md": "ff8f285956f6a769bae9be4ea0225a62f9fa44232c062e996077b71b643cb5c5",
   "windows/0-normal-library.png": "48629c2c4f6831f7783aafef278201c94c0015d3d80ebec02bc2e81e5f4012f2",
   "windows/0-normal-settings.png": "2861a93e5f23cda3e90ef127b474ee4a9bafa2b6b8542bc43d2600f75a226c17",
   "windows/0-normal-video.png": "d237f2f65f073fdb61edf37b70b55b361a105469d347b207494235aff3e9d8e0",
@@ -46,6 +46,7 @@
   "windows/2-normal-library.png": "a4cb43f349b5a99a9f74394d9b6cd665daa4e46e7fcb5f9fd78bd7f2bc3af570",
   "windows/2-normal-settings.png": "2861a93e5f23cda3e90ef127b474ee4a9bafa2b6b8542bc43d2600f75a226c17",
   "windows/2-normal-video.png": "d237f2f65f073fdb61edf37b70b55b361a105469d347b207494235aff3e9d8e0",
+  "windows/cleanup.json": "84191c4dea888285b6652ed0e37010a808b6084517ee13bf6f98c9bbba558025",
   "windows/measurements.json": "4232b4f6cf661f824fef6bb92226c0ffc0e1370924458d82e0bad8bc0ecb56e0",
   "windows/settings-maximized-d9d1df6.png": "53b634336519726fca8d9fa781aa80d26397f3835d60d063084690bd9fd5f84e",
   "windows-flat-build.log": "c9a0de3eac24fe9648d59556c9580ce89484e3121d9b2965ba538cfc4944793e"

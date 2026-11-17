@@ -1,7 +1,12 @@
 # Maximized Windows layout evidence
 
-Candidate application and test sources: `d9d1df6f081a158bbb2adf561eed3758d77f60ad`.
-Evidence-only descendants do not change build inputs. User acceptance is pending.
+Accepted application and test sources: `d9d1df6f081a158bbb2adf561eed3758d77f60ad`.
+Evidence-only descendants do not change build inputs. On 2026-11-17 the user
+selected "Accept reconstruction (Recommended)" in response to the new
+1920×1080 capture, the matching action-bottom measurements, the full-width
+workspace and the prominent header update button. The accepted capture is
+`browser/settings-1920x1080-d9d1df6.png`; the matching actual Windows rendering
+is `windows/settings-maximized-d9d1df6.png`.
 The earlier card, flat-row and capped hierarchy candidates were rejected; none is accepted
 design evidence. These focused checks do not claim the server-owned repository gate.
 
@@ -43,7 +48,7 @@ then returned the window to its original state and Library.
   `browser/settings-1920x1080-d9d1df6.png` and
   `windows/settings-maximized-d9d1df6.png`.
 
-The current desktop candidate uses the available page width without an overall
+The accepted desktop reconstruction uses the available page width without an overall
 cap. Gemini setup and YouTube session controls occupy equal-height grid cells
 and share their top and bottom edges. Their bottom action rows align through
 flex layout, without fixed-height spacers. The key form and removal group can
@@ -124,6 +129,9 @@ every state and screen. These are focused manual checks, not registered-flow rec
 
 No new transcription, paid translation, account sign-in or installer upgrade was
 requested. The installed app was not replaced by the isolated debug preview.
+After acceptance the owned launch context closed its Windows process tree;
+the app PID and its debugging listener were gone, and the stand-in server was
+also stopped. `windows/cleanup.json` records these manual cleanup checks.
 
 ## Focused checks and test cleanup
 

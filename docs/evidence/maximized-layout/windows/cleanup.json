@@ -1,0 +1,12 @@
+{
+  "source": "d9d1df6f081a158bbb2adf561eed3758d77f60ad",
+  "date": "2026-11-17",
+  "kind": "manual-preview-cleanup",
+  "owned_app_pid": 37608,
+  "owned_app_stopped": true,
+  "owned_context_completion": "Owned Windows process tree stopped",
+  "released_loopback_ports": {
+    "9246": true,
+    "8145": true
+  }
+}
