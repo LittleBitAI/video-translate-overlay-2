@@ -1,0 +1,632 @@
+[
+  {
+    "screen": "video",
+    "window": {
+      "x": 2348.0,
+      "y": 215.0,
+      "height": 799.0,
+      "width": 1040.0
+    },
+    "state": "Normal",
+    "groups": [
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2356.0,
+          "y": 246.0,
+          "height": 643.0,
+          "width": 1009.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2356.0,
+          "y": 246.0,
+          "height": 61.0,
+          "width": 1009.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2372.0,
+          "y": 246.0,
+          "height": 60.0,
+          "width": 208.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2356.0,
+          "y": 307.0,
+          "height": 582.0,
+          "width": 1009.0
+        }
+      }
+    ],
+    "navigation": [
+      {
+        "name": "영상",
+        "box": {
+          "x": 2372.0,
+          "y": 246.0,
+          "height": 60.0,
+          "width": 64.0
+        }
+      },
+      {
+        "name": "보관함",
+        "box": {
+          "x": 2436.0,
+          "y": 246.0,
+          "height": 60.0,
+          "width": 80.0
+        }
+      },
+      {
+        "name": "설정",
+        "box": {
+          "x": 2516.0,
+          "y": 246.0,
+          "height": 60.0,
+          "width": 64.0
+        }
+      }
+    ],
+    "screenshot": "video-normal.png",
+    "document": {
+      "x": 2356.0,
+      "y": 246.0,
+      "height": 760.0,
+      "width": 1024.0
+    }
+  },
+  {
+    "screen": "library",
+    "window": {
+      "x": 2348.0,
+      "y": 215.0,
+      "height": 799.0,
+      "width": 1040.0
+    },
+    "state": "Normal",
+    "groups": [
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2356.0,
+          "y": 246.0,
+          "height": 623.0,
+          "width": 1009.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2356.0,
+          "y": 246.0,
+          "height": 61.0,
+          "width": 1009.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2372.0,
+          "y": 246.0,
+          "height": 60.0,
+          "width": 208.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2356.0,
+          "y": 307.0,
+          "height": 562.0,
+          "width": 1009.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2372.0,
+          "y": 323.0,
+          "height": 398.0,
+          "width": 256.0
+        }
+      },
+      {
+        "role": "ControlType.List",
+        "box": {
+          "x": 2372.0,
+          "y": 400.0,
+          "height": 305.0,
+          "width": 256.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2652.0,
+          "y": 323.0,
+          "height": 530.0,
+          "width": 697.0
+        }
+      },
+      {
+        "role": "ControlType.List",
+        "box": {
+          "x": 2652.0,
+          "y": 383.0,
+          "height": 470.0,
+          "width": 697.0
+        }
+      }
+    ],
+    "navigation": [
+      {
+        "name": "영상",
+        "box": {
+          "x": 2372.0,
+          "y": 246.0,
+          "height": 60.0,
+          "width": 64.0
+        }
+      },
+      {
+        "name": "보관함",
+        "box": {
+          "x": 2436.0,
+          "y": 246.0,
+          "height": 60.0,
+          "width": 80.0
+        }
+      },
+      {
+        "name": "설정",
+        "box": {
+          "x": 2516.0,
+          "y": 246.0,
+          "height": 60.0,
+          "width": 64.0
+        }
+      }
+    ],
+    "screenshot": "library-normal.png",
+    "document": {
+      "x": 2356.0,
+      "y": 246.0,
+      "height": 760.0,
+      "width": 1024.0
+    }
+  },
+  {
+    "screen": "settings",
+    "window": {
+      "x": 2348.0,
+      "y": 215.0,
+      "height": 799.0,
+      "width": 1040.0
+    },
+    "state": "Normal",
+    "groups": [
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2356.0,
+          "y": 246.0,
+          "height": 1284.0,
+          "width": 1009.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2356.0,
+          "y": 246.0,
+          "height": 61.0,
+          "width": 1009.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2372.0,
+          "y": 246.0,
+          "height": 60.0,
+          "width": 208.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2524.0,
+          "y": 307.0,
+          "height": 1223.0,
+          "width": 673.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2540.0,
+          "y": 383.0,
+          "height": 304.0,
+          "width": 641.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2540.0,
+          "y": 879.0,
+          "height": 391.0,
+          "width": 641.0
+        }
+      },
+      {
+        "role": "ControlType.List",
+        "box": {
+          "x": 2564.0,
+          "y": 1081.0,
+          "height": 51.0,
+          "width": 593.0
+        }
+      }
+    ],
+    "navigation": [
+      {
+        "name": "영상",
+        "box": {
+          "x": 2372.0,
+          "y": 246.0,
+          "height": 60.0,
+          "width": 64.0
+        }
+      },
+      {
+        "name": "보관함",
+        "box": {
+          "x": 2436.0,
+          "y": 246.0,
+          "height": 60.0,
+          "width": 80.0
+        }
+      },
+      {
+        "name": "설정",
+        "box": {
+          "x": 2516.0,
+          "y": 246.0,
+          "height": 60.0,
+          "width": 64.0
+        }
+      }
+    ],
+    "screenshot": "settings-normal.png",
+    "document": {
+      "x": 2356.0,
+      "y": 246.0,
+      "height": 760.0,
+      "width": 1024.0
+    }
+  },
+  {
+    "screen": "video",
+    "window": {
+      "x": 1912.0,
+      "y": -3.0,
+      "height": 1056.0,
+      "width": 1936.0
+    },
+    "state": "Maximized",
+    "groups": [
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 1920.0,
+          "y": 28.0,
+          "height": 651.0,
+          "width": 1905.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 1920.0,
+          "y": 28.0,
+          "height": 61.0,
+          "width": 1905.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2312.0,
+          "y": 28.0,
+          "height": 60.0,
+          "width": 209.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2360.0,
+          "y": 89.0,
+          "height": 590.0,
+          "width": 1025.0
+        }
+      }
+    ],
+    "navigation": [
+      {
+        "name": "영상",
+        "box": {
+          "x": 2312.0,
+          "y": 28.0,
+          "height": 60.0,
+          "width": 65.0
+        }
+      },
+      {
+        "name": "보관함",
+        "box": {
+          "x": 2376.0,
+          "y": 28.0,
+          "height": 60.0,
+          "width": 81.0
+        }
+      },
+      {
+        "name": "설정",
+        "box": {
+          "x": 2456.0,
+          "y": 28.0,
+          "height": 60.0,
+          "width": 65.0
+        }
+      }
+    ],
+    "screenshot": "video-maximized.png",
+    "document": {
+      "x": 1920.0,
+      "y": 28.0,
+      "height": 1017.0,
+      "width": 1920.0
+    }
+  },
+  {
+    "screen": "library",
+    "window": {
+      "x": 1912.0,
+      "y": -3.0,
+      "height": 1056.0,
+      "width": 1936.0
+    },
+    "state": "Maximized",
+    "groups": [
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 1920.0,
+          "y": 28.0,
+          "height": 676.0,
+          "width": 1905.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 1920.0,
+          "y": 28.0,
+          "height": 61.0,
+          "width": 1905.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2312.0,
+          "y": 28.0,
+          "height": 60.0,
+          "width": 209.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2296.0,
+          "y": 89.0,
+          "height": 615.0,
+          "width": 1153.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2312.0,
+          "y": 105.0,
+          "height": 398.0,
+          "width": 257.0
+        }
+      },
+      {
+        "role": "ControlType.List",
+        "box": {
+          "x": 2312.0,
+          "y": 182.0,
+          "height": 305.0,
+          "width": 257.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2592.0,
+          "y": 105.0,
+          "height": 583.0,
+          "width": 841.0
+        }
+      },
+      {
+        "role": "ControlType.List",
+        "box": {
+          "x": 2592.0,
+          "y": 165.0,
+          "height": 523.0,
+          "width": 841.0
+        }
+      }
+    ],
+    "navigation": [
+      {
+        "name": "영상",
+        "box": {
+          "x": 2312.0,
+          "y": 28.0,
+          "height": 60.0,
+          "width": 65.0
+        }
+      },
+      {
+        "name": "보관함",
+        "box": {
+          "x": 2376.0,
+          "y": 28.0,
+          "height": 60.0,
+          "width": 81.0
+        }
+      },
+      {
+        "name": "설정",
+        "box": {
+          "x": 2456.0,
+          "y": 28.0,
+          "height": 60.0,
+          "width": 65.0
+        }
+      }
+    ],
+    "screenshot": "library-maximized.png",
+    "document": {
+      "x": 1920.0,
+      "y": 28.0,
+      "height": 1017.0,
+      "width": 1920.0
+    }
+  },
+  {
+    "screen": "settings",
+    "window": {
+      "x": 1912.0,
+      "y": -3.0,
+      "height": 1056.0,
+      "width": 1936.0
+    },
+    "state": "Maximized",
+    "groups": [
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 1920.0,
+          "y": 28.0,
+          "height": 1284.0,
+          "width": 1905.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 1920.0,
+          "y": 28.0,
+          "height": 61.0,
+          "width": 1905.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2312.0,
+          "y": 28.0,
+          "height": 60.0,
+          "width": 209.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2536.0,
+          "y": 89.0,
+          "height": 1223.0,
+          "width": 673.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2552.0,
+          "y": 165.0,
+          "height": 304.0,
+          "width": 641.0
+        }
+      },
+      {
+        "role": "ControlType.Group",
+        "box": {
+          "x": 2552.0,
+          "y": 661.0,
+          "height": 391.0,
+          "width": 641.0
+        }
+      },
+      {
+        "role": "ControlType.List",
+        "box": {
+          "x": 2576.0,
+          "y": 863.0,
+          "height": 51.0,
+          "width": 593.0
+        }
+      }
+    ],
+    "navigation": [
+      {
+        "name": "영상",
+        "box": {
+          "x": 2312.0,
+          "y": 28.0,
+          "height": 60.0,
+          "width": 65.0
+        }
+      },
+      {
+        "name": "보관함",
+        "box": {
+          "x": 2376.0,
+          "y": 28.0,
+          "height": 60.0,
+          "width": 81.0
+        }
+      },
+      {
+        "name": "설정",
+        "box": {
+          "x": 2456.0,
+          "y": 28.0,
+          "height": 60.0,
+          "width": 65.0
+        }
+      }
+    ],
+    "screenshot": "settings-maximized.png",
+    "document": {
+      "x": 1920.0,
+      "y": 28.0,
+      "height": 1017.0,
+      "width": 1920.0
+    }
+  }
+]

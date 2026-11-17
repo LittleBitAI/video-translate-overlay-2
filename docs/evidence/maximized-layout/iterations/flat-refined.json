@@ -1,0 +1,737 @@
+[
+  {
+    "width": 1280,
+    "height": 720,
+    "rows": [
+      {
+        "title": "Google 앱 계정",
+        "box": {
+          "x": 16,
+          "y": 137.390625,
+          "width": 1080,
+          "height": 137,
+          "top": 137.390625,
+          "right": 1096,
+          "bottom": 274.390625,
+          "left": 16
+        },
+        "header": {
+          "x": 16,
+          "y": 161.390625,
+          "width": 384,
+          "height": 89,
+          "top": 161.390625,
+          "right": 400,
+          "bottom": 250.390625,
+          "left": 16
+        },
+        "body": {
+          "x": 424,
+          "y": 161.390625,
+          "width": 672,
+          "height": 89,
+          "top": 161.390625,
+          "right": 1096,
+          "bottom": 250.390625,
+          "left": 424
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "padding": "24px 0px"
+      },
+      {
+        "title": "앱 업데이트",
+        "box": {
+          "x": 16,
+          "y": 274.390625,
+          "width": 1080,
+          "height": 123,
+          "top": 274.390625,
+          "right": 1096,
+          "bottom": 397.390625,
+          "left": 16
+        },
+        "header": {
+          "x": 16,
+          "y": 299.390625,
+          "width": 384,
+          "height": 74,
+          "top": 299.390625,
+          "right": 400,
+          "bottom": 373.390625,
+          "left": 16
+        },
+        "body": {
+          "x": 424,
+          "y": 299.390625,
+          "width": 672,
+          "height": 74,
+          "top": 299.390625,
+          "right": 1096,
+          "bottom": 373.390625,
+          "left": 424
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "padding": "24px 0px"
+      },
+      {
+        "title": "개인키",
+        "box": {
+          "x": 16,
+          "y": 397.390625,
+          "width": 1080,
+          "height": 268,
+          "top": 397.390625,
+          "right": 1096,
+          "bottom": 665.390625,
+          "left": 16
+        },
+        "header": {
+          "x": 16,
+          "y": 422.390625,
+          "width": 384,
+          "height": 219,
+          "top": 422.390625,
+          "right": 400,
+          "bottom": 641.390625,
+          "left": 16
+        },
+        "body": {
+          "x": 424,
+          "y": 422.390625,
+          "width": 672,
+          "height": 219,
+          "top": 422.390625,
+          "right": 1096,
+          "bottom": 641.390625,
+          "left": 424
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "padding": "24px 0px"
+      },
+      {
+        "title": "유튜브 로그인",
+        "box": {
+          "x": 16,
+          "y": 665.390625,
+          "width": 1080,
+          "height": 190,
+          "top": 665.390625,
+          "right": 1096,
+          "bottom": 855.390625,
+          "left": 16
+        },
+        "header": {
+          "x": 16,
+          "y": 690.390625,
+          "width": 384,
+          "height": 141,
+          "top": 690.390625,
+          "right": 400,
+          "bottom": 831.390625,
+          "left": 16
+        },
+        "body": {
+          "x": 424,
+          "y": 690.390625,
+          "width": 672,
+          "height": 141,
+          "top": 690.390625,
+          "right": 1096,
+          "bottom": 831.390625,
+          "left": 424
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "padding": "24px 0px"
+      }
+    ],
+    "overflow": false
+  },
+  {
+    "width": 1920,
+    "height": 1080,
+    "rows": [
+      {
+        "title": "Google 앱 계정",
+        "box": {
+          "x": 16,
+          "y": 137.390625,
+          "width": 1080,
+          "height": 137,
+          "top": 137.390625,
+          "right": 1096,
+          "bottom": 274.390625,
+          "left": 16
+        },
+        "header": {
+          "x": 16,
+          "y": 161.390625,
+          "width": 384,
+          "height": 89,
+          "top": 161.390625,
+          "right": 400,
+          "bottom": 250.390625,
+          "left": 16
+        },
+        "body": {
+          "x": 424,
+          "y": 161.390625,
+          "width": 672,
+          "height": 89,
+          "top": 161.390625,
+          "right": 1096,
+          "bottom": 250.390625,
+          "left": 424
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "padding": "24px 0px"
+      },
+      {
+        "title": "앱 업데이트",
+        "box": {
+          "x": 16,
+          "y": 274.390625,
+          "width": 1080,
+          "height": 123,
+          "top": 274.390625,
+          "right": 1096,
+          "bottom": 397.390625,
+          "left": 16
+        },
+        "header": {
+          "x": 16,
+          "y": 299.390625,
+          "width": 384,
+          "height": 74,
+          "top": 299.390625,
+          "right": 400,
+          "bottom": 373.390625,
+          "left": 16
+        },
+        "body": {
+          "x": 424,
+          "y": 299.390625,
+          "width": 672,
+          "height": 74,
+          "top": 299.390625,
+          "right": 1096,
+          "bottom": 373.390625,
+          "left": 424
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "padding": "24px 0px"
+      },
+      {
+        "title": "개인키",
+        "box": {
+          "x": 16,
+          "y": 397.390625,
+          "width": 1080,
+          "height": 268,
+          "top": 397.390625,
+          "right": 1096,
+          "bottom": 665.390625,
+          "left": 16
+        },
+        "header": {
+          "x": 16,
+          "y": 422.390625,
+          "width": 384,
+          "height": 219,
+          "top": 422.390625,
+          "right": 400,
+          "bottom": 641.390625,
+          "left": 16
+        },
+        "body": {
+          "x": 424,
+          "y": 422.390625,
+          "width": 672,
+          "height": 219,
+          "top": 422.390625,
+          "right": 1096,
+          "bottom": 641.390625,
+          "left": 424
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "padding": "24px 0px"
+      },
+      {
+        "title": "유튜브 로그인",
+        "box": {
+          "x": 16,
+          "y": 665.390625,
+          "width": 1080,
+          "height": 190,
+          "top": 665.390625,
+          "right": 1096,
+          "bottom": 855.390625,
+          "left": 16
+        },
+        "header": {
+          "x": 16,
+          "y": 690.390625,
+          "width": 384,
+          "height": 141,
+          "top": 690.390625,
+          "right": 400,
+          "bottom": 831.390625,
+          "left": 16
+        },
+        "body": {
+          "x": 424,
+          "y": 690.390625,
+          "width": 672,
+          "height": 141,
+          "top": 690.390625,
+          "right": 1096,
+          "bottom": 831.390625,
+          "left": 424
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "padding": "24px 0px"
+      }
+    ],
+    "overflow": false
+  },
+  {
+    "width": 2560,
+    "height": 1440,
+    "rows": [
+      {
+        "title": "Google 앱 계정",
+        "box": {
+          "x": 16,
+          "y": 137.390625,
+          "width": 1080,
+          "height": 137,
+          "top": 137.390625,
+          "right": 1096,
+          "bottom": 274.390625,
+          "left": 16
+        },
+        "header": {
+          "x": 16,
+          "y": 161.390625,
+          "width": 384,
+          "height": 89,
+          "top": 161.390625,
+          "right": 400,
+          "bottom": 250.390625,
+          "left": 16
+        },
+        "body": {
+          "x": 424,
+          "y": 161.390625,
+          "width": 672,
+          "height": 89,
+          "top": 161.390625,
+          "right": 1096,
+          "bottom": 250.390625,
+          "left": 424
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "padding": "24px 0px"
+      },
+      {
+        "title": "앱 업데이트",
+        "box": {
+          "x": 16,
+          "y": 274.390625,
+          "width": 1080,
+          "height": 123,
+          "top": 274.390625,
+          "right": 1096,
+          "bottom": 397.390625,
+          "left": 16
+        },
+        "header": {
+          "x": 16,
+          "y": 299.390625,
+          "width": 384,
+          "height": 74,
+          "top": 299.390625,
+          "right": 400,
+          "bottom": 373.390625,
+          "left": 16
+        },
+        "body": {
+          "x": 424,
+          "y": 299.390625,
+          "width": 672,
+          "height": 74,
+          "top": 299.390625,
+          "right": 1096,
+          "bottom": 373.390625,
+          "left": 424
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "padding": "24px 0px"
+      },
+      {
+        "title": "개인키",
+        "box": {
+          "x": 16,
+          "y": 397.390625,
+          "width": 1080,
+          "height": 268,
+          "top": 397.390625,
+          "right": 1096,
+          "bottom": 665.390625,
+          "left": 16
+        },
+        "header": {
+          "x": 16,
+          "y": 422.390625,
+          "width": 384,
+          "height": 219,
+          "top": 422.390625,
+          "right": 400,
+          "bottom": 641.390625,
+          "left": 16
+        },
+        "body": {
+          "x": 424,
+          "y": 422.390625,
+          "width": 672,
+          "height": 219,
+          "top": 422.390625,
+          "right": 1096,
+          "bottom": 641.390625,
+          "left": 424
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "padding": "24px 0px"
+      },
+      {
+        "title": "유튜브 로그인",
+        "box": {
+          "x": 16,
+          "y": 665.390625,
+          "width": 1080,
+          "height": 190,
+          "top": 665.390625,
+          "right": 1096,
+          "bottom": 855.390625,
+          "left": 16
+        },
+        "header": {
+          "x": 16,
+          "y": 690.390625,
+          "width": 384,
+          "height": 141,
+          "top": 690.390625,
+          "right": 400,
+          "bottom": 831.390625,
+          "left": 16
+        },
+        "body": {
+          "x": 424,
+          "y": 690.390625,
+          "width": 672,
+          "height": 141,
+          "top": 690.390625,
+          "right": 1096,
+          "bottom": 831.390625,
+          "left": 424
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "padding": "24px 0px"
+      }
+    ],
+    "overflow": false
+  },
+  {
+    "width": 768,
+    "height": 720,
+    "rows": [
+      {
+        "title": "Google 앱 계정",
+        "box": {
+          "x": 16,
+          "y": 137.390625,
+          "width": 721,
+          "height": 158,
+          "top": 137.390625,
+          "right": 737,
+          "bottom": 295.390625,
+          "left": 16
+        },
+        "header": {
+          "x": 16,
+          "y": 161.390625,
+          "width": 345,
+          "height": 110,
+          "top": 161.390625,
+          "right": 361,
+          "bottom": 271.390625,
+          "left": 16
+        },
+        "body": {
+          "x": 385,
+          "y": 161.390625,
+          "width": 352,
+          "height": 110,
+          "top": 161.390625,
+          "right": 737,
+          "bottom": 271.390625,
+          "left": 385
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "padding": "24px 0px"
+      },
+      {
+        "title": "앱 업데이트",
+        "box": {
+          "x": 16,
+          "y": 295.390625,
+          "width": 721,
+          "height": 123,
+          "top": 295.390625,
+          "right": 737,
+          "bottom": 418.390625,
+          "left": 16
+        },
+        "header": {
+          "x": 16,
+          "y": 320.390625,
+          "width": 345,
+          "height": 74,
+          "top": 320.390625,
+          "right": 361,
+          "bottom": 394.390625,
+          "left": 16
+        },
+        "body": {
+          "x": 385,
+          "y": 320.390625,
+          "width": 352,
+          "height": 74,
+          "top": 320.390625,
+          "right": 737,
+          "bottom": 394.390625,
+          "left": 385
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "padding": "24px 0px"
+      },
+      {
+        "title": "개인키",
+        "box": {
+          "x": 16,
+          "y": 418.390625,
+          "width": 721,
+          "height": 329,
+          "top": 418.390625,
+          "right": 737,
+          "bottom": 747.390625,
+          "left": 16
+        },
+        "header": {
+          "x": 16,
+          "y": 443.390625,
+          "width": 345,
+          "height": 280,
+          "top": 443.390625,
+          "right": 361,
+          "bottom": 723.390625,
+          "left": 16
+        },
+        "body": {
+          "x": 385,
+          "y": 443.390625,
+          "width": 352,
+          "height": 280,
+          "top": 443.390625,
+          "right": 737,
+          "bottom": 723.390625,
+          "left": 385
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "padding": "24px 0px"
+      },
+      {
+        "title": "유튜브 로그인",
+        "box": {
+          "x": 16,
+          "y": 747.390625,
+          "width": 721,
+          "height": 190,
+          "top": 747.390625,
+          "right": 737,
+          "bottom": 937.390625,
+          "left": 16
+        },
+        "header": {
+          "x": 16,
+          "y": 772.390625,
+          "width": 345,
+          "height": 141,
+          "top": 772.390625,
+          "right": 361,
+          "bottom": 913.390625,
+          "left": 16
+        },
+        "body": {
+          "x": 385,
+          "y": 772.390625,
+          "width": 352,
+          "height": 141,
+          "top": 772.390625,
+          "right": 737,
+          "bottom": 913.390625,
+          "left": 385
+        },
+        "background": "rgba(0, 0, 0, 0)",
+        "padding": "24px 0px"
+      }
+    ],
+    "overflow": false
+  },
+  {
+    "width": 384,
+    "height": 854,
+    "rows": [
+      {
+        "title": "Google 앱 계정",
+        "box": {
+          "x": 8,
+          "y": 68.390625,
+          "width": 368,
+          "height": 237,
+          "top": 68.390625,
+          "right": 376,
+          "bottom": 305.390625,
+          "left": 8
+        },
+        "header": {
+          "x": 24,
+          "y": 84.390625,
+          "width": 336,
+          "height": 95,
+          "top": 84.390625,
+          "right": 360,
+          "bottom": 179.390625,
+          "left": 24
+        },
+        "body": {
+          "x": 24,
+          "y": 187.390625,
+          "width": 336,
+          "height": 102,
+          "top": 187.390625,
+          "right": 360,
+          "bottom": 289.390625,
+          "left": 24
+        },
+        "background": "oklab(0.966476 -0.000875741 -0.00443137 / 0.05)",
+        "padding": "16px"
+      },
+      {
+        "title": "앱 업데이트",
+        "box": {
+          "x": 8,
+          "y": 321.390625,
+          "width": 368,
+          "height": 166,
+          "top": 321.390625,
+          "right": 376,
+          "bottom": 487.390625,
+          "left": 8
+        },
+        "header": {
+          "x": 24,
+          "y": 337.390625,
+          "width": 336,
+          "height": 74,
+          "top": 337.390625,
+          "right": 360,
+          "bottom": 411.390625,
+          "left": 24
+        },
+        "body": {
+          "x": 24,
+          "y": 411.390625,
+          "width": 336,
+          "height": 60,
+          "top": 411.390625,
+          "right": 360,
+          "bottom": 471.390625,
+          "left": 24
+        },
+        "background": "oklab(0.966476 -0.000875741 -0.00443137 / 0.05)",
+        "padding": "16px"
+      },
+      {
+        "title": "개인키",
+        "box": {
+          "x": 8,
+          "y": 503.390625,
+          "width": 368,
+          "height": 437,
+          "top": 503.390625,
+          "right": 376,
+          "bottom": 940.390625,
+          "left": 8
+        },
+        "header": {
+          "x": 24,
+          "y": 519.390625,
+          "width": 336,
+          "height": 74,
+          "top": 519.390625,
+          "right": 360,
+          "bottom": 593.390625,
+          "left": 24
+        },
+        "body": {
+          "x": 24,
+          "y": 609.390625,
+          "width": 336,
+          "height": 315,
+          "top": 609.390625,
+          "right": 360,
+          "bottom": 924.390625,
+          "left": 24
+        },
+        "background": "oklab(0.966476 -0.000875741 -0.00443137 / 0.05)",
+        "padding": "16px"
+      },
+      {
+        "title": "유튜브 로그인",
+        "box": {
+          "x": 8,
+          "y": 956.390625,
+          "width": 368,
+          "height": 233,
+          "top": 956.390625,
+          "right": 376,
+          "bottom": 1189.390625,
+          "left": 8
+        },
+        "header": {
+          "x": 24,
+          "y": 972.390625,
+          "width": 336,
+          "height": 141,
+          "top": 972.390625,
+          "right": 360,
+          "bottom": 1113.390625,
+          "left": 24
+        },
+        "body": {
+          "x": 24,
+          "y": 1113.390625,
+          "width": 336,
+          "height": 60,
+          "top": 1113.390625,
+          "right": 360,
+          "bottom": 1173.390625,
+          "left": 24
+        },
+        "background": "oklab(0.966476 -0.000875741 -0.00443137 / 0.05)",
+        "padding": "16px"
+      }
+    ],
+    "overflow": false
+  }
+]
