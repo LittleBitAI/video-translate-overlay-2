@@ -10,6 +10,11 @@
   },
   {
    "a": "README.md",
+   "b": "docs/design/desktop-transcription-speed.md",
+   "kind": "link"
+  },
+  {
+   "a": "README.md",
    "b": "docs/design/download-speed.md",
    "kind": "link"
   },
@@ -150,6 +155,11 @@
   },
   {
    "a": "docs/releases/procedure.md",
+   "b": "docs/design/desktop-transcription-speed.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/releases/procedure.md",
    "b": "docs/releases/0.1.7.md",
    "kind": "link"
   },
@@ -227,8 +237,8 @@
   "docs/evidence/library-rail/README.md"
  ],
  "counts": {
-  "docs": 22,
-  "linked": 15,
+  "docs": 23,
+  "linked": 16,
   "read": 3,
   "orphans": 4,
   "pages": 7,

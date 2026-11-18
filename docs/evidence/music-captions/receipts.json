@@ -67,6 +67,62 @@
   "final_verification": "server-owned, pending",
   "baseline_commit": "cd81109bc4c8be7ab81ff2e5d6dc74de83c7a1d3",
   "implementation_commit": "c6c5aeb",
+  "integration": {
+    "task_parent": "3209e7eaed617cc428c26c32f0eed0ec5fe3a4b9",
+    "merged_main": "435ff315743ca4731b6c8157c237ae9ef019f961",
+    "source_inputs": {
+      "Cargo.lock": "e6c3016cae711a699e8716fa9cb4a3da68a51d17d1f2812e021367b40f8f07eb",
+      "src-tauri/Cargo.toml": "824655ee305e4fb347fa1135c88f2fe72c51224e24519297a003a4ce30628100",
+      "src-tauri/src/whisper.rs": "729ad44695e63c8dd72d5f473eada391674ca2c5831fa372bc69b9a96627d317",
+      "src-tauri/src/voice.rs": "5a65ea57c2ba349348721cda5ddd6e39f35c8bfbc772d45c18d86554674d5178",
+      "src-tauri/src/audio.rs": "d7106dd3208fac3ea9e4cfc444282991f30a4c0800c88f07002e58b1690970f1",
+      "src-tauri/src/whisper_tests.rs": "7cc19ac1336d7b3c0823a4801f1c6658e69b08afaa8be5420bd43d0373f5711f",
+      "src-tauri/src/stitch_tests.rs": "6995be66b64f326740c40444c8664885cdb6ea91d0189f7abfb4f4d4a71f0c00",
+      "scripts/package-release.ps1": "bb0fa82cdae995ebeafc9f8af4e475c90df0b030d7d19e1fbf87843b6cc53bde",
+      "tests/package-release.test.ps1": "648b2843611a84d395e897bee39c4dc0bfb1de3a520612f22e6505434ec7a7a0"
+    },
+    "test_binary_sha256": "68db8be3d91f32f20f56330d9e49521d0627e1492c310f6f255bb37eba87da63",
+    "profile": "release",
+    "vulkan_sdk": "1.4.363.1",
+    "checks": [
+      {
+        "command": "cargo test -p video-translate-overlay --release --features whisper --lib mit_music_and_contrasting_speech -- --ignored --nocapture",
+        "backend": "NVIDIA GeForce RTX 3080",
+        "passed": 1,
+        "base_first_cue_ms": 9040,
+        "large_first_cue_ms": 9280,
+        "log_sha256": "996c7220f73ba36b3c652b3f172207bcfc76e26712a53a1d2970a57452fc85be"
+      },
+      {
+        "command": "cargo test -p video-translate-overlay --release --features whisper --lib mit_music_and_contrasting_speech -- --ignored --nocapture",
+        "environment": "VK_DRIVER_FILES points to a nonexistent file; fresh process",
+        "backend": "the CPU",
+        "passed": 1,
+        "base_first_cue_ms": 9040,
+        "large_first_cue_ms": 9280,
+        "log_sha256": "3e87abf0945d4dc455febd54a3c70a7d799be2694b00acbcacf29656b8a17d80"
+      },
+      {
+        "command": "cargo test -p video-translate-overlay --release --features whisper --lib stitch:: -- --nocapture",
+        "passed": 7,
+        "log_sha256": "df03ccb6eace172599a99e7f952966b68c6f4fdd7d1be38edbc258fe59e2e4b4"
+      },
+      {
+        "command": "cargo test -p video-translate-overlay --release --features whisper --lib detected_voice_keeps -- --nocapture",
+        "passed": 1,
+        "log_sha256": "0b992388fced565cde875cb5bc4b47373c8bf0af935b2f4f94dc2584fdc23c74"
+      },
+      {
+        "command": "pwsh -NoProfile -File tests/package-release.test.ps1",
+        "result": "18 refusal cases and empty/absent output cases passed; build boundary stubbed",
+        "log_sha256": "4c1ab8182e7c4996f44da91f74c0785b4d912b8bb45ad898580ec82f82361cdf"
+      }
+    ],
+    "installed_data_modified": false,
+    "installer_published": false,
+    "previous_review_reused": false,
+    "server_checks_and_fresh_review": "pending"
+  },
   "source_equivalence": {
     "path": "src-tauri/src/voice.rs",
     "tested_sha256": "0d87d802b41f9bdae5a52104d6f50b8174b5cc66eb6b4b245849ea241f828fe0",

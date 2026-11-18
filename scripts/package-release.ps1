@@ -72,7 +72,8 @@ if ($Platform -in @('both', 'android')) {
 
 if ($Platform -in @('both', 'windows')) {
     Run 'cargo' @('tauri', 'build', '--features', 'app', '--bundles', 'nsis', '--target', 'x86_64-pc-windows-msvc', '--', '--no-default-features')
-    $installer = "target/x86_64-pc-windows-msvc/release/bundle/nsis/video-translate-overlay_${version}_x64-setup.exe"
+    $targetRoot = if ($env:CARGO_TARGET_DIR) { $env:CARGO_TARGET_DIR } else { Join-Path $PWD 'target' }
+    $installer = Join-Path $targetRoot "x86_64-pc-windows-msvc/release/bundle/nsis/video-translate-overlay_${version}_x64-setup.exe"
     Copy-Item -LiteralPath $installer -Destination (Join-Path $output "video-translate-overlay-$version-windows-x64-setup.exe") -Force
     if ((Get-Item -LiteralPath $installer).VersionInfo.ProductVersion -notlike "$version*") { throw 'Windows installer version does not match' }
 }

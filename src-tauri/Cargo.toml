@@ -85,6 +85,10 @@ libsqlite3-sys = { version = "0.30", features = ["bundled"] }
 tauri-plugin-single-instance = { version = "2", optional = true }
 
 [target.'cfg(windows)'.dependencies]
+# whisper.cpp's Vulkan backend runs the model on the GPU (NVIDIA, AMD or Intel,
+# through the driver's Vulkan); with no usable GPU it stays on the CPU. Building
+# it needs the Vulkan SDK (`VULKAN_SDK`: headers, glslc and vulkan-1.lib).
+whisper-rs = { version = "0.16", optional = true, features = ["vulkan"] }
 windows = { version = "0.61", features = [
   "Data_Xml_Dom",
   "Foundation_Collections",

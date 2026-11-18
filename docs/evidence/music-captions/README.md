@@ -146,3 +146,40 @@ desktop observation; the session's native UI transport was unavailable.
 The server owns the repository gate and final verification, which remain
 pending. No installer or release was published, and no physical Android
 inference run is claimed for this change.
+
+## Integration with desktop GPU transcription
+
+The task branch merges the exact main commit
+`435ff315743ca4731b6c8157c237ae9ef019f961`. Its Windows Vulkan backend,
+bundled loader, GPU beam search and CPU greedy fallback remain in place.
+Speech detection still precedes recognition, and each speech portion retains
+its original source offset. Loop recovery now follows main's greedy-decoding
+policy for both phone and CPU fallback, retrying only the affected speech
+portion rather than feeding its musical lead-in back to the recognizer.
+
+The earlier execution receipts and Windows playback confirmation describe the
+initial implementation. They are historical evidence, not approval of this
+integration. Fresh integration checks and source hashes are recorded separately
+in the receipts. The server owns subsequent checks and a fresh independent
+review; no previous review is carried forward. This merge does not modify the
+installed lecture's saved data or publish an installer.
+
+Fresh focused checks on the merged sources:
+
+| Command | Result |
+| --- | --- |
+| `cargo test -p video-translate-overlay --release --features whisper --lib mit_music_and_contrasting_speech -- --ignored --nocapture` | 1 passed on NVIDIA GeForce RTX 3080. Both speech models left music blank and retained the opening speech. |
+| The same command in a fresh process with `VK_DRIVER_FILES` pointing to a nonexistent file | 1 passed; both models logged CPU execution. First cue starts were 9,040 ms for base and 9,280 ms for large, as on the GPU, within 300 ms of the source speech at 9,100 ms. |
+| `cargo test -p video-translate-overlay --release --features whisper --lib stitch:: -- --nocapture` | 7 passed: source offsets, overlap reconciliation, ordered nonoverlapping cues and genuine repetition. |
+| `cargo test -p video-translate-overlay --release --features whisper --lib detected_voice_keeps -- --nocapture` | 1 passed: nearby speech, original offsets and music-only empty output. |
+| `pwsh -NoProfile -File tests/package-release.test.ps1` | Passed 18 refusal cases and both fresh-output cases, with the build boundary stubbed and no candidate mutation. |
+
+The release-profile tests used `CARGO_TARGET_DIR=C:/vtt`, Vulkan SDK 1.4.363.1
+and the same pinned audio and models as the earlier regression. The initial
+debug build was stopped during slow compiler capability probes; it supplies
+no test result. The release-profile runs above completed successfully. These
+are correctness checks, not new transcription-speed measurements.
+
+The integration cleanup audit retained the real-audio, voice-offset, stitching
+and packaging tests. They guard distinct current behavior; the opt-in audio
+tests still need local audio and models. No tests were removed or weakened.

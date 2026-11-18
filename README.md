@@ -222,7 +222,7 @@ JSON at `artifacts/google-oauth/desktop-client.json`, or its local path in
 Installed-app users sign in directly; they do not supply credentials or client
 IDs. Android builds do not need the Desktop credential file.
 
-PowerShell에서 `LIBCLANG_PATH`를 `libclang.dll`이 있는 폴더로 지정한 뒤 실행합니다.
+PowerShell에서 `LIBCLANG_PATH`를 `libclang.dll`이 있는 폴더로 지정한 뒤 실행합니다. Windows에서 음성 인식을 빌드하면(앱과 브라우저 실행 모두) GPU용 Vulkan 백엔드가 함께 빌드되므로 [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)도 설치해야 합니다. 설치하면 `VULKAN_SDK`가 지정됩니다. GPU가 있으면 GPU에서, 없으면 CPU에서 받아씁니다([측정](docs/design/desktop-transcription-speed.md)).
 
 ```powershell
 $env:LIBCLANG_PATH = "C:/path/to/clang/native"
