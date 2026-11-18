@@ -80,7 +80,7 @@ if ($Platform -in @('both', 'windows')) {
     $installer = Join-Path $targetRoot "release/bundle/nsis/video-translate-overlay_${version}_x64-setup.exe"
     # An installer left from an earlier build must not pass for this one if a Cargo
     # build.target setting sends the output elsewhere.
-    Remove-Item -LiteralPath $installer -Force -ErrorAction SilentlyContinue
+    if (Test-Path -LiteralPath $installer) { Remove-Item -LiteralPath $installer -Force }
     Run 'cargo' @('tauri', 'build', '--features', 'app', '--bundles', 'nsis', '--', '--no-default-features')
     Copy-Item -LiteralPath $installer -Destination (Join-Path $output "video-translate-overlay-$version-windows-x64-setup.exe") -Force
     if ((Get-Item -LiteralPath $installer).VersionInfo.ProductVersion -notlike "$version*") { throw 'Windows installer version does not match' }
