@@ -255,3 +255,45 @@ contract. Both installers downloaded anonymously and matched the hashes above.
 Not performed for 0.1.8: isolated older-version native profiles selecting this
 release, either platform's download action, a silent Windows payload
 inspection, and installation on a physical device.
+
+## 0.1.9 publication (2026-11-18)
+
+The user installed the Windows candidate over the existing app, tried it and
+approved publishing; [the release is public](https://github.com/LittleBitAI/video-translate-overlay-2/releases/tag/v0.1.9).
+It carries PRs #14–#16 and #18: the maximized Windows layout, fullscreen
+subtitles scaled to the video, Windows speech on the GPU through Vulkan, and
+the speech model freed after writing.
+
+`npm run package:release` printed `Prepared 0.1.9 (both)` from clean source
+commit `adfbd21ef6efbdf8b295f20868ddcf45088c8cb9` (`dirty: false`), which tag
+`v0.1.9` points to, with `CARGO_TARGET_DIR=C:/t`. Android version code is 1009.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `video-translate-overlay-0.1.9-arm64.apk` | 27938007 | `a7ce676909478a2eaab04a515af80922b2c1ed020f5cd3917cba8d8bd9b1d8a9` |
+| `video-translate-overlay-0.1.9-windows-x64-setup.exe` | 10221704 | `5e0bf3ca8d97d63c1153c70878462357744394d83b692159650eb8500ee498ef` |
+
+The release body is `docs/releases/0.1.9.md`, SHA-256
+`fd88c097637e5bb47780dc7be8c2acf7aed795435521cedf648447a041a25795`. Android
+signature verification reports certificate SHA-256
+`fa6da2233c2062b48baf20b3562eacacce774da80f2e4bb3d20ec3a6a527ec28`, version
+name 0.1.9, ABI `arm64-v8a`. The generated NSIS script installs `vulkan-1.dll`
+beside the executable and both loader licence files under `licenses/`.
+
+Four earlier invocations failed and were archived under the ignored
+`artifacts/releases-archive/`: a fresh worktree had no `dist/`; the saved JDK
+had been emptied by a temp-folder cleanup (Temurin 17.0.21+9 was fetched again,
+checksum matching Adoptium's); then twice the Windows build of whisper.cpp's
+Vulkan shader generator failed in MSBuild on paths over 260 characters under
+`target/x86_64-pc-windows-msvc`, even with `C:\t`. Commit `adfbd21` builds the
+Windows installer for the host instead, which drops that directory.
+
+Unauthenticated `GET /repos/LittleBitAI/video-translate-overlay-2/releases`
+showed `v0.1.9` published, not draft or prerelease, with the approval marker and
+all three assets `uploaded` at the exact URLs from the release contract. Both
+installers downloaded anonymously and matched the hashes above.
+
+Not performed for 0.1.9: the repository gate at this head (CI runs it on the
+pull request), an independent review of `adfbd21`, isolated older-version
+native profiles, either platform's download action, and installation on a
+phone.
