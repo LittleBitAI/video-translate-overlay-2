@@ -251,3 +251,21 @@ figure.phone{width:100%}
 :root{--gap3:clamp(2.5rem,4.5vw,5.5rem)}
 .stats{row-gap:var(--gap3)}
 @media (max-width:960px){.stats{row-gap:2.25rem}}
+
+/* 추천하는 방법 — 단계 카드. 빨간 숫자(.mk)는 캡처 위 빨간 표시와 같은 번호 */
+:root{--mark:#e53935}
+.guide-side{margin:3rem 0 1.25rem;padding-top:1rem;border-top:2px solid var(--ink)}
+.guide-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:var(--cols);column-gap:var(--gap);row-gap:2.5rem}
+.guide-steps > li{grid-column:span 2;display:grid;gap:.75rem;align-content:start}
+.guide-steps > li.tall{grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:var(--gap);align-items:start}
+.guide-steps h4{font:700 1.0625rem/1.5 var(--sans);margin:.5rem 0 .4rem;display:flex;align-items:baseline;gap:.6rem}
+.guide-steps > li.tall h4{margin-top:0}
+.guide-steps .no{font:700 1.25rem/1 var(--serif);color:var(--accent)}
+.guide-steps p{color:var(--soft);line-height:1.75}
+.mk{display:inline-grid;place-items:center;width:1.35em;height:1.35em;border-radius:50%;background:var(--mark);color:#fff;font:700 .78em/1 var(--sans);vertical-align:.08em}
+@media (max-width:960px){
+  .guide-steps{grid-template-columns:minmax(0,1fr)}
+  .guide-steps > li,.guide-steps > li.tall{grid-column:1 / -1}
+  .guide-steps > li.tall{grid-template-columns:minmax(0,1fr)}
+  .guide-steps > li.tall figure.phone{width:min(17rem,100%)}
+}
