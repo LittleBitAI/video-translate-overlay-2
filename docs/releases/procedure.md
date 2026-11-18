@@ -49,7 +49,9 @@ malformed responses fail the check rather than claim the app is up to date.
    Set `JAVA_HOME`, `ANDROID_HOME`, `NDK_HOME`, and `LIBCLANG_PATH`; add their tools
    and the installed Tauri CLI to `PATH`. Build on Windows with the C++ toolchain
    and the Vulkan SDK (`VULKAN_SDK`), which the Windows speech engine's GPU
-   backend needs (`docs/design/desktop-transcription-speed.md`).
+   backend needs (`docs/design/desktop-transcription-speed.md`). Set a short
+   `CARGO_TARGET_DIR` such as `C:\t`: whisper.cpp's Vulkan shader generator
+   builds deep under it, and MSBuild fails past 260 characters.
    The Windows app build requires the publisher's existing Desktop OAuth JSON
    at `artifacts/google-oauth/desktop-client.json`, or its local path in
    `VTO_GOOGLE_DESKTOP_CLIENT_JSON`. See [Google registration](../design/google-auth-setup.md).
