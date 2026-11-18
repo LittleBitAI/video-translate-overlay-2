@@ -249,3 +249,44 @@ provisioning test, real-audio test, synthesized-speech test, stitching, timing,
 background/resume and overlay tests. They cover current distinct behaviors.
 The opt-in tests still need external model/audio prerequisites; their ignore
 reasons remain valid. No tests were removed or weakened in this review repair.
+
+## Review round 2: shared UI fixture evidence
+
+The shared browser fixture serves eight existing UI test files. Its isolation
+regression adds a ninth file, so the earlier partial run could not establish
+that every consumer passed. On committed source
+`b5f2504afc5eb436728ffcb61ac0024d5034f90f`, this exact UI-stage check ran:
+
+```text
+npm run test:ui -- --reporter=verbose --reporter=json --outputFile=artifacts/music-opening/review-two/ui-results.json
+```
+
+The options only retain console and machine-readable reports; they do not filter
+tests or change the configured assertions. All 9 files and 127 tests passed,
+with exit code 0 and no browser shutdown timeout. This includes
+`broadcast fixtures share peer messages without receiving other test contexts`
+and the previously failing busy-library broadcast case. No application or test
+code changed in this evidence repair.
+
+[The full console output](review-two-ui.log) and
+[the runner's individual results](review-two-ui-results.json) are inspectable.
+[The execution binding](review-two-ui.json) records the source commit, local
+comparison base, UTC start, Windows/Node/npm/tool versions, configured headless
+Chromium and its installed revision, expected/observed assertions, and Git object
+identities for every product source, UI test and relevant configuration input.
+The inventory explicitly includes `tests/ui/fake.ts`, `tests/ui/fake.test.ts`
+and `vitest.ui.config.ts`; it is not the older production-only inventory.
+Checkout/home prefixes and console color escapes are the only report
+normalization. The two public report hashes bind the normalized UTF-8/LF files.
+
+The round-one binding now lists both UI-test differences and points to this
+fresh run. Its Rust/overlay results and native/API observations remain labeled
+historical reuse for unchanged product code. The earlier Windows playback
+confirmation remains an owner report, not a new automated player observation.
+The previous partial UI run's shutdown warning is not a result of this run.
+
+This documentation/evidence descendant can reuse the run only while a fresh
+inventory under the recorded input policy matches it, including newly added
+input files. The final candidate comparison checks that condition. The complete
+repository gate, including server-owned debt checking, and fresh independent
+review remain pending; this UI-stage pass is not a claim that they passed.

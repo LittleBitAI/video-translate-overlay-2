@@ -75,6 +75,17 @@
     "production_library_modified": false,
     "paid_translation_calls": 0
   },
+  "review_two": {
+    "tested_head": "b5f2504afc5eb436728ffcb61ac0024d5034f90f",
+    "ui_binding": "review-two-ui.json",
+    "ui_output": "review-two-ui.log",
+    "ui_machine_results": "review-two-ui-results.json",
+    "files_passed": 9,
+    "tests_passed": 127,
+    "exit_code": 0,
+    "shutdown_timeout_warning": false,
+    "production_and_test_code_changed_in_this_evidence_repair": false
+  },
   "final_verification": "server-owned, pending after review repair",
   "baseline_commit": "cd81109bc4c8be7ab81ff2e5d6dc74de83c7a1d3",
   "implementation_commit": "c6c5aeb",

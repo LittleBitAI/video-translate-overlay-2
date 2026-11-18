@@ -1,0 +1,145 @@
+
+> video-translate-overlay-2@0.1.8 test:ui
+> vitest run -c vitest.ui.config.ts --reporter=verbose --reporter=json --outputFile=artifacts/music-opening/review-two/ui-results.json
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./vite.config" without a file extension (vitest.ui.config.ts:5:17). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+오전 11:12:27 [vite-plugin-svelte] no Svelte config found at <checkout> - using default configuration.
+
+ RUN  v5.1.0 <checkout>
+
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 1280 px the rail lists every playlist and a click shows its grid inside the viewport 127ms
+ ✓ |chromium| tests/ui/google-account.test.ts > privacy access at 384 px uses a fixed native opener and keeps failed attempts retryable without signing in 145ms
+ ✓ |chromium| tests/ui/preferences.test.ts > YouTube can be connected once from settings 205ms
+ ✓ |chromium| tests/ui/watch.test.ts > a remote deletion refresh waits for a pending open and then clears only the resulting browser pointer 225ms
+ ✓ |chromium| tests/ui/watch.test.ts > empty: only the address bar and where the video will open 53ms
+ ✓ |chromium| tests/ui/watch.test.ts > loading: the overlay is sketched until P9 answers 2ms
+ ✓ |chromium| tests/ui/updates.test.ts > launch notice displays text safely and invokes the android-arm64 download action 217ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 1009 px the rail lists every playlist and a click shows its grid inside the viewport 113ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > local subtitles scale with their player and wrap inside a letterboxed image 237ms
+ ✓ |chromium| tests/ui/google-account.test.ts > privacy access at 1280 px uses a fixed native opener and keeps failed attempts retryable without signing in 116ms
+ ✓ |chromium| tests/ui/preferences.test.ts > a failed YouTube connection can be retried 109ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 1920 px the rail lists every playlist and a click shows its grid inside the viewport 119ms
+ ✓ |chromium| tests/ui/updates.test.ts > launch notice displays text safely and invokes the windows-x64 download action 160ms
+ ✓ |chromium| tests/ui/google-account.test.ts > a new-peer authentication request offers native sign-in renewal without discarding the displayed account 108ms
+ ✓ |chromium| tests/ui/watch.test.ts > error: a failed P9 says so and loads again 111ms
+ ✓ |chromium| tests/ui/library.test.ts > busy library applies deletion after rename returns 200 through native 406ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 2560 px the rail lists every playlist and a click shows its grid inside the viewport 108ms
+ ✓ |chromium| tests/ui/preferences.test.ts > a late connection result belongs only to the settings screen that started it 218ms
+ ✓ |chromium| tests/ui/preferences.test.ts > empty: no key, why it is needed, and delete is off 54ms
+ ✓ |chromium| tests/ui/preferences.test.ts > loading: the cards are sketched and nothing can be sent until P3 answers 2ms
+ ✓ |chromium| tests/ui/updates.test.ts > manual checks reveal dismissed releases and distinguish failure from no update 183ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 1280 px activating a list after scrolling the previous one shows its first card 108ms
+ ✓ |chromium| tests/ui/watch.test.ts > at 1280 px a rejected address retains the player and keeps its frame visible below messages 224ms
+ ✓ |chromium| tests/ui/updates.test.ts > repeated foreground events share a pending request and a queued manual check reveals the release 108ms
+ ✓ |chromium| tests/ui/preferences.test.ts > a failed load says so and loads again 104ms
+ ✓ |chromium| tests/ui/updates.test.ts > automatic failure and unsafe destination never become a usable notice 95ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 384 px activating a list after scrolling the previous one shows its first card 205ms
+ ✓ |chromium| tests/ui/library.test.ts > busy library applies deletion after rename returns 400 through native 435ms
+ ✓ |chromium| tests/ui/watch.test.ts > at 1280 px a rejected address retains the player and keeps its frame visible below messages 228ms
+ ✓ |chromium| tests/ui/google-account.test.ts > connection recovery updates automatically and an unrelated account event retires the displayed identity 569ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 384 px a tapped row expands its videos directly under it, one row at a time, pinned while they scroll 212ms
+ ✓ |chromium| tests/ui/watch.test.ts > at 768 px a rejected address retains the player and keeps its frame visible below messages 221ms
+ ✓ |chromium| tests/ui/preferences.test.ts > saving: "확인하는 중" while Gemini checks; a refused or unchecked key keeps the value; a good one is masked 391ms
+ ✓ |chromium| tests/ui/updates.test.ts > a later dismissal wins over a pending automatic check 378ms
+ ✓ |chromium| tests/ui/library.test.ts > busy library applies deletion after rename returns 0 through native 400ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > cards show a YouTube thumbnail or a host placeholder, duration, clamped title, site and status, and open like 영상 열기 271ms
+ ✓ |chromium| tests/ui/watch.test.ts > at 1920 px a rejected address retains the player and keeps its frame visible below messages 216ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deleting another video preserves cues through a failed refresh: native ready 1060ms
+ ✓ |chromium| tests/ui/preferences.test.ts > deleting the key and signing out are each asked once more 400ms
+ ✓ |chromium| tests/ui/google-account.test.ts > native sign-in uses its captured account generation and observes immediate completion 510ms
+ ✓ |chromium| tests/ui/watch.test.ts > at 2560 px a rejected address retains the player and keeps its frame visible below messages 217ms
+ ✓ |chromium| tests/ui/updates.test.ts > a later dismissal wins over a pending manual check 370ms
+ ✓ |chromium| tests/ui/library.test.ts > busy library applies deletion after open returns 503 through native 380ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > the default view has only search, 추가 and 편집; edit mode holds every management control and reorders by buttons, keyboard and drag 407ms
+ ✓ |chromium| tests/ui/watch.test.ts > at 384 px a rejected address retains the player and keeps its frame visible below messages 219ms
+ ✓ |chromium| tests/ui/google-account.test.ts > Google sign-out requires confirmation and preserves Gemini and YouTube controls 279ms
+ ✓ |chromium| tests/ui/account-library.test.ts > retained subtitle versions at 384 px can be selected without starting translation 232ms
+ ✓ |chromium| tests/ui/watch.test.ts > YouTube's first open shows Google's account screen, and it can be skipped 108ms
+ ✓ |chromium| tests/ui/updates.test.ts > a later dismissal wins over a pending queued manual check 392ms
+ ✓ |chromium| tests/ui/watch.test.ts > 영상감지 without a key: the reason, and one click to the settings 117ms
+ ✓ |chromium| tests/ui/account-library.test.ts > retained subtitle versions at 1280 px can be selected without starting translation 181ms
+ ✓ |chromium| tests/ui/library.test.ts > busy library applies deletion after rename returns 200 through broadcast 384ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > 추가 offers saved videos with thumbnails, a link with an optional name and the cost note, and + 새 재생목록 375ms
+ ✓ |chromium| tests/ui/watch.test.ts > another job running, or audio that cannot be had: the reason is shown and 영상감지 stays 174ms
+ ✓ |chromium| tests/ui/updates.test.ts > a later dismissal wins over a pending manual failure check 378ms
+ ✓ |chromium| tests/ui/account-library.test.ts > legacy import at 384 px names the account copy and sends consent only after confirmation 265ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 1280 px the shared menu sits in the same place on every screen and marks the current one 176ms
+ ✓ |chromium| tests/ui/fake.test.ts > broadcast fixtures share peer messages without receiving other test contexts 2ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deleting another video preserves cues through a failed refresh: native failed 1062ms
+ ✓ |chromium| tests/ui/library.test.ts > busy library applies deletion after rename returns 400 through broadcast 387ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 1920 px the shared menu sits in the same place on every screen and marks the current one 160ms
+ ✓ |chromium| tests/ui/account-library.test.ts > legacy import at 1280 px names the account copy and sends consent only after confirmation 267ms
+ ✓ |chromium| tests/ui/account-library.test.ts > account changes discard a deletion confirmation and late library rows before showing the new account 109ms
+ ✓ |chromium| tests/ui/account-library.test.ts > native library transport captures its generation and rejects a reply completed after account retirement 51ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 2560 px the shared menu sits in the same place on every screen and marks the current one 167ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 768 px the shared menu sits in the same place on every screen and marks the current one 170ms
+ ✓ |chromium| tests/ui/library.test.ts > busy library applies deletion after rename returns 0 through broadcast 371ms
+ ✓ |chromium| tests/ui/google-account.test.ts > cancel and a newer sign-in retire an older pending status response without blocking polling 1062ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 384 px the shared menu sits in the same place on every screen and marks the current one 163ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 1280 px and 720 px high the loading state keeps a visible 16:9 frame 4ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 1280 px and 720 px high the empty state keeps a visible 16:9 frame 52ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 1280 px and 720 px high the media state keeps a visible 16:9 frame 58ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 1280 px and 720 px high the youtube state keeps a visible 16:9 frame 63ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 1280 px and 720 px high the page state keeps a visible 16:9 frame 62ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 1920 px and 1080 px high the loading state keeps a visible 16:9 frame 4ms
+ ✓ |chromium| tests/ui/library.test.ts > busy library applies deletion after open returns 503 through broadcast 386ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 1920 px and 1080 px high the empty state keeps a visible 16:9 frame 59ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 1920 px and 1080 px high the media state keeps a visible 16:9 frame 62ms
+ ✓ |chromium| tests/ui/library.test.ts > library loading, failure, retry, and empty guidance 111ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 1920 px and 1080 px high the youtube state keeps a visible 16:9 frame 61ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 1920 px and 1080 px high the page state keeps a visible 16:9 frame 62ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 2560 px and 1440 px high the loading state keeps a visible 16:9 frame 4ms
+ ✓ |chromium| tests/ui/google-account.test.ts > an unsolicited account generation requires explicit reload before adopting the other account 574ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deleting another video preserves cues through a failed refresh: broadcast ready 1060ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 2560 px and 1440 px high the empty state keeps a visible 16:9 frame 53ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 2560 px and 1440 px high the media state keeps a visible 16:9 frame 53ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 2560 px and 1440 px high the youtube state keeps a visible 16:9 frame 63ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 2560 px and 1440 px high the page state keeps a visible 16:9 frame 64ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 384 px and 854 px high the loading state keeps a visible 16:9 frame 4ms
+ ✓ |chromium| tests/ui/library.test.ts > saved search, confirmed deletion, cancellation and retry use the named video 367ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 384 px and 854 px high the empty state keeps a visible 16:9 frame 52ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 384 px and 854 px high the media state keeps a visible 16:9 frame 52ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 384 px and 854 px high the youtube state keeps a visible 16:9 frame 52ms
+ ✓ |chromium| tests/ui/library-layout.test.ts > at 384 px and 854 px high the page state keeps a visible 16:9 frame 59ms
+ ✓ |chromium| tests/ui/google-account.test.ts > expired authentication and failed re-queries show recovery without claiming success 571ms
+ ✓ |chromium| tests/ui/library.test.ts > playlist controls wire link addition, removal and order without creating jobs 338ms
+ ✓ |chromium| tests/ui/google-account.test.ts > an initial account response cannot publish into a replacement settings screen 138ms
+ ✓ |chromium| tests/ui/google-account.test.ts > publisher registration failure names the app configuration and keeps account credentials private 52ms
+ ✓ |chromium| tests/ui/library.test.ts > retired library responses do not replace the next screen 110ms
+ ✓ |chromium| tests/ui/library.test.ts > processing videos show their site, their address in edit mode, and disable deletion 162ms
+ ✓ |chromium| tests/ui/watch.test.ts > a running job shows its stage, percent and cost each second, then its subtitles are ready 2071ms
+ ✓ |chromium| tests/ui/google-account.test.ts > Google account controls and long addresses fit a 384 pixel screen 118ms
+ ✓ |chromium| tests/ui/google-account.test.ts > Google account controls and long addresses fit a 400 pixel screen 127ms
+ ✓ |chromium| tests/ui/google-account.test.ts > Google account controls and long addresses fit a 1280 pixel screen 107ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deleting another video preserves cues through a failed refresh: broadcast failed 1065ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > a late subtitle response after deletion cannot restore cached cues: native ready 187ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > a late subtitle response after deletion cannot restore cached cues: native failed 171ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > a late subtitle response after deletion cannot restore cached cues: broadcast ready 172ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > a late subtitle response after deletion cannot restore cached cues: broadcast failed 170ms
+ ✓ |chromium| tests/ui/watch.test.ts > the downloading stage names the speech model while it is fetched, then the audio download 1061ms
+ ✓ |chromium| tests/ui/watch.test.ts > a job that stopped (no_speech) shows why and offers 영상감지 again 60ms
+ ✓ |chromium| tests/ui/watch.test.ts > a job that stopped (unsupported_cpu) shows why and offers 영상감지 again 58ms
+ ✓ |chromium| tests/ui/watch.test.ts > a ready video's subtitles while they load: said with the cost, no subtitle line yet, 영상감지 off 66ms
+ ✓ |chromium| tests/ui/watch.test.ts > a ready video's subtitles that fail to load: the reason, and 영상감지 brings them back 116ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deletion before the first job response cannot revive that video: native 1160ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deletion before the first job response cannot revive that video: broadcast 1157ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > confirmed recreation replaces earlier deletion markers: native known identity 167ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > confirmed recreation replaces earlier deletion markers: native unknown identity 208ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > confirmed recreation replaces earlier deletion markers: broadcast known identity 165ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > confirmed recreation replaces earlier deletion markers: broadcast unknown identity 209ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deletion after consent still rejects a late creation response: native 168ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deletion after consent still rejects a late creation response: broadcast 153ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > the cue under the playback time, hidden while an ad plays 54ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > failed jobs recover saved subtitles and keep the failure reason: initial, saved=true 52ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > failed jobs recover saved subtitles and keep the failure reason: initial, saved=false 52ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > failed jobs recover saved subtitles and keep the failure reason: poll, saved=true 1056ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > failed jobs recover saved subtitles and keep the failure reason: poll, saved=false 1052ms
+
+ Test Files  9 passed (9)
+      Tests  127 passed (127)
+   Start at  11:12:27
+   Duration  12.81s (tests 77%, worker 19%, import 4%)
+
+JSON report written to <checkout>/artifacts/music-opening/review-two/ui-results.json

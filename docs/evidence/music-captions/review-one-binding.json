@@ -2,9 +2,18 @@
   "runtime_source_commit": "eead0b9989de21c25d683d5260352134d264fb0c",
   "current_runtime_source_differences": [
     "src-tauri/src/whisper_tests.rs",
-    "src-tauri/tests/whisper_model.rs"
+    "src-tauri/tests/whisper_model.rs",
+    "tests/ui/fake.test.ts",
+    "tests/ui/fake.ts"
   ],
-  "difference_scope": "Only opt-in test strengthening and a test prerequisite comment; native production and UI sources are identical. Runtime source IDs in both packets are exact, not a claim that the final evidence-only commit was rebuilt.",
+  "difference_scope": "These four differences are test-only: Rust opt-in coverage and its prerequisite comment, plus the shared UI-test fixture and its isolation regression. Native production and product UI sources remain identical. Round-one outputs do not cover the changed UI fixture; its current-head execution is recorded separately in ui_test_follow_up. Runtime source IDs remain exact, not a claim that an evidence-only descendant was rebuilt.",
+  "ui_test_follow_up": {
+    "tested_source_commit": "b5f2504afc5eb436728ffcb61ac0024d5034f90f",
+    "binding": "review-two-ui.json",
+    "readable_output": "review-two-ui.log",
+    "machine_results": "review-two-ui-results.json",
+    "scope": "All nine configured UI test files, including both changed UI-test inputs; 127 passed. This result is fresh, not reused from round one."
+  },
   "focused_source_hash_format": "SHA-256 of UTF-8 text with LF; independent of Windows working-copy CRLF",
   "focused_sources": {
     "src-tauri/src/whisper.rs": "e153168f9a14d1b385e69b4edb1b9f3b2a2b44989dd148d521319532480d4927",
