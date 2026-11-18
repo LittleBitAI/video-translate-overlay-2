@@ -1,355 +1,144 @@
 # 영상 번역 오버레이
 
-외국어 강연·강의 영상을 한국어 자막으로 보는 앱입니다. 앱 안에서 영상을 열고 `영상감지`를 누르면 음성을 인식하고 번역합니다. 처리가 끝나면 알림을 보내고, 재생 위치에 맞춰 자막을 표시합니다.
+외국어 강연·강의 영상에 한국어 자막을 붙여 보는 Android·Windows 앱입니다. 앱에서 영상을 열고 `영상감지`를 누르면, 기기 안에서 음성을 받아쓰고 그 글을 Gemini로 번역합니다. 다 되면 알림이 오고, 재생 위치에 맞춰 한국어 자막이 뜹니다.
 
-Android 앱은 PC 없이 실행합니다. 화면, 처리 코어, 음성 인식 엔진을 APK에 포함합니다. PC 프로그램이나 개발 서버를 켤 필요가 없습니다. 영상 다운로드, 최초 모델 다운로드, Gemini 번역에는 인터넷이 필요합니다.
+소리는 기기 밖으로 보내지 않고 번역할 글만 보내기 때문에, 한 시간짜리 강연도 번역비가 1,000원을 넘지 않도록 맞춰 두었습니다.
 
-만든 이유와 순서, 사용법, 설치법은 한국어 소개 페이지 [`overview.html`](overview.html)에 정리했습니다. 이야기, [사용법](overview/guide.html), [설치법](overview/install.html) 세 장입니다.
+처음 보는 분은 [소개 페이지](https://littlebitai.github.io/video-translate-overlay-2/)부터 읽어 보세요. [사용법](overview/guide.html)과 [설치법](overview/install.html)도 그림과 함께 정리해 두었습니다.
 
-## Android에서 시작하기
+## 설치
 
-Android 7.0 이상, ARM64 기기가 대상입니다. 갤럭시 S21 시리즈도 이 규격에 해당합니다.
+[GitHub 최신 릴리스](https://github.com/LittleBitAI/video-translate-overlay-2/releases/latest) 페이지 아래쪽에서 기기에 맞는 파일을 받아 설치하면 끝입니다.
 
-1. Download the approved [ARM64 APK 0.1.8](https://github.com/LittleBitAI/video-translate-overlay-2/releases/download/v0.1.8/video-translate-overlay-0.1.8-arm64.apk) from GitHub Releases. Install it over the existing app without uninstalling. Allow installation from that source if Android requests it.
-2. 앱을 열고 `설정`에서 본인 Gemini API 키를 저장합니다. 번역 비용은 키 소유자에게 청구됩니다.
-3. 유튜브 계정을 사용할 경우 `설정 → 유튜브 계정 연결`에서 한 번 로그인합니다. 이후 영상은 같은 앱 브라우저의 세션을 사용합니다. 로그인 없이도 영상을 열 수 있습니다.
-4. 첫 화면에서 영상 주소를 열고, 영상 위 `영상감지`를 누릅니다. 처음에는 약 60MB 음성 인식 모델을 내려받습니다. 0.1.4로 업데이트한 뒤에도 새 모델을 한 번 받습니다. 모델 외에 오디오와 작업 자료를 저장할 공간도 필요합니다.
-5. 자막 준비 알림을 누르고 영상을 재생합니다. 자막은 전체 처리가 끝난 뒤 표시합니다. 영상 위 앱의 `전체화면` 버튼을 누르면 영상과 자막이 가로 전체화면으로 전환됩니다. `화면복귀`나 휴대폰 뒤로가기로 나옵니다. 완료한 자막은 다시 열 때 그대로 표시합니다.
+- PC(Windows): `.exe` 파일을 받아 실행합니다.
+- 휴대폰(Android): 휴대폰에서 `.apk` 파일을 받아 엽니다. 출처를 알 수 없는 앱 설치를 허용하라고 하면 허용합니다.
 
-0.1.5까지의 버전에서 만든 자막의 내용이 앞뒤로 밀리면 해당 영상에서 `다시 번역`을 누릅니다. 받아쓰기와 시각은 유지하고 번역만 새로 만듭니다. 추가 API 비용이 발생하며, 이전 번역 비용까지 합쳐 영상별 한도를 확인합니다. 앱 업데이트만으로 기존 자막을 자동 변경하지 않습니다.
+PC는 64비트 Windows, 휴대폰은 Android 7.0 이상의 64비트(ARM64) 기기에서 돌아갑니다. 자세한 화면은 [설치법](overview/install.html)에 있습니다.
 
-Approved installers are distributed through GitHub Releases. Local build outputs
-in `artifacts/` are not committed. The Android release APK retains the development
-signing key used by existing installations; store signing is separate. The
-[approved 0.1.8 release](https://github.com/LittleBitAI/video-translate-overlay-2/releases/tag/v0.1.8)
-contains anonymously downloadable Android and Windows installers. It adds
-Google-account sharing over the local network, faster audio downloads, faster
-phone transcription and the library rail; see [its notes](docs/releases/0.1.8.md).
+새 버전이 나오면 앱을 열 때 알려 줍니다. 받아서 지금 앱 위에 그대로 설치하면 저장된 자막과 보관함이 남습니다. 알림을 닫아도 `설정 → 업데이트 확인`에서 다시 볼 수 있습니다.
 
-## Approved release updates
+## 사용법
 
-Android and Windows builds from 0.1.7 check approved GitHub Releases on launch
-and return to the foreground. Read the version and brief feature notes, then
-open your device's download or dismiss that version. `설정 → 업데이트 확인` checks
-again and can reveal a dismissed version. Downloads and installation are manual;
-automatic failures do not interrupt video use. Installations through 0.1.6 need
-one manual upgrade, keeping the existing app installed to retain local data.
-Windows users can download the [0.1.8 x64 installer](https://github.com/LittleBitAI/video-translate-overlay-2/releases/download/v0.1.8/video-translate-overlay-0.1.8-windows-x64-setup.exe)
-and install it for the same Windows user, keeping the existing app data.
-The [release procedure](docs/releases/procedure.md) defines approval, packaging,
-signing continuity, and first-publication acceptance.
+1. `설정`에서 본인 Gemini API 키를 붙여 넣고 저장합니다. 번역비는 이 키의 주인에게 청구됩니다.
+2. 로그인해야 보이는 유튜브 영상이 있다면 `설정 → 유튜브 계정 연결`에서 한 번 로그인합니다. 로그인하지 않아도 영상은 열립니다.
+3. `영상`에서 주소를 열고, 영상 위의 `영상감지`를 누릅니다. 앱을 내려 둬도 진행 알림이 떠 있는 동안 계속 처리합니다.
+   - 처음 한 번은 음성 인식 모델을 내려받습니다(휴대폰 약 60MB). 오디오와 작업 자료를 저장할 공간도 필요합니다.
+4. 자막 준비 알림을 누르고 재생합니다. 자막은 영상 전체를 처리한 뒤에 뜹니다. 일시 정지와 건너뛰기를 따라가고, 광고로 보이는 구간에서는 자막을 숨깁니다.
+5. 영상 위의 `전체화면`을 누르면 영상과 자막이 함께 커집니다. `화면복귀`나 뒤로가기로 나옵니다.
 
-## Saved videos and topic playlists
+한 번 만든 자막은 기기에 저장되어, 다시 열면 받아쓰기도 번역도 하지 않고 바로 뜹니다. 번역비는 `영상감지`를 누를 때만 듭니다.
 
-`영상`, `보관함` and `설정` sit in the same menu on every screen: tabs at the top
-of a wide window, a bar at the bottom of a phone. In `보관함`, choose `전체 영상`
-or a playlist to see its videos as thumbnail cards. On a wide window, including
-the Windows app, the playlists stay in a list on the left and the videos fill
-the right. On a phone, tapping a playlist opens its videos directly under it;
-tapping it again closes it. Search by title or source URL. Each card shows the
-duration when known, the site and whether saved subtitles exist. Tap a card to
-open the video. `저장 자막 있음` means the existing subtitles reopen without
-transcription or translation. YouTube cards show YouTube's thumbnail, loaded from
-YouTube's image server; other sites show a tile with the site name. Completed
-translations from earlier versions appear automatically; their cue timestamps
-and recorded costs stay unchanged. The original video still needs its source
-site and internet access.
+### 추천: 번역은 PC에서, 보는 건 휴대폰에서
 
-`추가` adds a saved video from a thumbnail list or an HTTP(S) video link to the
-chosen playlist. You may enter a recognizable name for a new link. `+ 새 재생목록`
-creates a playlist. `편집` shows each video's full address and the controls to
-drag or use `위로` / `아래로` to reorder playlists and videos, rename or delete a
-playlist, remove a video from a playlist, and delete a video; `완료` hides them.
-A video may belong to several playlists. Removing an entry or deleting a
-playlist keeps the video's translation. Adding or opening a link does not start
-translation. Press `영상감지` to translate explicitly; the existing API-key
-checks and cost limit apply.
+PC는 휴대폰보다 큰 받아쓰기 모델을 쓰고, 그래픽카드가 있으면 그래픽카드로 받아씁니다. 그래서 더 빠르고 덜 틀립니다. PC에서 번역해 두고, 휴대폰은 동기화된 자막을 받아 보기만 하는 방법을 권합니다. 단계별 화면은 [소개 페이지의 추천하는 방법](https://littlebitai.github.io/video-translate-overlay-2/overview.html#recommended)에 있습니다.
 
-In `편집`, `영상 삭제` first names the video and asks for confirmation. Confirming permanently
-removes its transcript, translated cues, glossary, job history, per-video files,
-and memberships in every playlist. The playlists, other videos, speech models,
-and credentials remain. A running video cannot be deleted. If file cleanup fails,
-subtitles are hidden and `삭제 다시 시도` lets you finish cleanup. Translating a
-deleted video later requires a new confirmation and may incur API costs.
+1. PC: `설정`에서 개인키를 저장하고 `Google 계정으로 로그인`을 누릅니다.
+2. PC: `영상`에서 주소를 열고 `영상감지`를 누릅니다.
+3. 휴대폰: `설정`에서 PC와 같은 Google 계정으로 로그인합니다.
+4. 휴대폰: PC 앱을 켜 둔 채 같은 Wi-Fi에 있으면, `보관함`에 `저장 자막 있음`이 붙은 영상이 보입니다. 누르면 바로 재생됩니다.
 
-The library and playlists use the existing local SQLite database on Android and
-Windows. They persist after restart. Without Google sign-in each device keeps
-its own library. There is no cloud sync, automatic next-video playback, or
-original-video offline copy.
+## 보관함과 재생목록
 
-## Sharing between Windows and Android (0.1.8)
+메뉴는 `영상`, `보관함`, `설정` 세 개입니다. 넓은 창에서는 위쪽 탭, 휴대폰에서는 아래쪽 막대에 있습니다.
 
-0.1.8 adds a separate Google app account under Settings.
-Signing in selects that account's local library; signing out returns to the
-original device library. `기존 보관함 가져오기` offers a confirmed copy of the
-original completed translations, links and playlists into the displayed Google
-account. The original data, cue times and recorded costs remain intact. It does
-not copy unfinished jobs, Gemini credentials or YouTube cookies. A job already
-started on this device continues in its original library after account changes.
-The selected device sign-in lasts at most thirty days; expiry stops transfers
-while preserving local account-library access. The app starts
-an automatic LAN controller with durable remote deletion cleanup and playback
-position synchronization. Opening a saved video may resume it once where the
-player permits seeking; user input takes priority over a delayed saved position.
-Native transfer, playback, restart, deletion, Home and screen-off delivery, and
-two-account isolation checks passed on Windows and a physical Android phone.
-The owner confirmed Google's public production configuration after completing
-the approved branding fields. The server-owned gate remains pending; see
-[implementation status](docs/design/local-network-sync.md).
+### 보기
 
-The [app homepage](https://littlebitai.github.io/video-translate-overlay-2/) and
-[privacy policy](https://littlebitai.github.io/video-translate-overlay-2/privacy.html)
-describe Google identity and local-network data handling. The settings screen
-also opens the policy independently of Google sign-in.
+`보관함`에서 `전체 영상`이나 재생목록을 고르면 영상이 썸네일 카드로 보입니다. 넓은 창(Windows 앱 포함)에서는 왼쪽에 재생목록, 오른쪽에 영상이 놓입니다. 휴대폰에서는 재생목록을 누르면 바로 아래로 펼쳐지고, 다시 누르면 접힙니다. 제목이나 주소로 검색할 수 있습니다.
 
-Both devices need 0.1.8 or later. 0.1.7 and an older preview that supports only
-Google sign-in cannot connect. No server is involved: Google sign-in only proves
-both devices belong to the same account, and they exchange records directly. Keep the PC app running and use the
-same reachable local network; Ethernet on the PC and Wi-Fi on the phone can work
-together. Android keeps an ongoing connection notification while its native
-background service is active. Reopening catches up after interruption; a
-force-stopped app receives nothing until reopened. The original device library
-stays separate until its import is confirmed.
+카드에는 길이(알 때만), 사이트, 저장 자막 여부가 적힙니다. `저장 자막 있음`인 카드는 누르면 받아쓰기·번역 없이 저장된 자막으로 바로 열립니다. 유튜브 카드는 유튜브 이미지 서버에서 썸네일을 가져오고, 다른 사이트는 사이트 이름이 적힌 타일로 보입니다. 원본 영상을 보려면 원래 사이트와 인터넷 연결이 필요합니다.
 
-If concurrent work leaves several completed subtitle versions, the card counts
-them and the saved-version selector in `편집` retains each response. Select one and reopen the video
-to use its original cue times and recorded cost. Selecting a saved version
-does not transcribe or call Gemini; its selection also synchronizes.
-Selecting an older response does not reduce the recorded cost used by the
-existing retranslation limit. New usage is added to that retained baseline;
-the model, unit prices and per-hour limit are unchanged.
+### 정리
+
+- `추가`: 저장된 영상이나 HTTP(S) 영상 링크를 지금 고른 재생목록에 넣습니다. 새 링크에는 알아보기 쉬운 이름을 붙일 수 있습니다.
+- `+ 새 재생목록`: 재생목록을 만듭니다.
+- `편집`: 영상의 전체 주소가 보이고, 끌거나 `위로`·`아래로`로 순서를 바꾸고, 재생목록 이름을 바꾸거나 지우고, 영상을 목록에서 빼거나 지울 수 있습니다. `완료`를 누르면 다시 감춥니다.
+- 영상 하나가 여러 재생목록에 들어갈 수 있습니다. 목록에서 빼거나 재생목록을 지워도 그 영상의 번역은 남습니다.
+- 링크를 넣거나 열기만 해서는 번역이 시작되지 않습니다. `영상감지`를 눌러야 하고, 이때 개인키 확인과 비용 한도가 그대로 적용됩니다.
+
+### 영상 삭제
+
+`편집`의 `영상 삭제`는 영상 이름을 보여 주고 한 번 더 묻습니다. 확인하면 그 영상의 받아쓰기, 번역 자막, 용어표, 작업 기록, 영상별 파일, 모든 재생목록에서의 자리가 지워집니다. 재생목록, 다른 영상, 음성 인식 모델, 개인키는 그대로입니다. 처리 중인 영상은 지울 수 없습니다. 파일 정리에 실패하면 자막을 숨기고 `삭제 다시 시도`로 마저 지울 수 있게 합니다. 지운 영상을 다시 번역하려면 새로 확인을 받고, 번역비가 다시 들 수 있습니다.
+
+보관함과 재생목록은 Android와 Windows 모두 기기 안의 SQLite 데이터베이스에 저장되어, 앱을 다시 켜도 남아 있습니다. Google 로그인을 하지 않으면 기기마다 따로 보관합니다. 클라우드 동기화, 다음 영상 자동 재생, 원본 영상의 오프라인 저장은 없습니다.
+
+## PC와 휴대폰 동기화
+
+같은 Google 계정으로 로그인한 기기끼리 보관함, 재생목록, 보던 위치를 맞춥니다.
+
+### 필요한 것
+
+- 각 기기의 `설정 → Google 계정으로 로그인`에서 같은 계정으로 로그인
+- PC 앱을 켜 두고, 두 기기를 서로 닿는 같은 네트워크에 두기. PC는 유선, 휴대폰은 Wi-Fi여도 됩니다.
+
+### 어떻게 동작하나
+
+- 중간 서버는 없습니다. Google 로그인은 두 기기가 같은 사람 것인지 확인하는 데만 쓰고, 기기끼리 직접 기록을 주고받습니다.
+- 로그인하면 그 계정의 보관함으로 바뀌고, 로그아웃하면 원래 기기 보관함으로 돌아갑니다.
+- 로그인 전부터 있던 보관함은 따로 남습니다. `기존 보관함 가져오기`를 누르고 확인하면 완성된 번역, 링크, 재생목록을 지금 계정으로 복사합니다. 원본 데이터, 자막 시각, 기록된 비용은 그대로 두고, 진행 중인 작업, Gemini 개인키, 유튜브 쿠키는 복사하지 않습니다.
+- 계정을 바꾸기 전에 이 기기에서 시작한 작업은 원래 보관함에서 계속됩니다.
+- 기기 로그인은 최대 30일 유지됩니다. 만료되면 주고받기만 멈추고, 이 기기에 있는 계정 보관함은 계속 볼 수 있습니다.
+- 다른 기기에서 지운 영상은 이쪽에서도 지워지고, 보던 위치도 맞춰집니다. 저장된 영상을 열면 플레이어가 허락하는 경우 보던 위치로 한 번 이동합니다. 사용자가 먼저 조작하면 그쪽을 따릅니다.
+- Android는 연결된 동안 연결 알림을 띄워 둡니다. 연결이 끊겨도 다시 열면 따라잡습니다. 앱을 강제 종료하면 다시 열 때까지 아무것도 받지 않습니다.
+
+### 자막 버전이 여러 개일 때
+
+여러 기기에서 동시에 번역해 완성된 자막이 둘 이상 생기면, 카드에 그 개수가 보이고 `편집`의 저장 버전 선택에 모두 남습니다. 하나를 고르고 영상을 다시 열면 그 버전의 자막 시각과 기록된 비용을 씁니다. 고르기만 해서는 받아쓰기도 Gemini 호출도 하지 않으며, 고른 버전도 동기화됩니다. 예전 버전을 골라도 재번역 한도 계산에 쓰는 기록 비용은 줄지 않습니다.
+
+Google 계정과 근거리 네트워크 데이터를 어떻게 다루는지는 [앱 홈페이지](https://littlebitai.github.io/video-translate-overlay-2/)와 [개인정보처리방침](https://littlebitai.github.io/video-translate-overlay-2/privacy.html)에 적어 두었습니다. 방침은 Google 로그인과 상관없이 설정 화면에서도 열 수 있습니다.
 
 ## 처리 방식과 지원 범위
 
 | 항목 | 현재 동작 |
 | --- | --- |
-| 음성 인식 | Android는 whisper.cpp의 다국어 `base q5_1`, PC는 `large-v3-turbo q5_0` 실행 |
-| 한국어 번역 | 인식한 텍스트를 `gemini-3.1-flash-lite`에 전송. 용어표를 먼저 만들어 묶음 간 용어 유지 |
-| 처리 순서 | 오디오 다운로드 → 음성 인식 → 번역 → 완료 알림 |
-| 백그라운드 | Android 포그라운드 서비스와 진행 알림으로 작업 유지. 저장한 진행 지점에서 재시작 |
-| 자막 재생 | 일시 정지와 탐색 위치 반영. 광고로 판단한 구간에서는 숨김 |
-| 다시 보기 | 같은 영상의 완성된 자막 재사용. 재번역 비용 없음 |
-| 영상 소스 | 유튜브와 다운로드 가능한 일반 영상·오디오, 지원 형식의 HLS |
-| 지원 제외 | 라이브 방송, DRM 영상, DASH, 목소리 변경 |
+| 음성 인식 | whisper.cpp. Android는 다국어 `base q5_1`, PC는 `large-v3-turbo q5_0`. Windows는 그래픽카드(Vulkan)가 있으면 그래픽카드로, 없으면 CPU로 받아씀 |
+| 한국어 번역 | 받아쓴 글을 `gemini-3.1-flash-lite`로 번역. 용어표를 먼저 만들어 강연 전체에서 용어를 맞춤 |
+| 처리 순서 | 오디오 받기 → 받아쓰기 → 번역 → 완료 알림 |
+| 백그라운드 | Android는 포그라운드 서비스와 진행 알림으로 작업 유지. 끊기면 저장한 지점부터 다시 시작 |
+| 자막 재생 | 일시 정지와 건너뛰기 반영. 광고로 판단한 구간에서는 숨김 |
+| 다시 보기 | 같은 영상의 완성된 자막을 다시 씀. 번역비 없음 |
+| 영상 출처 | 유튜브, 내려받을 수 있는 일반 영상·오디오, 지원하는 형식의 HLS |
+| 지원하지 않음 | 라이브 방송, DRM 영상, DASH, 목소리 바꾸기 |
 
-오버레이는 앱 안에서 연 영상 위에 표시합니다. 다른 앱의 화면 위에 자막을 띄우는 기능은 없습니다.
+- 자막은 이 앱 안에서 연 영상 위에만 뜹니다. 유튜브 앱이나 Chrome 같은 다른 앱 위에는 띄우지 않습니다.
+- 앱을 내려 둬도 처리는 계속됩니다. 강제 종료하거나 운영체제가 앱을 끝내면, 앱을 다시 열어야 이어집니다.
+- 유튜브 오디오는 앱 브라우저의 세션으로 주소를 받은 뒤 Rust 코어가 내려받습니다. 사이트가 바뀌거나 로그인 제한, 다운로드 차단이 있으면 작업이 거절될 수 있습니다. Google이 앱 안 로그인을 막으면 로그인을 건너뛰고 쓸 수 있습니다.
 
-앱을 백그라운드로 보내도 처리하도록 구현했습니다. 강제 종료나 운영체제의 프로세스 종료 뒤에는 앱을 다시 열어야 이어집니다. 실제 휴대폰의 처리 속도와 배터리 사용량은 측정하지 않았습니다.
+## 속도
 
-유튜브 오디오는 앱 브라우저의 세션으로 주소를 받은 뒤 Rust 코어가 내려받습니다. 실제 공개 영상의 다운로드와 기기 내 음성 인식을 확인했습니다. 사이트 변경, 로그인 제한, 다운로드 차단에 따라 작업이 거절될 수 있습니다. Google이 앱 내 로그인을 막으면 건너뛰기를 사용할 수 있습니다.
+| 측정한 것 | 걸린 시간 | 조건 |
+| --- | --- | --- |
+| 한 시간 강연의 오디오 받기 | 몇 초~1분 | 갤럭시 S21+, 집 Wi-Fi |
+| 휴대폰에서 한 시간 강연, `영상감지`부터 자막 준비까지 | 약 41분 | 갤럭시 S21+ |
+| PC에서 23분 강연 받아쓰기(번역 제외) | 약 74초 | i7-12700F, RTX 3080 |
 
-## Faster audio downloads
+- 강연 하나를 한 번씩 잰 결과라, 기기와 강연에 따라 달라집니다.
+- 휴대폰은 속도 때문에 60MB짜리 작은 모델을 씁니다. 억양이 강하거나 잡음, 기술 용어가 많은 강연은 PC보다 자주 틀립니다.
+- PC는 그래픽카드가 없으면 CPU로 받아써서 더 느립니다. 받아쓰기가 끝나면 모델을 메모리에서 내려놓습니다.
+- 처음 한 번은 모델을 내려받는 동안 진행 상태에 `음성 인식 모델 준비 중`이 뜹니다.
 
-Since 0.1.8 the app receives a video's audio file in 10 MiB pieces when the
-server marks which version of the file it is sending; otherwise it receives the
-file in one piece, as before. YouTube
-sends a single whole-file request at only about twice the playback speed. On a
-Galaxy S21+ over home Wi-Fi, a one-hour lecture's audio previously took about
-30 minutes and now usually takes seconds to about a minute. The audio file
-and subtitle timing are unchanged. While the speech model downloads for the
-first time, progress shows `음성 인식 모델 준비 중` instead of the audio
-download. Measurements and limits are in
-[download speed](docs/design/download-speed.md).
-
-## Faster phone transcription (0.1.8)
-
-On a Galaxy S21+, a one-hour lecture went from pressing `영상감지` to ready
-subtitles in 41.2 minutes, down from about 79–84 minutes. The speech model is
-unchanged (`base q5_1`, greedy). The speech engine uses the phone CPU's
-dot-product instructions, audio is split into fuller windows at sustained
-pauses, a cut through speech overlaps by about one second and keeps the words
-once, and translation keeps eight requests in flight (18.0 to 2.2 minutes).
-The word error rate against the large reference went from 5.40 % to 5.33 %.
-These are single measured runs on one lecture; see
-[transcription speed](docs/design/transcription-speed.md).
-
-## 모바일 받아쓰기 최적화
-
-0.1.4는 Android의 받아쓰기 연산량을 줄입니다. 기존 작업의 저장된 음성 구간과 자막 시각을 유지하며, 업데이트해도 완료한 구간부터 이어갑니다. 기존 모델 파일을 자동 삭제하지는 않습니다.
-
-| 항목 | Android 0.1.4 동작 |
-| --- | --- |
-| 모델 | `large-v3-turbo q5_0` 574MB → 다국어 `base q5_1` 60MB. 파일 크기 약 90% 감소 |
-| 후보 탐색 | beam 5개 → greedy 1개 |
-| 반복 계산 | 온도를 바꿔 최대 6번 시도하던 자동 재처리 제외 |
-| 추론 메모리 | 음성 구간마다 새로 만들던 상태·계산 버퍼 재사용. 이전 작업의 텍스트는 넘기지 않음 |
-| CPU | 최대 4개 스레드. 기존 최대 8개에서 축소 |
-| 언어·시각 | 첫 구간에서 감지한 언어 유지. 모델이 입력 길이를 넘겨 준 끝 시각은 입력 끝으로 제한 |
-
-기존 모델도 이미 양자화돼 있었습니다. 이번 변경의 핵심은 모델 축소와 탐색·반복 비용 감소입니다. [whisper.cpp Android 예제](https://github.com/ggml-org/whisper.cpp/tree/master/examples/whisper.android)도 `tiny/base` 모델을 권장합니다. `base`는 큰 모델보다 악센트·잡음·기술 용어 인식 정확도가 낮아질 수 있습니다.
-
-Flash Attention은 같은 CPU 음성 비교에서 더 느려 적용하지 않았습니다. GPU·NPU 가속과 고급 ARM 명령어를 강제로 켜는 방식도 적용하지 않았습니다. [Android CPU 기능 안내](https://developer.android.com/ndk/guides/cpu-features)에 따라 지원 여부 확인이 필요하며, S21 실기기에서 드라이버·명령어·발열을 검증한 기록은 없습니다. 기존 ARM NEON과 release 최적화 빌드는 사용합니다.
-
-PC release 비교는 같은 14.8초 기술 음성, 음성 구간 4개, 각 설정 2회로 진행했습니다. 모델 로딩을 제외한 받아쓰기 시간입니다. `base`는 Flash Attention 없이 5.0~5.5초, 켰을 때 6.0초였습니다. `small`과 Flash Attention은 19.3~19.6초, `large-v3-turbo`와 기존 beam 설정은 66.9~87.3초였습니다. 모든 비교에서 `deep learning`, `gradient descent`, `transformer`, `attention`을 인식했고, 작업을 바꿔 버퍼를 재사용한 뒤에도 언어와 시각 검사를 통과했습니다. 짧은 합성 음성 비교이므로 실제 강연의 정확도나 S21 속도를 보장하지 않습니다.
-
-비교를 다시 하려면 `VTO_WHISPER_BENCH_MODELS`에 세 모델이 있는 폴더, `VTO_WHISPER_BENCH_AUDIO`에 위 기술 용어가 포함된 WAV를 지정하고 다음 검사를 실행합니다. `VTO_WHISPER_BENCH_RESULT`를 지정하면 JSON 결과도 저장합니다. libclang이 필요합니다.
-
-```sh
-cargo test --release -p video-translate-overlay --features whisper --lib whisper::tests::compare_mobile_models_on_technical_speech -- --ignored --nocapture
-```
+측정 기록: [오디오 다운로드](docs/design/download-speed.md), [휴대폰 받아쓰기](docs/design/transcription-speed.md), [PC 받아쓰기](docs/design/desktop-transcription-speed.md)
 
 ## 비용과 개인정보
 
-번역은 자막 한 조각씩 요청합니다. 앞 문장은 문법·부정을 해석하는 참고로만 보내고, 뒤 문장은 보내지 않습니다. 여러 조각을 합쳐 번역하면서 뒤 문장의 내용이 앞 시각에 들어가던 문제를 막기 위한 방식입니다. 요청 수가 늘어 번역 시간과 비용이 증가할 수 있습니다. 모든 요청에서 같은 용어표와 비용 제한을 사용합니다.
+### 비용
 
-음성 인식은 기기에서 처리합니다. Gemini에는 번역할 텍스트를 보냅니다. 영상·모델 다운로드에 드는 데이터 요금은 별도입니다.
+- 받아쓰기는 기기 안에서 하고, Gemini에는 번역할 글만 보냅니다. 영상·모델을 내려받는 데이터 요금은 따로입니다.
+- 앱이 API 사용량으로 비용을 추정해, 영상 1시간당 1,000원을 넘으면 번역 요청을 멈춥니다. 코드에 넣은 단가와 환율 기준이라 실제 청구액과 다를 수 있고, 이미 보낸 요청의 비용은 나갈 수 있습니다.
+- 번역은 자막 한 조각씩 요청합니다. 앞 문장은 문법과 부정을 해석하는 참고로만 보내고, 뒤 문장은 보내지 않습니다. 여러 조각을 묶어 번역하면 뒤 문장의 내용이 앞 시각에 들어가는 문제가 있어서입니다. 그만큼 요청 수가 늘어 번역 시간과 비용이 조금 늘 수 있습니다. 모든 요청에 같은 용어표와 비용 한도를 씁니다.
 
-앱은 API 사용량으로 비용을 추정하고, 영상 1시간당 1,000원 기준을 넘으면 추가 번역 요청을 중단합니다. 이는 코드에 설정한 단가와 환율에 따른 제한입니다. 실제 청구액을 보장하지 않으며, 이미 보낸 요청의 비용은 발생할 수 있습니다.
+### 개인키와 기기 간 공유
 
-API 키는 Android Keystore로 암호화해 저장합니다. Windows 앱은 자격 증명 관리자를 사용합니다. 설정 화면에는 끝 네 글자만 표시하고, 키 삭제도 지원합니다. API 키, 유튜브 쿠키, 진행 중인 작업은 기기마다 따로 저장하며 다른 기기로 옮기지 않습니다. 같은 Google 앱 계정으로 로그인하면 완성된 자막, 재생목록, 재생 위치만 같은 네트워크의 기기끼리 직접 주고받습니다.
+- Gemini API 키는 Android에서는 Android Keystore로 암호화해, Windows에서는 자격 증명 관리자에 저장합니다. 설정 화면에는 끝 네 글자만 보이고, 지울 수도 있습니다.
+- API 키, 유튜브 쿠키, 진행 중인 작업은 기기마다 따로 두고 다른 기기로 옮기지 않습니다. 같은 Google 계정으로 로그인한 기기끼리는 완성된 자막, 재생목록, 재생 위치만 같은 네트워크에서 직접 주고받습니다.
 
-유튜브 로그인은 Google 화면에서 진행합니다. 로그인 쿠키는 앱의 WebView 프로필에 저장하며, Android에서 앱을 백그라운드로 보낼 때 디스크에 반영합니다. 로그인 후 영상으로 돌아오면 로그인 화면 대신 영상 주소를 기억합니다. 설정의 `유튜브 로그아웃`은 쿠키와 사이트 자료를 지웁니다.
+### 유튜브 로그인
 
-휴대폰의 유튜브 앱·Chrome과는 별도 세션입니다. 휴대폰에 등록된 Google 계정을 자동으로 가져오는 기능은 없습니다. Google이 앱 내 로그인을 차단하면 계정을 연결할 수 없습니다. 앱은 Google 비밀번호를 받거나 저장하지 않습니다.
+- 로그인은 Google 화면에서 하고, 앱은 Google 비밀번호를 받지도 저장하지도 않습니다.
+- 로그인 쿠키는 앱의 WebView 프로필에 저장합니다. Android에서는 앱을 내릴 때 디스크에 기록합니다.
+- 로그인 뒤 영상으로 돌아오면 로그인 화면 대신 보던 영상 주소로 갑니다.
+- 휴대폰의 유튜브 앱이나 Chrome과는 따로인 세션이고, 휴대폰에 등록된 Google 계정을 자동으로 가져오지 않습니다. Google이 앱 안 로그인을 막으면 계정을 연결할 수 없습니다.
+- 설정의 `유튜브 로그아웃`은 쿠키와 사이트 자료를 지웁니다.
 
-## 소스에서 실행하기
-
-기본 도구는 Node.js 24, Rust stable, CMake, C/C++ 컴파일러입니다. 실제 음성 인식까지 실행하려면 libclang도 필요합니다.
-
-Windows에서는 Visual Studio Build Tools의 C++ 빌드 도구와 Windows SDK를 설치합니다. macOS에서는 Xcode Command Line Tools를 사용합니다. macOS·Linux에는 API 키 보안 저장소가 구현되지 않아 실제 키 저장을 지원하지 않습니다.
-
-저장소 루트에서 의존성을 설치합니다.
-
-```sh
-npm ci --prefer-offline --no-audit --no-fund
-```
-
-### Windows 데스크톱 앱
-
-The publisher's Windows app build needs the existing Desktop OAuth credential
-JSON at `artifacts/google-oauth/desktop-client.json`, or its local path in
-`VTO_GOOGLE_DESKTOP_CLIENT_JSON`. Follow the [Google registration guide](docs/design/google-auth-setup.md).
-Installed-app users sign in directly; they do not supply credentials or client
-IDs. Android builds do not need the Desktop credential file.
-
-PowerShell에서 `LIBCLANG_PATH`를 `libclang.dll`이 있는 폴더로 지정한 뒤 실행합니다. Windows에서 음성 인식을 빌드하면(앱과 브라우저 실행 모두) GPU용 Vulkan 백엔드가 함께 빌드되므로 [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)도 설치해야 합니다. 설치하면 `VULKAN_SDK`가 지정됩니다. GPU가 있으면 GPU에서, 없으면 CPU에서 받아씁니다([측정](docs/design/desktop-transcription-speed.md)).
-
-```powershell
-$env:LIBCLANG_PATH = "C:/path/to/clang/native"
-cargo run --release -p video-translate-overlay --features app --bin video-translate-overlay
-```
-
-설치된 모델을 사용하려면 `VTO_WHISPER_MODEL`에 모델 파일 경로를 지정합니다. 지정하지 않으면 첫 작업에서 모델을 내려받습니다.
-
-### 브라우저 실행
-
-브라우저 버전은 실행한 PC의 로컬 서버를 사용합니다. Android APK와 별도 실행 방식입니다.
-
-Windows PowerShell:
-
-```powershell
-$env:PORT = "8080"
-$env:APP_DATA_DIR = "$PWD/data"
-$env:LIBCLANG_PATH = "C:/path/to/clang/native"
-npm run live
-```
-
-macOS·Linux에서 화면과 작업 흐름만 확인하려면 대체 데이터를 사용합니다.
-
-```sh
-PORT=8080 APP_DATA_DIR=./data npm run live -- --stand-ins
-```
-
-접속 주소는 `http://127.0.0.1:8080/`, 설정은 `/preferences`입니다. 서버는 같은 기기의 접속만 받습니다. `APP_DATA_DIR`에는 SQLite, 오디오, 모델을 저장합니다.
-
-`LIBCLANG_PATH` 없이 실행하면 실제 음성 인식 단계에서 작업이 실패합니다. `--stand-ins`는 오디오·음성 인식·Gemini를 대체하는 화면 확인용 모드입니다. 실제 번역에는 사용할 수 없습니다. Windows에서도 `npm run live -- --stand-ins`로 실행할 수 있습니다.
-
-브라우저 버전은 유튜브 임베드와 직접 재생 가능한 미디어 주소를 지원합니다. 일반 사이트의 영상 감지는 앱 내 브라우저를 사용합니다.
-
-## Android APK 빌드
-
-PC는 APK를 빌드할 때만 필요합니다. 설치 후에는 휴대폰 안의 Rust 코어와 화면을 사용합니다. 세부 환경 설정은 [Tauri 사전 준비](https://tauri.app/start/prerequisites/#android)를 참고합니다.
-
-| 도구·변수 | 설정 |
-| --- | --- |
-| JDK | 17, `JAVA_HOME` 지정 |
-| Android SDK | Platform 36, Build Tools 36.0.0, Platform Tools 설치. `ANDROID_HOME` 지정 |
-| Android NDK | 27.2.12479018, `NDK_HOME` 지정 |
-| Ninja | `PATH`에 추가 |
-| libclang | `LIBCLANG_PATH` 지정 |
-| Rust 대상 | `aarch64-linux-android` |
-| Tauri CLI | 2.x |
-
-저장소 루트에서 실행합니다.
-
-```sh
-rustup target add aarch64-linux-android
-cargo install tauri-cli --version "^2" --locked
-npm ci --prefer-offline --no-audit --no-fund
-cargo tauri android build --apk --target aarch64 --features app
-```
-
-기본 명령은 release APK를 만듭니다. 출력은 `src-tauri/gen/android/app/build/outputs/apk/` 아래에 생성됩니다. 설치하려면 서명이 필요합니다. 배포 서명 설정은 [Tauri Android 서명](https://tauri.app/distribute/sign/android/)을 참고합니다.
-
-개발용 서명으로 바로 설치할 APK가 필요하면 다음 명령을 사용합니다. 개발 서버 연결 없이 앱 자체 화면을 포함합니다.
-
-```sh
-cargo tauri android build --debug --apk --target aarch64 --features app
-```
-
-Windows에서 네이티브 라이브러리 빌드는 끝났지만 심볼릭 링크 생성에 실패할 수 있습니다. 개발자 모드를 사용하거나 라이브러리를 복사해 패키징합니다. ARM64 release 빌드의 명령은 다음과 같습니다.
-
-```powershell
-$jni = "src-tauri/gen/android/app/src/main/jniLibs/arm64-v8a"
-New-Item -ItemType Directory -Force $jni | Out-Null
-Copy-Item "target/aarch64-linux-android/release/libvto.so" $jni
-Copy-Item "$env:NDK_HOME/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so" $jni
-Push-Location src-tauri/gen/android
-./gradlew.bat assembleArm64Release -x rustBuildArm64Release
-Pop-Location
-```
-
-이 명령도 서명 전 APK를 만듭니다. 디버그 빌드에 적용하려면 라이브러리 경로의 `release`를 `debug`로, Gradle 작업의 `Release`를 `Debug`로 바꿉니다.
-
-## 테스트와 확인 범위
-
-저장소 완료 검사는 아래 전체 명령입니다. CI도 같은 명령을 실행합니다. PowerShell은 `&&`를 지원하는 7 이상을 사용합니다.
-
-```sh
-npm ci --prefer-offline --no-audit --no-fund && node scripts/contract-tests.mjs artifacts/junit.xml && npm run test:ui && npm run build
-```
-
-| 검사 | 확인 대상 |
-| --- | --- |
-| `scripts/contract-tests.mjs` | 실제 앱 코어의 계약 테스트, Rust 단위 테스트, Chromium 오버레이 테스트. 결과는 `artifacts/junit.xml` |
-| `npm run test:ui` | 첫 화면·설정의 상태와 사용자 동작 |
-| `npm run build` | Svelte 화면의 배포 빌드 |
-
-계약 테스트는 외부 서비스와 기기 기능 일부를 대체합니다. 통과 결과가 실제 Gemini 응답이나 유튜브 접속 성공을 보장하지는 않습니다.
-
-0.1.6은 전체 완료 검사를 통과했습니다. 테스트 199개 성공, 3개 건너뜀입니다. 번역 요청당 대상 한 조각, 이전 원문만 참고하는 문맥, 잘못된 응답 번호 거부, 원문·시각·기존 비용을 유지한 재번역, 페이지당 자막 레이어 하나를 추가로 검증했습니다.
-
-문제 영상 `vSCYL8ySh9g`는 Android 앱에서 받아쓴 원문 189개를 실제 Gemini API로 번역했습니다. 재번역 전후 원문·시각이 모두 같고, 8분 57초에는 채팅 화면 설명 대신 토큰 수 설명이 배정됐습니다. 최종 방식의 재번역 사용량은 코드의 단가·환율 기준 약 55원입니다. 단일 영상의 결과이며 실제 청구액이나 S21 실기기 동작을 보장하지 않습니다.
-
-Android 14의 0.1.6 debug APK에서는 실제 유튜브 페이지의 8분 57초 자막, 중복 없는 레이어, 재번역 전후 작업 ID 변경, 가로 전체화면 자막 유지를 확인했습니다. 기기 재번역 검사는 위 실제 API 결과를 저장한 응답 서버를 사용했고, 실제 Gemini 호출은 별도로 검증했습니다. 배포용 ARM64 release APK는 기존과 같은 키로 서명했으며, PC 테스트 서버 설정을 포함하지 않습니다.
-
-2026년 11월 13일 사용자가 갤럭시 S21의 모바일 0.1.6을 직접 실행해 자막 싱크가 개선됐고 정상 동작한다고 확인했습니다. 사용자 실검증 결과이며, 개발 환경에서 S21의 속도·발열을 직접 측정한 결과는 아닙니다.
-
-0.1.5는 전체 완료 검사를 통과했습니다. 테스트 194개 성공, 2개 건너뜀입니다. 모바일 화면 검사는 384×854, PC 화면 검사는 1280×720에서 버튼과 자막이 잘리지 않는지 확인합니다. 로그인 회귀 검사는 설정의 계정 연결, 다음 영상에서 로그인 화면 생략, 앱 재시작, 로그인 후 영상 주소 복원, 오래된 응답 무시를 확인합니다. 오디오 회귀 검사는 브라우저 세션으로 받은 주소 전달, 다른 영상·광고 길이·비기본 언어 트랙·라이브 제외, 잘못된 주소와 네트워크 실패 처리를 확인합니다. 전체화면 회귀 검사는 플레이어와 자막을 함께 확대하고, 가로·세로 전환 뒤에도 자막을 유지하는지 확인합니다. 실제 모델 비교 검사는 0.1.4에서 별도로 실행해 통과했습니다.
-
-ARM64 release APK는 빌드·서명·패키지 검증을 마쳤습니다. PC 독립 실행은 같은 소스의 x86_64 debug APK로 확인했습니다. Android 14 에뮬레이터에서 PC 앱·웹 서버·ADB 포트 전달 없이 Wi-Fi와 모바일 데이터를 끄고 첫 화면과 설정 조회를 검증했습니다. 개발 환경의 S21 Ultra 직접 검증은 없으며, S21 사용자 확인 범위는 위 실검증 기록과 같습니다.
-
-0.1.1의 Android 검사는 같은 소스의 x86_64 debug APK에서 테스트 쿠키 저장 → 앱 백그라운드 전환 → 프로세스 종료 → 새 프로세스에서 쿠키 재조회 순서로 진행했습니다. 앱의 로그아웃 버튼으로 쿠키가 삭제되는 것도 확인했습니다. 실제 Google 계정 인증은 검증하지 않았습니다.
-
-0.1.2는 유튜브의 Trusted Types 보안 정책 때문에 영상감지 버튼 생성이 실패하던 문제를 수정했습니다. HTML 문자열 대신 DOM으로 버튼을 만듭니다. 같은 보안 정책을 적용한 회귀 검사와 실제 모바일 유튜브 페이지에서 버튼 표시·클릭·앱의 API 키 안내 응답을 확인했습니다. 실행 검증은 Android 14 에뮬레이터이며, ARM64 배포본과 같은 오버레이 코드를 사용했습니다. 실제 영상 번역까지 진행한 검사는 아닙니다.
-
-0.1.3은 익명 네이티브 유튜브 요청이 봇 확인에 막혀 오디오를 받지 못하던 문제를 수정했습니다. 앱 브라우저의 세션으로 플레이어 API를 요청하고, 받은 서명된 오디오 주소를 Rust 작업에 저장합니다. 다운로드·음성 인식은 페이지 밖에서 계속 실행합니다. Android 14 에뮬레이터의 0.1.3 APK에서 공개 영상 `jNQXAC9IVRw`의 영상감지 → AAC 309,288바이트 다운로드 → 약 19초 오디오 확인 → 실제 whisper.cpp 음성 인식 → 번역 단계 진입까지 확인했습니다. 음성 인식 결과 3개 구간을 SQLite에서 확인했습니다. 검증용 Gemini 주소는 연결하지 않아 실제 Gemini 번역은 수행하지 않았습니다. 실제 Google 로그인 계정과 S21 Ultra의 ARM64 실행은 검증하지 않았습니다.
-
-0.1.4의 Android 실행 검사는 같은 Android 14 x86_64 에뮬레이터와 같은 공개 유튜브 영상 `jNQXAC9IVRw` 약 19초를 사용했습니다. 0.1.3 debug APK의 받아쓰기 단계는 약 42.7초, 0.1.4 debug APK는 약 3.1초였습니다. 진행 상태를 0.5초 간격으로 읽은 각 1회 측정이며, 모델 로딩은 포함하고 다운로드·Gemini 번역은 제외합니다. 새 모델 59,707,625바이트를 앱이 내려받아 검증한 뒤 사용했고, 인식 결과 3개 구간과 번역 단계 진입을 SQLite에서 확인했습니다. 짧은 기술 음성 검사는 통과했지만 일반 유튜브 샘플에서 일부 단어 오인식도 확인했습니다. 기존 앱 데이터를 유지한 업데이트로 검사했으며, 이전 큰 모델 파일도 남았습니다. ARM64 release APK는 빌드·서명·패키지 검증을 마쳤으나 실제 S21 속도·발열·배터리와 15분 전체 영상 성능은 측정하지 않았습니다.
-
-0.1.5는 Android 브라우저 엔진이 전체화면 요청을 즉시 취소하던 문제를 수정했습니다. 앱이 전체화면 뷰를 표시하고 가로 방향으로 전환하며, 종료 시 화면 방향과 시스템 바를 복원합니다. 앱의 `전체화면` 버튼은 영상만 따로 확대하지 않고 자막이 포함된 플레이어를 확대합니다. Android 14 에뮬레이터의 0.1.5 debug APK에서 실제 유튜브 페이지와 미리 저장한 한국어 자막 테스트 자료로 진입·화면복귀·재진입·뒤로가기를 검증했습니다. 가로 866×412에서 자막이 영상 안에 표시되고, 세로 복귀 후에도 같은 URL·완료 작업 ID·자막이 유지됐습니다. ARM64 release APK는 빌드·서명·패키지 검증을 마쳤습니다. 실제 S21에서 회전·전체화면을 실행한 검사는 아닙니다.
-
-## 코드와 설계 문서
-
-| 경로 | 내용 |
-| --- | --- |
-| `src/ui/` | 첫 화면과 설정. Svelte |
-| `src/overlay/` | 영상 감지 버튼, 진행 상태, 자막 표시 |
-| `src-tauri/src/` | Rust 코어, 다운로드, 음성 인식, 번역, 저장소 |
-| `src-tauri/gen/android/` | Android 앱, 키 저장소, 백그라운드 서비스 |
-| `contract-tests/`, `tests/` | 계약·오버레이·화면 테스트 |
-| [백엔드 설계](docs/design/backend.md) | 요구사항과 처리 흐름 |
-| [화면 설계](docs/design/frontend.md) | 화면 구성과 상태 |
-| [백엔드 구현 안내](src-tauri/README.md) | 파일별 역할과 플랫폼별 제약 |
+앱을 직접 빌드하거나 고치려면 [개발 안내](docs/development.md)를 보세요.
 
 라이선스: [Apache-2.0](LICENSE)
