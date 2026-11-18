@@ -28,6 +28,8 @@ pub const MODEL_SHA256: &str = if cfg!(target_os = "android") {
 };
 pub const MODEL_BYTES: u64 = if cfg!(target_os = "android") { 59_707_625 } else { 574_041_195 };
 
+type ModelFetcher<'a> = dyn FnMut(&Path, &str, u64, &str, &mut dyn FnMut(f32)) -> Result<(), String> + 'a;
+
 pub struct Whisper {
     /// The model file. It is known from the start, so a process restarted in
     /// the writing stage loads it without passing through downloading again.
@@ -48,7 +50,7 @@ impl Whisper {
         whisper_rs::install_logging_hooks(); // whisper.cpp's own logging off: it prints per call
         let fetch = model_override.is_none();
         let path = model_override.unwrap_or_else(|| data_dir.join("models").join(MODEL_FILE));
-        let voice = voice::Detector::new(path.parent().unwrap());
+        let voice = voice::Detector::new(&data_dir.join("models"));
         Whisper { path, fetch, state: Mutex::new(None), language: Mutex::new(None), mobile: cfg!(target_os = "android"), voice }
     }
 
@@ -57,6 +59,19 @@ impl Whisper {
     pub fn with_mobile_params(mut self) -> Self {
         self.mobile = true;
         self
+    }
+
+    fn prepare_models(&self, progress: &mut dyn FnMut(f32), download: &mut ModelFetcher<'_>) -> Result<bool, String> {
+        *self.language.lock().unwrap() = None;
+        if !cpu_runs_model() { return Err(crate::pipeline::UNSUPPORTED_CPU.into()); }
+        if !self.fetch && !self.path.is_file() { return Err(format!("model file missing: {}", self.path.display())); }
+        let voice_fetched = self.voice.prepare_with(true, download)?;
+        if !self.fetch || std::fs::metadata(&self.path).is_ok_and(|m| m.len() == MODEL_BYTES) {
+            return Ok(voice_fetched);
+        }
+        std::fs::create_dir_all(self.path.parent().unwrap()).map_err(|e| e.to_string())?;
+        download(&self.path, MODEL_URL, MODEL_BYTES, MODEL_SHA256, progress)?;
+        Ok(true)
     }
 
     fn state(&self) -> Result<std::sync::MutexGuard<'_, Option<(WhisperState, i32)>>, String> {
@@ -125,24 +140,11 @@ impl Transcriber for Whisper {
     fn prepare(&self, _data_dir: &Path, progress: &mut dyn FnMut(f32)) -> Result<bool, String> {
         // The start of a job's downloading or writing: its language is detected
         // afresh on the first window it writes.
-        *self.language.lock().unwrap() = None;
-        if !cpu_runs_model() {
-            return Err(crate::pipeline::UNSUPPORTED_CPU.into());
-        }
-        let voice_fetched = self.voice.prepare(self.fetch)?;
-        if !self.fetch {
-            return if self.path.is_file() { Ok(false) } else { Err(format!("model file missing: {}", self.path.display())) };
-        }
-        if !self.needs_fetch() {
-            return Ok(voice_fetched);
-        }
-        std::fs::create_dir_all(self.path.parent().unwrap()).map_err(|e| e.to_string())?;
-        fetch_model(&self.path, MODEL_URL, MODEL_BYTES, MODEL_SHA256, progress)?;
-        Ok(true)
+        self.prepare_models(progress, &mut fetch_model)
     }
 
     fn needs_fetch(&self) -> bool {
-        self.fetch && (!std::fs::metadata(&self.path).is_ok_and(|m| m.len() == MODEL_BYTES) || self.voice.needs_fetch())
+        self.voice.needs_fetch() || (self.fetch && !std::fs::metadata(&self.path).is_ok_and(|m| m.len() == MODEL_BYTES))
     }
 
     fn load(&self) -> Result<(), String> {
@@ -150,6 +152,8 @@ impl Transcriber for Whisper {
     }
 
     fn transcribe(&self, pcm: &[f32], progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String> {
+        // A resumed writing job can bypass the downloading stage, including with a model override.
+        self.voice.prepare(true)?;
         let regions = crate::audio::detected_voice_regions(&self.voice.spans(pcm)?, pcm.len());
         if regions.is_empty() {
             progress(1.0);

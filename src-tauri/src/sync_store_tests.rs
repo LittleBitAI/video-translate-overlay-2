@@ -86,25 +86,28 @@ fn silent_cue_repair_is_atomic_retains_versions_cost_and_sync_selection() {
     let before_library = store.library().unwrap();
     let db = Db::open(store.path()).unwrap();
     db.execute("UPDATE job SET cost_krw=320 WHERE video_key=?", p![&key]).unwrap();
-    assert!(store.repair_silent_cue(&key, &previous, 99).is_err());
+    let inspected = store.inspect_silent_cue(&key, &previous, 0).unwrap();
+    let mut unavailable = inspected.clone();
+    unavailable.seq = 99;
+    assert!(store.repair_silent_cue(&key, &previous, &unavailable).is_err());
     assert_eq!(store.cues(&key).unwrap()[0].source_text, before[0].source_text);
 
     // A lost process between publication and commit leaves neither a partial selection nor cues.
     {
         let db = Db::open(store.path()).unwrap();
         db.exec("BEGIN IMMEDIATE").unwrap();
-        local::repair_silent_cue(&db, &key, &previous, 0).unwrap();
+        local::repair_silent_cue(&db, &key, &previous, &inspected).unwrap();
     }
     assert_eq!(store.cues(&key).unwrap().len(), 2);
     assert!(store.library().unwrap()["videos"].as_array().unwrap().iter().find(|v|v["video_key"]==key).unwrap()["versions"].as_array().unwrap().iter().any(|v|v["id"]==previous && v["selected"]==true));
 
     db.execute("CREATE TRIGGER reject_repair BEFORE INSERT ON cue BEGIN SELECT RAISE(ABORT,'repair write failure'); END", &[]).unwrap();
-    assert!(store.repair_silent_cue(&key, &previous, 0).is_err());
+    assert!(store.repair_silent_cue(&key, &previous, &inspected).is_err());
     db.exec("DROP TRIGGER reject_repair").unwrap();
     assert_eq!(store.cues(&key).unwrap().len(), 2);
-    let replacement = store.repair_silent_cue(&key, &previous, 0).unwrap();
+    let replacement = store.repair_silent_cue(&key, &previous, &inspected).unwrap();
     assert_ne!(replacement, previous);
-    assert!(store.repair_silent_cue(&key, &previous, 0).is_err(), "stale selection must not remove speech");
+    assert!(store.repair_silent_cue(&key, &previous, &inspected).is_err(), "stale selection must not remove speech");
     let repaired = store.cues(&key).unwrap();
     assert_eq!(repaired.len(), 1);
     assert_eq!((repaired[0].start_ms, repaired[0].end_ms), (9100,18100));
@@ -128,7 +131,46 @@ fn silent_cue_repair_is_atomic_retains_versions_cost_and_sync_selection() {
     assert_eq!(reopened.cues(&key).unwrap().len(),2);
     assert_eq!(reopened.retranslation_cost(&key).unwrap(),320.0);
     let other_account = Journal::open(&a.0,&VerifiedIdentity::fixture("another-account")).unwrap();
-    assert!(other_account.library().unwrap().repair_silent_cue(&key,&previous,0).is_err());
+    assert!(other_account.library().unwrap().repair_silent_cue(&key,&previous,&inspected).is_err());
+}
+
+#[test]
+fn silent_cue_repair_denies_any_change_to_the_inspected_selection_or_cue() {
+    let profile = Profile::new();
+    let journal = profile.journal();
+    let Change::Translation { mut translation } = translation() else { unreachable!() };
+    let key = translation.video.key.clone();
+    translation.duration_ms = 20000;
+    translation.cues = vec![
+        Cue {start_ms:9100,end_ms:18100,source_text:"Good afternoon everyone".into(),text_ko:"Saved speech".into()},
+        Cue {start_ms:18200,end_ms:19000,source_text:"Welcome".into(),text_ko:"Saved welcome".into()},
+    ];
+    let speech = journal.write(Change::Translation {translation:translation.clone()}, Deletions::new()).unwrap().identity();
+    translation.cues[0] = Cue {start_ms:1180,end_ms:5800,source_text:"Music description".into(),text_ko:"Saved music".into()};
+    let music = journal.write(Change::Translation {translation}, Deletions::new()).unwrap().identity();
+    let store = journal.library().unwrap();
+    // A requested version must be selected at inspection, not merely at publication.
+    assert!(store.inspect_silent_cue(&key,&speech,0).is_err());
+    let inspected_music = store.inspect_silent_cue(&key,&music,0).unwrap();
+    store.select_translation(&key,&speech).unwrap();
+    let before = store.cues(&key).unwrap();
+    assert!(store.repair_silent_cue(&key,&speech,&inspected_music).is_err());
+    assert!(store.repair_silent_cue(&key,&music,&inspected_music).is_err());
+    // Every component of the audio/text inspection is bound, including missing translations.
+    for field in ["sequence","start","end","source","translation","missing translation"] {
+        let mut changed = store.inspect_silent_cue(&key,&speech,0).unwrap();
+        match field {
+            "sequence" => changed.seq = 1,
+            "start" => changed.start_ms += 1,
+            "end" => changed.end_ms += 1,
+            "source" => changed.source_text.push('!'),
+            "translation" => changed.text_ko.as_mut().unwrap().push('!'),
+            _ => changed.text_ko = None,
+        }
+        assert!(store.repair_silent_cue(&key,&speech,&changed).is_err(), "{field}");
+        assert_eq!(store.cues(&key).unwrap(),before,"{field}");
+    }
+    assert_eq!(store.library().unwrap()["videos"][0]["versions"].as_array().unwrap().len(),2);
 }
 
 #[test]

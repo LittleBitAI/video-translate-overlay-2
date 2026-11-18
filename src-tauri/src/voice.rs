@@ -24,10 +24,14 @@ impl Detector {
     }
 
     pub fn prepare(&self, fetch: bool) -> Result<bool, String> {
+        self.prepare_with(fetch, &mut super::fetch_model)
+    }
+
+    pub(super) fn prepare_with(&self, fetch: bool, download: &mut super::ModelFetcher<'_>) -> Result<bool, String> {
         if !self.needs_fetch() { return Ok(false); }
         if !fetch { return Err(format!("speech detector missing: {}", self.path.display())); }
         std::fs::create_dir_all(self.path.parent().unwrap()).map_err(|e| e.to_string())?;
-        super::fetch_model(&self.path, URL, BYTES, SHA256, &mut |_| {})?;
+        download(&self.path, URL, BYTES, SHA256, &mut |_| {})?;
         Ok(true)
     }
 

@@ -75,9 +75,17 @@ impl Store {
         self.library_write(|db| local::select_translation(db, key, identity))
     }
 
-    /// The caller checks the original audio for this cue first. Publication is atomic and version-bound.
-    pub fn repair_silent_cue(&self, key: &str, identity: &str, seq: usize) -> R<String> {
-        self.library_write(|db| local::repair_silent_cue(db, key, identity, seq))
+    /// Capture the requested selection and projected cue in one SQLite snapshot before audio inspection.
+    pub fn inspect_silent_cue(&self, key: &str, identity: &str, seq: usize) -> R<Cue> {
+        let seq = i64::try_from(seq).map_err(|_| "cue unavailable")?;
+        let row = self.db.query_one("SELECT c.seq,c.start_ms,c.end_ms,c.source_text,c.text_ko FROM cue c JOIN sync_selected_translation s ON s.video_key=c.video_key WHERE c.video_key=? AND s.identity=? AND c.seq=?", p![key,identity,seq])?
+            .ok_or("selected version or cue unavailable; inspect it again before repair")?;
+        Ok(Cue { seq:row[0].int(), start_ms:row[1].int(), end_ms:row[2].int(), source_text:row[3].text(), text_ko:row[4].opt_text() })
+    }
+
+    /// The caller checks this exact cue's original audio first. Publication rechecks it atomically.
+    pub fn repair_silent_cue(&self, key: &str, identity: &str, inspected: &Cue) -> R<String> {
+        self.library_write(|db| local::repair_silent_cue(db, key, identity, inspected))
     }
 
     pub fn deleted(&self, key: &str) -> R<Option<(String, bool)>> {

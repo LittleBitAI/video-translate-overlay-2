@@ -205,7 +205,7 @@ pub(crate) fn select_translation(db: &Db, key: &str, identity: &str) -> Result<(
     Ok(())
 }
 
-pub(crate) fn repair_silent_cue(db: &Db, key: &str, identity: &str, seq: usize) -> Result<String> {
+pub(crate) fn repair_silent_cue(db: &Db, key: &str, identity: &str, inspected: &crate::store::Cue) -> Result<String> {
     if !owned(db)? { return Err("repair requires a retained saved version".into()); }
     if db.query_one("SELECT id FROM job WHERE video_key=? AND stage IN ('downloading','writing','translating')", p![key])?.is_some()
         || db.query_one("SELECT video_key FROM deleted_video WHERE video_key=?", p![key])?.is_some()
@@ -217,8 +217,13 @@ pub(crate) fn repair_silent_cue(db: &Db, key: &str, identity: &str, seq: usize) 
         .ok_or("saved version unavailable")?[0].text();
     let record = super::library::decode(&body)?;
     let Change::Translation { mut translation } = record.change else { return Err("invalid saved version".into()); };
+    let seq = usize::try_from(inspected.seq).map_err(|_| "cue unavailable")?;
     if seq >= translation.cues.len() || translation.cues.len() < 2 { return Err("repair must retain valid speech".into()); }
     let cue = &translation.cues[seq];
+    if cue.start_ms != inspected.start_ms || cue.end_ms != inspected.end_ms
+        || cue.source_text != inspected.source_text || Some(&cue.text_ko) != inspected.text_ko.as_ref() {
+        return Err("inspected cue changed; inspect it again before repair".into());
+    }
     if db.query_one("SELECT seq FROM cue WHERE video_key=? AND seq=? AND start_ms=? AND end_ms=? AND source_text=? AND text_ko=?",
         p![key,seq as i64,cue.start_ms,cue.end_ms,&cue.source_text,&cue.text_ko])?.is_none() {
         return Err("saved cue changed; inspect it again before repair".into());

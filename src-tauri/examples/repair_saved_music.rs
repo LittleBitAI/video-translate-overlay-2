@@ -10,8 +10,7 @@ fn main() -> Result<(), String> {
     if !Path::new(&args[1]).is_file() { return Err("database does not exist".into()); }
     let seq: usize = args[4].parse().map_err(|_| "cue_seq must be a nonnegative integer")?;
     let store = Store::open(Path::new(&args[1]))?;
-    let cues = store.cues(&args[2])?;
-    let cue = cues.get(seq).filter(|c| c.seq == seq as i64).ok_or("cue unavailable")?;
+    let cue = store.inspect_silent_cue(&args[2], &args[3], seq)?;
     let pcm = audio::decode_file(Path::new(&args[5]))?;
     let start = (cue.start_ms.saturating_sub(300).max(0) as usize) * audio::RATE / 1000;
     let end = (cue.end_ms as usize + 300) * audio::RATE / 1000;
@@ -20,9 +19,9 @@ fn main() -> Result<(), String> {
     detector.prepare(false)?;
     let samples: Vec<_> = pcm[start..end].iter().map(|&x| x as f32 / 32768.0).collect();
     if !detector.spans(&samples)?.is_empty() { return Err("speech detected: retain this cue and inspect the source".into()); }
-    println!("No speech at {}..{} ms; retain {} speech cues and every existing translation; no paid calls", cue.start_ms, cue.end_ms, cues.len() - 1);
+    println!("No speech at {}..{} ms; retain every other cue and existing translation; no paid calls", cue.start_ms, cue.end_ms);
     if args.len() == 8 {
-        let identity = store.repair_silent_cue(&args[2], &args[3], seq)?;
+        let identity = store.repair_silent_cue(&args[2], &args[3], &cue)?;
         println!("Published {identity}");
     } else {
         println!("Preview only; no saved data changed");

@@ -70,7 +70,9 @@ Without `--apply`, this prints a preview. Adding `--apply` uses one SQLite
 transaction to retain the old response, remove the confirmed non-speech source
 cue from a new response, project that response through the existing ready-job
 and saved-selection mechanism, and commit. The selected identity and projected
-cue must still match. Active processing and deletion prevent the repair.
+cue must still match the exact cue captured before audio inspection, including
+its interval, source text and Korean text. Selection and cue are captured in
+one database snapshot. Active processing and deletion prevent the repair.
 Failure or interruption rolls back publication and projection together.
 
 The replacement reuses every remaining source and translation byte and their
