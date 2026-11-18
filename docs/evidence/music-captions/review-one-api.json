@@ -1,0 +1,1709 @@
+{
+  "collector_head": "eead0b9989de21c25d683d5260352134d264fb0c",
+  "mode": "api",
+  "environment": {
+    "observed_at": "2026-11-18T01:18:48.275Z",
+    "os": "Windows 11 Home",
+    "release": "10.0.26200",
+    "arch": "x64",
+    "node": "v24.18.0"
+  },
+  "collector_sha256": "11f0e9d8e53d4b441c33d632267a4121c45b77d9afaeee765b75cee2286cd3b2",
+  "observer_sha256": "a20f67dc90c08d1a5edc2816a74103e0f6dd10137fac010267ca08b7d7087bd4",
+  "build_input_hashes": "git_blob identifies staged repository bytes; working_tree_sha256 identifies Windows build bytes, including CRLF",
+  "build_inputs": [
+    {
+      "path": "Cargo.lock",
+      "git_blob": "8ac4f99fa3284c2cb05ac05857f72b0922457c12",
+      "working_tree_sha256": "e6c3016cae711a699e8716fa9cb4a3da68a51d17d1f2812e021367b40f8f07eb"
+    },
+    {
+      "path": "Cargo.toml",
+      "git_blob": "8312d4eed80cdf2fa51b371225ff30bd002e2a95",
+      "working_tree_sha256": "b9b07001b8b3963b4d309068fe7c433bee2aa283c695c93f9f9911e55245c577"
+    },
+    {
+      "path": "index.html",
+      "git_blob": "6051cc7e4edd98aa56ff67691ff908054e30389d",
+      "working_tree_sha256": "3b03cf78983cd14e0246be85530814e08348a08f503d3f6e4af4e4f961ae05cc"
+    },
+    {
+      "path": "package-lock.json",
+      "git_blob": "88b275f11f2607f0e1f2c22cf296a3090c463d30",
+      "working_tree_sha256": "f5b749b48be38df538e62de4d803cb5992866eacc56ddd7df924a59e882e1ee4"
+    },
+    {
+      "path": "package.json",
+      "git_blob": "7fb75bc367db3c0f1fc100fa13e2f3a8c3cc5007",
+      "working_tree_sha256": "3e7fc8da8fbf426cc6f6584316d2a8bd18c6cdf7f73d44a333cd07268e6a834b"
+    },
+    {
+      "path": "src-tauri/Cargo.toml",
+      "git_blob": "88e9ab8ec95adce5aa992da8c6e1310f25405ca5",
+      "working_tree_sha256": "824655ee305e4fb347fa1135c88f2fe72c51224e24519297a003a4ce30628100"
+    },
+    {
+      "path": "src-tauri/android/whisper.toolchain.cmake",
+      "git_blob": "ded1c151b202f3caa8d074e76181e73312897a4d",
+      "working_tree_sha256": "2d43344823966454735186247a7b58fbc8ee78147a9e20eb6c9e427812f29ed6"
+    },
+    {
+      "path": "src-tauri/build.rs",
+      "git_blob": "444b65247f9bd2adb4a5594a91376e3bf5297d61",
+      "working_tree_sha256": "b8560f239303a169102d2cfea23e89de9b09c3e395ac0dbd17f8a320a28c8d20"
+    },
+    {
+      "path": "src-tauri/capabilities/main.json",
+      "git_blob": "942d28de08d8af24560b47f1efaa04036f2fcb3f",
+      "working_tree_sha256": "6275bfa8854f309ae43afa9059e4525a390935d618155971b709f75b617140eb"
+    },
+    {
+      "path": "src-tauri/capabilities/overlay-android.json",
+      "git_blob": "61f2d8253bf553eb2267da78c470ec29352eab7c",
+      "working_tree_sha256": "b96773f4cf5daf2006ad6037f62c6fef5dc64b70df938561515066b3accda5ac"
+    },
+    {
+      "path": "src-tauri/capabilities/overlay.json",
+      "git_blob": "7e9cbac3164aeafb75676e1484210c351d341d66",
+      "working_tree_sha256": "5aeba7a9b12365d49c7eb84749240929622d86525f01ce97f7a652fac974d79e"
+    },
+    {
+      "path": "src-tauri/examples/download_timing.rs",
+      "git_blob": "e609439d93d991f322a37f667e658c88e581f1f2",
+      "working_tree_sha256": "1acf13445d988c176b9b4e00f4f473f22cd67e9c9fd51bc5f20421a88d9ef8db"
+    },
+    {
+      "path": "src-tauri/examples/repair_saved_music.rs",
+      "git_blob": "f958000d586bb20c90e4afbb01a2931f1bef5e22",
+      "working_tree_sha256": "c280ce564197e25fa36aed039159ac3794636014f804612f2a5b946a56f7481e"
+    },
+    {
+      "path": "src-tauri/examples/transcribe_timing.rs",
+      "git_blob": "46a86517bd293ec540b81a7ab709825fc93cb2ce",
+      "working_tree_sha256": "ffbca9aeb2f02d0b0cbb2af50966717a6ec3a102a5c8824f5783f1e6b9069475"
+    },
+    {
+      "path": "src-tauri/gen/android/.editorconfig",
+      "git_blob": "ebe51d3bfa4701e67ca2c77b074ab814a7d506e3",
+      "working_tree_sha256": "d22b394a5a140050065207d160273570edb04200480160e0951df3291dd7848f"
+    },
+    {
+      "path": "src-tauri/gen/android/.gitignore",
+      "git_blob": "1c636c39a7506f77d15071ad26afcafc14f8c253",
+      "working_tree_sha256": "2d8a4dfb08ea1403e6eab97bc216158328c01ace4027f0dd3b65b2a088994270"
+    },
+    {
+      "path": "src-tauri/gen/android/app/.gitignore",
+      "git_blob": "6c4d56b4a28784fdb17ba7cefa4ba2126bd03f71",
+      "working_tree_sha256": "174bfc72691cfd2146e10c4dc930940ae29af4f9c79b7f3f7d1fe87b32689491"
+    },
+    {
+      "path": "src-tauri/gen/android/app/build.gradle.kts",
+      "git_blob": "43419aa7389a758a7833c1a45477ebd7d7c83ea5",
+      "working_tree_sha256": "ab1a0f99e584674c9c99c89a57b2fbdea379cf0c2e699954f777e8b807304d6c"
+    },
+    {
+      "path": "src-tauri/gen/android/app/proguard-rules.pro",
+      "git_blob": "481bb434814107eb79d7a30b676d344b0df2f8ce",
+      "working_tree_sha256": "56fd960cf225f6ca40f982b13a5dbb0d8bc3dfde13ff76422825c6070d0a1890"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/androidTest/java/dev/vto/overlay/YouTubeSessionTest.kt",
+      "git_blob": "efb58c9b8e2ac5026331577163afaf65525c8687",
+      "working_tree_sha256": "a279bbc833ee02ca78cb02b5ffcb1d92440ec0a893fc88e5b7b31ce25852fa9c"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/AndroidManifest.xml",
+      "git_blob": "4fa864e5ce69c2b238bc58124c6aa9c5ad5a2a98",
+      "working_tree_sha256": "aa366cca8dcd436a38c56303a3c7dc68d0ab52c9f6f7ad199d99425dbba4ca2c"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/GoogleAccount.kt",
+      "git_blob": "5989ca876eae1ec3454218b76fc0b08782c03b10",
+      "working_tree_sha256": "637a9af82cf9c17ac50fcb936fdf598e5e77a033e85c0c2b36485af0f0f6587f"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/JobService.kt",
+      "git_blob": "1a69442530e6a944c679a7d2070c4c1ba06a9012",
+      "working_tree_sha256": "4fc15a520b7e57e7e7c5b53dd6e26b8e6e027b9d1d7c29e29dbbf0c0f3bc7d88"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/MainActivity.kt",
+      "git_blob": "558eee993fc340438f39d74a4df0b3e86ea7beb7",
+      "working_tree_sha256": "e7d63c1c91ad7d43cd87b9b1fd6ae442a9d9ea12d6a74bae11ef52ae7f24d951"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/SyncService.kt",
+      "git_blob": "b7770362d752390d5cd5b5eb3f758b4d19d42212",
+      "working_tree_sha256": "346e3ad5b6a33c01409423ca86401ffa3f7d784b04ca2371cba9045615110a53"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/VideoChromeClient.kt",
+      "git_blob": "13aced79d4a5da320af2068c705a72f6db0801aa",
+      "working_tree_sha256": "c9b2b244d69a69cd60b7456f44a8ce8e633948736f92d4bd71ef42ced22d205c"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/java/dev/vto/overlay/VtoPlugin.kt",
+      "git_blob": "49bf7f0db9a1b8da1d746260d9a3a725e60d249e",
+      "working_tree_sha256": "94d1298dbbff2ab1e5ae81e74c6159a54d25009cc025e8b3ade3f43e97fdf1e2"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml",
+      "git_blob": "2b068d11462a4b96669193de13a711a3a36220a0",
+      "working_tree_sha256": "01d1a6a6c1234eb7fe270d097eb283d72b9c95ae5118886f1b6573aad280f1f7"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/drawable/ic_launcher_background.xml",
+      "git_blob": "07d5da9cbf141911847041df5d7b87f0dd5ef9d4",
+      "working_tree_sha256": "ed423c73a6f40a4d2909f0901e60527b3a807cd59e1b5593bcaae1808b1c6321"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/layout/activity_main.xml",
+      "git_blob": "4fc244418b5fe524789352d1b1b52d1b22045f3a",
+      "working_tree_sha256": "68466a0a3006f183eb3af4e978d52f50a68087a1aac0880bd16eef3760153bcb"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+      "git_blob": "28f1aa119119336781390c2531c381499576ed59",
+      "working_tree_sha256": "320e552422179b81dae014ee6cc00561bd6e7455767b28f5518b8862a8c7987c"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png",
+      "git_blob": "85d0c88af65bcef008faba29bfc02688883dda8c",
+      "working_tree_sha256": "7a9ae0632bfe5b28a1e6e9a7b38982fef62be07c95de46c26bd4f901ac6b9753"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+      "git_blob": "28f1aa119119336781390c2531c381499576ed59",
+      "working_tree_sha256": "320e552422179b81dae014ee6cc00561bd6e7455767b28f5518b8862a8c7987c"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+      "git_blob": "73e48dbfb7dc31ed1e951b77820af88b93fcc418",
+      "working_tree_sha256": "75322a261ba38a23a25647af0d1298f204f3b3fafd317b8122a1b9a1f38284ff"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png",
+      "git_blob": "13dd21476b5c7f69cdfb82969bce7150244c127f",
+      "working_tree_sha256": "2425d59d27578f75ca97d31d9ae8385898badce3d6a1774bfc2f0fd191dc12c7"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+      "git_blob": "73e48dbfb7dc31ed1e951b77820af88b93fcc418",
+      "working_tree_sha256": "75322a261ba38a23a25647af0d1298f204f3b3fafd317b8122a1b9a1f38284ff"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+      "git_blob": "1d98044f13bdd3afc7cb426644ae118688c03c14",
+      "working_tree_sha256": "44e5c3dc1dfb392f65e3dbcc9b986d30f10dd95b57e306657e56281b572fa684"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png",
+      "git_blob": "a888b336b5bc84b42c0c266ce9b8ec5d9eafed0b",
+      "working_tree_sha256": "b1d19b8b78d0ed6903dd35b7640afba29b4cf02f3780e0d1cd46d9ebcbc93695"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+      "git_blob": "1d98044f13bdd3afc7cb426644ae118688c03c14",
+      "working_tree_sha256": "44e5c3dc1dfb392f65e3dbcc9b986d30f10dd95b57e306657e56281b572fa684"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+      "git_blob": "081832466b4a17180fe9255fa0d3fcba2010592c",
+      "working_tree_sha256": "0b250fc4451dfd1e5a41128234d93225726a2984448b0b966af25677b167d8de"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png",
+      "git_blob": "a2a838e7b550ac82b12e73d71427c6ffea06a944",
+      "working_tree_sha256": "ab9397c9827aef4b3a1f1f917fc722d54abcf26488880c8bf9c724d1e59ab905"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+      "git_blob": "081832466b4a17180fe9255fa0d3fcba2010592c",
+      "working_tree_sha256": "0b250fc4451dfd1e5a41128234d93225726a2984448b0b966af25677b167d8de"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+      "git_blob": "b18bceb64d257ed31d50e65d7f2b98abcfb21158",
+      "working_tree_sha256": "dae1ff05b101efea50e4b622fe6a3af8ba8f761162fa7c4fd864adc7cb39eeac"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png",
+      "git_blob": "3f8a57f38e0273699c8cdd1012042bffdc38abce",
+      "working_tree_sha256": "27cf0cdbc78bec8b9a14eaedb084c541a3c191fe5db89766e831fbfd21ce955d"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+      "git_blob": "b18bceb64d257ed31d50e65d7f2b98abcfb21158",
+      "working_tree_sha256": "dae1ff05b101efea50e4b622fe6a3af8ba8f761162fa7c4fd864adc7cb39eeac"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/values-night/themes.xml",
+      "git_blob": "f2b6cf287c382afd1bf8487ffd5f01faf742e46c",
+      "working_tree_sha256": "2c4acaa3cf970b9ecc4d8aaeb14b53ced154fe65a141ea62c32843685952e696"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/values/colors.xml",
+      "git_blob": "f8c6127d327620c93d2b2d00342a68e97b98a48d",
+      "working_tree_sha256": "b5626527d503417f0d8e5b1e08f338de7b31173bf0e122815f03e64932adbd88"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/values/strings.xml",
+      "git_blob": "d80323600d98ef514256693fd98a6cb2110c9f47",
+      "working_tree_sha256": "8afa2c406c05fa1d5258b43b17fa95f37666db3bff50e3faa5c76091a2dc25ad"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/values/themes.xml",
+      "git_blob": "f2b6cf287c382afd1bf8487ffd5f01faf742e46c",
+      "working_tree_sha256": "2c4acaa3cf970b9ecc4d8aaeb14b53ced154fe65a141ea62c32843685952e696"
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/res/xml/file_paths.xml",
+      "git_blob": "782d63b9932cb68dac12773dc25de54ab7ce1644",
+      "working_tree_sha256": "cdb4effab9f579e06f0f49d5fde4b3909fc5f03e978c9ba9ce34cf5b9f4b6902"
+    },
+    {
+      "path": "src-tauri/gen/android/build.gradle.kts",
+      "git_blob": "6f96a1e6d6753f7bef0af33ce9d5b69350fe08ab",
+      "working_tree_sha256": "975b86375423d877cfd5a90648bed227bae5665a82fce99e3ebd901419e80bf9"
+    },
+    {
+      "path": "src-tauri/gen/android/buildSrc/build.gradle.kts",
+      "git_blob": "cc6c9bc0f02091dfe12afa46a2a7e5ae0dafa2d8",
+      "working_tree_sha256": "e3856dc35370b6f5c3222b981e546c08121bf96629e6a336d0c7f8f8020eb942"
+    },
+    {
+      "path": "src-tauri/gen/android/buildSrc/src/main/java/dev/vto/overlay/kotlin/BuildTask.kt",
+      "git_blob": "3a293ef803104d891aa46596ad8f7a736b7485ea",
+      "working_tree_sha256": "a23fc50bb35704302240dcfc02d30b972ec67aee59eaf14b23443e7fb4a02236"
+    },
+    {
+      "path": "src-tauri/gen/android/buildSrc/src/main/java/dev/vto/overlay/kotlin/RustPlugin.kt",
+      "git_blob": "3309f1cc4b4435998e33df8d0be8e223108fb6cc",
+      "working_tree_sha256": "ba97577f2cf2b123eddd332662844d2b93a2ee589be65f3843bc7de4ea5b7ba7"
+    },
+    {
+      "path": "src-tauri/gen/android/gradle.properties",
+      "git_blob": "9e6e7b95e80eba8a6b5e1367cbea39b8f14c9aee",
+      "working_tree_sha256": "02a22057efb36491da460e4ecee89db4961b14c2aa48db9a33108748418a480d"
+    },
+    {
+      "path": "src-tauri/gen/android/gradle/wrapper/gradle-wrapper.jar",
+      "git_blob": "b1b8ef56b44f16b14dc800fa8103a6d89abb526f",
+      "working_tree_sha256": "497c8c2a7e5031f6aa847f88104aa80a93532ec32ee17bdb8d1d2f67a194a9c7"
+    },
+    {
+      "path": "src-tauri/gen/android/gradle/wrapper/gradle-wrapper.properties",
+      "git_blob": "b2ee479e23661bf76d92f0a909924fad29c26c51",
+      "working_tree_sha256": "b347084df5a6747528d85c39c1ec723ac38110c91a4a6a950e4483509f209945"
+    },
+    {
+      "path": "src-tauri/gen/android/gradlew",
+      "git_blob": "249efbb032ce46a80c687c0723eb172e85f6a136",
+      "working_tree_sha256": "a5a5c199ba02189ae8c46a334223371a20599d9c298ef65e7540ede4a3f72d59"
+    },
+    {
+      "path": "src-tauri/gen/android/gradlew.bat",
+      "git_blob": "a51ec4f5886d3bb106b26724ee4507addbbe3fa8",
+      "working_tree_sha256": "59328c7a17f673b1a63040bfb380a0c749e5d6df3406f7f18641060314cd9aa1"
+    },
+    {
+      "path": "src-tauri/gen/android/settings.gradle",
+      "git_blob": "39391166fb1cbf120ba1e604338702f148eb7966",
+      "working_tree_sha256": "99856053f245337d20d308dbeaf9cd7250ad0c186ebbb6866ab46a6e7005ee19"
+    },
+    {
+      "path": "src-tauri/icons/icon.ico",
+      "git_blob": "945016baed64a2a8a4a788944efd787190465c8e",
+      "working_tree_sha256": "1b90b6ebf4622b739520a137bec720319661f7e51231bb43989af848301142ef"
+    },
+    {
+      "path": "src-tauri/icons/icon.png",
+      "git_blob": "be3d01730a6de4f9bc2c3ea705c545e2f302abd1",
+      "working_tree_sha256": "bf32ce7be62bdbe23b2026d483ef16d5e000df5d904c221cd1d8803a77c7af77"
+    },
+    {
+      "path": "src-tauri/src/account.rs",
+      "git_blob": "7ce2624846413694d565ce8ad3f9bff6ed4a153f",
+      "working_tree_sha256": "5d8a8920b0a22af074ac17ee5b6ab4cb4098412120e02a0d0fc6bd8e02d8df1f"
+    },
+    {
+      "path": "src-tauri/src/account_secrets.rs",
+      "git_blob": "ec3eaa76a338321ab703afb9cb436e71d935c7c9",
+      "working_tree_sha256": "91860c55aa2065f7c78981678102500f2bf8983e0fcf230288c0bbcf7a31308e"
+    },
+    {
+      "path": "src-tauri/src/account_tests.rs",
+      "git_blob": "2b41437522a6d73284047d83dbf08790f2eb3e1c",
+      "working_tree_sha256": "461ce80cdd53013979a8ddd2069fff080de314cf5f53c7e2c830e891b79defda"
+    },
+    {
+      "path": "src-tauri/src/android.rs",
+      "git_blob": "424c63b8a14e7286cbeccf12e46cdfe30c31a72c",
+      "working_tree_sha256": "cae75cbafc5c3a4c750ae648d978d3e1fd17f1cf2fe2bf952e15f822af1e7eb5"
+    },
+    {
+      "path": "src-tauri/src/api.rs",
+      "git_blob": "ba35f673233caacaf22e5708ce328a1ba373ad3c",
+      "working_tree_sha256": "91a2cb15ce03a223cf25de57e27e50e1cd8584e510dbced2a83400141ee824e5"
+    },
+    {
+      "path": "src-tauri/src/api_duration_tests.rs",
+      "git_blob": "22adda19c6e0b34e55fa93415d5d96e22de48a0f",
+      "working_tree_sha256": "b20a953983d8f8921abffd75f96cdb65257567db1e4dff3af5682da4719df765"
+    },
+    {
+      "path": "src-tauri/src/api_hold_tests.rs",
+      "git_blob": "3b3e45888c7579fa9ebdd4d1d60350e877a8b932",
+      "working_tree_sha256": "751fbbe20a6097aee8cd9bd6e0fdc746eeaeea9f5408809f64745b6ca63d1410"
+    },
+    {
+      "path": "src-tauri/src/api_key_tests.rs",
+      "git_blob": "ad1e11f21a9c6ba5d9b347ed496eaec2ee5c4fd4",
+      "working_tree_sha256": "ca318a0a05d40bd9de705bd4cca90d1ed5e794fc29cdd8aca63a6ab1e8de884b"
+    },
+    {
+      "path": "src-tauri/src/app.rs",
+      "git_blob": "210ae3d85dbee735f0a279147be6755b7e117f27",
+      "working_tree_sha256": "5cde91480f7dba7ccef8a5a7b949b48f96580090ab5267ce7869fe92c11d906b"
+    },
+    {
+      "path": "src-tauri/src/app_toast_tests.rs",
+      "git_blob": "ca222ea39259aca410287ee76cdad1cb4b6bc26a",
+      "working_tree_sha256": "9687bfd78a9db6725df2dee455b10e6fc3f17d71c2b595653993b2ed3ef5dad6"
+    },
+    {
+      "path": "src-tauri/src/audio.rs",
+      "git_blob": "ed0feccdf3e8c921a93566118f8f9b692d03de85",
+      "working_tree_sha256": "d7106dd3208fac3ea9e4cfc444282991f30a4c0800c88f07002e58b1690970f1"
+    },
+    {
+      "path": "src-tauri/src/audio_plan_tests.rs",
+      "git_blob": "7683b042bcf57f5c45f3ce1535e2a45aa4e2e0a8",
+      "working_tree_sha256": "c8ddfa92481f198a028ab60b87b9ea68e34044d4db3744b9df57b93afb5efbcf"
+    },
+    {
+      "path": "src-tauri/src/audio_quiet_and_cut_tests.rs",
+      "git_blob": "0a2b09c135cd4cb05ad674e3968a53cd861b676f",
+      "working_tree_sha256": "375aec3f8fa42c02585e71c9742fe22371eb6aa56407e0bc3e8f028f3a894599"
+    },
+    {
+      "path": "src-tauri/src/bin/vto-contract-host.rs",
+      "git_blob": "26b9888b489914bc8e85159c1ced9964a60c93ea",
+      "working_tree_sha256": "d4b7aecc825a2deb6f7cd3b4c0eea273a3a6f802622f5492b1bb970306be40ce"
+    },
+    {
+      "path": "src-tauri/src/bin/vto-web.rs",
+      "git_blob": "7cae60bffe64954fd513ccd237d292f1a4638ad0",
+      "working_tree_sha256": "871f56322666ad09eb6464a62b876160a01df24c20389a239e6340ab2322220f"
+    },
+    {
+      "path": "src-tauri/src/commands.rs",
+      "git_blob": "4578cfed2695ecdf0fa1de9fd32a6e74df4d9356",
+      "working_tree_sha256": "e4a0fa6d4e3a33e31d9c17c393c4237e5d75b714f24d1c810dd760bba0cf3dc8"
+    },
+    {
+      "path": "src-tauri/src/commands_android_tests.rs",
+      "git_blob": "663bae6cfe86b61f9a4519891e093d489040b684",
+      "working_tree_sha256": "847439eb9e9cce0f602f57f336b9e22b1043ca015887d3d15cd61e74116ef493"
+    },
+    {
+      "path": "src-tauri/src/db.rs",
+      "git_blob": "f2abeff9cb5a5aae25e167d2b866ca89beb9ddce",
+      "working_tree_sha256": "a99e362de29093ba7881b47b6197f84476745b030bb5323649b1f5df02a5413c"
+    },
+    {
+      "path": "src-tauri/src/decode.rs",
+      "git_blob": "cbcd4570f88c4950edc1b41cd829d77465cf31de",
+      "working_tree_sha256": "307b7701cdc6477935675b6e62d879b901c9d2feda312199de89fa78a59e00cd"
+    },
+    {
+      "path": "src-tauri/src/decode_container_gap_tests.rs",
+      "git_blob": "5380842fe7fbfd8509259a06c7f293c922e41d24",
+      "working_tree_sha256": "d732aaba5928d9ddad5ea84e3e8747f437ee4e36a4cb2fcc54e6d17e688ff8ed"
+    },
+    {
+      "path": "src-tauri/src/decode_edit_tests.rs",
+      "git_blob": "104e87f4132add7b869347bf8997a0c2ce57ada7",
+      "working_tree_sha256": "26b30a5b640527ce6bcd3dee655c5ecbf920d4b756a3c1229bfd2591fcbef745"
+    },
+    {
+      "path": "src-tauri/src/decode_fmp4_direct_tests.rs",
+      "git_blob": "0dce04edf4b363882ff42bc95e151e54b5b1aace",
+      "working_tree_sha256": "410879e6f07bd2105d7b7a4f49d6f954f953b0e37783fe5e3e5890690b4541b2"
+    },
+    {
+      "path": "src-tauri/src/decode_fmp4_gap_tests.rs",
+      "git_blob": "80232d761a806b52807c537aac585506cc9b15f7",
+      "working_tree_sha256": "79baeaf6a953b487f58080b807f2a063a352a00f00be270ab8d1ea6f3d803702"
+    },
+    {
+      "path": "src-tauri/src/decode_fmp4_lead_tests.rs",
+      "git_blob": "c13d65c57f81dec35617c1f78fb4f52f98fd51cc",
+      "working_tree_sha256": "afd3435feab16187894d640c715303ed94dba813503f6acb9524f4931b2a78c2"
+    },
+    {
+      "path": "src-tauri/src/decode_gap_tests.rs",
+      "git_blob": "b64c8880f89f6e4dab575899ed31c63464940df7",
+      "working_tree_sha256": "48f0370ddfa6162e3fedb339dc98fa262a75059a239a9b389c1c4f3685146405"
+    },
+    {
+      "path": "src-tauri/src/decode_limits_tests.rs",
+      "git_blob": "25466672defd928bdbaa67ebf9f7c01ba8f1615f",
+      "working_tree_sha256": "34194ee3562e1aae61e44e92e8b8a81ebb7828e5e67a5f76711bb021b267fd4c"
+    },
+    {
+      "path": "src-tauri/src/decode_tests.rs",
+      "git_blob": "9e1813a4bdef86b348b843af99a4bb2d82444510",
+      "working_tree_sha256": "e5cf8512735b90ce6fd749c07e8145a9f601d903a65594d67462dad050c04458"
+    },
+    {
+      "path": "src-tauri/src/gemini.rs",
+      "git_blob": "dbfa35b3c993242b74fc6943e94935bdb51fcbc3",
+      "working_tree_sha256": "6b5d3b5d206ad93bfffe56d3145421b0c11ec17052239bd1bf02f470ea42be46"
+    },
+    {
+      "path": "src-tauri/src/gemini_key_tests.rs",
+      "git_blob": "88fd3623fb8fa0e4ed95fb885f6b525986d01f96",
+      "working_tree_sha256": "4ee761f7564f0e65a8fcb7bd70a205f28f54815c1b2941e281656b925627fb28"
+    },
+    {
+      "path": "src-tauri/src/google_auth.rs",
+      "git_blob": "6a49bb9d6f5b4bb16c1fc81ed16502957924c260",
+      "working_tree_sha256": "97c8a5b05c01f45ee4fe6e902e44c4ef5b782f235d883e40e9e338c88b565208"
+    },
+    {
+      "path": "src-tauri/src/google_auth_tests.rs",
+      "git_blob": "1309f1a6699fa44f5ae2a9a51539534ae1820691",
+      "working_tree_sha256": "160b87a536be1247d88333ee2d8437b1352ef7c61e345bb8e34555d82c5d36c1"
+    },
+    {
+      "path": "src-tauri/src/google_desktop.rs",
+      "git_blob": "c336d5d0c1ce3bed34324e213269c2b995c18ade",
+      "working_tree_sha256": "d3e578f4d1f39de5f5f2f300032d28b585f3fa02dab3c140c2c6942beeae375f"
+    },
+    {
+      "path": "src-tauri/src/google_desktop_tests.rs",
+      "git_blob": "ac0af8016018f58e4b0eca50a9313ecc17be46a0",
+      "working_tree_sha256": "7cf00b7ebf8167e9dabbab47108bc1f5b646f69fd59083f11051bd05b046ba5a"
+    },
+    {
+      "path": "src-tauri/src/google_registration.rs",
+      "git_blob": "fc5bdf602f0076b4678eca3487dd4c6ba6f8469e",
+      "working_tree_sha256": "adac4264063f687627cac39be656146f5f3a39e149e8a98bfd9593aafae59a77"
+    },
+    {
+      "path": "src-tauri/src/http.rs",
+      "git_blob": "880ba3e018f397580c49b45361a990ab15232dfd",
+      "working_tree_sha256": "0309f8a2ebbf7955e5d4de84a7c12f40ee6ef73038f39ef3f8e36809dd0d422f"
+    },
+    {
+      "path": "src-tauri/src/http_chunked_tests.rs",
+      "git_blob": "2dc485f5d6767413501756d86bf07fc0439b14b1",
+      "working_tree_sha256": "84c69aa50eecfd164869af11a28b3a3bac2c0679f8d7e5c39e4a6f45240f2629"
+    },
+    {
+      "path": "src-tauri/src/http_head_limits_tests.rs",
+      "git_blob": "86a70e9520d06be733a7cbc33c980723307c8572",
+      "working_tree_sha256": "63de95a9c731f39e4e0bdf0be70f1257c219c7fe0d78728dde28d7a342a83cb2"
+    },
+    {
+      "path": "src-tauri/src/http_length_tests.rs",
+      "git_blob": "9228b0b960fd083b04ba8d58f2ae10d5a9fd74f2",
+      "working_tree_sha256": "f6d59f74348fdc10a764f37572a768c8d4e6122e8d6389453ee5e97abbb72a48"
+    },
+    {
+      "path": "src-tauri/src/http_pin_tests.rs",
+      "git_blob": "2334c5f2f86cec66f420f81b43dd91a88533a825",
+      "working_tree_sha256": "e968b2af28d810a55e2a7273f12d7bd193664a782a2289dc1fde3228a4fe6874"
+    },
+    {
+      "path": "src-tauri/src/http_portable_tests.rs",
+      "git_blob": "74dadf43ef07e04ff8b1d9d999a0d3c5ee353205",
+      "working_tree_sha256": "1b489cbd78227eb2a6735643e6ea08695b07733a6c0e4a8a0afb031d5265aa4e"
+    },
+    {
+      "path": "src-tauri/src/lib.rs",
+      "git_blob": "f46df525b24a79af78147e33d2cfa0de4a81fdb1",
+      "working_tree_sha256": "6d58f38df343df9f1e174a9bbdc74a9f0045016210b07980e5eb43ae08a1ec18"
+    },
+    {
+      "path": "src-tauri/src/library_api.rs",
+      "git_blob": "b54f2924dc2b84572185273f6dae366c7ee25c82",
+      "working_tree_sha256": "838f28c349d99c460a40aef4516848615b6a8f7059cfa4e38b08993eff36f183"
+    },
+    {
+      "path": "src-tauri/src/library_scope.rs",
+      "git_blob": "854aeba6d3a66475de3725cd0269e6d07db54174",
+      "working_tree_sha256": "fb2017f8a898cee4272c19b56c46cb044d667cd005ee5c3fce13e5c6d00a329f"
+    },
+    {
+      "path": "src-tauri/src/library_store.rs",
+      "git_blob": "4a5bf7273d04d5d1b598221001b68c95c293e9a4",
+      "working_tree_sha256": "e1f2fe86504dd664206d8bb56ab671ee66ff41e381e029800f9d32189d12ef9f"
+    },
+    {
+      "path": "src-tauri/src/library_store_tests.rs",
+      "git_blob": "dc9221a337f2d4b624a887551bcf992e7627e259",
+      "working_tree_sha256": "f84fb3e89f43dc2ccc3d96ad56ced4067ce2088093b2ced0dae81428b86b5199"
+    },
+    {
+      "path": "src-tauri/src/main.rs",
+      "git_blob": "426f955ecf08bca48e727e0b3ca16308c72302f3",
+      "working_tree_sha256": "291e676c69f7394fdf2784c5bba0acb5b1b0b51b834f96c9bf970c5fc167bc25"
+    },
+    {
+      "path": "src-tauri/src/media.rs",
+      "git_blob": "2d4ac0541a3f03f72389d036c73fd1b90ce13f15",
+      "working_tree_sha256": "7c33f2625c5d15f11356d854a04416923b0f2d622a4db5614895330d2c47f54c"
+    },
+    {
+      "path": "src-tauri/src/media_audio_group_tests.rs",
+      "git_blob": "ba957c65d24fdf60cd335e3567846d4e0486de51",
+      "working_tree_sha256": "06978e7b9452e77fe157e5dfca3f0485fa76770ca58d7f7c5b3bf367d79c3e31"
+    },
+    {
+      "path": "src-tauri/src/media_discontinuity_tests.rs",
+      "git_blob": "306053ecc31d6779c470c78539761fb748162443",
+      "working_tree_sha256": "d2ae793176506ccd3653a36556dedc55079143a6fcea41ced2f715fb27f5dc45"
+    },
+    {
+      "path": "src-tauri/src/media_dns_tests.rs",
+      "git_blob": "a792d5326368289358f293532de47b12f73d9834",
+      "working_tree_sha256": "ad93d1a6b54cdce209e94dd6df08c33f2c1f875dd03c2b1e994dc65ed256cfc4"
+    },
+    {
+      "path": "src-tauri/src/media_hls_aes_tests.rs",
+      "git_blob": "5930c510bd85821ec5fcc752ad158e50d6e305d6",
+      "working_tree_sha256": "032211b514179428f4e747007953b230199989bceec946b8385658affb9cab48"
+    },
+    {
+      "path": "src-tauri/src/media_hls_init_tests.rs",
+      "git_blob": "3235b38dbee90f5db25617f29e0643a7a4b95938",
+      "working_tree_sha256": "d4b5666bd9c60d4c47d8b9143e21d9031edf313381563e3a598d3c0714bff0d6"
+    },
+    {
+      "path": "src-tauri/src/media_hls_pieces_tests.rs",
+      "git_blob": "9bf83ff15832bbbe258890cc085acb519019ffd7",
+      "working_tree_sha256": "eacbe8a2f2d9631b4a019954f282c61d02db0909f7c08816dc13d947b29d3c82"
+    },
+    {
+      "path": "src-tauri/src/media_hls_start_tests.rs",
+      "git_blob": "d26f164bd010101b2390d99d67c11137f0596c2c",
+      "working_tree_sha256": "9e6ef4d8e8fc0d8fb5a506a8073ea7109bfb62ccf79815cd3d1a843b6e924981"
+    },
+    {
+      "path": "src-tauri/src/media_norange_tests.rs",
+      "git_blob": "ba2ff22b274adc20e7ad7e0fc67a7ca11856ffbc",
+      "working_tree_sha256": "9230d9069ef9dac0aa95866c5cd72e890d34771f38fb4d7dbc284126d12044b6"
+    },
+    {
+      "path": "src-tauri/src/media_not_audio_tests.rs",
+      "git_blob": "0b835235a3bbaf8141be8e27b194a9d15c7ff051",
+      "working_tree_sha256": "b94a30fc7d204beb3a88d5b78db44b4936476222881e57a851714f4736800aed"
+    },
+    {
+      "path": "src-tauri/src/media_probe_tests.rs",
+      "git_blob": "c72f24b7b51bf9e5b1955a34bcfa8ed29e761d51",
+      "working_tree_sha256": "d61962c02d227a4a3c5831e68909ab0f1b6e5f97c4f708ea726b297085de36cc"
+    },
+    {
+      "path": "src-tauri/src/media_ranged_tests.rs",
+      "git_blob": "c9905a5e505bd2ff0132c85dbbee32c8f4fd7a1c",
+      "working_tree_sha256": "8302f0242aba3846a7697efad473311119e8172d62503839a6b8db9dba10d3f7"
+    },
+    {
+      "path": "src-tauri/src/media_tracks_tests.rs",
+      "git_blob": "1a742c16e6c82272ec183978a9af1561f3fcdfb0",
+      "working_tree_sha256": "9dd488574c62d549fd9c7636fce03a1c7ef46497db9393a09af7576e9d8c10ee"
+    },
+    {
+      "path": "src-tauri/src/media_webm_drm_tests.rs",
+      "git_blob": "5c784efbe27a9ee9ff87e37fa8e349d71dca9373",
+      "working_tree_sha256": "1abab68474be04e0073bac548cc8f81462d803d1e5d99049f00d08667cd12bff"
+    },
+    {
+      "path": "src-tauri/src/pipeline.rs",
+      "git_blob": "94e9fa220d2a7d12f0b3530c461fec6ba69e44ac",
+      "working_tree_sha256": "5733c20e80f7e43eff46f37ea7426ee14cac1fe30f0397fed017bb4c4d7590a8"
+    },
+    {
+      "path": "src-tauri/src/pipeline_audio_tests.rs",
+      "git_blob": "b443538c1c0f5a8728ff8696abdd8e4cadba4d47",
+      "working_tree_sha256": "7783add2ce045d50aaa6dd5e20537018db1fdedb600e5c1ee76efe87be3fcd16"
+    },
+    {
+      "path": "src-tauri/src/pipeline_boundary_tests.rs",
+      "git_blob": "b410a0d6f78177b6cddfd60dbb0d30782d30bff2",
+      "working_tree_sha256": "b2f77980a15d0d915dedd04e82dd3c486f0d78f629330e34f774d1be8d98a196"
+    },
+    {
+      "path": "src-tauri/src/pipeline_cost_tests.rs",
+      "git_blob": "8b1c33c09338a8b665f64cad974264d482f1a710",
+      "working_tree_sha256": "b59365a74515897a360ac882febf2e28afc816526f9aceb903701e5add8affdc"
+    },
+    {
+      "path": "src-tauri/src/pipeline_download_tests.rs",
+      "git_blob": "b2a9e7c2e280cb9a60add33fd6580b4a82af5f2f",
+      "working_tree_sha256": "1f71d0648188708eb41213b61fd41b0bad5f40bdf3ccae2f45510984513198b0"
+    },
+    {
+      "path": "src-tauri/src/pipeline_glossary_tests.rs",
+      "git_blob": "921dc65fbea51f76660a7a000d5a1284107cf480",
+      "working_tree_sha256": "930888bde3010b23875f42451b5fe9da86047ecf22c05aa08fc6cc3e1d7e2ba5"
+    },
+    {
+      "path": "src-tauri/src/pipeline_translate_tests.rs",
+      "git_blob": "65fef4a0050b096a7de31e7971a1adaff132d160",
+      "working_tree_sha256": "91cd071f25ba86323c77c3eb3f32dc9a71f146874a04b5e918fd192c1c7f4170"
+    },
+    {
+      "path": "src-tauri/src/pipeline_worker_tests.rs",
+      "git_blob": "fc768d11007b23feacbbf30352f73616ce224928",
+      "working_tree_sha256": "096fd928ab04f10f6de2bae7d92fac58b8f99865d640b0cb672ab7606320a869"
+    },
+    {
+      "path": "src-tauri/src/platform.rs",
+      "git_blob": "f09ddbda30ae4d32bab8de38440229bcdd44c2a2",
+      "working_tree_sha256": "c494e87c0a6214123e4bc48c81316a4a83aec0c880a4c7e5fa658d1d31911d8a"
+    },
+    {
+      "path": "src-tauri/src/screens.rs",
+      "git_blob": "2e372bc13121f1b2999f7db83367ee4365288e2f",
+      "working_tree_sha256": "e3fcc7c1ef0029ec6d819329c5a8439a7126fdc21dc9d3bc8390358bf46649cf"
+    },
+    {
+      "path": "src-tauri/src/stitch.rs",
+      "git_blob": "2784a8041e951a2bb7e460297db5a9d1eea52841",
+      "working_tree_sha256": "d64fbeeb8a558b3a7784dd90d94b8c6c9cc7f4316d58484474f7eacb18c0f340"
+    },
+    {
+      "path": "src-tauri/src/stitch_tests.rs",
+      "git_blob": "f5b7fcda54fac9cabc638a921700a843a419e29c",
+      "working_tree_sha256": "6995be66b64f326740c40444c8664885cdb6ea91d0189f7abfb4f4d4a71f0c00"
+    },
+    {
+      "path": "src-tauri/src/store.rs",
+      "git_blob": "8b6c9659d5700e087c33f8ba8b52b8c4d6a0a5d5",
+      "working_tree_sha256": "0e9dc0c223e6532a6b043c5d945171b77208b14d091f97a4d0dc39d93d6bedb1"
+    },
+    {
+      "path": "src-tauri/src/store_wal_tests.rs",
+      "git_blob": "fdc29d14caa325f748ac62630bfc2ebf7fb3acba",
+      "working_tree_sha256": "23ad5aa31518cddd0795bf36fbc81254868ae9c3cddb1a2b86520e70160948ae"
+    },
+    {
+      "path": "src-tauri/src/sync.rs",
+      "git_blob": "95d9a06036f23e74128b94ffe5301e7444311a5f",
+      "working_tree_sha256": "f8982c71a520ff258b86e59eab9448ae5474e9bac97dd8584b739a70c28836c3"
+    },
+    {
+      "path": "src-tauri/src/sync_channel.rs",
+      "git_blob": "93b96c40be7f8959866cd2d23a2ef047b0647210",
+      "working_tree_sha256": "e276c2af7c45b6aecb2b1e13716e4f4643d086e51957c32f8658d52dc9357767"
+    },
+    {
+      "path": "src-tauri/src/sync_channel_tests.rs",
+      "git_blob": "1e60030c2d16b66063f5aa5b03306ebafb55b52f",
+      "working_tree_sha256": "04c6304da5d3991ea4d124e3a4b5a2560089d6173eaa8083a53d0bc410d0840e"
+    },
+    {
+      "path": "src-tauri/src/sync_cleanup.rs",
+      "git_blob": "2ed15940b8b896556e9bf628428014e3513ae1ea",
+      "working_tree_sha256": "96c0989cd3ac064022e323b3af29c8fd5e091e557af26008e3e7109a6507b89e"
+    },
+    {
+      "path": "src-tauri/src/sync_cleanup_tests.rs",
+      "git_blob": "3d3853fbfdca91c0436dec93408447913f829999",
+      "working_tree_sha256": "ed8d78d58d3888891a43b6179207a5bdae507d6495a3b17743b7bb79e1b4837c"
+    },
+    {
+      "path": "src-tauri/src/sync_discovery.rs",
+      "git_blob": "12047be6e260889a59a2425535b1feb7d0cb72ce",
+      "working_tree_sha256": "76b5762d4fa28ca0280c5e250e065cb9a16f444c1f485efb62379485fa947fce"
+    },
+    {
+      "path": "src-tauri/src/sync_discovery_tests.rs",
+      "git_blob": "74b66aa5a756bbbbbf8f99489fb9385c8bd21df8",
+      "working_tree_sha256": "7cfa77385b33099a9d72149af8d06afe248766ab691b0723b040f08dcfb14e3b"
+    },
+    {
+      "path": "src-tauri/src/sync_local.rs",
+      "git_blob": "451b32c79f0300a39b2f5b684c3247c1e6967b93",
+      "working_tree_sha256": "031fb8dbb7bb0e3e065c22d3f8cb6f7e4766a047ae1daad402c2dbeb2e38c4ac"
+    },
+    {
+      "path": "src-tauri/src/sync_runtime.rs",
+      "git_blob": "7de54335509c3b5dc9e5c70de74b38781adbfd91",
+      "working_tree_sha256": "58637f4d5913954f81b59607b3067253ebd22d9e579dcc912ead95e68835cb5f"
+    },
+    {
+      "path": "src-tauri/src/sync_runtime_tests.rs",
+      "git_blob": "35e0597ffcdd6d42d1137b7ac27aa709a1459faa",
+      "working_tree_sha256": "af26f7d9f0f05136ed5dc41a44288dc8eddf6caec6ef8706cbbd553aee3984c9"
+    },
+    {
+      "path": "src-tauri/src/sync_store.rs",
+      "git_blob": "bcca1e832b09cd92fa2110af94474b39c63633d8",
+      "working_tree_sha256": "dc4645719acd1a622efc15835a7276e55001636d8d9b3d5c15d40d96467ced97"
+    },
+    {
+      "path": "src-tauri/src/sync_store_tests.rs",
+      "git_blob": "768c136d2f5048827c1bdfb338da47ac9f7aa1a7",
+      "working_tree_sha256": "2bc7efcf807ef9f4193a0eee5ff6e11b25b81d3974af1105243cbb9d1f55b44e"
+    },
+    {
+      "path": "src-tauri/src/sync_tests.rs",
+      "git_blob": "77af5049b5fb635dc33e5e1ad5cd1537b8ef9e57",
+      "working_tree_sha256": "5468dc22464406c11e19b0b42eadeb9f8e665d57a680bbb7adaaee64c9bf76eb"
+    },
+    {
+      "path": "src-tauri/src/sync_tls.rs",
+      "git_blob": "9bfa218eebedc5c9ee2f38617e159e46eb91696f",
+      "working_tree_sha256": "71a80715eddeee3e5caa2c42a895dbd9c4d9adcfd2418c07da121e38351861f8"
+    },
+    {
+      "path": "src-tauri/src/sync_tls_tests.rs",
+      "git_blob": "da97c36ecebc98d9a34aa15f192bf35bbe4849bd",
+      "working_tree_sha256": "b1b98cb747f98471b1b3126f0b1f16a139002ac2e3c11bd33f2102dc5295350d"
+    },
+    {
+      "path": "src-tauri/src/updates.rs",
+      "git_blob": "5aea5946e1582c0f7bf075d483e351ae9cbae13d",
+      "working_tree_sha256": "3e4782b8766f4caa19df47ca11e837488ffc70dfca4ab373e1aa8f6d7ecec66a"
+    },
+    {
+      "path": "src-tauri/src/updates_tests.rs",
+      "git_blob": "1f7d4b20fddbd00f1bde1f764a18f5e3cb68c6f4",
+      "working_tree_sha256": "ff37dbb666ead849c6507111ba8566df4900700fdc0fa3c4b347003c74ebdeaf"
+    },
+    {
+      "path": "src-tauri/src/voice.rs",
+      "git_blob": "df7147e645aaf9914aed6a1987142529288178a2",
+      "working_tree_sha256": "a3b717415b879488f65680c831c4e80d12748027552640e2d4c2bf0d3b6dea5c"
+    },
+    {
+      "path": "src-tauri/src/web.rs",
+      "git_blob": "93bc9c7731ef101c9a92b17f53195b74ca66e132",
+      "working_tree_sha256": "52a1edf6b1323d088e372a017ebab1b954add68960fa8967f6c961ee57d06ef0"
+    },
+    {
+      "path": "src-tauri/src/web_tests.rs",
+      "git_blob": "e1b2b2ed797935c2dd2b988c727b285979f584cb",
+      "working_tree_sha256": "0210571020f9261bfe25557f262e682323d513607b9a98d8821b4851b6bbcac3"
+    },
+    {
+      "path": "src-tauri/src/whisper.rs",
+      "git_blob": "ce38981ceceaddd1ec40526b44ef798a5a3cf4fb",
+      "working_tree_sha256": "e153168f9a14d1b385e69b4edb1b9f3b2a2b44989dd148d521319532480d4927"
+    },
+    {
+      "path": "src-tauri/src/whisper_tests.rs",
+      "git_blob": "bf235c6fb306ae172dffc5c748a0db1d94fe6698",
+      "working_tree_sha256": "e31fdcbe1012d5d7443d4bb4eea15acd1f5eea4cee08fb59138801eeeb2ad22b"
+    },
+    {
+      "path": "src-tauri/src/youtube.rs",
+      "git_blob": "9e0246e8ca8029254860094972d1b8c5ed4b415b",
+      "working_tree_sha256": "5194c9989f79f8c391d1945f6f5b73e4e7d6da8a71541941665c1e08cb44083b"
+    },
+    {
+      "path": "src-tauri/src/youtube_live_tests.rs",
+      "git_blob": "93d1d721d97ecf27d37befcde86bc6f224b7c93c",
+      "working_tree_sha256": "e3edfd76c6941a0e4f74463d42eeada01ace6493b296a7add35887cb5b3fe4e0"
+    },
+    {
+      "path": "src-tauri/tauri.conf.json",
+      "git_blob": "adf39fb29dcaf1a202f567a6bd2c77faffde4378",
+      "working_tree_sha256": "67c9ea6d1b06a0ad484a3102a991877f09544aee6b81c41ba3fcbf0b9d163340"
+    },
+    {
+      "path": "src-tauri/tauri.windows.conf.json",
+      "git_blob": "ec03fd31b7b4176aad76b3a1f49b76bc18be8ea4",
+      "working_tree_sha256": "c210336614d8664f86dd3dbeb97b982693881c60b17077d9452d2068d38e60c1"
+    },
+    {
+      "path": "src-tauri/tests/audio_clock_probe.rs",
+      "git_blob": "97d2ef2d4396132111e05d2a1592f48711e925a4",
+      "working_tree_sha256": "9fffcd635e6a632953304153bdc7efedd612b41b649687e177c081b6ef6bb994"
+    },
+    {
+      "path": "src-tauri/tests/decode_memory.rs",
+      "git_blob": "bc5a100c146dd2bb87f4e7ca8e4abee350fd8c76",
+      "working_tree_sha256": "4d9652e6b2e443b3a7d3e44e2a1204b4db5e84790c329ae64d8efec5053301b3"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/cut.mp4",
+      "git_blob": "27ce1c373b8ac0fb9fe920e8424c6403a3509dbc",
+      "working_tree_sha256": "086041504a18713b3cd67da94bfeacf199d2ad97ac5685d902f99f20e3883f71"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/gap.mp4",
+      "git_blob": "f7dbec24c95690bc479c20429eb458f337f828b1",
+      "working_tree_sha256": "f16a3ae1ac89faf65fa43c5bd3e825a08f6298315682e8a92273178618be1839"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/gap.ts",
+      "git_blob": "7cbe7b88be4554baff1fa83d76991d993b860e66",
+      "working_tree_sha256": "afcfb89735301053b0056f3ca7b5f18f93941d4929d3cda80acd55e865c22d4e"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/gap.webm",
+      "git_blob": "d75d4f1aa2f406ace57f8ca957cac911a6ec32e6",
+      "working_tree_sha256": "cf244f097454a32054e8dcd2bbcc9c7bcf6fe20cec092abd5ca49e1fd988079c"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/lead.mp4",
+      "git_blob": "99ad29c38736dd1a44e7f8d58710035dfe9e416b",
+      "working_tree_sha256": "8fe6b36c739f55683a14301cd17957ed7c4bfc7e24244cf642f770d97dbdf739"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/skip.mp4",
+      "git_blob": "2ab4cea1523b29a3674545e02f92ec33e68797d1",
+      "working_tree_sha256": "b84f4d1d6fda5dd968f0ae719062021c3712dab6fd22674f6bff468e401a26d4"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/tone.aac",
+      "git_blob": "0a84174859aee2dc8315628be4fc6e950d2ceca3",
+      "working_tree_sha256": "32221cd67e1d78bf454c11f3350fa99b9910bb45888726f84c236957dfc5b172"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/tone.m4a",
+      "git_blob": "b3bb48f1bf3c149d70c5bc1658a0e6c5201c29ab",
+      "working_tree_sha256": "f9e781a75bfa5403035a89c67e26fd4b441e156dd5c7350406faba183e6b88eb"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/tone.mp3",
+      "git_blob": "967f9169469dcb80f6bf87844955b1789c4ddb8f",
+      "working_tree_sha256": "be2985f7529be962ae99d67d0bc96fef0bd0a9546eb232f603925f65c1c3ec89"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/tone.ts",
+      "git_blob": "f8789f0c0ba0cf5ac77c52e4f869055c68d02c91",
+      "working_tree_sha256": "453970287400de510be6d630f55f0a3a0548f941c7cab436052132a592a7bfbc"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/audio/trim.mp4",
+      "git_blob": "09cda31fbb114b4ed04001496c6c83894d3bf688",
+      "working_tree_sha256": "f4d73008c81e9fd9bf62beceefc76e0e47364e6aafcf47f928799fc6855e2f88"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/auth/test-only-rsa.pem",
+      "git_blob": "b7d5b5a445723d63129d441e88571e5c340ae7f2",
+      "working_tree_sha256": "76e783a42dbffcd04767db5eeb4424b974a544deba64f4d9a937237ed81ed802"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_disc/index.m3u8",
+      "git_blob": "c3f91de0de16e058bf067f960b72e796f28643ba",
+      "working_tree_sha256": "6131c0af8745d247964f98c2ac883fd0e8440490ac97eb9ac8b96bb5f533db34"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_disc/seg0.ts",
+      "git_blob": "e279c80f89aace56baac81b8aa2e8d5653f8e3c3",
+      "working_tree_sha256": "06e32a66e5f7e45365abeefece394650ea5e7d47bc95a7ddbf73bc4895478872"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_disc/seg1.ts",
+      "git_blob": "aad58b5ea6cd5ebea206d68451b6a979303ff795",
+      "working_tree_sha256": "8e658ab4f48b814b03ac3566135a9d089ddc2d494c3ffd7bd07dda479d2d38ae"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_gap/init.mp4",
+      "git_blob": "4616f26bbbaa7d8a465f2fee92f574e7f01f1cfb",
+      "working_tree_sha256": "fdd9ce5c5358b5550fd858dd95f2fcc5c77cd7f6d0fc71b2579267ce8559cb35"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_gap/seg0.m4s",
+      "git_blob": "e8c082fe6468e22bef1eebaa82a8df0357d7af0a",
+      "working_tree_sha256": "9c9f00c123cbe4b006212dc0d38abc7818f80c58222b691a5cc955701ea138ef"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_gap/seg1-late.m4s",
+      "git_blob": "ae5f6a898815b3957cd1783d4b0fdcf3021d69fe",
+      "working_tree_sha256": "811f56acd0de9e847a7dd7b8d31f22bf56c0c2c60d1531c9a643b6028c3642f2"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_lead/init-tfdt.mp4",
+      "git_blob": "308a58d5b52aeff0b14c9b7fecd9aa3999ea7879",
+      "working_tree_sha256": "1020ce13f79555a2e968a4d959f9b667188cb9715a837ff917f57889162c57aa"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_lead/init.mp4",
+      "git_blob": "3b54b15d1547469fe47c3dd4be213219a9c82eab",
+      "working_tree_sha256": "b0effa8f9882c10b2d8121651910815cc1613189c64b8e7c043484cad571e114"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_lead/seg0-tfdt.m4s",
+      "git_blob": "a8f149df9e51adf50708cb090ab6305cb6647105",
+      "working_tree_sha256": "680a64d350f852a5d5497232759b36c739a0c51642d468748067d09fec28955e"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_lead/seg0.m4s",
+      "git_blob": "cb35816a206175af8a68d3d1976069d8a2ecff9a",
+      "working_tree_sha256": "ffae76ac8cff32e240e6c1d4680451a960c1ae6fbe04006db1248238ab59283e"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_maps/a0.m4s",
+      "git_blob": "ca812878832d59143abc6f3f8d3240d5941324ee",
+      "working_tree_sha256": "5ad076e8bdb7aa31eefe00f64ac6a1f284fc1e17ce3085b3150b66c61f7fb4b6"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_maps/b0.m4s",
+      "git_blob": "15ec43d2682070ec7e2c0ce91db72e1a45ce1d45",
+      "working_tree_sha256": "06aeed5c8499132fb1191330c80ce65a06fc1c396b2eb57c989b17a3e1a54f0c"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_maps/index.m3u8",
+      "git_blob": "bea2d73c9053bb038332a40ef569ef5591b77c78",
+      "working_tree_sha256": "94921a9f9f903f22be16e26ba5f34ed45c32cf5437c2eb3e6798b53a58494526"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_maps/init-a.mp4",
+      "git_blob": "5968cc06274ef907fcc03145231dcf6423947471",
+      "working_tree_sha256": "7f53634cd2782af23aa7e56221c17679243ece2ab7fd06873e4702aa5031be16"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/hls_maps/init-b.mp4",
+      "git_blob": "079fd9523e4fa5b6458a983acbc97c1cad16e02c",
+      "working_tree_sha256": "f135d351de5f8f1b26247fcfd9915ff5c45b47505eacc62a1db9fcefd6ee998f"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/library-video.mp4",
+      "git_blob": "b5b6be5fced256c9f27e2699e7997b78089885e9",
+      "working_tree_sha256": "b6862e4696213b23937b90b369d3f58a86c4b20ba41b10241e8fe97d97a62611"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/tracks/video-init.mp4",
+      "git_blob": "913d0d0f8afd2246d5e5c939ecee73f0f0e83c56",
+      "working_tree_sha256": "8fb817c963872082648f9976491d0b1ebc9aef68f3f11f8b5aca509f76052a05"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/tracks/video.mp4",
+      "git_blob": "c37a88a285c632b47d7318cb45efe7330f336224",
+      "working_tree_sha256": "f5c973817bdf376ab91730d96c224a0de6736a67baafebeaf39742085dbe084f"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/tracks/video.ts",
+      "git_blob": "e5259b88e4079e6da596dd0e88714831ab30867f",
+      "working_tree_sha256": "92e31d1706b45e432d4becb5351ab506a21f448267b33e7836d1b3b609d3e726"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/tracks/video.webm",
+      "git_blob": "8c5203ee074b5aedce42dc3d613fed5735c6854c",
+      "working_tree_sha256": "28f28169ffb5fdfd44589ca729e713690a8f3584de03d1cdb171570140f3d8b5"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/tracks/video0.m4s",
+      "git_blob": "6a7fb00a125a2c4a109240053867881a09b54e18",
+      "working_tree_sha256": "7fdcf43620699b1170911d4896acb258d62aa59790098fdcd8fe5011f855b424"
+    },
+    {
+      "path": "src-tauri/tests/fixtures/tracks/with-audio.webm",
+      "git_blob": "bddea805db074ea7ed101b8a44f724ca4f186e6a",
+      "working_tree_sha256": "f8d52b896b1963172c91a4e9194d58e64c94b23547bd617ff71403a97bb512a6"
+    },
+    {
+      "path": "src-tauri/tests/whisper_model.rs",
+      "git_blob": "938616fef91f77e54907f7a934fcb01f297608b2",
+      "working_tree_sha256": "9ed11e0d7006756b3006bfb9d3baf92b0c61d010642d9c0c7c7ba05a8b7c3360"
+    },
+    {
+      "path": "src-tauri/windows/vulkan-1.dll",
+      "git_blob": "7e96ea8ca6fda0dd4c4f50a335b96ec124484152",
+      "working_tree_sha256": "f4740173f8706ee968cbf5611246877b55ce9ec1027bccd6aa3a632154378a5b"
+    },
+    {
+      "path": "src-tauri/windows/vulkan-loader-LICENSE.txt",
+      "git_blob": "6599e310a4c90160e93b1f260fa33df4d1424a86",
+      "working_tree_sha256": "43c0a37e6a0fa7ff3c843b3ec5a4fac84b712558ddac103fbd4c1649662a9ece"
+    },
+    {
+      "path": "src-tauri/windows/vulkan-loader-cJSON-NOTICE.txt",
+      "git_blob": "9ceb99b415fc47a8d6731f026d3dc0b4f8587640",
+      "working_tree_sha256": "4c09f8a9764ec57753e602acf382dfbbcc5391346f5237067ad4ac4a899cd40d"
+    },
+    {
+      "path": "src/overlay/geometry.ts",
+      "git_blob": "cf9993c0f43e098a24b4b1b772c8163453522680",
+      "working_tree_sha256": "dd20b30dd46d0990a154bc1ae513ce8e4f5cf9a9944afdba40891ff634db1383"
+    },
+    {
+      "path": "src/overlay/index.ts",
+      "git_blob": "fac3b252e5b15492828604f762ab4f5a0108553e",
+      "working_tree_sha256": "f038bc700a9f7edeaac73546913ab5c0339fbab5103dbedbeef54b5cd85e0ae3"
+    },
+    {
+      "path": "src/overlay/inject.ts",
+      "git_blob": "17fe20b1ee6cec3860d3c35a10092bb5a564ebd6",
+      "working_tree_sha256": "93f0e66ce10a5e18791c95080bf993771a018d4be43f14065403e5eaf024ac58"
+    },
+    {
+      "path": "src/overlay/page.ts",
+      "git_blob": "28e95b76e9f25748a88223a7638bbc3a0fe5f1a3",
+      "working_tree_sha256": "58ae0ad9072a74e8bd22bbc584ec62ead8a00d1cefe81d40e2f131f523f63d12"
+    },
+    {
+      "path": "src/overlay/playback.ts",
+      "git_blob": "12b15b313e8ba734e12fef1a4930c1d52cf36b85",
+      "working_tree_sha256": "8d33348f8d61d07c3a6ac933c1ac4c7058e189437dad526275d675a3ccd8114e"
+    },
+    {
+      "path": "src/overlay/signin.ts",
+      "git_blob": "e921ef11654df6269eb3d517d1a47a39908d4774",
+      "working_tree_sha256": "0f35bfa3c2cf2d646429d61077b5e55ae41b975bd38d1be5df757d0b35dce6ab"
+    },
+    {
+      "path": "src/ui/App.svelte",
+      "git_blob": "04b2fa7dfc0272b2b224017544e4618f53319449",
+      "working_tree_sha256": "7d8d704459e13dd4d32e0cd18650ed18657467f6496662f9f357aa480db79149"
+    },
+    {
+      "path": "src/ui/GoogleAccount.svelte",
+      "git_blob": "713ac070171f61df9c736ab23db10ed152b94153",
+      "working_tree_sha256": "eecb7449450bd2d5ed3e4fae32f15fca415fc591246342119ab400f123d70fce"
+    },
+    {
+      "path": "src/ui/Library.svelte",
+      "git_blob": "477f8843f7adb32d2804ba425b55b6c5ff0a76f6",
+      "working_tree_sha256": "950133a975ab4e7d5198f971193ea39bdb1f2760dd556c314ab0040c107a6b36"
+    },
+    {
+      "path": "src/ui/Link.svelte",
+      "git_blob": "b9e56f4c0673bc9270e8adc2bf5e51c5f3e4d7fa",
+      "working_tree_sha256": "f4ae8ac5612ab984547b7ed673f84df12589a628a24c182359c207ec66d723f9"
+    },
+    {
+      "path": "src/ui/Nav.svelte",
+      "git_blob": "32025ad882eeb9f545a04841c5fa22f1289f0b36",
+      "working_tree_sha256": "31bc621b339aef44a8438665cc6bc34c29b4fbbb150966e85436bd32de995a8c"
+    },
+    {
+      "path": "src/ui/Overlay.svelte",
+      "git_blob": "62143301af97c67a2e5b6341eaa7d31e6377508b",
+      "working_tree_sha256": "5cb144c954da7f4239b6493a76792059a683ce8d349c3140a7dd84a499a82c70"
+    },
+    {
+      "path": "src/ui/Preferences.svelte",
+      "git_blob": "f6ff31e0aca9bd2238efb23fff740de15b834b12",
+      "working_tree_sha256": "e92906f3b758b820aff886ffa6204d4772926fbbfef3e60ed6fd3585dce3cc8a"
+    },
+    {
+      "path": "src/ui/Stage.svelte",
+      "git_blob": "1d3b8f7a6f420bf7d18404e7ff6d1a77366387a3",
+      "working_tree_sha256": "e8fab5543da6682ad9ffc96f7ac5c68bed8ece2c4f20cbd5d9db593f2688ab92"
+    },
+    {
+      "path": "src/ui/Thumb.svelte",
+      "git_blob": "a55d7bc057c7a4759e4b8e4107500204b6c5a213",
+      "working_tree_sha256": "1f42bcf5ed6a98dae84522e6ea50c652c924ce8ae82f46888e45d17840a4f2a9"
+    },
+    {
+      "path": "src/ui/Updates.svelte",
+      "git_blob": "7c9987c0b9b23d655f5e1c7055ed79dd9618f038",
+      "working_tree_sha256": "adc82cec1736c2790fa48e95bcee69c1d90315de2afea85222a4cdb53e30480e"
+    },
+    {
+      "path": "src/ui/Watch.svelte",
+      "git_blob": "beabf082f3ee03d4e41b77b6d971199b609e5f25",
+      "working_tree_sha256": "9941c227a6e214ea80fde0a3b149eb7193aee1ccc304119c44eae9f77b090184"
+    },
+    {
+      "path": "src/ui/api.ts",
+      "git_blob": "a1cbac720f0a530ef173461bd14049bab5400a01",
+      "working_tree_sha256": "1ac3578e55bc802bc555bff7eaad059d6eca966bfd5fcfe50a6d4206fedc316d"
+    },
+    {
+      "path": "src/ui/app.css",
+      "git_blob": "3b12cec4934898776e3c8e18f1906e94a1adb477",
+      "working_tree_sha256": "92054d3a602e1225b04936c13b6830890a5ec8bd6e449dfb0c3de988a656efd4"
+    },
+    {
+      "path": "src/ui/main.ts",
+      "git_blob": "547406b971aa213d1d0480b1de05b9a3a3c38e5d",
+      "working_tree_sha256": "fed54166da4068bc35d009af82fd93262754783f6626f2fb2cdee7ba4dfb975d"
+    },
+    {
+      "path": "src/ui/router.svelte.ts",
+      "git_blob": "10fe1045c0f2a2883c9f5e6d7ceef57730703823",
+      "working_tree_sha256": "831904ba2b5563317aca610e5b668740b1270a8e89fd247e8066f603fabadea6"
+    },
+    {
+      "path": "vite.config.ts",
+      "git_blob": "68c8020a02cf7b245e1c107865a43ccf83e39ab1",
+      "working_tree_sha256": "af0a9b4c43c042e6128231b47c41cfc6219af311a7f8f5156ec3956ce27e8333"
+    },
+    {
+      "path": "vite.overlay.config.ts",
+      "git_blob": "d81ed740eaec3f80d99739ee6c9de47f1653e027",
+      "working_tree_sha256": "e17ba3f3114f79de925b656cb3d7056cd4a46900985678d18f49e08a5fd0e5b4"
+    },
+    {
+      "path": "vitest.config.ts",
+      "git_blob": "dadf10a9f608ab771ab6b7f77295802d112cf7ec",
+      "working_tree_sha256": "b390b3334ded27729de8a372b2722d2b3ed3268a1389dc3f6f06cc339afd1af9"
+    },
+    {
+      "path": "vitest.ui.config.ts",
+      "git_blob": "ddab02f7244ff248ddda23770a8be57df2d8d1cb",
+      "working_tree_sha256": "2bc6a129f778599e1a42903cb8f34323c704c1580762f30b0ae02cd6dc0310d3"
+    }
+  ],
+  "binaries": {
+    "host": {
+      "name": "vto-web.exe",
+      "sha256": "52302e170a83103a41be1e8054d1588136e1b72d6ff8e045706f0ffc6862c18d"
+    },
+    "repair": {
+      "name": "repair_saved_music.exe",
+      "sha256": "fc4b676ec35df1fc2f25afa95fca7b194256a25ec2a28c524a0cf6113a535cd3"
+    }
+  },
+  "identities": [
+    {
+      "head": "eead0b9989de21c25d683d5260352134d264fb0c",
+      "pid": 27684
+    },
+    {
+      "head": "eead0b9989de21c25d683d5260352134d264fb0c",
+      "pid": 4588
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "route": "/library/data",
+      "body": {},
+      "status": 200,
+      "response": {
+        "target": {
+          "video_key": "QDX-1M5Nj7s",
+          "saved": true,
+          "versions": [
+            {
+              "id": "t/QDX-1M5Nj7s/dae8e80e2206305ffe0d3e679af5df6474dcfa75081c8045d1ab6a6cda4d8973",
+              "selected": true
+            }
+          ]
+        },
+        "playlist_count": 3,
+        "playlists_sha256": "5420cb52f10937de12e677fa6f68b6398efc17ce326a7f897d93811ca3088a56"
+      }
+    },
+    {
+      "method": "GET",
+      "route": "/videos/QDX-1M5Nj7s/subtitles",
+      "body": {},
+      "status": 200,
+      "response": {
+        "cue_count": 755,
+        "cues_sha256": "57f48fe7a6f45df6e33aab0c49fc2d7ae19d8719d65cf7d0bfdf18cdafee35d7",
+        "first_cues": [
+          {
+            "seq": 0,
+            "start_ms": 1180,
+            "end_ms": 5800,
+            "translation_sha256": "f87a34e41f3820165e92cfa9d85a77a7421a1595d560d9047580df60463740d3"
+          },
+          {
+            "seq": 1,
+            "start_ms": 9100,
+            "end_ms": 18100,
+            "translation_sha256": "60d8e3f0b737f83c6abd74c1392b00a36246c217a7ab66ba1a080fcb1631db89"
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "route": "/library/data",
+      "body": {},
+      "status": 200,
+      "response": {
+        "target": {
+          "video_key": "QDX-1M5Nj7s",
+          "saved": true,
+          "versions": [
+            {
+              "id": "t/QDX-1M5Nj7s/b46450964281773a3b439fbe164cb5ac0b9aa0fcc8dc77c13c6a240554de8b27",
+              "selected": true
+            },
+            {
+              "id": "t/QDX-1M5Nj7s/dae8e80e2206305ffe0d3e679af5df6474dcfa75081c8045d1ab6a6cda4d8973",
+              "selected": false
+            }
+          ]
+        },
+        "playlist_count": 3,
+        "playlists_sha256": "5420cb52f10937de12e677fa6f68b6398efc17ce326a7f897d93811ca3088a56"
+      }
+    },
+    {
+      "method": "GET",
+      "route": "/videos/QDX-1M5Nj7s/subtitles",
+      "body": {},
+      "status": 200,
+      "response": {
+        "cue_count": 754,
+        "cues_sha256": "cc70d2ed5b66bb1f710b28c2cb11962ba787c53930f391b9a7ec25b0619e89a5",
+        "first_cues": [
+          {
+            "seq": 0,
+            "start_ms": 9100,
+            "end_ms": 18100,
+            "translation_sha256": "60d8e3f0b737f83c6abd74c1392b00a36246c217a7ab66ba1a080fcb1631db89"
+          },
+          {
+            "seq": 1,
+            "start_ms": 18100,
+            "end_ms": 29980,
+            "translation_sha256": "d3fd613595e0723163c9d781e530dd5c50fba14afef8aec48c45ab540b6d392a"
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "route": "/jobs?page_url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DQDX-1M5Nj7s",
+      "body": {
+        "page_url": "https://www.youtube.com/watch?v=QDX-1M5Nj7s"
+      },
+      "status": 200,
+      "response": {
+        "cost_krw": 276.2938750000004,
+        "stage": "ready"
+      }
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "action": "select_translation",
+        "video_key": "QDX-1M5Nj7s",
+        "translation_id": "t/QDX-1M5Nj7s/dae8e80e2206305ffe0d3e679af5df6474dcfa75081c8045d1ab6a6cda4d8973"
+      },
+      "status": 200,
+      "response": {
+        "changed": true
+      }
+    },
+    {
+      "method": "GET",
+      "route": "/library/data",
+      "body": {},
+      "status": 200,
+      "response": {
+        "target": {
+          "video_key": "QDX-1M5Nj7s",
+          "saved": true,
+          "versions": [
+            {
+              "id": "t/QDX-1M5Nj7s/dae8e80e2206305ffe0d3e679af5df6474dcfa75081c8045d1ab6a6cda4d8973",
+              "selected": true
+            },
+            {
+              "id": "t/QDX-1M5Nj7s/b46450964281773a3b439fbe164cb5ac0b9aa0fcc8dc77c13c6a240554de8b27",
+              "selected": false
+            }
+          ]
+        },
+        "playlist_count": 3,
+        "playlists_sha256": "5420cb52f10937de12e677fa6f68b6398efc17ce326a7f897d93811ca3088a56"
+      }
+    },
+    {
+      "method": "GET",
+      "route": "/videos/QDX-1M5Nj7s/subtitles",
+      "body": {},
+      "status": 200,
+      "response": {
+        "cue_count": 755,
+        "cues_sha256": "57f48fe7a6f45df6e33aab0c49fc2d7ae19d8719d65cf7d0bfdf18cdafee35d7",
+        "first_cues": [
+          {
+            "seq": 0,
+            "start_ms": 1180,
+            "end_ms": 5800,
+            "translation_sha256": "f87a34e41f3820165e92cfa9d85a77a7421a1595d560d9047580df60463740d3"
+          },
+          {
+            "seq": 1,
+            "start_ms": 9100,
+            "end_ms": 18100,
+            "translation_sha256": "60d8e3f0b737f83c6abd74c1392b00a36246c217a7ab66ba1a080fcb1631db89"
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "route": "/library/data",
+      "body": {
+        "action": "select_translation",
+        "video_key": "QDX-1M5Nj7s",
+        "translation_id": "t/QDX-1M5Nj7s/b46450964281773a3b439fbe164cb5ac0b9aa0fcc8dc77c13c6a240554de8b27"
+      },
+      "status": 200,
+      "response": {
+        "changed": true
+      }
+    },
+    {
+      "method": "GET",
+      "route": "/library/data",
+      "body": {},
+      "status": 200,
+      "response": {
+        "target": {
+          "video_key": "QDX-1M5Nj7s",
+          "saved": true,
+          "versions": [
+            {
+              "id": "t/QDX-1M5Nj7s/b46450964281773a3b439fbe164cb5ac0b9aa0fcc8dc77c13c6a240554de8b27",
+              "selected": true
+            },
+            {
+              "id": "t/QDX-1M5Nj7s/dae8e80e2206305ffe0d3e679af5df6474dcfa75081c8045d1ab6a6cda4d8973",
+              "selected": false
+            }
+          ]
+        },
+        "playlist_count": 3,
+        "playlists_sha256": "5420cb52f10937de12e677fa6f68b6398efc17ce326a7f897d93811ca3088a56"
+      }
+    },
+    {
+      "method": "GET",
+      "route": "/videos/QDX-1M5Nj7s/subtitles",
+      "body": {},
+      "status": 200,
+      "response": {
+        "cue_count": 754,
+        "cues_sha256": "cc70d2ed5b66bb1f710b28c2cb11962ba787c53930f391b9a7ec25b0619e89a5",
+        "first_cues": [
+          {
+            "seq": 0,
+            "start_ms": 9100,
+            "end_ms": 18100,
+            "translation_sha256": "60d8e3f0b737f83c6abd74c1392b00a36246c217a7ab66ba1a080fcb1631db89"
+          },
+          {
+            "seq": 1,
+            "start_ms": 18100,
+            "end_ms": 29980,
+            "translation_sha256": "d3fd613595e0723163c9d781e530dd5c50fba14afef8aec48c45ab540b6d392a"
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "route": "/videos/QDX-1M5Nj7s/subtitles",
+      "body": {},
+      "status": 200,
+      "response": {
+        "cue_count": 754,
+        "cues_sha256": "cc70d2ed5b66bb1f710b28c2cb11962ba787c53930f391b9a7ec25b0619e89a5",
+        "first_cues": [
+          {
+            "seq": 0,
+            "start_ms": 9100,
+            "end_ms": 18100,
+            "translation_sha256": "60d8e3f0b737f83c6abd74c1392b00a36246c217a7ab66ba1a080fcb1631db89"
+          },
+          {
+            "seq": 1,
+            "start_ms": 18100,
+            "end_ms": 29980,
+            "translation_sha256": "d3fd613595e0723163c9d781e530dd5c50fba14afef8aec48c45ab540b6d392a"
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "route": "/library/data",
+      "body": {},
+      "status": 200,
+      "response": {
+        "target": {
+          "video_key": "QDX-1M5Nj7s",
+          "saved": true,
+          "versions": [
+            {
+              "id": "t/QDX-1M5Nj7s/b46450964281773a3b439fbe164cb5ac0b9aa0fcc8dc77c13c6a240554de8b27",
+              "selected": true
+            },
+            {
+              "id": "t/QDX-1M5Nj7s/dae8e80e2206305ffe0d3e679af5df6474dcfa75081c8045d1ab6a6cda4d8973",
+              "selected": false
+            }
+          ]
+        },
+        "playlist_count": 3,
+        "playlists_sha256": "5420cb52f10937de12e677fa6f68b6398efc17ce326a7f897d93811ca3088a56"
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "name": "HTTP host process ownership",
+      "expected": 27684,
+      "observed": 27684
+    },
+    {
+      "name": "HTTP host source revision",
+      "expected": "eead0b9989de21c25d683d5260352134d264fb0c",
+      "observed": "eead0b9989de21c25d683d5260352134d264fb0c"
+    },
+    {
+      "name": "successful local request",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "successful local request",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "original cue count",
+      "expected": 755,
+      "observed": 755
+    },
+    {
+      "name": "reported music interval",
+      "expected": [
+        1180,
+        5800
+      ],
+      "observed": [
+        1180,
+        5800
+      ]
+    },
+    {
+      "name": "repair process exit",
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "name": "successful local request",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "successful local request",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "source and Korean cue bytes retained",
+      "expected": "69198de572931ee591dbf6ca0a101555635dc1c273b27916ba5f536277f973d9",
+      "observed": "69198de572931ee591dbf6ca0a101555635dc1c273b27916ba5f536277f973d9"
+    },
+    {
+      "name": "other_cues_sha256",
+      "expected": "e6e9473467bba7af9967649c4f5f5f63489081ad196630b3ab6044644b1651b0",
+      "observed": "e6e9473467bba7af9967649c4f5f5f63489081ad196630b3ab6044644b1651b0"
+    },
+    {
+      "name": "playback_sha256",
+      "expected": "b7104c868faeb4fee075dfe86e3d4522f1d34fa96a6317151023b1ef86a07d41",
+      "observed": "b7104c868faeb4fee075dfe86e3d4522f1d34fa96a6317151023b1ef86a07d41"
+    },
+    {
+      "name": "playlists_sha256",
+      "expected": "71442fcfc50e01e36d5bc16e7b67c0824a9d92c8a7e7a89207a82972363d3e71",
+      "observed": "71442fcfc50e01e36d5bc16e7b67c0824a9d92c8a7e7a89207a82972363d3e71"
+    },
+    {
+      "name": "memberships_sha256",
+      "expected": "081824c0d7434db30e59158acc368931f83595b6ae64e09e5d62eb81d2bddb39",
+      "observed": "081824c0d7434db30e59158acc368931f83595b6ae64e09e5d62eb81d2bddb39"
+    },
+    {
+      "name": "previous saved response bytes retained",
+      "expected": {
+        "identity": "t/QDX-1M5Nj7s/dae8e80e2206305ffe0d3e679af5df6474dcfa75081c8045d1ab6a6cda4d8973",
+        "body_sha256": "7338501fdbdbf072ff7aa7da6cf6f4b087570b53af699dda8e9337f6dff451a1"
+      },
+      "observed": {
+        "identity": "t/QDX-1M5Nj7s/dae8e80e2206305ffe0d3e679af5df6474dcfa75081c8045d1ab6a6cda4d8973",
+        "body_sha256": "7338501fdbdbf072ff7aa7da6cf6f4b087570b53af699dda8e9337f6dff451a1"
+      }
+    },
+    {
+      "name": "remaining speech and timing bytes",
+      "expected": "cc70d2ed5b66bb1f710b28c2cb11962ba787c53930f391b9a7ec25b0619e89a5",
+      "observed": "cc70d2ed5b66bb1f710b28c2cb11962ba787c53930f391b9a7ec25b0619e89a5"
+    },
+    {
+      "name": "repaired cue count",
+      "expected": 754,
+      "observed": 754
+    },
+    {
+      "name": "first speech source time",
+      "expected": 9100,
+      "observed": 9100
+    },
+    {
+      "name": "retained saved versions",
+      "expected": 2,
+      "observed": 2
+    },
+    {
+      "name": "previous version remains available",
+      "expected": true,
+      "observed": true
+    },
+    {
+      "name": "playlists unchanged",
+      "expected": "5420cb52f10937de12e677fa6f68b6398efc17ce326a7f897d93811ca3088a56",
+      "observed": "5420cb52f10937de12e677fa6f68b6398efc17ce326a7f897d93811ca3088a56"
+    },
+    {
+      "name": "unrelated saved responses unchanged",
+      "expected": "b8872e8126725c00d05d3cf4c41eed1c3b20600de8041f6d5394c1df81033f80",
+      "observed": "b8872e8126725c00d05d3cf4c41eed1c3b20600de8041f6d5394c1df81033f80"
+    },
+    {
+      "name": "unrelated saved response count",
+      "expected": 4,
+      "observed": 4
+    },
+    {
+      "name": "successful local request",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "cumulative cost retained",
+      "expected": 276.2938750000004,
+      "observed": 276.2938750000004
+    },
+    {
+      "name": "successful local request",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "successful local request",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "explicit saved-version selection",
+      "expected": "t/QDX-1M5Nj7s/dae8e80e2206305ffe0d3e679af5df6474dcfa75081c8045d1ab6a6cda4d8973",
+      "observed": "t/QDX-1M5Nj7s/dae8e80e2206305ffe0d3e679af5df6474dcfa75081c8045d1ab6a6cda4d8973"
+    },
+    {
+      "name": "successful local request",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "selected response cue count",
+      "expected": 755,
+      "observed": 755
+    },
+    {
+      "name": "successful local request",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "successful local request",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "explicit saved-version selection",
+      "expected": "t/QDX-1M5Nj7s/b46450964281773a3b439fbe164cb5ac0b9aa0fcc8dc77c13c6a240554de8b27",
+      "observed": "t/QDX-1M5Nj7s/b46450964281773a3b439fbe164cb5ac0b9aa0fcc8dc77c13c6a240554de8b27"
+    },
+    {
+      "name": "successful local request",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "selected response cue count",
+      "expected": 754,
+      "observed": 754
+    },
+    {
+      "name": "HTTP host process ownership",
+      "expected": 4588,
+      "observed": 4588
+    },
+    {
+      "name": "HTTP host source revision",
+      "expected": "eead0b9989de21c25d683d5260352134d264fb0c",
+      "observed": "eead0b9989de21c25d683d5260352134d264fb0c"
+    },
+    {
+      "name": "successful local request",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "restart preserves repaired subtitles",
+      "expected": "d0f9305ce1eff9807db045dc253520484110dcb4c554b76bc4b261b3ae2eacfe",
+      "observed": "d0f9305ce1eff9807db045dc253520484110dcb4c554b76bc4b261b3ae2eacfe"
+    },
+    {
+      "name": "successful local request",
+      "expected": 200,
+      "observed": 200
+    },
+    {
+      "name": "restart preserves repaired selection",
+      "expected": "t/QDX-1M5Nj7s/b46450964281773a3b439fbe164cb5ac0b9aa0fcc8dc77c13c6a240554de8b27",
+      "observed": "t/QDX-1M5Nj7s/b46450964281773a3b439fbe164cb5ac0b9aa0fcc8dc77c13c6a240554de8b27"
+    }
+  ],
+  "store_observations": {
+    "before": {
+      "cue_count": 755,
+      "source_and_translation_sha256": "35cba5cd7da865f8f63d49c2d857e021d7c1121d8a3ca2fd4429fc50263680c9",
+      "without_first_cue_sha256": "69198de572931ee591dbf6ca0a101555635dc1c273b27916ba5f536277f973d9",
+      "other_cues_sha256": "e6e9473467bba7af9967649c4f5f5f63489081ad196630b3ab6044644b1651b0",
+      "playback_sha256": "b7104c868faeb4fee075dfe86e3d4522f1d34fa96a6317151023b1ef86a07d41",
+      "playlists_sha256": "71442fcfc50e01e36d5bc16e7b67c0824a9d92c8a7e7a89207a82972363d3e71",
+      "memberships_sha256": "081824c0d7434db30e59158acc368931f83595b6ae64e09e5d62eb81d2bddb39",
+      "versions": [
+        {
+          "identity": "t/QDX-1M5Nj7s/dae8e80e2206305ffe0d3e679af5df6474dcfa75081c8045d1ab6a6cda4d8973",
+          "body_sha256": "7338501fdbdbf072ff7aa7da6cf6f4b087570b53af699dda8e9337f6dff451a1"
+        }
+      ]
+    },
+    "after": {
+      "cue_count": 754,
+      "source_and_translation_sha256": "69198de572931ee591dbf6ca0a101555635dc1c273b27916ba5f536277f973d9",
+      "without_first_cue_sha256": "61aa01702ba2c72146b72f9bf4769dfea248c9f2f6923454d2ed796a5b3d8175",
+      "other_cues_sha256": "e6e9473467bba7af9967649c4f5f5f63489081ad196630b3ab6044644b1651b0",
+      "playback_sha256": "b7104c868faeb4fee075dfe86e3d4522f1d34fa96a6317151023b1ef86a07d41",
+      "playlists_sha256": "71442fcfc50e01e36d5bc16e7b67c0824a9d92c8a7e7a89207a82972363d3e71",
+      "memberships_sha256": "081824c0d7434db30e59158acc368931f83595b6ae64e09e5d62eb81d2bddb39",
+      "versions": [
+        {
+          "identity": "t/QDX-1M5Nj7s/b46450964281773a3b439fbe164cb5ac0b9aa0fcc8dc77c13c6a240554de8b27",
+          "body_sha256": "11961dc4ffa42862da949f8b9f9d882178f6b9cf2a3a256da24d267051aa12f4"
+        },
+        {
+          "identity": "t/QDX-1M5Nj7s/dae8e80e2206305ffe0d3e679af5df6474dcfa75081c8045d1ab6a6cda4d8973",
+          "body_sha256": "7338501fdbdbf072ff7aa7da6cf6f4b087570b53af699dda8e9337f6dff451a1"
+        }
+      ]
+    }
+  },
+  "limits": {
+    "disposable_copy": true,
+    "production_modified": false,
+    "translation_requests": 0,
+    "native_ui_actions": false,
+    "playback_observation": "earlier owner report; no new playback claim"
+  }
+}

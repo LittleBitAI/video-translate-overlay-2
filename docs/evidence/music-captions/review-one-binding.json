@@ -1,0 +1,50 @@
+{
+  "runtime_source_commit": "eead0b9989de21c25d683d5260352134d264fb0c",
+  "current_runtime_source_differences": [
+    "src-tauri/src/whisper_tests.rs",
+    "src-tauri/tests/whisper_model.rs"
+  ],
+  "difference_scope": "Only opt-in test strengthening and a test prerequisite comment; native production and UI sources are identical. Runtime source IDs in both packets are exact, not a claim that the final evidence-only commit was rebuilt.",
+  "focused_source_hash_format": "SHA-256 of UTF-8 text with LF; independent of Windows working-copy CRLF",
+  "focused_sources": {
+    "src-tauri/src/whisper.rs": "e153168f9a14d1b385e69b4edb1b9f3b2a2b44989dd148d521319532480d4927",
+    "src-tauri/src/voice.rs": "a3b717415b879488f65680c831c4e80d12748027552640e2d4c2bf0d3b6dea5c",
+    "src-tauri/src/library_store.rs": "e1f2fe86504dd664206d8bb56ab671ee66ff41e381e029800f9d32189d12ef9f",
+    "src-tauri/src/sync_local.rs": "031fb8dbb7bb0e3e065c22d3f8cb6f7e4766a047ae1daad402c2dbeb2e38c4ac",
+    "src-tauri/examples/repair_saved_music.rs": "c280ce564197e25fa36aed039159ac3794636014f804612f2a5b946a56f7481e",
+    "src-tauri/src/whisper_tests.rs": "e31fdcbe1012d5d7443d4bb4eea15acd1f5eea4cee08fb59138801eeeb2ad22b",
+    "src-tauri/src/sync_store_tests.rs": "2bc7efcf807ef9f4193a0eee5ff6e11b25b81d3974af1105243cbb9d1f55b44e",
+    "src-tauri/tests/whisper_model.rs": "9ed11e0d7006756b3006bfb9d3baf92b0c61d010642d9c0c7c7ba05a8b7c3360",
+    "src-tauri/src/audio.rs": "d7106dd3208fac3ea9e4cfc444282991f30a4c0800c88f07002e58b1690970f1",
+    "src-tauri/src/stitch.rs": "d64fbeeb8a558b3a7784dd90d94b8c6c9cc7f4316d58484474f7eacb18c0f340",
+    "src-tauri/src/stitch_tests.rs": "6995be66b64f326740c40444c8664885cdb6ea91d0189f7abfb4f4d4a71f0c00"
+  },
+  "unchanged_override_test_function_sha256": "3f320eace2f4cccb2884f569056e625901d9330edd537ddf795b69ebd01efe0b",
+  "reused_integration_files": [
+    "src-tauri/src/stitch.rs",
+    "src-tauri/src/stitch_tests.rs",
+    "src-tauri/src/audio.rs"
+  ],
+  "owner_playback_reuse": {
+    "method": "earlier owner confirmation, not new automated playback",
+    "source_commit": "7ddcaa3",
+    "unchanged_paths": [
+      "src/ui/Watch.svelte",
+      "src/overlay",
+      "src-tauri/src/api.rs",
+      "src-tauri/src/library_api.rs",
+      "src-tauri/src/screens.rs",
+      "src-tauri/src/browser.rs"
+    ],
+    "selected_response_matches_native_and_api": "t/QDX-1M5Nj7s/b46450964281773a3b439fbe164cb5ac0b9aa0fcc8dc77c13c6a240554de8b27"
+  },
+  "inputs": {
+    "private_fixture_sha256": "98439eaf7de7e6996c6985a1182015f3bf4bdc3203dca8176a0aad23f067dd68",
+    "mit_audio_sha256": "df962fa26e63bf34842203f889ecf7040a85e155010eae9199ae490968605835",
+    "spoken_repetition_sha256": "22c4b85abf853c4693521295404a6a9e292135c218b59de58b3a75f9f4605af7",
+    "detector_sha256": "2aa269b785eeb53a82983a20501ddf7c1d9c48e33ab63a41391ac6c9f7fb6987"
+  },
+  "excluded_attempt": "Additional selected-test rerun stopped during dependency compilation after an unexpected cache miss; no test result claimed. Earlier same-round unit executions and unchanged integration checks are explicitly identified above.",
+  "focused_outputs_sha256": "9c95981f826122416693f106f8ee71709fea9b6651ef2d7bb9ffc30e1de540a0",
+  "server_gate_and_fresh_review": "pending"
+}

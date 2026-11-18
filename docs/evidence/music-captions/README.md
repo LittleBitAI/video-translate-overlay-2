@@ -185,3 +185,67 @@ are correctness checks, not new transcription-speed measurements.
 The integration cleanup audit retained the real-audio, voice-offset, stitching
 and packaging tests. They guard distinct current behavior; the opt-in audio
 tests still need local audio and models. No tests were removed or weakened.
+
+## Review round 1: inspected cue, override and readable evidence
+
+Publication now receives the exact cue that was inspected. Capture reads the
+requested selection and cue together; publication compares the captured interval,
+source text and Korean text inside its transaction. The regression
+`silent_cue_repair_denies_any_change_to_the_inspected_selection_or_cue` denies
+version interleavings and a table of changed cue fields without losing speech.
+This rule applies at two store boundaries, capture and publication, and the
+single repair-command caller now carries the captured cue through detection.
+
+An existing speech-model override no longer disables the separate detector's
+provisioning. The detector uses the app's writable model cache, leaving the
+override directory unchanged. Preparation, the pending-download indicator and
+direct resumed transcription all account for this dependency. The offline
+override regression checks first provisioning, reuse and failure propagation.
+The real-audio regression also uses a speech-only override directory and a fresh
+app cache for each actual model; its provisioner copies the pinned local detector
+fixture so these checks make no new external requests.
+
+Three evidence families now have readable observations:
+
+| Evidence | Observed result |
+| --- | --- |
+| [Actual HTTP requests and assertions](review-one-api.json) | 13 recorded target/library operations and 41 assertions against the real local API. |
+| [Actual Windows native-host requests and assertions](review-one-native.json) | 13 recorded target/library IPC operations and 43 assertions in WebView2 157.0.4341.46 on Windows 11 Home, build 10.0.26200, x64. Core and screen both identified `eead0b9989de21c25d683d5260352134d264fb0c`. |
+| [Focused command outputs](review-one-checks.log) and [source bindings](review-one-binding.json) | Readable test outputs, commands, model/audio hashes and the relation between the tested sources and this evidence commit. |
+
+Both runtime runs started with separate disposable copies of the original
+755-cue MIT response. They ran the rebuilt repair tool, checked the 754 remaining
+source/Korean cues byte-for-byte through a separate read-only SQLite observer,
+retained the old response and 276.2938750000004 KRW, selected both versions through
+the actual API, and stopped and restarted the host to check the repaired selection.
+Four other saved responses, playlists, memberships and playback positions remained
+unchanged. The packets contain request/response projections and explicit expected
+and observed values. Unrelated content stays behind digests; no private library
+export, account credentials or browser profile is published.
+Auxiliary unrelated-response reads are compared through aggregate digests. The
+existing native bridge also reads the account generation before each operation;
+these auxiliary reads are not counted among the 13 recorded target operations.
+
+The inspectable producers are
+[`music-repair-evidence.mjs`](../../../scripts/verification/music-repair-evidence.mjs)
+and its [read-only observer](../../../scripts/verification/music-repair-observer.py).
+The HTTP host used stand-ins for processing services; the native host used the
+actual debug Tauri/Wry application. Neither run created a translation job or made
+a paid call. Native startup update checks used an empty local fixture. Each host
+and its owned processes were stopped. The installed user's library was untouched.
+
+These are fresh native-host IPC observations, not new player UI actions or a new
+automated playback claim. Native UI discovery reported an unavailable pipe. The
+earlier owner-confirmed Windows playback remains explicitly reused: the watch,
+overlay, subtitle API and native screen sources are unchanged since that report,
+the repaired response is the same, and fresh overlay tests still cover seek and
+pause. The GPU and CPU real-audio checks are fresh on the repaired sources.
+The original API summaries and integration log hashes remain historical; this
+packet supplies their inspectable current replacements. Server-owned checks and
+fresh independent review remain pending.
+
+The final cleanup audit retains the binding/interruption/sync tests, detector
+provisioning test, real-audio test, synthesized-speech test, stitching, timing,
+background/resume and overlay tests. They cover current distinct behaviors.
+The opt-in tests still need external model/audio prerequisites; their ignore
+reasons remain valid. No tests were removed or weakened in this review repair.

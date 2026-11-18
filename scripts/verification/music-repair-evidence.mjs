@@ -19,6 +19,7 @@ const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 const digest=value=>sha(JSON.stringify(value));
 const head=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
 const requests=[], assertions=[], identities=[];
+const observe=()=>JSON.parse(execFileSync('python',['scripts/verification/music-repair-observer.py',resolve(profile,'app.sqlite3')],{encoding:'utf8',windowsHide:true}));
 const check=(name,expected,observed)=>{assert.deepEqual(observed,expected,name);assertions.push({name,expected,observed});};
 const cues=value=>value.cues.map(({seq,...cue})=>cue);
 const video=library=>library.videos.find(v=>v.video_key===key);
@@ -81,7 +82,7 @@ async function request(method,route,body={}) {
   let projection;
   if(route==='/library/data' && method==='POST') projection={changed:result.body.changed};
   else if(route==='/library/data') projection={target:video(result.body),playlist_count:result.body.playlists.length,playlists_sha256:digest(result.body.playlists)};
-  else if(route.includes('/subtitles')) projection={cue_count:result.body.cues.length,cues_sha256:digest(cues(result.body)),first_cues:result.body.cues.slice(0,2).map(c=>({seq:c.seq,start_ms:c.start_ms,end_ms:c.end_ms,source_sha256:digest(c.source_text),translation_sha256:digest(c.text_ko)}))};
+  else if(route.includes('/subtitles')) projection={cue_count:result.body.cues.length,cues_sha256:digest(cues(result.body)),first_cues:result.body.cues.slice(0,2).map(c=>({seq:c.seq,start_ms:c.start_ms,end_ms:c.end_ms,translation_sha256:digest(c.text_ko)}))};
   else projection={cost_krw:result.body.cost_krw,stage:result.body.stage};
   if(projection.target) projection.target={video_key:key,saved:projection.target.saved,versions:projection.target.versions};
   requests.push({method,route,body,status:result.status,response:projection});
@@ -91,6 +92,7 @@ try {
   await start();
   const before=await request('GET','/library/data');
   const old=await request('GET',`/videos/${key}/subtitles`);
+  const beforeStore=observe();
   const previous=selection(before);
   check('original cue count',755,old.cues.length);
   check('reported music interval',[1180,5800],[old.cues[0].start_ms,old.cues[0].end_ms]);
@@ -107,6 +109,10 @@ try {
   assert.match(repair.stdout,/Published t\/QDX-1M5Nj7s\//);
   const after=await request('GET','/library/data');
   const fresh=await request('GET',`/videos/${key}/subtitles`);
+  const afterStore=observe();
+  check('source and Korean cue bytes retained',beforeStore.without_first_cue_sha256,afterStore.source_and_translation_sha256);
+  for(const field of ['other_cues_sha256','playback_sha256','playlists_sha256','memberships_sha256']) check(field,beforeStore[field],afterStore[field]);
+  for(const version of beforeStore.versions) check('previous saved response bytes retained',version,afterStore.versions.find(v=>v.identity===version.identity));
   check('remaining speech and timing bytes',digest(cues(old).slice(1)),digest(cues(fresh)));
   check('repaired cue count',754,fresh.cues.length);
   check('first speech source time',9100,fresh.cues[0].start_ms);
@@ -135,9 +141,12 @@ try {
   check('restart preserves repaired subtitles',digest(fresh),digest(await request('GET',`/videos/${key}/subtitles`)));
   check('restart preserves repaired selection',selected,selection(await request('GET','/library/data')));
   const inputs=execFileSync('git',['ls-files','Cargo.toml','Cargo.lock','package.json','package-lock.json','index.html','vite*.ts','src','src-tauri'],{encoding:'utf8'}).trim().split('\n').filter(p=>!p.endsWith('.md'));
+  const blobs=new Map(execFileSync('git',['ls-files','--stage'],{encoding:'utf8'}).trim().split('\n').map(line=>{const [metadata,path]=line.split('\t');return [path,metadata.split(' ')[1]];}));
   const result={collector_head:head,mode,environment:{observed_at:new Date().toISOString(),os:os.version(),release:os.release(),arch:os.arch(),node:process.version},
-    build_inputs:inputs.map(path=>({path,sha256:sha(readFileSync(path))})),
-    binaries:{host:{name:basename(executable),sha256:sha(readFileSync(executable))},repair:{name:basename(repairTool),sha256:sha(readFileSync(repairTool))}},identities,requests,assertions,
+    collector_sha256:sha(readFileSync('scripts/verification/music-repair-evidence.mjs')),observer_sha256:sha(readFileSync('scripts/verification/music-repair-observer.py')),
+    build_input_hashes:'git_blob identifies staged repository bytes; working_tree_sha256 identifies Windows build bytes, including CRLF',
+    build_inputs:inputs.map(path=>({path,git_blob:blobs.get(path),working_tree_sha256:sha(readFileSync(path))})),
+    binaries:{host:{name:basename(executable),sha256:sha(readFileSync(executable))},repair:{name:basename(repairTool),sha256:sha(readFileSync(repairTool))}},identities,requests,assertions,store_observations:{before:beforeStore,after:afterStore},
     limits:{disposable_copy:true,production_modified:false,translation_requests:0,native_ui_actions:false,playback_observation:'earlier owner report; no new playback claim'}};
   writeFileSync(resolve(out,'observations.json'),JSON.stringify(result,null,2)+'\n');
   console.log(`PASS: ${mode}; ${requests.length} local requests; ${assertions.length} assertions; repair, selection and real process restart`);

@@ -68,8 +68,19 @@ fn mit_music_and_contrasting_speech_keep_their_source_clock() {
     let repetition: Vec<_> = crate::audio::decode_file(&repetition_path).unwrap().into_iter().map(|x| x as f32 / 32768.0).collect();
     assert!(detector.spans(&repetition).unwrap().iter().any(|&(a,b)| a < 3500 && b > 9500), "genuine rhythmic speech was lost");
     for (name, mobile) in [("ggml-base-q5_1.bin", true), ("ggml-large-v3-turbo-q5_0.bin", false)] {
-        let mut w = Whisper::new(models.parent().unwrap(), Some(models.join(name)));
+        let dir = std::env::temp_dir().join(format!("vto-real-override-{}-{name}",std::process::id()));
+        std::fs::create_dir_all(dir.join("existing")).unwrap();
+        let model = dir.join("existing/speech.bin");
+        std::fs::hard_link(models.join(name),&model).unwrap();
+        let app = dir.join("app");
+        let mut w = Whisper::new(&app, Some(model.clone()));
         w.mobile = mobile;
+        assert!(w.prepare_models(&mut |_| {}, &mut |path,_,_,_,_| {
+            std::fs::copy(models.join("ggml-silero-v6.2.0.bin"),path).map_err(|e|e.to_string())?;
+            Ok(())
+        }).unwrap());
+        assert!(!w.prepare(&app,&mut |_| {}).unwrap());
+        assert_eq!(std::fs::read_dir(model.parent().unwrap()).unwrap().count(),1);
         assert!(w.transcribe(&samples[..8 * rate], &mut |_| {}).unwrap().is_empty());
         assert!(w.transcribe(cropped, &mut |_| {}).unwrap().is_empty());
         let segs = w.transcribe(&samples[..20 * rate], &mut |_| {}).unwrap();
@@ -80,6 +91,8 @@ fn mit_music_and_contrasting_speech_keep_their_source_clock() {
         let (cues, _) = crate::stitch::window_cues(&crate::audio::Region { start: 0, end: 20 * rate }, segs, Vec::new(), None, None, &mut end);
         assert!(cues.windows(2).all(|w| w[0].1 <= w[1].0));
         assert!((cues[0].0 - 9100).abs() <= 300, "speech timing moved: {cues:?}");
+        drop(w);
+        std::fs::remove_dir_all(dir).unwrap();
     }
 }
 

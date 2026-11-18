@@ -64,7 +64,18 @@
     ],
     "automated_desktop_observation": false
   },
-  "final_verification": "server-owned, pending",
+  "review_one": {
+    "runtime_source_commit": "eead0b9989de21c25d683d5260352134d264fb0c",
+    "api": "review-one-api.json",
+    "native_host": "review-one-native.json",
+    "focused_outputs": "review-one-checks.log",
+    "bindings_and_reuse": "review-one-binding.json",
+    "native_method": "actual Windows WebView2 IPC, including version changes and real process restart in an isolated profile",
+    "prior_windows_playback": "reused owner report in windows_playback; not a new automated playback observation",
+    "production_library_modified": false,
+    "paid_translation_calls": 0
+  },
+  "final_verification": "server-owned, pending after review repair",
   "baseline_commit": "cd81109bc4c8be7ab81ff2e5d6dc74de83c7a1d3",
   "implementation_commit": "c6c5aeb",
   "integration": {
