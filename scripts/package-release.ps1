@@ -71,9 +71,13 @@ if ($Platform -in @('both', 'android')) {
 }
 
 if ($Platform -in @('both', 'windows')) {
-    Run 'cargo' @('tauri', 'build', '--features', 'app', '--bundles', 'nsis', '--target', 'x86_64-pc-windows-msvc', '--', '--no-default-features')
+    # A host build: an x64 Windows publisher builds x86_64-pc-windows-msvc anyway, and the
+    # extra target directory pushed MSBuild's paths inside whisper.cpp's Vulkan shader
+    # generator past 260 characters even under C:\t.
+    if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -ne 'X64') { throw 'The Windows installer is built on x64 Windows' }
+    Run 'cargo' @('tauri', 'build', '--features', 'app', '--bundles', 'nsis', '--', '--no-default-features')
     $targetRoot = if ($env:CARGO_TARGET_DIR) { $env:CARGO_TARGET_DIR } else { Join-Path $PWD 'target' }
-    $installer = Join-Path $targetRoot "x86_64-pc-windows-msvc/release/bundle/nsis/video-translate-overlay_${version}_x64-setup.exe"
+    $installer = Join-Path $targetRoot "release/bundle/nsis/video-translate-overlay_${version}_x64-setup.exe"
     Copy-Item -LiteralPath $installer -Destination (Join-Path $output "video-translate-overlay-$version-windows-x64-setup.exe") -Force
     if ((Get-Item -LiteralPath $installer).VersionInfo.ProductVersion -notlike "$version*") { throw 'Windows installer version does not match' }
 }
