@@ -80,6 +80,9 @@ pub trait Transcriber: Send + Sync {
         Ok(())
     }
     fn transcribe(&self, pcm: &[f32], progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String>;
+    /// Frees the loaded model (memory, and on a GPU its video memory); the
+    /// next [`Transcriber::load`] reads it again.
+    fn unload(&self) {}
     /// The language the model heard, when it knows.
     fn language(&self) -> Option<String> {
         None
