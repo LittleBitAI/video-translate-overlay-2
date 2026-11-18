@@ -74,10 +74,14 @@ if ($Platform -in @('both', 'windows')) {
     # A host build: an x64 Windows publisher builds x86_64-pc-windows-msvc anyway, and the
     # extra target directory pushed MSBuild's paths inside whisper.cpp's Vulkan shader
     # generator past 260 characters even under C:\t.
-    if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -ne 'X64') { throw 'The Windows installer is built on x64 Windows' }
-    Run 'cargo' @('tauri', 'build', '--features', 'app', '--bundles', 'nsis', '--', '--no-default-features')
+    if (-not ((& rustc -vV) -contains 'host: x86_64-pc-windows-msvc')) { throw 'The Windows installer is built with an x86_64-pc-windows-msvc Rust host' }
+    if ($env:CARGO_BUILD_TARGET) { throw 'Unset CARGO_BUILD_TARGET: the Windows installer is a host build' }
     $targetRoot = if ($env:CARGO_TARGET_DIR) { $env:CARGO_TARGET_DIR } else { Join-Path $PWD 'target' }
     $installer = Join-Path $targetRoot "release/bundle/nsis/video-translate-overlay_${version}_x64-setup.exe"
+    # An installer left from an earlier build must not pass for this one if a Cargo
+    # build.target setting sends the output elsewhere.
+    Remove-Item -LiteralPath $installer -Force -ErrorAction SilentlyContinue
+    Run 'cargo' @('tauri', 'build', '--features', 'app', '--bundles', 'nsis', '--', '--no-default-features')
     Copy-Item -LiteralPath $installer -Destination (Join-Path $output "video-translate-overlay-$version-windows-x64-setup.exe") -Force
     if ((Get-Item -LiteralPath $installer).VersionInfo.ProductVersion -notlike "$version*") { throw 'Windows installer version does not match' }
 }
