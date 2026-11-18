@@ -229,8 +229,12 @@ fn the_model_is_released_when_writing_ends_either_way() {
         let mut core = job_at_writing(name, audio::PLAN, &raw);
         let unloads = Arc::new(AtomicUsize::new(0));
         core.svc.transcriber = Box::new(Heard { source: pcm.clone(), script: script.clone(), calls: Default::default(), fail_at, unloads: unloads.clone() });
+        // Marked notified, the job skips translation and ends right after writing.
+        core.store.mark_notified("j").unwrap();
         run_job(&core, &core.store, core.store.job("j").unwrap().unwrap());
         assert_eq!(unloads.load(Ordering::SeqCst), 1, "{name}");
-        assert_ne!(core.store.job("j").unwrap().unwrap().stage, "writing", "{name}: the job left writing");
+        let stage = core.store.job("j").unwrap().unwrap().stage;
+        assert_eq!(stage, if fail_at.is_none() { "ready" } else { "failed" }, "{name}");
+        assert!(fail_at.is_some() || cues(&core).len() > 1, "{name}: the lecture was written");
     }
 }
