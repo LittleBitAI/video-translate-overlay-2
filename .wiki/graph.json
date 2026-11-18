@@ -10,6 +10,11 @@
   },
   {
    "a": "README.md",
+   "b": "docs/design/desktop-transcription-speed.md",
+   "kind": "link"
+  },
+  {
+   "a": "README.md",
    "b": "docs/design/download-speed.md",
    "kind": "link"
   },
@@ -95,6 +100,11 @@
   },
   {
    "a": "docs/design/transcription-speed.md",
+   "b": "docs/evidence/music-captions/README.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/design/transcription-speed.md",
    "b": "docs/evidence/transcription-speed/README.md",
    "kind": "link"
   },
@@ -111,6 +121,11 @@
   {
    "a": "docs/evidence/library-rail/README.md",
    "b": "docs/design/frontend.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/evidence/music-captions/README.md",
+   "b": "docs/design/download-speed.md",
    "kind": "link"
   },
   {
@@ -136,6 +151,11 @@
   {
    "a": "docs/releases/procedure.md",
    "b": "docs/design/backend.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/releases/procedure.md",
+   "b": "docs/design/desktop-transcription-speed.md",
    "kind": "link"
   },
   {
@@ -217,12 +237,12 @@
   "docs/evidence/library-rail/README.md"
  ],
  "counts": {
-  "docs": 21,
-  "linked": 14,
+  "docs": 23,
+  "linked": 16,
   "read": 3,
   "orphans": 4,
   "pages": 7,
-  "decisions": 12,
-  "injectable_decisions": 2
+  "decisions": 19,
+  "injectable_decisions": 4
  }
 }

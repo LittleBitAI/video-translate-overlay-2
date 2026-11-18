@@ -3,6 +3,7 @@
 //! path has to write it back with times inside the audio.
 //!
 //! Needs the `app` feature and the 0.6 GB model file, so it is opt-in:
+//! The separate detector downloads into this test's temporary app cache on first use.
 //! `VTO_WHISPER_MODEL=<ggml-large-v3-turbo-q5_0.bin> cargo test --features app --test whisper_model -- --ignored`
 #![cfg(all(feature = "app", windows))]
 

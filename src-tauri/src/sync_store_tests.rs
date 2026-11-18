@@ -56,6 +56,124 @@ fn send(from: &Journal, to: &Journal) {
 }
 
 #[test]
+fn silent_cue_repair_is_atomic_retains_versions_cost_and_sync_selection() {
+    let a = Profile::new();
+    let b = Profile::new();
+    let first = a.journal();
+    let second = b.journal();
+    let Change::Translation { mut translation } = translation() else { unreachable!() };
+    let key = translation.video.key.clone();
+    translation.duration_ms = 20000;
+    translation.cost_krw = 276.293875;
+    translation.cues = vec![
+        Cue { start_ms:1180, end_ms:5800, source_text:format!("[♪ {}", "Music playing in background, ".repeat(42)), text_ko:"Retained music description".into() },
+        Cue { start_ms:9100, end_ms:18100, source_text:"Good afternoon everyone".into(), text_ko:"Saved speech translation".into() },
+    ];
+    let previous = first.write(Change::Translation { translation:translation.clone() }, Deletions::new()).unwrap().identity();
+    for change in [Change::PlaylistName {id:"topic".into(),name:"Saved topic".into()},
+        Change::EntryPresence {id:"topic".into(),key:key.clone(),present:true},
+        Change::Playback {key:key.clone(),position_ms:12000}] {
+        first.write(change, Deletions::new()).unwrap();
+    }
+    let mut unrelated = translation.clone();
+    unrelated.video.page_url = "https://lectures.example.org/unrelated".into();
+    unrelated.video.key = crate::api::video_key(&url::Url::parse(&unrelated.video.page_url).unwrap());
+    let other_key = unrelated.video.key.clone();
+    first.write(Change::Translation {translation:unrelated}, Deletions::new()).unwrap();
+    let store = first.library().unwrap();
+    let before = store.cues(&key).unwrap();
+    let untouched = store.cues(&other_key).unwrap();
+    let before_library = store.library().unwrap();
+    let db = Db::open(store.path()).unwrap();
+    db.execute("UPDATE job SET cost_krw=320 WHERE video_key=?", p![&key]).unwrap();
+    let inspected = store.inspect_silent_cue(&key, &previous, 0).unwrap();
+    let mut unavailable = inspected.clone();
+    unavailable.seq = 99;
+    assert!(store.repair_silent_cue(&key, &previous, &unavailable).is_err());
+    assert_eq!(store.cues(&key).unwrap()[0].source_text, before[0].source_text);
+
+    // A lost process between publication and commit leaves neither a partial selection nor cues.
+    {
+        let db = Db::open(store.path()).unwrap();
+        db.exec("BEGIN IMMEDIATE").unwrap();
+        local::repair_silent_cue(&db, &key, &previous, &inspected).unwrap();
+    }
+    assert_eq!(store.cues(&key).unwrap().len(), 2);
+    assert!(store.library().unwrap()["videos"].as_array().unwrap().iter().find(|v|v["video_key"]==key).unwrap()["versions"].as_array().unwrap().iter().any(|v|v["id"]==previous && v["selected"]==true));
+
+    db.execute("CREATE TRIGGER reject_repair BEFORE INSERT ON cue BEGIN SELECT RAISE(ABORT,'repair write failure'); END", &[]).unwrap();
+    assert!(store.repair_silent_cue(&key, &previous, &inspected).is_err());
+    db.exec("DROP TRIGGER reject_repair").unwrap();
+    assert_eq!(store.cues(&key).unwrap().len(), 2);
+    let replacement = store.repair_silent_cue(&key, &previous, &inspected).unwrap();
+    assert_ne!(replacement, previous);
+    assert!(store.repair_silent_cue(&key, &previous, &inspected).is_err(), "stale selection must not remove speech");
+    let repaired = store.cues(&key).unwrap();
+    assert_eq!(repaired.len(), 1);
+    assert_eq!((repaired[0].start_ms, repaired[0].end_ms), (9100,18100));
+    assert_eq!(repaired[0].source_text, before[1].source_text);
+    assert_eq!(repaired[0].text_ko, before[1].text_ko);
+    assert_eq!(store.ready_job(&key).unwrap().unwrap().cost_krw,320.0);
+    assert_eq!(store.playback(&key).unwrap(),Some(12000));
+    assert_eq!(store.library().unwrap()["playlists"],before_library["playlists"]);
+    assert_eq!(store.cues(&other_key).unwrap()[0].source_text,untouched[0].source_text);
+    send(&first,&second);
+    // Receiving the same old response again cannot select it over the repaired version.
+    send(&first,&second);
+    let reopened = second.library().unwrap();
+    assert_eq!(reopened.cues(&key).unwrap().len(),1);
+    assert_eq!(reopened.ready_job(&key).unwrap().unwrap().cost_krw,320.0);
+    let versions = reopened.library().unwrap();
+    let versions = versions["videos"].as_array().unwrap().iter().find(|v|v["video_key"]==key).unwrap()["versions"].as_array().unwrap();
+    assert_eq!(versions.len(),2);
+    assert!(versions.iter().any(|v|v["id"]==replacement && v["selected"]==true));
+    reopened.select_translation(&key,&previous).unwrap();
+    assert_eq!(reopened.cues(&key).unwrap().len(),2);
+    assert_eq!(reopened.retranslation_cost(&key).unwrap(),320.0);
+    let other_account = Journal::open(&a.0,&VerifiedIdentity::fixture("another-account")).unwrap();
+    assert!(other_account.library().unwrap().repair_silent_cue(&key,&previous,&inspected).is_err());
+}
+
+#[test]
+fn silent_cue_repair_denies_any_change_to_the_inspected_selection_or_cue() {
+    let profile = Profile::new();
+    let journal = profile.journal();
+    let Change::Translation { mut translation } = translation() else { unreachable!() };
+    let key = translation.video.key.clone();
+    translation.duration_ms = 20000;
+    translation.cues = vec![
+        Cue {start_ms:9100,end_ms:18100,source_text:"Good afternoon everyone".into(),text_ko:"Saved speech".into()},
+        Cue {start_ms:18200,end_ms:19000,source_text:"Welcome".into(),text_ko:"Saved welcome".into()},
+    ];
+    let speech = journal.write(Change::Translation {translation:translation.clone()}, Deletions::new()).unwrap().identity();
+    translation.cues[0] = Cue {start_ms:1180,end_ms:5800,source_text:"Music description".into(),text_ko:"Saved music".into()};
+    let music = journal.write(Change::Translation {translation}, Deletions::new()).unwrap().identity();
+    let store = journal.library().unwrap();
+    // A requested version must be selected at inspection, not merely at publication.
+    assert!(store.inspect_silent_cue(&key,&speech,0).is_err());
+    let inspected_music = store.inspect_silent_cue(&key,&music,0).unwrap();
+    store.select_translation(&key,&speech).unwrap();
+    let before = store.cues(&key).unwrap();
+    assert!(store.repair_silent_cue(&key,&speech,&inspected_music).is_err());
+    assert!(store.repair_silent_cue(&key,&music,&inspected_music).is_err());
+    // Every component of the audio/text inspection is bound, including missing translations.
+    for field in ["sequence","start","end","source","translation","missing translation"] {
+        let mut changed = store.inspect_silent_cue(&key,&speech,0).unwrap();
+        match field {
+            "sequence" => changed.seq = 1,
+            "start" => changed.start_ms += 1,
+            "end" => changed.end_ms += 1,
+            "source" => changed.source_text.push('!'),
+            "translation" => changed.text_ko.as_mut().unwrap().push('!'),
+            _ => changed.text_ko = None,
+        }
+        assert!(store.repair_silent_cue(&key,&speech,&changed).is_err(), "{field}");
+        assert_eq!(store.cues(&key).unwrap(),before,"{field}");
+    }
+    assert_eq!(store.library().unwrap()["videos"][0]["versions"].as_array().unwrap().len(),2);
+}
+
+#[test]
 fn received_ready_library_is_usable_without_processing_and_survives_restart() {
     let a = Profile::new();
     let b = Profile::new();

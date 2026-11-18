@@ -6,6 +6,97 @@ use serde_json::json;
 use std::time::Instant;
 
 #[test]
+fn speech_model_override_provisions_only_the_detector_in_the_app_cache() {
+    let dir = std::env::temp_dir().join(format!("vto-override-{}",std::process::id()));
+    std::fs::create_dir_all(dir.join("existing")).unwrap();
+    let model = dir.join("existing/speech.bin");
+    std::fs::write(&model,b"existing speech model").unwrap();
+    let app = dir.join("app");
+    let w = Whisper::new(&app,Some(model.clone()));
+    assert!(w.needs_fetch(),"the missing detector still needs provisioning");
+    let mut downloads = 0;
+    let mut provision = |path: &Path, url: &str, bytes: u64, sha: &str, _: &mut dyn FnMut(f32)| {
+        downloads += 1;
+        assert_eq!(path,app.join("models/ggml-silero-v6.2.0.bin"));
+        assert!(url.ends_with("ggml-silero-v6.2.0.bin"));
+        assert_eq!(bytes,885098);
+        assert_eq!(sha,"2aa269b785eeb53a82983a20501ddf7c1d9c48e33ab63a41391ac6c9f7fb6987");
+        // The downloader is substituted here; real pinned bytes are exercised by the audio test.
+        std::fs::File::create(path).unwrap().set_len(885098).unwrap();
+        Ok(())
+    };
+    assert!(w.prepare_models(&mut |_| {}, &mut provision).unwrap());
+    assert!(!w.prepare_models(&mut |_| {}, &mut provision).unwrap());
+    assert_eq!(downloads,1);
+    assert!(!w.needs_fetch());
+    assert_eq!(std::fs::read(&model).unwrap(),b"existing speech model");
+    assert_eq!(std::fs::read_dir(model.parent().unwrap()).unwrap().count(),1);
+    std::fs::remove_file(app.join("models/ggml-silero-v6.2.0.bin")).unwrap();
+    assert_eq!(w.prepare_models(&mut |_| {}, &mut |_,_,_,_,_| Err("provision unavailable".into())).unwrap_err(),"provision unavailable");
+    assert!(w.needs_fetch());
+    std::fs::remove_dir_all(dir).unwrap();
+}
+
+#[test]
+#[ignore = "needs VTO_MIT_OPENING_AUDIO, VTO_SPOKEN_REPETITION_AUDIO and VTO_MUSIC_MODELS: real audio and pinned local models"]
+fn mit_music_and_contrasting_speech_keep_their_source_clock() {
+    let models = PathBuf::from(std::env::var_os("VTO_MUSIC_MODELS").expect("models"));
+    let path = PathBuf::from(std::env::var_os("VTO_MIT_OPENING_AUDIO").expect("MIT opening"));
+    let pcm = crate::audio::decode_file(&path).unwrap();
+    let samples: Vec<_> = pcm.iter().map(|&s| s as f32 / 32768.0).collect();
+    let rate = crate::audio::RATE;
+    let detector = voice::Detector::new(&models);
+    detector.prepare(false).unwrap();
+    assert!(detector.spans(&samples[..8 * rate]).unwrap().is_empty(), "music became speech");
+    let cropped = &samples[1180 * rate / 1000..5800 * rate / 1000];
+    assert!(detector.spans(cropped).unwrap().is_empty(), "the original cropped music window became speech");
+    let spans = detector.spans(&samples[..20 * rate]).unwrap();
+    println!("MIT opening speech spans: {spans:?}");
+    assert!(spans.iter().all(|&(a, _)| a >= 8500), "music acquired a speech span: {spans:?}");
+    let speech = &samples[10 * rate..17 * rate];
+    let normal = detector.spans(speech).unwrap();
+    let quiet: Vec<_> = speech.iter().map(|x| x * 0.005).collect();
+    let quiet_spans = detector.spans(&quiet).unwrap();
+    assert!(!normal.is_empty() && !quiet_spans.is_empty());
+    assert!((normal[0].0 - quiet_spans[0].0).abs() <= 300);
+    let music = &samples[rate..8 * rate];
+    let mixed: Vec<_> = speech.iter().zip(music).map(|(s, m)| s + m * 0.3).collect();
+    assert!(!detector.spans(&mixed).unwrap().is_empty(), "speech over music was lost");
+    assert_eq!(detector.spans(&samples[..20 * rate]).unwrap(), spans, "reused state changed the speech clock");
+    assert_eq!(voice::Detector::new(&models).spans(&samples[..20 * rate]).unwrap(), spans, "reopening changed the speech clock");
+    let repetition_path = PathBuf::from(std::env::var_os("VTO_SPOKEN_REPETITION_AUDIO").expect("spoken repetition"));
+    let repetition: Vec<_> = crate::audio::decode_file(&repetition_path).unwrap().into_iter().map(|x| x as f32 / 32768.0).collect();
+    assert!(detector.spans(&repetition).unwrap().iter().any(|&(a,b)| a < 3500 && b > 9500), "genuine rhythmic speech was lost");
+    for (name, mobile) in [("ggml-base-q5_1.bin", true), ("ggml-large-v3-turbo-q5_0.bin", false)] {
+        let dir = std::env::temp_dir().join(format!("vto-real-override-{}-{name}",std::process::id()));
+        std::fs::create_dir_all(dir.join("existing")).unwrap();
+        let model = dir.join("existing/speech.bin");
+        std::fs::hard_link(models.join(name),&model).unwrap();
+        let app = dir.join("app");
+        let mut w = Whisper::new(&app, Some(model.clone()));
+        w.mobile = mobile;
+        assert!(w.prepare_models(&mut |_| {}, &mut |path,_,_,_,_| {
+            std::fs::copy(models.join("ggml-silero-v6.2.0.bin"),path).map_err(|e|e.to_string())?;
+            Ok(())
+        }).unwrap());
+        assert!(!w.prepare(&app,&mut |_| {}).unwrap());
+        assert_eq!(std::fs::read_dir(model.parent().unwrap()).unwrap().count(),1);
+        assert!(w.transcribe(&samples[..8 * rate], &mut |_| {}).unwrap().is_empty());
+        assert!(w.transcribe(cropped, &mut |_| {}).unwrap().is_empty());
+        let segs = w.transcribe(&samples[..20 * rate], &mut |_| {}).unwrap();
+        println!("{name}: {segs:?}");
+        assert!(!segs.is_empty() && segs.iter().all(|s| s.start_ms >= 8500));
+        assert!(segs.iter().map(|s| s.text.to_lowercase()).collect::<String>().contains("afternoon"));
+        let mut end = 0;
+        let (cues, _) = crate::stitch::window_cues(&crate::audio::Region { start: 0, end: 20 * rate }, segs, Vec::new(), None, None, &mut end);
+        assert!(cues.windows(2).all(|w| w[0].1 <= w[1].0));
+        assert!((cues[0].0 - 9100).abs() <= 300, "speech timing moved: {cues:?}");
+        drop(w);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}
+
+#[test]
 #[ignore = "needs the original audio of vSCYL8ySh9g in VTO_WHISPER_BENCH_AUDIO, models and VTO_SYNC_RESULT"]
 fn problem_video_keeps_its_late_speech_on_the_source_clock() {
     let models = PathBuf::from(std::env::var_os("VTO_WHISPER_BENCH_MODELS").expect("models"));
@@ -15,7 +106,7 @@ fn problem_video_keeps_its_late_speech_on_the_source_clock() {
     assert!((pcm.len() as f64 / crate::audio::RATE as f64 - 904.324).abs() < 0.1);
     std::fs::write(dest.with_extension("pcm"), pcm.iter().flat_map(|s| s.to_le_bytes()).collect::<Vec<_>>()).unwrap();
     let regions = crate::audio::speech_regions(&pcm);
-    let mut w = Whisper::new(&models, Some(models.join("ggml-base-q5_1.bin")));
+    let mut w = Whisper::new(models.parent().unwrap(), Some(models.join("ggml-base-q5_1.bin")));
     w.mobile = true;
     let mut cues = Vec::new();
     let mut prev_end = 0;
@@ -55,7 +146,7 @@ fn reused_mobile_state_keeps_fifteen_minutes_of_source_offsets() {
     }
     let regions = crate::audio::speech_regions(&pcm);
     assert_eq!(regions.len(), 15);
-    let mut w = Whisper::new(&models, Some(models.join("ggml-base-q5_1.bin")));
+    let mut w = Whisper::new(models.parent().unwrap(), Some(models.join("ggml-base-q5_1.bin")));
     w.mobile = true;
     for (minute, r) in regions.iter().enumerate() {
         let samples: Vec<_> = pcm[r.start..r.end].iter().map(|&s| s as f32 / 32768.0).collect();
@@ -81,7 +172,7 @@ fn compare_mobile_models_on_technical_speech() {
         ("base-q5_1", true, true), ("base-q5_1", true, false),
         ("small-q5_1", true, true), ("large-v3-turbo-q5_0", false, false),
     ] {
-        let mut w = Whisper::new(&models, Some(models.join(format!("ggml-{name}.bin"))));
+        let mut w = Whisper::new(models.parent().unwrap(), Some(models.join(format!("ggml-{name}.bin"))));
         w.mobile = mobile;
         let load = Instant::now();
         let mut params = WhisperContextParameters::default();

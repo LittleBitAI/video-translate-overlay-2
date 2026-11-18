@@ -1,8 +1,17 @@
 // A stand-in for `vto-web` behind `fetch`, and helpers to mount the screens.
 import { flushSync, mount, unmount } from 'svelte';
-import { afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
 import App from '../../src/ui/App.svelte';
 import { go } from '../../src/ui/router.svelte';
+
+const BrowserChannel = globalThis.BroadcastChannel;
+beforeEach(() => {
+  // Browser test files share an origin; keep real delivery inside this test's two views.
+  const scope = crypto.randomUUID();
+  vi.stubGlobal('BroadcastChannel', class extends BrowserChannel {
+    constructor(name: string) { super(`${scope}:${name}`); }
+  });
+});
 
 export type Call = { method: string; path: string; query: Record<string, string>; body: any };
 /** `[status, body]`, or `'hang'` for an answer that never comes. */

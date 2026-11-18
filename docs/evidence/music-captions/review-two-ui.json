@@ -1,0 +1,299 @@
+{
+  "tested_head": "b5f2504afc5eb436728ffcb61ac0024d5034f90f",
+  "tested_base": "cd81109bc4c8be7ab81ff2e5d6dc74de83c7a1d3",
+  "observed_start": "2026-11-18T02:12:25.287Z",
+  "environment": {
+    "os": "Windows 11 Home",
+    "release": "10.0.26200",
+    "arch": "x64",
+    "node": "v24.18.0",
+    "versions": {
+      "vitest": "5.1.0",
+      "vite": "8.3.8",
+      "svelte": "5.57.3",
+      "playwright": "1.61.0",
+      "@vitest/browser-playwright": "5.1.0"
+    },
+    "configured_browser": {
+      "name": "chromium",
+      "headless": true
+    },
+    "installed_browser_manifest": [
+      {
+        "name": "chromium",
+        "revision": "1228",
+        "browserVersion": "149.0.7827.55"
+      },
+      {
+        "name": "chromium-headless-shell",
+        "revision": "1228",
+        "browserVersion": "149.0.7827.55"
+      }
+    ],
+    "npm": "11.16.0"
+  },
+  "input_policy": {
+    "prefixes": [
+      "src/",
+      "tests/ui/"
+    ],
+    "config": [
+      "package.json",
+      "package-lock.json",
+      "index.html",
+      "vite.config.ts",
+      "vite.overlay.config.ts",
+      "vitest.config.ts",
+      "vitest.ui.config.ts",
+      "tsconfig.json",
+      ".npmrc",
+      ".gitattributes"
+    ]
+  },
+  "source": {
+    "files": [
+      [
+        ".gitattributes",
+        "95c1951cd30655419d3fc2cd7ee0e600ab42e93c"
+      ],
+      [
+        "index.html",
+        "6051cc7e4edd98aa56ff67691ff908054e30389d"
+      ],
+      [
+        "package-lock.json",
+        "88b275f11f2607f0e1f2c22cf296a3090c463d30"
+      ],
+      [
+        "package.json",
+        "7fb75bc367db3c0f1fc100fa13e2f3a8c3cc5007"
+      ],
+      [
+        "src/overlay/geometry.ts",
+        "cf9993c0f43e098a24b4b1b772c8163453522680"
+      ],
+      [
+        "src/overlay/index.ts",
+        "fac3b252e5b15492828604f762ab4f5a0108553e"
+      ],
+      [
+        "src/overlay/inject.ts",
+        "17fe20b1ee6cec3860d3c35a10092bb5a564ebd6"
+      ],
+      [
+        "src/overlay/page.ts",
+        "28e95b76e9f25748a88223a7638bbc3a0fe5f1a3"
+      ],
+      [
+        "src/overlay/playback.ts",
+        "12b15b313e8ba734e12fef1a4930c1d52cf36b85"
+      ],
+      [
+        "src/overlay/signin.ts",
+        "e921ef11654df6269eb3d517d1a47a39908d4774"
+      ],
+      [
+        "src/ui/App.svelte",
+        "04b2fa7dfc0272b2b224017544e4618f53319449"
+      ],
+      [
+        "src/ui/GoogleAccount.svelte",
+        "713ac070171f61df9c736ab23db10ed152b94153"
+      ],
+      [
+        "src/ui/Library.svelte",
+        "477f8843f7adb32d2804ba425b55b6c5ff0a76f6"
+      ],
+      [
+        "src/ui/Link.svelte",
+        "b9e56f4c0673bc9270e8adc2bf5e51c5f3e4d7fa"
+      ],
+      [
+        "src/ui/Nav.svelte",
+        "32025ad882eeb9f545a04841c5fa22f1289f0b36"
+      ],
+      [
+        "src/ui/Overlay.svelte",
+        "62143301af97c67a2e5b6341eaa7d31e6377508b"
+      ],
+      [
+        "src/ui/Preferences.svelte",
+        "f6ff31e0aca9bd2238efb23fff740de15b834b12"
+      ],
+      [
+        "src/ui/Stage.svelte",
+        "1d3b8f7a6f420bf7d18404e7ff6d1a77366387a3"
+      ],
+      [
+        "src/ui/Thumb.svelte",
+        "a55d7bc057c7a4759e4b8e4107500204b6c5a213"
+      ],
+      [
+        "src/ui/Updates.svelte",
+        "7c9987c0b9b23d655f5e1c7055ed79dd9618f038"
+      ],
+      [
+        "src/ui/Watch.svelte",
+        "beabf082f3ee03d4e41b77b6d971199b609e5f25"
+      ],
+      [
+        "src/ui/api.ts",
+        "a1cbac720f0a530ef173461bd14049bab5400a01"
+      ],
+      [
+        "src/ui/app.css",
+        "3b12cec4934898776e3c8e18f1906e94a1adb477"
+      ],
+      [
+        "src/ui/main.ts",
+        "547406b971aa213d1d0480b1de05b9a3a3c38e5d"
+      ],
+      [
+        "src/ui/router.svelte.ts",
+        "10fe1045c0f2a2883c9f5e6d7ceef57730703823"
+      ],
+      [
+        "tests/ui/account-library.test.ts",
+        "a7da34ae9cc328ae818fb20262dbbb2b4e4f1941"
+      ],
+      [
+        "tests/ui/fake.test.ts",
+        "a82adc61607f7ae3f0e93dde2bfdf89663bb69bb"
+      ],
+      [
+        "tests/ui/fake.ts",
+        "605b0396e7c94ebab01bf2ce0981ea72c7bc816f"
+      ],
+      [
+        "tests/ui/google-account.test.ts",
+        "8e2065f2dfcbf4c4ce3013e08433e9290feb17d8"
+      ],
+      [
+        "tests/ui/library-layout.test.ts",
+        "cbbbf962891ca0e7252c8a6cc01350bd93b745ef"
+      ],
+      [
+        "tests/ui/library.test.ts",
+        "e22a890d4e8a39c35a2f2c6fbc09d5c4e2c853c1"
+      ],
+      [
+        "tests/ui/preferences.test.ts",
+        "9bbd5e893426329b5f2fc978186a19ec395526b9"
+      ],
+      [
+        "tests/ui/subtitles.test.svelte.ts",
+        "bd4a188d173d790fbebeb71dfca5e148c46a7ebd"
+      ],
+      [
+        "tests/ui/updates.test.ts",
+        "0d81eb35d24f62d5eacaf0474ea0e3c273c6f054"
+      ],
+      [
+        "tests/ui/watch.test.ts",
+        "705de64ad936ca1f82ecb40aa59687061df18534"
+      ],
+      [
+        "vite.config.ts",
+        "68c8020a02cf7b245e1c107865a43ccf83e39ab1"
+      ],
+      [
+        "vite.overlay.config.ts",
+        "d81ed740eaec3f80d99739ee6c9de47f1653e027"
+      ],
+      [
+        "vitest.config.ts",
+        "dadf10a9f608ab771ab6b7f77295802d112cf7ec"
+      ],
+      [
+        "vitest.ui.config.ts",
+        "ddab02f7244ff248ddda23770a8be57df2d8d1cb"
+      ]
+    ],
+    "sha256": "a1363c0479ce234982d508ef235bfad9cb7d432e67ca947ef7f5a9a366151b33"
+  },
+  "command": "npm run test:ui -- --reporter=verbose --reporter=json --outputFile=artifacts/music-opening/review-two/ui-results.json",
+  "reporter_options_only": true,
+  "base_reference": "local main at collection; the task starting revision",
+  "observed_start_is_utc": true,
+  "result": {
+    "exit_code": 0,
+    "files": 9,
+    "passed": 127,
+    "failed": 0,
+    "skipped": 0,
+    "todo": 0,
+    "shutdown_timeout_warning": false
+  },
+  "assertions": [
+    {
+      "name": "all configured UI files execute",
+      "expected": [
+        "tests/ui/account-library.test.ts",
+        "tests/ui/fake.test.ts",
+        "tests/ui/google-account.test.ts",
+        "tests/ui/library-layout.test.ts",
+        "tests/ui/library.test.ts",
+        "tests/ui/preferences.test.ts",
+        "tests/ui/subtitles.test.svelte.ts",
+        "tests/ui/updates.test.ts",
+        "tests/ui/watch.test.ts"
+      ],
+      "observed": [
+        "tests/ui/account-library.test.ts",
+        "tests/ui/fake.test.ts",
+        "tests/ui/google-account.test.ts",
+        "tests/ui/library-layout.test.ts",
+        "tests/ui/library.test.ts",
+        "tests/ui/preferences.test.ts",
+        "tests/ui/subtitles.test.svelte.ts",
+        "tests/ui/updates.test.ts",
+        "tests/ui/watch.test.ts"
+      ]
+    },
+    {
+      "name": "all current UI assertions pass",
+      "expected": 127,
+      "observed": 127
+    },
+    {
+      "name": "shared-fixture isolation regression",
+      "expected": "passed",
+      "observed": "passed"
+    },
+    {
+      "name": "previously failing library broadcast case",
+      "expected": "passed",
+      "observed": "passed"
+    },
+    {
+      "name": "runner exits normally",
+      "expected": {
+        "exit_code": 0,
+        "shutdown_timeout_warning": false
+      },
+      "observed": {
+        "exit_code": 0,
+        "shutdown_timeout_warning": false
+      }
+    }
+  ],
+  "shared_fixture_scope": {
+    "existing_test_files": 8,
+    "new_regression_files": 1,
+    "affected_paths": [
+      "tests/ui/fake.ts",
+      "tests/ui/fake.test.ts"
+    ],
+    "glob_owner": "vitest.ui.config.ts"
+  },
+  "publication": {
+    "normalization": "UTF-8 without BOM, LF; checkout and home prefixes replaced with placeholders; console color escapes removed",
+    "log": "review-two-ui.log",
+    "log_sha256": "dc40baa6891ef671598c15427cc5543ade3bc0afb479ce2f0c9a3aecbf493fda",
+    "machine_results": "review-two-ui-results.json",
+    "machine_results_sha256": "94cbd06b627f60edc149fdc572ab4fcd55e91fd582ef4f565f26aa933cd2641b"
+  },
+  "reuse_condition": "Recompute this input policy at the reviewed HEAD, including added files, and require its sourceSnapshot to equal source. The evidence descendant changes only documentation and evidence.",
+  "previous_evidence": "Round-one Rust, API, native IPC and owner playback records remain historical, explicitly reused for unchanged product inputs. They do not establish this UI suite result.",
+  "limits": "This is the UI-stage check, not a new whole repository gate. No new API/native playback/paid translation execution is claimed. Server-owned gate and fresh review remain pending."
+}

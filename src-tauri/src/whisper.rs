@@ -12,6 +12,9 @@ use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Duration;
 use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperSegment, WhisperState};
 
+#[path = "voice.rs"]
+pub mod voice;
+
 pub const MODEL_FILE: &str = if cfg!(target_os = "android") { "ggml-base-q5_1.bin" } else { "ggml-large-v3-turbo-q5_0.bin" };
 pub const MODEL_URL: &str = if cfg!(target_os = "android") {
     "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base-q5_1.bin"
@@ -25,6 +28,8 @@ pub const MODEL_SHA256: &str = if cfg!(target_os = "android") {
 };
 pub const MODEL_BYTES: u64 = if cfg!(target_os = "android") { 59_707_625 } else { 574_041_195 };
 
+type ModelFetcher<'a> = dyn FnMut(&Path, &str, u64, &str, &mut dyn FnMut(f32)) -> Result<(), String> + 'a;
+
 pub struct Whisper {
     /// The model file. It is known from the start, so a process restarted in
     /// the writing stage loads it without passing through downloading again.
@@ -36,6 +41,7 @@ pub struct Whisper {
     state: Mutex<Option<(WhisperState, i32)>>,
     language: Mutex<Option<String>>,
     mobile: bool,
+    voice: voice::Detector,
 }
 
 impl Whisper {
@@ -44,7 +50,8 @@ impl Whisper {
         whisper_rs::install_logging_hooks(); // whisper.cpp's own logging off: it prints per call
         let fetch = model_override.is_none();
         let path = model_override.unwrap_or_else(|| data_dir.join("models").join(MODEL_FILE));
-        Whisper { path, fetch, state: Mutex::new(None), language: Mutex::new(None), mobile: cfg!(target_os = "android") }
+        let voice = voice::Detector::new(&data_dir.join("models"));
+        Whisper { path, fetch, state: Mutex::new(None), language: Mutex::new(None), mobile: cfg!(target_os = "android"), voice }
     }
 
     /// The phone's decoding (greedy, no temperature retries, at most 4 threads)
@@ -52,6 +59,19 @@ impl Whisper {
     pub fn with_mobile_params(mut self) -> Self {
         self.mobile = true;
         self
+    }
+
+    fn prepare_models(&self, progress: &mut dyn FnMut(f32), download: &mut ModelFetcher<'_>) -> Result<bool, String> {
+        *self.language.lock().unwrap() = None;
+        if !cpu_runs_model() { return Err(crate::pipeline::UNSUPPORTED_CPU.into()); }
+        if !self.fetch && !self.path.is_file() { return Err(format!("model file missing: {}", self.path.display())); }
+        let voice_fetched = self.voice.prepare_with(true, download)?;
+        if !self.fetch || std::fs::metadata(&self.path).is_ok_and(|m| m.len() == MODEL_BYTES) {
+            return Ok(voice_fetched);
+        }
+        std::fs::create_dir_all(self.path.parent().unwrap()).map_err(|e| e.to_string())?;
+        download(&self.path, MODEL_URL, MODEL_BYTES, MODEL_SHA256, progress)?;
+        Ok(true)
     }
 
     fn state(&self) -> Result<std::sync::MutexGuard<'_, Option<(WhisperState, i32)>>, String> {
@@ -69,9 +89,24 @@ impl Whisper {
     }
 }
 
-fn fetch_model(dest: &Path, progress: &mut dyn FnMut(f32)) -> Result<(), String> {
+fn fetch_model(dest: &Path, url: &str, bytes: u64, sha256: &str, progress: &mut dyn FnMut(f32)) -> Result<(), String> {
+    let mut tries = 0;
+    loop {
+        match fetch_once(dest, url, bytes, sha256, progress) {
+            Ok(()) => return Ok(()),
+            Err(e) => {
+                tries += 1;
+                if tries >= 3 { return Err(e); }
+                crate::log(format!("{e}; retrying"));
+                std::thread::sleep(Duration::from_secs(5 * tries));
+            }
+        }
+    }
+}
+
+fn fetch_once(dest: &Path, url: &str, bytes: u64, sha256: &str, progress: &mut dyn FnMut(f32)) -> Result<(), String> {
     let part = dest.with_extension("part");
-    let mut req = Request::get(MODEL_URL);
+    let mut req = Request::get(url);
     req.timeout_ms = 120_000;
     let mut r = http::send(req).map_err(|e| format!("model download: {e}"))?;
     if r.status != 200 {
@@ -89,14 +124,14 @@ fn fetch_model(dest: &Path, progress: &mut dyn FnMut(f32)) -> Result<(), String>
         hash.update(&buf[..n]);
         out.write_all(&buf[..n]).map_err(|e| e.to_string())?;
         done += n as u64;
-        progress(done as f32 / MODEL_BYTES as f32);
+        progress(done as f32 / bytes as f32);
     }
     out.flush().map_err(|e| e.to_string())?;
     drop(out);
     let got: String = hash.finalize().iter().map(|b| format!("{b:02x}")).collect();
-    if got != MODEL_SHA256 {
+    if got != sha256 {
         let _ = std::fs::remove_file(&part);
-        return Err(format!("model download: SHA-256 {got} is not the pinned {MODEL_SHA256}"));
+        return Err(format!("model download: SHA-256 {got} is not the pinned {sha256}"));
     }
     std::fs::rename(&part, dest).map_err(|e| e.to_string())
 }
@@ -105,31 +140,11 @@ impl Transcriber for Whisper {
     fn prepare(&self, _data_dir: &Path, progress: &mut dyn FnMut(f32)) -> Result<bool, String> {
         // The start of a job's downloading or writing: its language is detected
         // afresh on the first window it writes.
-        *self.language.lock().unwrap() = None;
-        if !cpu_runs_model() {
-            return Err(crate::pipeline::UNSUPPORTED_CPU.into());
-        }
-        if !self.fetch {
-            return if self.path.is_file() { Ok(false) } else { Err(format!("model file missing: {}", self.path.display())) };
-        }
-        if !self.needs_fetch() {
-            return Ok(false);
-        }
-        std::fs::create_dir_all(self.path.parent().unwrap()).map_err(|e| e.to_string())?;
-        let mut tries = 0;
-        while let Err(e) = fetch_model(&self.path, progress) {
-            tries += 1;
-            if tries >= 3 {
-                return Err(e);
-            }
-            crate::log(format!("{e}; retrying"));
-            std::thread::sleep(Duration::from_secs(5 * tries));
-        }
-        Ok(true)
+        self.prepare_models(progress, &mut fetch_model)
     }
 
     fn needs_fetch(&self) -> bool {
-        self.fetch && !std::fs::metadata(&self.path).is_ok_and(|m| m.len() == MODEL_BYTES)
+        self.voice.needs_fetch() || (self.fetch && !std::fs::metadata(&self.path).is_ok_and(|m| m.len() == MODEL_BYTES))
     }
 
     fn load(&self) -> Result<(), String> {
@@ -137,26 +152,43 @@ impl Transcriber for Whisper {
     }
 
     fn transcribe(&self, pcm: &[f32], progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String> {
+        // A resumed writing job can bypass the downloading stage, including with a model override.
+        self.voice.prepare(true)?;
+        let regions = crate::audio::detected_voice_regions(&self.voice.spans(pcm)?, pcm.len());
+        if regions.is_empty() {
+            progress(1.0);
+            return Ok(Vec::new());
+        }
         let mut state_guard = self.state()?;
         let (state, eot) = state_guard.as_mut().unwrap();
         let eot = *eot;
-        // Keep the detected language across windows, without carrying text into another job.
-        let known = self.language.lock().unwrap().clone();
-        let segs = decode(state, eot, known.as_deref(), inference_params(self.mobile), pcm, progress)?;
-        if known.is_none() {
-            *self.language.lock().unwrap() = whisper_rs::get_lang_str(state.full_lang_id_from_state()).map(String::from);
+        let total = regions.iter().map(|r| r.end - r.start).sum::<usize>();
+        let mut done = 0;
+        let mut out = Vec::new();
+        for r in regions {
+            // Keep short pauses, but never let a musical interval corrupt the next speech's decoding.
+            let samples = &pcm[r.start..r.end];
+            let mut report = |p| progress((done as f32 + p * samples.len() as f32) / total as f32);
+            let known = self.language.lock().unwrap().clone();
+            let mut segs = decode(state, eot, known.as_deref(), inference_params(self.mobile), samples, &mut report)?;
+            if known.is_none() {
+                *self.language.lock().unwrap() = whisper_rs::get_lang_str(state.full_lang_id_from_state()).map(String::from);
+            }
+            // Keep loop recovery for greedy phone or CPU decoding, on this speech portion's clock.
+            if greedy(self.mobile) && segs.iter().any(|s| crate::stitch::collapse_repeats(&s.text) != s.text) {
+                let mut params = inference_params(self.mobile);
+                params.set_temperature_inc(0.2);
+                segs = decode(state, eot, self.language().as_deref(), params, samples, &mut report)?;
+            }
+            for s in &mut segs {
+                s.start_ms += r.start_ms();
+                s.end_ms += r.start_ms();
+                for w in &mut s.words { w.start_ms += r.start_ms(); w.end_ms += r.start_ms(); }
+            }
+            out.extend(segs);
+            done += samples.len();
         }
-        // Greedy decoding with no temperature retries can loop on a rhythmic
-        // sound and lose the speech after it (36:52 of the lecture: "chon" 104
-        // times over 22 s). Such a window alone is decoded again with whisper's
-        // temperature fallback, which retries a looping part. whisper.cpp seeds
-        // its sampling on every call, so the retry gives the same text each time.
-        if greedy(self.mobile) && segs.iter().any(|s| crate::stitch::collapse_repeats(&s.text) != s.text) {
-            let mut params = inference_params(self.mobile);
-            params.set_temperature_inc(0.2);
-            return decode(state, eot, self.language().as_deref(), params, pcm, progress);
-        }
-        Ok(segs)
+        Ok(out)
     }
 
     fn unload(&self) {

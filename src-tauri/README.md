@@ -37,6 +37,10 @@ Run the screens in a browser: `PORT=8080 APP_DATA_DIR=<folder> node scripts/live
 Build and run the app on Windows. This needs `npm ci` first and libclang for whisper-rs's bindgen, for example from `pip install libclang`:
 `LIBCLANG_PATH=<dir with libclang.dll> cargo run --release -p video-translate-overlay --features app --bin video-translate-overlay`.
 `VTO_WHISPER_MODEL=<file>` uses an existing model file instead of fetching one.
+The separate speech detector is provisioned under the app data folder's
+`models/` directory even with this override. The override directory is left
+unchanged. First use needs network access for the detector unless its pinned
+file is already provisioned in that app cache; resumed writing checks it too.
 The real model has its own opt-in test:
 `VTO_WHISPER_MODEL=<file> cargo test --release -p video-translate-overlay --features app --test whisper_model -- --ignored`.
 

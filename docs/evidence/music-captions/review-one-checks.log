@@ -1,0 +1,633 @@
+Focused repair checks. These are not the repository gate.
+Environment: Windows 11 Home 10.0.26200 x64; Node 24.18.0; rustc 1.98.1; Cargo 1.98.1; Vulkan SDK 1.4.363.1; CARGO_TARGET_DIR=C:/vtt.
+The stopped extra dependency-build rerun has no passing result and is excluded.
+
+COMMAND: cargo test -p video-translate-overlay --release --features whisper --lib sync::library::tests -- --nocapture
+STATUS: current round; same source and test file as eead0b9
+warning: unexpected `cfg` condition name: `desktop`
+  --> src-tauri\src\screens.rs:26:11
+   |
+26 |     #[cfg(desktop)]
+   |           ^^^^^^^
+   |
+   = help: expected names are: `docsrs`, `feature`, and `test` and 32 more
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(desktop)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(desktop)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition name: `desktop`
+  --> src-tauri\src\screens.rs:15:15
+   |
+15 |         #[cfg(desktop)]
+   |               ^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(desktop)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(desktop)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: `video-translate-overlay` (lib test) generated 2 warnings
+    Finished `release` profile [optimized] target(s) in 1.11s
+     Running unittests src\lib.rs (C:/vtt\release\deps\vto-ff55f15a8ff37a42.exe)
+
+running 16 tests
+test sync::library::tests::concurrent_order_ties_have_the_same_visible_order_on_both_replicas ... ok
+test sync::library::tests::active_jobs_defer_projection_and_confirmed_deletion_stays_hidden_until_cleanup ... ok
+test sync::library::tests::invalid_legacy_completion_rolls_back_the_copy_and_active_jobs_stay_local ... ok
+test sync::library::tests::failed_projection_rolls_back_received_records_and_cursor_together ... ok
+test sync::library::tests::job_completion_cannot_adopt_a_deletion_received_after_the_job_started ... ok
+test sync::library::tests::legacy_import_is_a_copy_is_idempotent_and_cannot_assign_another_accounts_store ... ok
+test sync::library::tests::concurrent_completed_versions_are_retained_and_fresh_restoration_waits_for_cleanup ... ok
+test sync::library::tests::deletion_and_a_fresh_link_or_translation_in_one_page_cannot_bypass_cleanup ... ok
+test sync::library::tests::multi_place_moves_reach_the_peer_in_the_same_order ... ok
+test sync::library::tests::native_completion_and_its_journal_commit_atomically_and_do_not_replace_the_local_job ... ok
+test sync::library::tests::ordinary_library_mutations_publish_and_incoming_projection_does_not_echo ... ok
+test sync::library::tests::partial_dependencies_survive_restart_and_blocked_rows_do_not_starve_later_work ... ok
+test sync::library::tests::queued_remote_deletion_invalidates_earlier_consent_before_projection ... ok
+test sync::library::tests::silent_cue_repair_denies_any_change_to_the_inspected_selection_or_cue ... ok
+test sync::library::tests::received_ready_library_is_usable_without_processing_and_survives_restart ... ok
+test sync::library::tests::silent_cue_repair_is_atomic_retains_versions_cost_and_sync_selection ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 231 filtered out; finished in 11.14s
+
+COMMAND: cargo test -p video-translate-overlay --release --features whisper --lib speech_model_override -- --nocapture
+STATUS: current round; unchanged test function before the adjacent opt-in test was strengthened
+warning: unexpected `cfg` condition name: `desktop`
+  --> src-tauri\src\screens.rs:26:11
+   |
+26 |     #[cfg(desktop)]
+   |           ^^^^^^^
+   |
+   = help: expected names are: `docsrs`, `feature`, and `test` and 32 more
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(desktop)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(desktop)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition name: `desktop`
+  --> src-tauri\src\screens.rs:15:15
+   |
+15 |         #[cfg(desktop)]
+   |               ^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(desktop)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(desktop)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: `video-translate-overlay` (lib test) generated 2 warnings
+    Finished `release` profile [optimized] target(s) in 0.64s
+     Running unittests src\lib.rs (C:/vtt\release\deps\vto-ff55f15a8ff37a42.exe)
+
+running 1 test
+test whisper::tests::speech_model_override_provisions_only_the_detector_in_the_app_cache ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 246 filtered out; finished in 0.05s
+
+COMMAND: cargo test -p video-translate-overlay --release --features whisper --lib mit_music_and_contrasting_speech -- --ignored --nocapture
+STATUS: fresh final audio test, RTX 3080
+   Compiling video-translate-overlay v0.1.8 (<checkout>\src-tauri)
+warning: unexpected `cfg` condition name: `desktop`
+  --> src-tauri\src\screens.rs:26:11
+   |
+26 |     #[cfg(desktop)]
+   |           ^^^^^^^
+   |
+   = help: expected names are: `docsrs`, `feature`, and `test` and 32 more
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(desktop)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(desktop)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition name: `desktop`
+  --> src-tauri\src\screens.rs:15:15
+   |
+15 |         #[cfg(desktop)]
+   |               ^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(desktop)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(desktop)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: `video-translate-overlay` (lib test) generated 2 warnings
+    Finished `release` profile [optimized] target(s) in 1m 01s
+     Running unittests src\lib.rs (C:/vtt\release\deps\vto-ff55f15a8ff37a42.exe)
+
+running 1 test
+whisper_vad_init_from_file_with_params: loading VAD model from '<checkout>\artifacts\models\ggml-silero-v6.2.0.bin'
+whisper_vad_init_with_params: model type: silero-16k
+whisper_vad_init_with_params: model version: 6.2.0
+whisper_vad_init_with_params: n_encoder_layers = 4
+whisper_vad_init_with_params: encoder_in_channels[0] = 129
+whisper_vad_init_with_params: encoder_in_channels[1] = 128
+whisper_vad_init_with_params: encoder_in_channels[2] = 64
+whisper_vad_init_with_params: encoder_in_channels[3] = 64
+whisper_vad_init_with_params: encoder_out_channels[0] = 128
+whisper_vad_init_with_params: encoder_out_channels[1] = 64
+whisper_vad_init_with_params: encoder_out_channels[2] = 64
+whisper_vad_init_with_params: encoder_out_channels[3] = 128
+whisper_vad_init_with_params: lstm_input_size = 128
+whisper_vad_init_with_params: lstm_hidden_size = 128
+whisper_vad_init_with_params: final_conv_in = 128
+whisper_vad_init_with_params: final_conv_out = 1
+ggml_vulkan: Found 1 Vulkan devices:
+ggml_vulkan: 0 = NVIDIA GeForce RTX 3080 (NVIDIA) | uma: 0 | fp16: 1 | bf16: 1 | warp size: 32 | shared memory: 49152 | int dot: 1 | matrix cores: NV_coopmat2
+register_backend: registered backend Vulkan (1 devices)
+register_device: registered device Vulkan0 (NVIDIA GeForce RTX 3080)
+register_backend: registered backend CPU (1 devices)
+register_device: registered device CPU (12th Gen Intel(R) Core(TM) i7-12700F)
+whisper_vad_init_with_params:          CPU total size =     0.88 MB
+whisper_vad_init_with_params: model size    =    0.88 MB
+whisper_backend_init_gpu: no GPU found
+whisper_vad_init_context: compute buffer (VAD)   =    1.60 MB
+whisper_vad_segments_from_samples: detecting speech timestamps in 128000 samples
+whisper_vad_detect_speech: detecting speech in 128000 samples
+whisper_vad_detect_speech: n_chunks: 250
+whisper_vad_detect_speech: props size: 250
+whisper_vad_detect_speech: vad time = 831.07 ms processing 128000 samples
+voice: 128000 samples, peak=0.04675293, probabilities=0.051703308
+whisper_vad_segments_from_probs: detecting speech timestamps using 250 probabilities
+whisper_vad_segments_from_probs: Final speech segments after filtering: 0
+whisper_vad_segments_from_samples: detecting speech timestamps in 73920 samples
+whisper_vad_detect_speech: detecting speech in 73920 samples
+whisper_vad_detect_speech: n_chunks: 145
+whisper_vad_detect_speech: props size: 145
+whisper_vad_detect_speech: chunk_len: 192 < n_window: 512
+whisper_vad_detect_speech: vad time = 1163.99 ms processing 73920 samples
+voice: 73920 samples, peak=0.04675293, probabilities=0.35412338
+whisper_vad_segments_from_probs: detecting speech timestamps using 145 probabilities
+whisper_vad_segments_from_probs: Final speech segments after filtering: 0
+whisper_vad_segments_from_samples: detecting speech timestamps in 320000 samples
+whisper_vad_detect_speech: detecting speech in 320000 samples
+whisper_vad_detect_speech: n_chunks: 625
+whisper_vad_detect_speech: props size: 625
+voice: 320000 samples, peak=0.93777466, probabilities=0.99999905
+whisper_vad_detect_speech: vad time = 1842.09 ms processing 320000 samples
+whisper_vad_segments_from_probs: detecting speech timestamps using 625 probabilities
+whisper_vad_segments_from_probs: Merged 2 adjacent segments, now have 3 segments
+whisper_vad_segments_from_probs: Final speech segments after filtering: 3
+whisper_vad_segments_from_probs: VAD segment 0: start = 9.04, end = 14.00 (duration: 4.96)
+whisper_vad_segments_from_probs: VAD segment 1: start = 14.07, end = 18.58 (duration: 4.51)
+whisper_vad_segments_from_probs: VAD segment 2: start = 18.58, end = 20.00 (duration: 1.42)
+MIT opening speech spans: [(9040, 14000), (14070, 18580), (18580, 20000)]
+whisper_vad_segments_from_samples: detecting speech timestamps in 112000 samples
+whisper_vad_detect_speech: detecting speech in 112000 samples
+whisper_vad_detect_speech: n_chunks: 219
+whisper_vad_detect_speech: props size: 219
+whisper_vad_detect_speech: chunk_len: 384 < n_window: 512
+whisper_vad_detect_speech: vad time = 2344.93 ms processing 112000 samples
+voice: 112000 samples, peak=0.9343872, probabilities=0.9999989
+whisper_vad_segments_from_probs: detecting speech timestamps using 219 probabilities
+whisper_vad_segments_from_probs: Merged 1 adjacent segments, now have 2 segments
+whisper_vad_segments_from_probs: Final speech segments after filtering: 2
+whisper_vad_segments_from_probs: VAD segment 0: start = 0.00, end = 3.98 (duration: 3.98)
+whisper_vad_segments_from_probs: VAD segment 1: start = 4.08, end = 7.01 (duration: 2.93)
+whisper_vad_segments_from_samples: detecting speech timestamps in 112000 samples
+whisper_vad_detect_speech: detecting speech in 112000 samples
+whisper_vad_detect_speech: n_chunks: 219
+whisper_vad_detect_speech: props size: 219
+whisper_vad_detect_speech: chunk_len: 384 < n_window: 512
+whisper_vad_detect_speech: vad time = 2493.01 ms processing 112000 samples
+voice: 112000 samples, peak=0.004671936, probabilities=0.99999523
+whisper_vad_segments_from_probs: detecting speech timestamps using 219 probabilities
+whisper_vad_segments_from_probs: Merged 2 adjacent segments, now have 2 segments
+whisper_vad_segments_from_probs: Final speech segments after filtering: 2
+whisper_vad_segments_from_probs: VAD segment 0: start = 0.00, end = 3.98 (duration: 3.98)
+whisper_vad_segments_from_probs: VAD segment 1: start = 4.08, end = 7.01 (duration: 2.93)
+whisper_vad_segments_from_samples: detecting speech timestamps in 112000 samples
+whisper_vad_detect_speech: detecting speech in 112000 samples
+whisper_vad_detect_speech: n_chunks: 219
+whisper_vad_detect_speech: props size: 219
+whisper_vad_detect_speech: chunk_len: 384 < n_window: 512
+whisper_vad_detect_speech: vad time = 2595.66 ms processing 112000 samples
+whisper_vad_segments_from_probs: detecting speech timestamps using 219 probabilities
+whisper_vad_segments_from_probs: Merged 2 adjacent segments, now have 2 segments
+whisper_vad_segments_from_probs: Final speech segments after filtering: 2
+whisper_vad_segments_from_probs: VAD segment 0: start = 0.00, end = 4.01 (duration: 4.01)
+whisper_vad_segments_from_probs: VAD segment 1: start = 4.08, end = 7.01 (duration: 2.93)
+voice: 112000 samples, peak=0.9305054, probabilities=0.9999989
+whisper_vad_segments_from_samples: detecting speech timestamps in 320000 samples
+whisper_vad_detect_speech: detecting speech in 320000 samples
+whisper_vad_detect_speech: n_chunks: 625
+whisper_vad_detect_speech: props size: 625
+whisper_vad_detect_speech: vad time = 2773.47 ms processing 320000 samples
+voice: 320000 samples, peak=0.93777466, probabilities=0.99999905
+whisper_vad_segments_from_probs: detecting speech timestamps using 625 probabilities
+whisper_vad_segments_from_probs: Merged 2 adjacent segments, now have 3 segments
+whisper_vad_segments_from_probs: Final speech segments after filtering: 3
+whisper_vad_segments_from_probs: VAD segment 0: start = 9.04, end = 14.00 (duration: 4.96)
+whisper_vad_segments_from_probs: VAD segment 1: start = 14.07, end = 18.58 (duration: 4.51)
+whisper_vad_segments_from_probs: VAD segment 2: start = 18.58, end = 20.00 (duration: 1.42)
+whisper_vad_init_from_file_with_params: loading VAD model from '<checkout>\artifacts\models\ggml-silero-v6.2.0.bin'
+whisper_vad_init_with_params: model type: silero-16k
+whisper_vad_init_with_params: model version: 6.2.0
+whisper_vad_init_with_params: n_encoder_layers = 4
+whisper_vad_init_with_params: encoder_in_channels[0] = 129
+whisper_vad_init_with_params: encoder_in_channels[1] = 128
+whisper_vad_init_with_params: encoder_in_channels[2] = 64
+whisper_vad_init_with_params: encoder_in_channels[3] = 64
+whisper_vad_init_with_params: encoder_out_channels[0] = 128
+whisper_vad_init_with_params: encoder_out_channels[1] = 64
+whisper_vad_init_with_params: encoder_out_channels[2] = 64
+whisper_vad_init_with_params: encoder_out_channels[3] = 128
+whisper_vad_init_with_params: lstm_input_size = 128
+whisper_vad_init_with_params: lstm_hidden_size = 128
+whisper_vad_init_with_params: final_conv_in = 128
+whisper_vad_init_with_params: final_conv_out = 1
+whisper_vad_init_with_params:          CPU total size =     0.88 MB
+whisper_vad_init_with_params: model size    =    0.88 MB
+whisper_backend_init_gpu: no GPU found
+whisper_vad_init_context: compute buffer (VAD)   =    1.60 MB
+whisper_vad_segments_from_samples: detecting speech timestamps in 320000 samples
+whisper_vad_detect_speech: detecting speech in 320000 samples
+whisper_vad_detect_speech: n_chunks: 625
+whisper_vad_detect_speech: props size: 625
+whisper_vad_detect_speech: vad time = 231.34 ms processing 320000 samples
+voice: 320000 samples, peak=0.93777466, probabilities=0.99999905
+whisper_vad_segments_from_probs: detecting speech timestamps using 625 probabilities
+whisper_vad_segments_from_probs: Merged 2 adjacent segments, now have 3 segments
+whisper_vad_segments_from_probs: Final speech segments after filtering: 3
+whisper_vad_segments_from_probs: VAD segment 0: start = 9.04, end = 14.00 (duration: 4.96)
+whisper_vad_segments_from_probs: VAD segment 1: start = 14.07, end = 18.58 (duration: 4.51)
+whisper_vad_segments_from_probs: VAD segment 2: start = 18.58, end = 20.00 (duration: 1.42)
+whisper_vad_segments_from_samples: detecting speech timestamps in 208000 samples
+whisper_vad_detect_speech: detecting speech in 208000 samples
+whisper_vad_detect_speech: n_chunks: 407
+whisper_vad_detect_speech: props size: 407
+whisper_vad_detect_speech: chunk_len: 128 < n_window: 512
+voice: 208000 samples, peak=0.45529175, probabilities=0.9999995
+whisper_vad_detect_speech: vad time = 2951.99 ms processing 208000 samples
+whisper_vad_segments_from_probs: detecting speech timestamps using 407 probabilities
+whisper_vad_segments_from_probs: Merged 2 adjacent segments, now have 2 segments
+whisper_vad_segments_from_probs: Final speech segments after filtering: 2
+whisper_vad_segments_from_probs: VAD segment 0: start = 0.00, end = 10.73 (duration: 10.73)
+whisper_vad_segments_from_probs: VAD segment 1: start = 10.87, end = 13.02 (duration: 2.15)
+voice: 128000 samples, peak=0.04675293, probabilities=0.051703308
+voice: 73920 samples, peak=0.04675293, probabilities=0.35412338
+voice: 320000 samples, peak=0.93777466, probabilities=0.99999905
+[vto] speech model on NVIDIA GeForce RTX 3080
+ggml-base-q5_1.bin: [Segment { start_ms: 9040, end_ms: 13720, text: " Good afternoon everyone. Thank you all for joining today. My name is Alexandra Amini and", words: [Word { start_ms: 9310, end_ms: 9320, text: " Good" }, Word { start_ms: 9330, end_ms: 9950, text: " afternoon" }, Word { start_ms: 9950, end_ms: 10670, text: " everyone." }, Word { start_ms: 10800, end_ms: 10910, text: " Thank" }, Word { start_ms: 10910, end_ms: 11040, text: " you" }, Word { start_ms: 11040, end_ms: 11170, text: " all" }, Word { start_ms: 11170, end_ms: 11300, text: " for" }, Word { start_ms: 11300, end_ms: 11620, text: " joining" }, Word { start_ms: 11620, end_ms: 11940, text: " today." }, Word { start_ms: 11940, end_ms: 12070, text: " My" }, Word { start_ms: 12070, end_ms: 12340, text: " name" }, Word { start_ms: 12340, end_ms: 12450, text: " is" }, Word { start_ms: 12540, end_ms: 13120, text: " Alexandra" }, Word { start_ms: 13120, end_ms: 13480, text: " Amini" }, Word { start_ms: 13480, end_ms: 13560, text: " and" }] }, Segment { start_ms: 13720, end_ms: 19640, text: " I'll be one of your course organizers this year along with Ava and together we're", words: [Word { start_ms: 13800, end_ms: 14050, text: " I'll" }, Word { start_ms: 14050, end_ms: 14210, text: " be" }, Word { start_ms: 14210, end_ms: 14460, text: " one" }, Word { start_ms: 14460, end_ms: 14620, text: " of" }, Word { start_ms: 14620, end_ms: 14950, text: " your" }, Word { start_ms: 14950, end_ms: 15090, text: " course" }, Word { start_ms: 15480, end_ms: 16320, text: " organizers" }, Word { start_ms: 16320, end_ms: 16660, text: " this" }, Word { start_ms: 16660, end_ms: 17000, text: " year" }, Word { start_ms: 17000, end_ms: 17420, text: " along" }, Word { start_ms: 17420, end_ms: 17760, text: " with" }, Word { start_ms: 17760, end_ms: 18040, text: " Ava" }, Word { start_ms: 18040, end_ms: 18230, text: " and" }, Word { start_ms: 19050, end_ms: 19360, text: " together" }, Word { start_ms: 19430, end_ms: 19640, text: " we're" }] }]
+voice: 128000 samples, peak=0.04675293, probabilities=0.051703308
+voice: 73920 samples, peak=0.04675293, probabilities=0.35412338
+voice: 320000 samples, peak=0.93777466, probabilities=0.99999905
+[vto] speech model on NVIDIA GeForce RTX 3080
+ggml-large-v3-turbo-q5_0.bin: [Segment { start_ms: 9280, end_ms: 13520, text: " good afternoon everyone thank you all for joining today my name is alexander amini", words: [Word { start_ms: 9280, end_ms: 9290, text: " good" }, Word { start_ms: 9560, end_ms: 9860, text: " afternoon" }, Word { start_ms: 9860, end_ms: 10370, text: " everyone" }, Word { start_ms: 10370, end_ms: 10640, text: " thank" }, Word { start_ms: 10690, end_ms: 10750, text: " you" }, Word { start_ms: 11040, end_ms: 11060, text: " all" }, Word { start_ms: 11060, end_ms: 11250, text: " for" }, Word { start_ms: 11250, end_ms: 11690, text: " joining" }, Word { start_ms: 11690, end_ms: 12000, text: " today" }, Word { start_ms: 12000, end_ms: 12120, text: " my" }, Word { start_ms: 12120, end_ms: 12370, text: " name" }, Word { start_ms: 12370, end_ms: 12560, text: " is" }, Word { start_ms: 12560, end_ms: 13120, text: " alexander" }, Word { start_ms: 13120, end_ms: 13520, text: " amini" }] }, Segment { start_ms: 13520, end_ms: 20000, text: " and i'll be one of your course organizers this year along with ava and together we're sort", words: [Word { start_ms: 13790, end_ms: 13790, text: " and" }, Word { start_ms: 13800, end_ms: 14110, text: " i'll" }, Word { start_ms: 14210, end_ms: 14330, text: " be" }, Word { start_ms: 14330, end_ms: 14600, text: " one" }, Word { start_ms: 14600, end_ms: 14780, text: " of" }, Word { start_ms: 14780, end_ms: 14890, text: " your" }, Word { start_ms: 15280, end_ms: 15660, text: " course" }, Word { start_ms: 15730, end_ms: 16620, text: " organizers" }, Word { start_ms: 16620, end_ms: 16930, text: " this" }, Word { start_ms: 17020, end_ms: 17360, text: " year" }, Word { start_ms: 17360, end_ms: 17820, text: " along" }, Word { start_ms: 17820, end_ms: 18030, text: " with" }, Word { start_ms: 18030, end_ms: 18460, text: " ava" }, Word { start_ms: 18460, end_ms: 18730, text: " and" }, Word { start_ms: 18870, end_ms: 19460, text: " together" }, Word { start_ms: 19460, end_ms: 19970, text: " we're" }, Word { start_ms: 20000, end_ms: 20000, text: " sort" }] }]
+test whisper::tests::mit_music_and_contrasting_speech_keep_their_source_clock ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 246 filtered out; finished in 8.61s
+
+COMMAND: same audio command in a fresh process with VK_DRIVER_FILES pointing to a nonexistent file
+STATUS: fresh final audio test, CPU fallback
+warning: unexpected `cfg` condition name: `desktop`
+  --> src-tauri\src\screens.rs:26:11
+   |
+26 |     #[cfg(desktop)]
+   |           ^^^^^^^
+   |
+   = help: expected names are: `docsrs`, `feature`, and `test` and 32 more
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(desktop)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(desktop)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition name: `desktop`
+  --> src-tauri\src\screens.rs:15:15
+   |
+15 |         #[cfg(desktop)]
+   |               ^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(desktop)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(desktop)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: `video-translate-overlay` (lib test) generated 2 warnings
+    Finished `release` profile [optimized] target(s) in 0.77s
+     Running unittests src\lib.rs (C:/vtt\release\deps\vto-ff55f15a8ff37a42.exe)
+
+running 1 test
+whisper_vad_init_from_file_with_params: loading VAD model from '<checkout>\artifacts\models\ggml-silero-v6.2.0.bin'
+whisper_vad_init_with_params: model type: silero-16k
+whisper_vad_init_with_params: model version: 6.2.0
+whisper_vad_init_with_params: n_encoder_layers = 4
+whisper_vad_init_with_params: encoder_in_channels[0] = 129
+whisper_vad_init_with_params: encoder_in_channels[1] = 128
+whisper_vad_init_with_params: encoder_in_channels[2] = 64
+whisper_vad_init_with_params: encoder_in_channels[3] = 64
+whisper_vad_init_with_params: encoder_out_channels[0] = 128
+whisper_vad_init_with_params: encoder_out_channels[1] = 64
+whisper_vad_init_with_params: encoder_out_channels[2] = 64
+whisper_vad_init_with_params: encoder_out_channels[3] = 128
+whisper_vad_init_with_params: lstm_input_size = 128
+whisper_vad_init_with_params: lstm_hidden_size = 128
+whisper_vad_init_with_params: final_conv_in = 128
+whisper_vad_init_with_params: final_conv_out = 1
+register_backend: registered backend CPU (1 devices)
+register_device: registered device CPU (12th Gen Intel(R) Core(TM) i7-12700F)
+whisper_vad_init_with_params:          CPU total size =     0.88 MB
+whisper_vad_init_with_params: model size    =    0.88 MB
+whisper_backend_init_gpu: no GPU found
+whisper_vad_init_context: compute buffer (VAD)   =    1.60 MB
+whisper_vad_segments_from_samples: detecting speech timestamps in 128000 samples
+whisper_vad_detect_speech: detecting speech in 128000 samples
+whisper_vad_detect_speech: n_chunks: 250
+whisper_vad_detect_speech: props size: 250
+whisper_vad_detect_speech: vad time = 47.89 ms processing 128000 samples
+whisper_vad_segments_from_probs: detecting speech timestamps using 250 probabilities
+whisper_vad_segments_from_probs: Final speech segments after filtering: 0
+voice: 128000 samples, peak=0.04675293, probabilities=0.051703308
+whisper_vad_segments_from_samples: detecting speech timestamps in 73920 samples
+whisper_vad_detect_speech: detecting speech in 73920 samples
+whisper_vad_detect_speech: n_chunks: 145
+whisper_vad_detect_speech: props size: 145
+whisper_vad_detect_speech: chunk_len: 192 < n_window: 512
+whisper_vad_detect_speech: vad time = 70.69 ms processing 73920 samples
+voice: 73920 samples, peak=0.04675293, probabilities=0.35412338
+whisper_vad_segments_from_probs: detecting speech timestamps using 145 probabilities
+whisper_vad_segments_from_probs: Final speech segments after filtering: 0
+whisper_vad_segments_from_samples: detecting speech timestamps in 320000 samples
+whisper_vad_detect_speech: detecting speech in 320000 samples
+whisper_vad_detect_speech: n_chunks: 625
+whisper_vad_detect_speech: props size: 625
+whisper_vad_detect_speech: vad time = 194.33 ms processing 320000 samples
+voice: 320000 samples, peak=0.93777466, probabilities=0.99999905
+whisper_vad_segments_from_probs: detecting speech timestamps using 625 probabilities
+whisper_vad_segments_from_probs: Merged 2 adjacent segments, now have 3 segments
+whisper_vad_segments_from_probs: Final speech segments after filtering: 3
+whisper_vad_segments_from_probs: VAD segment 0: start = 9.04, end = 14.00 (duration: 4.96)
+whisper_vad_segments_from_probs: VAD segment 1: start = 14.07, end = 18.58 (duration: 4.51)
+whisper_vad_segments_from_probs: VAD segment 2: start = 18.58, end = 20.00 (duration: 1.42)
+MIT opening speech spans: [(9040, 14000), (14070, 18580), (18580, 20000)]
+whisper_vad_segments_from_samples: detecting speech timestamps in 112000 samples
+whisper_vad_detect_speech: detecting speech in 112000 samples
+whisper_vad_detect_speech: n_chunks: 219
+whisper_vad_detect_speech: props size: 219
+whisper_vad_detect_speech: chunk_len: 384 < n_window: 512
+whisper_vad_detect_speech: vad time = 483.37 ms processing 112000 samples
+whisper_vad_segments_from_probs: detecting speech timestamps using 219 probabilities
+whisper_vad_segments_from_probs: Merged 1 adjacent segments, now have 2 segments
+whisper_vad_segments_from_probs: Final speech segments after filtering: 2
+whisper_vad_segments_from_probs: VAD segment 0: start = 0.00, end = 3.98 (duration: 3.98)
+whisper_vad_segments_from_probs: VAD segment 1: start = 4.08, end = 7.01 (duration: 2.93)
+voice: 112000 samples, peak=0.9343872, probabilities=0.9999989
+whisper_vad_segments_from_samples: detecting speech timestamps in 112000 samples
+whisper_vad_detect_speech: detecting speech in 112000 samples
+whisper_vad_detect_speech: n_chunks: 219
+whisper_vad_detect_speech: props size: 219
+whisper_vad_detect_speech: chunk_len: 384 < n_window: 512
+whisper_vad_detect_speech: vad time = 519.64 ms processing 112000 samples
+whisper_vad_segments_from_probs: detecting speech timestamps using 219 probabilities
+whisper_vad_segments_from_probs: Merged 2 adjacent segments, now have 2 segments
+whisper_vad_segments_from_probs: Final speech segments after filtering: 2
+whisper_vad_segments_from_probs: VAD segment 0: start = 0.00, end = 3.98 (duration: 3.98)
+whisper_vad_segments_from_probs: VAD segment 1: start = 4.08, end = 7.01 (duration: 2.93)
+voice: 112000 samples, peak=0.004671936, probabilities=0.99999523
+whisper_vad_segments_from_samples: detecting speech timestamps in 112000 samples
+whisper_vad_detect_speech: detecting speech in 112000 samples
+whisper_vad_detect_speech: n_chunks: 219
+whisper_vad_detect_speech: props size: 219
+whisper_vad_detect_speech: chunk_len: 384 < n_window: 512
+whisper_vad_detect_speech: vad time = 547.75 ms processing 112000 samples
+whisper_vad_segments_from_probs: detecting speech timestamps using 219 probabilities
+whisper_vad_segments_from_probs: Merged 2 adjacent segments, now have 2 segments
+whisper_vad_segments_from_probs: Final speech segments after filtering: 2
+whisper_vad_segments_from_probs: VAD segment 0: start = 0.00, end = 4.01 (duration: 4.01)
+whisper_vad_segments_from_probs: VAD segment 1: start = 4.08, end = 7.01 (duration: 2.93)
+voice: 112000 samples, peak=0.9305054, probabilities=0.9999989
+whisper_vad_segments_from_samples: detecting speech timestamps in 320000 samples
+whisper_vad_detect_speech: detecting speech in 320000 samples
+whisper_vad_detect_speech: n_chunks: 625
+whisper_vad_detect_speech: props size: 625
+whisper_vad_detect_speech: vad time = 645.41 ms processing 320000 samples
+voice: 320000 samples, peak=0.93777466, probabilities=0.99999905
+whisper_vad_segments_from_probs: detecting speech timestamps using 625 probabilities
+whisper_vad_segments_from_probs: Merged 2 adjacent segments, now have 3 segments
+whisper_vad_segments_from_probs: Final speech segments after filtering: 3
+whisper_vad_segments_from_probs: VAD segment 0: start = 9.04, end = 14.00 (duration: 4.96)
+whisper_vad_segments_from_probs: VAD segment 1: start = 14.07, end = 18.58 (duration: 4.51)
+whisper_vad_segments_from_probs: VAD segment 2: start = 18.58, end = 20.00 (duration: 1.42)
+whisper_vad_init_from_file_with_params: loading VAD model from '<checkout>\artifacts\models\ggml-silero-v6.2.0.bin'
+whisper_vad_init_with_params: model type: silero-16k
+whisper_vad_init_with_params: model version: 6.2.0
+whisper_vad_init_with_params: n_encoder_layers = 4
+whisper_vad_init_with_params: encoder_in_channels[0] = 129
+whisper_vad_init_with_params: encoder_in_channels[1] = 128
+whisper_vad_init_with_params: encoder_in_channels[2] = 64
+whisper_vad_init_with_params: encoder_in_channels[3] = 64
+whisper_vad_init_with_params: encoder_out_channels[0] = 128
+whisper_vad_init_with_params: encoder_out_channels[1] = 64
+whisper_vad_init_with_params: encoder_out_channels[2] = 64
+whisper_vad_init_with_params: encoder_out_channels[3] = 128
+whisper_vad_init_with_params: lstm_input_size = 128
+whisper_vad_init_with_params: lstm_hidden_size = 128
+whisper_vad_init_with_params: final_conv_in = 128
+whisper_vad_init_with_params: final_conv_out = 1
+whisper_vad_init_with_params:          CPU total size =     0.88 MB
+whisper_vad_init_with_params: model size    =    0.88 MB
+whisper_backend_init_gpu: no GPU found
+whisper_vad_init_context: compute buffer (VAD)   =    1.60 MB
+whisper_vad_segments_from_samples: detecting speech timestamps in 320000 samples
+whisper_vad_detect_speech: detecting speech in 320000 samples
+whisper_vad_detect_speech: n_chunks: 625
+whisper_vad_detect_speech: props size: 625
+whisper_vad_detect_speech: vad time = 221.93 ms processing 320000 samples
+voice: 320000 samples, peak=0.93777466, probabilities=0.99999905
+whisper_vad_segments_from_probs: detecting speech timestamps using 625 probabilities
+whisper_vad_segments_from_probs: Merged 2 adjacent segments, now have 3 segments
+whisper_vad_segments_from_probs: Final speech segments after filtering: 3
+whisper_vad_segments_from_probs: VAD segment 0: start = 9.04, end = 14.00 (duration: 4.96)
+whisper_vad_segments_from_probs: VAD segment 1: start = 14.07, end = 18.58 (duration: 4.51)
+whisper_vad_segments_from_probs: VAD segment 2: start = 18.58, end = 20.00 (duration: 1.42)
+whisper_vad_segments_from_samples: detecting speech timestamps in 208000 samples
+whisper_vad_detect_speech: detecting speech in 208000 samples
+whisper_vad_detect_speech: n_chunks: 407
+whisper_vad_detect_speech: props size: 407
+whisper_vad_detect_speech: chunk_len: 128 < n_window: 512
+whisper_vad_detect_speech: vad time = 759.68 ms processing 208000 samples
+voice: 208000 samples, peak=0.45529175, probabilities=0.9999995
+whisper_vad_segments_from_probs: detecting speech timestamps using 407 probabilities
+whisper_vad_segments_from_probs: Merged 2 adjacent segments, now have 2 segments
+whisper_vad_segments_from_probs: Final speech segments after filtering: 2
+whisper_vad_segments_from_probs: VAD segment 0: start = 0.00, end = 10.73 (duration: 10.73)
+whisper_vad_segments_from_probs: VAD segment 1: start = 10.87, end = 13.02 (duration: 2.15)
+voice: 128000 samples, peak=0.04675293, probabilities=0.051703308
+voice: 73920 samples, peak=0.04675293, probabilities=0.35412338
+voice: 320000 samples, peak=0.93777466, probabilities=0.99999905
+[vto] speech model on the CPU
+ggml-base-q5_1.bin: [Segment { start_ms: 9040, end_ms: 13720, text: " Good afternoon everyone. Thank you all for joining today. My name is Alexandra Amini and", words: [Word { start_ms: 9320, end_ms: 9340, text: " Good" }, Word { start_ms: 9340, end_ms: 10020, text: " afternoon" }, Word { start_ms: 10020, end_ms: 10680, text: " everyone." }, Word { start_ms: 10800, end_ms: 10910, text: " Thank" }, Word { start_ms: 10910, end_ms: 11040, text: " you" }, Word { start_ms: 11040, end_ms: 11170, text: " all" }, Word { start_ms: 11170, end_ms: 11300, text: " for" }, Word { start_ms: 11300, end_ms: 11620, text: " joining" }, Word { start_ms: 11620, end_ms: 11940, text: " today." }, Word { start_ms: 11940, end_ms: 12070, text: " My" }, Word { start_ms: 12070, end_ms: 12340, text: " name" }, Word { start_ms: 12340, end_ms: 12450, text: " is" }, Word { start_ms: 12540, end_ms: 13120, text: " Alexandra" }, Word { start_ms: 13120, end_ms: 13480, text: " Amini" }, Word { start_ms: 13480, end_ms: 13560, text: " and" }] }, Segment { start_ms: 13720, end_ms: 19640, text: " I'll be one of your course organizers this year along with Ava and together we're", words: [Word { start_ms: 13800, end_ms: 14050, text: " I'll" }, Word { start_ms: 14050, end_ms: 14210, text: " be" }, Word { start_ms: 14210, end_ms: 14460, text: " one" }, Word { start_ms: 14460, end_ms: 14620, text: " of" }, Word { start_ms: 14620, end_ms: 14950, text: " your" }, Word { start_ms: 14950, end_ms: 15090, text: " course" }, Word { start_ms: 15480, end_ms: 16320, text: " organizers" }, Word { start_ms: 16320, end_ms: 16660, text: " this" }, Word { start_ms: 16660, end_ms: 17000, text: " year" }, Word { start_ms: 17000, end_ms: 17420, text: " along" }, Word { start_ms: 17420, end_ms: 17760, text: " with" }, Word { start_ms: 17760, end_ms: 18040, text: " Ava" }, Word { start_ms: 18040, end_ms: 18230, text: " and" }, Word { start_ms: 19050, end_ms: 19360, text: " together" }, Word { start_ms: 19430, end_ms: 19640, text: " we're" }] }]
+voice: 128000 samples, peak=0.04675293, probabilities=0.051703308
+voice: 73920 samples, peak=0.04675293, probabilities=0.35412338
+voice: 320000 samples, peak=0.93777466, probabilities=0.99999905
+[vto] speech model on the CPU
+test whisper::tests::mit_music_and_contrasting_speech_keep_their_source_clock has been running for over 60 seconds
+ggml-large-v3-turbo-q5_0.bin: [Segment { start_ms: 9280, end_ms: 13440, text: " Good afternoon everyone. Thank you all for joining today. My name is Alexander Amini", words: [Word { start_ms: 9360, end_ms: 9360, text: " Good" }, Word { start_ms: 9560, end_ms: 10070, text: " afternoon" }, Word { start_ms: 10070, end_ms: 10770, text: " everyone." }, Word { start_ms: 11030, end_ms: 11030, text: " Thank" }, Word { start_ms: 11040, end_ms: 11150, text: " you" }, Word { start_ms: 11150, end_ms: 11270, text: " all" }, Word { start_ms: 11270, end_ms: 11390, text: " for" }, Word { start_ms: 11390, end_ms: 11660, text: " joining" }, Word { start_ms: 11660, end_ms: 12000, text: " today." }, Word { start_ms: 12000, end_ms: 12140, text: " My" }, Word { start_ms: 12140, end_ms: 12410, text: " name" }, Word { start_ms: 12410, end_ms: 12560, text: " is" }, Word { start_ms: 12560, end_ms: 13110, text: " Alexander" }, Word { start_ms: 13110, end_ms: 13440, text: " Amini" }] }, Segment { start_ms: 13440, end_ms: 20000, text: " and I'll be one of your course organizers this year along with Ava. And together we're", words: [Word { start_ms: 13700, end_ms: 13700, text: " and" }, Word { start_ms: 13720, end_ms: 14030, text: " I'll" }, Word { start_ms: 14130, end_ms: 14230, text: " be" }, Word { start_ms: 14230, end_ms: 14490, text: " one" }, Word { start_ms: 14490, end_ms: 14670, text: " of" }, Word { start_ms: 14670, end_ms: 14810, text: " your" }, Word { start_ms: 15200, end_ms: 15550, text: " course" }, Word { start_ms: 15550, end_ms: 16440, text: " organizers" }, Word { start_ms: 16440, end_ms: 16790, text: " this" }, Word { start_ms: 16790, end_ms: 17140, text: " year" }, Word { start_ms: 17140, end_ms: 17570, text: " along" }, Word { start_ms: 17580, end_ms: 17930, text: " with" }, Word { start_ms: 17930, end_ms: 18450, text: " Ava." }, Word { start_ms: 18710, end_ms: 18710, text: " And" }, Word { start_ms: 18800, end_ms: 19420, text: " together" }, Word { start_ms: 19420, end_ms: 19980, text: " we're" }] }]
+test whisper::tests::mit_music_and_contrasting_speech_keep_their_source_clock ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 246 filtered out; finished in 63.87s
+
+COMMAND: cargo test -p vto-contract-tests --test write_and_timing -- --nocapture
+STATUS: fresh; VTO_CONTRACT_HOST=C:/vtt/debug/vto-contract-host.exe
+   Compiling serde_core v1.0.229
+   Compiling serde_json v1.0.154
+   Compiling memchr v2.8.3
+   Compiling vto-contract-tests v0.1.0 (<checkout>\contract-tests)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.66s
+     Running tests\write_and_timing.rs (C:/vtt\debug\deps\write_and_timing-b383e3545d2b2c86.exe)
+
+running 2 tests
+test test_silent_span_has_no_cue ... ok
+test test_cue_times_match_source_after_silence_trim ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.41s
+
+COMMAND: cargo test -p vto-contract-tests --test jobs test_job_advances_in_background_and_resumes -- --nocapture
+STATUS: fresh; VTO_CONTRACT_HOST=C:/vtt/debug/vto-contract-host.exe
+   Compiling vto-contract-tests v0.1.0 (<checkout>\contract-tests)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.55s
+     Running tests\jobs.rs (C:/vtt\debug\deps\jobs-d2b4b95d967b4622.exe)
+
+running 1 test
+test test_job_advances_in_background_and_resumes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 16.55s
+
+COMMAND: npx vitest run tests/overlay/overlay.test.ts tests/overlay/hidden_mount.test.ts
+STATUS: fresh; player and overlay sources unchanged
+오전 10:12:47 [vite-plugin-svelte] no Svelte config found at <checkout> - using default configuration.
+
+ RUN  v5.1.0 <checkout>
+
+ ✓ |chromium| tests/overlay/hidden_mount.test.ts (1 test) 2431ms
+   ✓ test_an_overlay_mounted_while_hidden_loads_the_existing_job_when_the_page_is_shown 2430ms
+ ✓ |chromium| tests/overlay/overlay.test.ts (36 tests) 32063ms
+   ✓ the downloading stage names the speech model while it is fetched, then the audio 1070ms
+   ✓ deleting another video preserves cues through a failed refresh: ready 1075ms
+   ✓ deleting another video preserves cues through a failed refresh: failed 1048ms
+   ✓ deletion before the first job response cannot revive that video 1028ms
+   ✓ deletion after consent still rejects a late creation response 1065ms
+   ✓ confirmed recreation owns the attempt while waiting for media across interval polling 1210ms
+   ✓ confirmed recreation owns the attempt while waiting for advertisement across interval polling 1350ms
+   ✓ confirmed recreation owns the attempt while waiting for advertisement across visibility polling 352ms
+   ✓ confirmed recreation owns the attempt while waiting for creation across interval polling 1207ms
+   ✓ confirmed recreation owns the attempt while waiting for retranslation across interval polling 1166ms
+   ✓ a failed explicit attempt releases polling and allows retry: media 1126ms
+   ✓ a failed explicit attempt releases polling and allows retry: request 1067ms
+   ✓ a failed explicit attempt releases polling and allows retry: refusal 1136ms
+   ✓ a visible saved overlay notices deletion from another screen without a native event 1016ms
+   ✓ completed subtitles remain available after retranslation failure: retry 3118ms
+   ✓ test_overlay_follows_seek_and_pause 307ms
+   ✓ test_overlay_fits_phone_and_desktop_screens 12161ms
+   ✓ test_subtitles_hide_during_ad_and_return 628ms
+
+ Test Files  2 passed (2)
+      Tests  37 passed (37)
+   Start at  10:12:48
+   Duration  36.75s (tests 97%, worker 3%)
+
+JUNIT report written to <checkout>/target/vitest/junit.xml
+
+COMMAND: cargo test -p video-translate-overlay --release --features whisper --lib stitch:: -- --nocapture
+STATUS: reused integration execution; stitching source and tests unchanged
+warning: unexpected `cfg` condition name: `desktop`
+  --> src-tauri\src\screens.rs:26:11
+   |
+26 |     #[cfg(desktop)]
+   |           ^^^^^^^
+   |
+   = help: expected names are: `docsrs`, `feature`, and `test` and 32 more
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(desktop)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(desktop)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition name: `desktop`
+  --> src-tauri\src\screens.rs:15:15
+   |
+15 |         #[cfg(desktop)]
+   |               ^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(desktop)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(desktop)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: `video-translate-overlay` (lib test) generated 2 warnings
+    Finished `release` profile [optimized] target(s) in 0.94s
+     Running unittests src\lib.rs (C:/vtt\release\deps\vto-ff55f15a8ff37a42.exe)
+
+running 7 tests
+test stitch::tests::a_loop_on_a_sound_is_cut_and_said_repetition_and_numbers_stay ... ok
+test stitch::tests::a_side_that_heard_nothing_in_the_overlap_gives_way_to_the_other ... ok
+test stitch::tests::a_word_cut_by_the_window_edge_appears_once_and_the_split_sentence_is_one_cue ... ok
+test stitch::tests::cues_move_to_the_source_timeline_inside_their_window ... ok
+test stitch::tests::natural_repetition_across_the_cut_keeps_every_spoken_repeat ... ok
+test stitch::tests::segments_without_words_are_reconciled_as_whole_units ... ok
+test stitch::tests::without_a_common_word_the_overlap_is_shared_at_its_middle ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 238 filtered out; finished in 0.12s
+
+COMMAND: cargo test -p video-translate-overlay --release --features whisper --lib detected_voice_keeps -- --nocapture
+STATUS: reused integration execution; audio source and test unchanged
+warning: unexpected `cfg` condition name: `desktop`
+  --> src-tauri\src\screens.rs:26:11
+   |
+26 |     #[cfg(desktop)]
+   |           ^^^^^^^
+   |
+   = help: expected names are: `docsrs`, `feature`, and `test` and 32 more
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(desktop)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(desktop)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition name: `desktop`
+  --> src-tauri\src\screens.rs:15:15
+   |
+15 |         #[cfg(desktop)]
+   |               ^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(desktop)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(desktop)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: `video-translate-overlay` (lib test) generated 2 warnings
+    Finished `release` profile [optimized] target(s) in 1.01s
+     Running unittests src\lib.rs (C:/vtt\release\deps\vto-ff55f15a8ff37a42.exe)
+
+running 1 test
+test audio::tests::detected_voice_keeps_nearby_speech_and_original_offsets_without_music ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 244 filtered out; finished in 0.08s

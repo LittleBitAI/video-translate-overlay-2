@@ -1,0 +1,154 @@
+{
+  "recorded_at": "2026-11-17T23:37:34.621667+00:00",
+  "source_inputs": {
+    "src-tauri/Cargo.toml": "cc3b659fe56d4f86fdefed14c2de7d12556e98c77273e463f44c04690cc6290e",
+    "src-tauri/src/audio.rs": "d7106dd3208fac3ea9e4cfc444282991f30a4c0800c88f07002e58b1690970f1",
+    "src-tauri/src/library_store.rs": "d9937626b88b3907052ec5d8545df8367752ecbab6c0131ab80880d3334fbd2d",
+    "src-tauri/src/sync_local.rs": "42efc8c4e12c63ef87e32f92a79e8ab59ad36fbcf4245818a5f9cb69279706c6",
+    "src-tauri/src/sync_store_tests.rs": "025f1df86fa6209058c001e52214586a72f109564914d52b2f6054762cdf430a",
+    "src-tauri/src/whisper.rs": "2ec5491036e0cbd6a55fd9801778fd512d685862952aa362dbaaa8e868ed2067",
+    "src-tauri/src/whisper_tests.rs": "7cc19ac1336d7b3c0823a4801f1c6658e69b08afaa8be5420bd43d0373f5711f",
+    "src-tauri/src/voice.rs": "5a65ea57c2ba349348721cda5ddd6e39f35c8bfbc772d45c18d86554674d5178",
+    "src-tauri/examples/repair_saved_music.rs": "abbffdfef6595265fcf8d89aea3f71a5af297933ff9569f6bab6e0017f538597"
+  },
+  "inputs": {
+    "mit_opening_wav_sha256": "df962fa26e63bf34842203f889ecf7040a85e155010eae9199ae490968605835",
+    "spoken_repetition_wav_sha256": "22c4b85abf853c4693521295404a6a9e292135c218b59de58b3a75f9f4605af7",
+    "vad_model_sha256": "2aa269b785eeb53a82983a20501ddf7c1d9c48e33ab63a41391ac6c9f7fb6987"
+  },
+  "tools": {
+    "target/debug/examples/repair_saved_music.exe": "4822225aa92be81be01ddad46cd54618c118f13fd7a8ba55fa21b92117ee31dc",
+    "target/debug/vto-web.exe": "6b04daa42f37b8967375f1322b529623c079995171312e5f4b742eda4f85c0ed"
+  },
+  "api": {
+    "video_key": "QDX-1M5Nj7s",
+    "previous": "t/QDX-1M5Nj7s/dae8e80e2206305ffe0d3e679af5df6474dcfa75081c8045d1ab6a6cda4d8973",
+    "selected": "t/QDX-1M5Nj7s/b46450964281773a3b439fbe164cb5ac0b9aa0fcc8dc77c13c6a240554de8b27",
+    "retained_cues": 754,
+    "first_speech_ms": 9100,
+    "cost_krw": 276.2938750000004,
+    "paid_calls": 0,
+    "prior_version_retained": true,
+    "unrelated_saved_videos": 4,
+    "playlists_unchanged": true,
+    "reopened": true
+  },
+  "installed_library": {
+    "video_key": "QDX-1M5Nj7s",
+    "previous": "t/QDX-1M5Nj7s/dae8e80e2206305ffe0d3e679af5df6474dcfa75081c8045d1ab6a6cda4d8973",
+    "selected": "t/QDX-1M5Nj7s/b46450964281773a3b439fbe164cb5ac0b9aa0fcc8dc77c13c6a240554de8b27",
+    "original_cues": 755,
+    "repaired_cues": 754,
+    "first_speech_ms": 9100,
+    "source_and_translation_bytes_preserved": true,
+    "timestamps_preserved": true,
+    "previous_response_bytes_preserved": true,
+    "cost_krw": 276.2938750000004,
+    "paid_calls": 0,
+    "videos_playlists_playback_and_browser_unchanged": true,
+    "unrelated_jobs_cues_and_selections_unchanged": true,
+    "reopened": true,
+    "integrity_check": "ok"
+  },
+  "windows_playback": {
+    "status": "passed",
+    "method": "user confirmation",
+    "confirmed_option": "Playback checks passed (Recommended)",
+    "recorded_at": "2026-11-17T23:49:57.542079+00:00",
+    "checks": [
+      "Windows lecture reopened",
+      "no captions at 0\u20138 seconds",
+      "normal Korean speech captions at 9\u201320 seconds",
+      "seek and pause",
+      "app restart retains repaired selection"
+    ],
+    "automated_desktop_observation": false
+  },
+  "review_one": {
+    "runtime_source_commit": "eead0b9989de21c25d683d5260352134d264fb0c",
+    "api": "review-one-api.json",
+    "native_host": "review-one-native.json",
+    "focused_outputs": "review-one-checks.log",
+    "bindings_and_reuse": "review-one-binding.json",
+    "native_method": "actual Windows WebView2 IPC, including version changes and real process restart in an isolated profile",
+    "prior_windows_playback": "reused owner report in windows_playback; not a new automated playback observation",
+    "production_library_modified": false,
+    "paid_translation_calls": 0
+  },
+  "review_two": {
+    "tested_head": "b5f2504afc5eb436728ffcb61ac0024d5034f90f",
+    "ui_binding": "review-two-ui.json",
+    "ui_output": "review-two-ui.log",
+    "ui_machine_results": "review-two-ui-results.json",
+    "files_passed": 9,
+    "tests_passed": 127,
+    "exit_code": 0,
+    "shutdown_timeout_warning": false,
+    "production_and_test_code_changed_in_this_evidence_repair": false
+  },
+  "final_verification": "server-owned, pending after review repair",
+  "baseline_commit": "cd81109bc4c8be7ab81ff2e5d6dc74de83c7a1d3",
+  "implementation_commit": "c6c5aeb",
+  "integration": {
+    "task_parent": "3209e7eaed617cc428c26c32f0eed0ec5fe3a4b9",
+    "merged_main": "435ff315743ca4731b6c8157c237ae9ef019f961",
+    "source_inputs": {
+      "Cargo.lock": "e6c3016cae711a699e8716fa9cb4a3da68a51d17d1f2812e021367b40f8f07eb",
+      "src-tauri/Cargo.toml": "824655ee305e4fb347fa1135c88f2fe72c51224e24519297a003a4ce30628100",
+      "src-tauri/src/whisper.rs": "729ad44695e63c8dd72d5f473eada391674ca2c5831fa372bc69b9a96627d317",
+      "src-tauri/src/voice.rs": "5a65ea57c2ba349348721cda5ddd6e39f35c8bfbc772d45c18d86554674d5178",
+      "src-tauri/src/audio.rs": "d7106dd3208fac3ea9e4cfc444282991f30a4c0800c88f07002e58b1690970f1",
+      "src-tauri/src/whisper_tests.rs": "7cc19ac1336d7b3c0823a4801f1c6658e69b08afaa8be5420bd43d0373f5711f",
+      "src-tauri/src/stitch_tests.rs": "6995be66b64f326740c40444c8664885cdb6ea91d0189f7abfb4f4d4a71f0c00",
+      "scripts/package-release.ps1": "bb0fa82cdae995ebeafc9f8af4e475c90df0b030d7d19e1fbf87843b6cc53bde",
+      "tests/package-release.test.ps1": "648b2843611a84d395e897bee39c4dc0bfb1de3a520612f22e6505434ec7a7a0"
+    },
+    "test_binary_sha256": "68db8be3d91f32f20f56330d9e49521d0627e1492c310f6f255bb37eba87da63",
+    "profile": "release",
+    "vulkan_sdk": "1.4.363.1",
+    "checks": [
+      {
+        "command": "cargo test -p video-translate-overlay --release --features whisper --lib mit_music_and_contrasting_speech -- --ignored --nocapture",
+        "backend": "NVIDIA GeForce RTX 3080",
+        "passed": 1,
+        "base_first_cue_ms": 9040,
+        "large_first_cue_ms": 9280,
+        "log_sha256": "996c7220f73ba36b3c652b3f172207bcfc76e26712a53a1d2970a57452fc85be"
+      },
+      {
+        "command": "cargo test -p video-translate-overlay --release --features whisper --lib mit_music_and_contrasting_speech -- --ignored --nocapture",
+        "environment": "VK_DRIVER_FILES points to a nonexistent file; fresh process",
+        "backend": "the CPU",
+        "passed": 1,
+        "base_first_cue_ms": 9040,
+        "large_first_cue_ms": 9280,
+        "log_sha256": "3e87abf0945d4dc455febd54a3c70a7d799be2694b00acbcacf29656b8a17d80"
+      },
+      {
+        "command": "cargo test -p video-translate-overlay --release --features whisper --lib stitch:: -- --nocapture",
+        "passed": 7,
+        "log_sha256": "df03ccb6eace172599a99e7f952966b68c6f4fdd7d1be38edbc258fe59e2e4b4"
+      },
+      {
+        "command": "cargo test -p video-translate-overlay --release --features whisper --lib detected_voice_keeps -- --nocapture",
+        "passed": 1,
+        "log_sha256": "0b992388fced565cde875cb5bc4b47373c8bf0af935b2f4f94dc2584fdc23c74"
+      },
+      {
+        "command": "pwsh -NoProfile -File tests/package-release.test.ps1",
+        "result": "18 refusal cases and empty/absent output cases passed; build boundary stubbed",
+        "log_sha256": "4c1ab8182e7c4996f44da91f74c0785b4d912b8bb45ad898580ec82f82361cdf"
+      }
+    ],
+    "installed_data_modified": false,
+    "installer_published": false,
+    "previous_review_reused": false,
+    "server_checks_and_fresh_review": "pending"
+  },
+  "source_equivalence": {
+    "path": "src-tauri/src/voice.rs",
+    "tested_sha256": "0d87d802b41f9bdae5a52104d6f50b8174b5cc66eb6b4b245849ea241f828fe0",
+    "current_sha256": "5a65ea57c2ba349348721cda5ddd6e39f35c8bfbc772d45c18d86554674d5178",
+    "change": "Removed one blank line at EOF; all other runtime-source bytes are identical. Existing behavioral test evidence is reused."
+  }
+}
