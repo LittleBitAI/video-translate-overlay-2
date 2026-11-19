@@ -115,6 +115,9 @@ fn a_stretch_without_punctuation_is_cut_at_pauses_and_the_cap() {
 fn abbreviations_and_lower_case_continuations_do_not_end_a_sentence() {
     let cues = all(vec![owned(&spoken(0, 200, 50, "We compare e.g. ResNet with Dr. Smith's model on the U.S. dataset. Fine."))]);
     assert_eq!(texts(&cues), ["We compare e.g. ResNet with Dr. Smith's model on the U.S. dataset.", "Fine."]);
+    // "etc." ends a sentence before a capital and carries on before lower case.
+    let cues = all(vec![owned(&spoken(0, 200, 50, "They ship GGUFs etc. So it runs locally, etc. and it is fast."))]);
+    assert_eq!(texts(&cues), ["They ship GGUFs etc.", "So it runs locally, etc. and it is fast."]);
 }
 
 #[test]

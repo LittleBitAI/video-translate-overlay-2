@@ -118,7 +118,9 @@ fn punctuated(ws: &[Word]) -> bool {
     ws.iter().any(|w| w.text.trim_end().ends_with([',', ';', ':']))
 }
 
-const ABBREVIATIONS: [&str; 14] = ["mr.", "mrs.", "ms.", "dr.", "prof.", "jr.", "sr.", "vs.", "etc.", "e.g.", "i.e.", "fig.", "eq.", "approx."];
+// Never followed by a new sentence. "etc." is not here: before a capital it
+// ends one ("GGUFs etc. So the model…"), before lower case it carries on anyway.
+const ABBREVIATIONS: [&str; 13] = ["mr.", "mrs.", "ms.", "dr.", "prof.", "jr.", "sr.", "vs.", "e.g.", "i.e.", "fig.", "eq.", "approx."];
 
 /// Whether `w` ends a sentence, given the word `next` after it: terminal
 /// punctuation that is not an abbreviation, and a next word that does not
