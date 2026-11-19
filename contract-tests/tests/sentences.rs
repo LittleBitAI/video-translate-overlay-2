@@ -65,21 +65,42 @@ fn a_split_sentence_goes_to_gemini_as_one_request_of_its_parts() {
 }
 
 #[test]
+fn a_retranslation_asks_for_each_sentence_as_the_first_translation_did() {
+    let (mut app, _) = talk(&[LONG, SHORT], GeminiOptions::default());
+    let first: Vec<Vec<i64>> = translate_calls(&app).iter().map(|c| segments(c).into_iter().map(|(id, _)| id).collect()).collect();
+    let retry = app.call(TALK, "POST", "/jobs", serde_json::json!({"page_url": TALK, "retranslate": true}));
+    assert_eq!(retry.status, 200, "{retry:?}");
+    app.wait_ready(TALK);
+    let all: Vec<Vec<i64>> = translate_calls(&app).iter().map(|c| segments(c).into_iter().map(|(id, _)| id).collect()).collect();
+    let again = &all[first.len()..];
+    let (mut first, mut again) = (first.clone(), again.to_vec());
+    first.sort();
+    again.sort();
+    assert_eq!(first, [vec![0, 1], vec![2]], "the split sentence went whole the first time");
+    assert_eq!(again, first, "the re-translation split or joined a sentence");
+}
+
+#[test]
 fn a_reply_with_a_missing_extra_or_duplicate_part_is_not_saved() {
     for fault in ["missing", "extra", "duplicate"] {
-        let (app, cues) = talk(&[LONG, SHORT], GeminiOptions { parts_fault: Some(fault), ..Default::default() });
-        for c in &cues {
-            let ko = c["text_ko"].as_str().unwrap();
-            assert!(has_hangul(ko) && !ko.contains("BROKEN"), "{fault}: a wrong reply was saved: {c}");
-        }
+        let mut app = App::new(Options { lines: vec![LONG.into(), SHORT.into()], ms_per_audio_second: 20, gemini: GeminiOptions { parts_fault: Some(fault), ..Default::default() } });
+        let url = app.media.serve("/talks/42.wav", "audio/wav", speech_wav(17_000, &regular_spans(2, 500, 8_000, 6_000)));
+        app.launch();
+        app.set_key(KEY);
+        assert_eq!(app.create_job(TALK, Some(&url), "Learning rates", 17_000).status, 200);
+        let seen = app.poll_job(TALK, 20, 180, |b| b["stage"] == "failed" || b["stage"] == "ready");
+        let end = seen.last().unwrap();
+        // Never answered with exactly its parts, the sentence is never saved, whole or in pieces.
+        assert_eq!((end["stage"].as_str(), end["failure_reason"].as_str()), (Some("failed"), Some("translate_failed")), "{fault}: {end}");
+        assert!(!app.sqlite_contains(b"BROKEN"), "{fault}: a wrong reply was saved");
+        assert!(!app.sqlite_contains("한국어 번역: When the learning rate".as_bytes()), "{fault}: a part was saved on its own");
+        // Every request for it carried both parts; the other sentence went once, alone.
         let calls = translate_calls(&app);
-        let whole = calls.iter().filter(|c| segments(c).len() == 2).count();
-        let single: Vec<i64> = calls.iter().filter(|c| segments(c).len() == 1).map(|c| segments(c)[0].0).collect();
-        // Asked whole three times, then part by part; each part once, the other sentence once.
-        assert_eq!(whole, 3, "{fault}");
-        let mut single = single;
-        single.sort();
-        assert_eq!(single, [0, 1, 2], "{fault}");
+        let (whole, single): (Vec<_>, Vec<_>) = calls.iter().map(segments).partition(|s| s.len() == 2);
+        // Once per pass: the first (where the other sentence was saved), then three that saved nothing.
+        assert_eq!(whole.len(), 4, "{fault}: asked whole once per pass");
+        assert!(whole.iter().all(|s| s.iter().map(|(id, _)| *id).collect::<Vec<_>>() == [0, 1]), "{fault}");
+        assert_eq!(single.iter().map(|s| s[0].0).collect::<Vec<_>>(), [2], "{fault}: a part went alone");
     }
 }
 

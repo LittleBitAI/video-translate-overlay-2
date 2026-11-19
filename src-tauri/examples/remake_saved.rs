@@ -15,14 +15,17 @@
 //! `remake_saved resume <account-db> <video-key> <work-dir>` carries on a
 //! re-make whose process was stopped, from what its job last wrote.
 //!
-//! `remake_saved continue <account-db> <video-key> <job-id> <work-dir>` sends
-//! a failed re-make back to translating; only cues without Korean are asked.
-//! If it fails again its cues stay for another `continue`; the previous
-//! version is still the selected one.
+//! A re-make that does not end ready keeps its draft (what it wrote and
+//! translated) in the cue table, and the previous version stays selected.
+//! Then one of:
 //!
-//! `remake_saved restore <account-db> <video-key> <work-dir>` gives a failed
-//! re-make up and projects the previous version again, as `run` and `resume`
-//! do when their re-make does not end ready.
+//! `remake_saved continue <account-db> <video-key> <job-id> <work-dir>` sends
+//! the failed re-make back to translating; only cues without Korean are asked.
+//! If it fails again its draft stays for another `continue`.
+//!
+//! `remake_saved restore <account-db> <video-key> <work-dir>` gives the failed
+//! re-make up and projects the previous version again. After that the draft
+//! is gone and `continue` refuses the re-make.
 
 use std::path::Path;
 use std::sync::Arc;
@@ -80,7 +83,7 @@ fn run(db: &Path, key: &str, audio: &Path, work: &Path, apply: bool) -> Result<(
     let previous = store.begin_remake(&id, key, &copy.to_string_lossy(), gemini::MODEL)?;
     std::fs::write(work.join("previous.txt"), &previous).map_err(|e| e.to_string())?;
     println!("job {id} started; previous version {previous}");
-    finish(&core, &store, &id, key, &previous, true)
+    finish(&core, &store, &id, &previous)
 }
 
 /// Carries on a re-make whose process was stopped: the job resumes from what it wrote.
@@ -90,7 +93,7 @@ fn resume(db: &Path, key: &str, work: &Path) -> Result<(), String> {
     let previous = std::fs::read_to_string(work.join("previous.txt")).map_err(|e| format!("previous.txt: {e}"))?;
     println!("job {} resumed at {}; previous version {previous}", job.id, job.stage);
     let core = start(work)?;
-    finish(&core, &store, &job.id, key, &previous, true)
+    finish(&core, &store, &job.id, &previous)
 }
 
 /// Translates what a failed re-make left without Korean.
@@ -100,7 +103,7 @@ fn carry_on(db: &Path, key: &str, id: &str, work: &Path) -> Result<(), String> {
     store.continue_remake(id)?;
     println!("job {id} continued at translating; previous version {previous}");
     let core = start(work)?;
-    finish(&core, &store, id, key, &previous, false)
+    finish(&core, &store, id, &previous)
 }
 
 /// Gives a failed re-make up: the previous version is projected again.
@@ -111,16 +114,12 @@ fn restore(db: &Path, key: &str, work: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn finish(core: &Core, store: &Store, id: &str, key: &str, previous: &str, restore: bool) -> Result<(), String> {
+fn finish(core: &Core, store: &Store, id: &str, previous: &str) -> Result<(), String> {
     vto::pipeline::run_pending(core, store)?;
     let job = store.job(id)?.ok_or("job vanished")?;
     println!("job {id} {}: cost {:.4} KRW (input {} output {} tokens), failure {:?}", job.stage, job.cost_krw, job.input_amount, job.output_amount, job.failure_reason);
-    if job.stage != "ready" && !restore {
-        return Err(format!("the re-make failed again; its cues stay for `continue`, and {previous} is still selected"));
-    }
     if job.stage != "ready" {
-        store.restore_translation(key, previous)?;
-        return Err(format!("the re-make failed; {previous} is selected again"));
+        return Err(format!("the re-make failed; its draft stays for `continue` {id}, or `restore` projects {previous} again"));
     }
     Ok(())
 }

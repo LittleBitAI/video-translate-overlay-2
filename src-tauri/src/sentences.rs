@@ -131,12 +131,16 @@ fn punctuated(ws: &[Word]) -> bool {
 // ends one ("GGUFs etc. So the model…"), before lower case it carries on anyway.
 const ABBREVIATIONS: [&str; 13] = ["mr.", "mrs.", "ms.", "dr.", "prof.", "jr.", "sr.", "vs.", "e.g.", "i.e.", "fig.", "eq.", "approx."];
 
-/// Whether `w` ends a sentence, given the word `next` after it: terminal
-/// punctuation that is not an abbreviation, and a next word that does not
-/// carry on in lower case ("U.S. government", "e.g. this", "so... and").
+/// Whether `w` ends a sentence, given the word `next` after it. A question or
+/// exclamation mark always does. A period or an ellipsis does unless it ends
+/// an abbreviation or the next word carries on in lower case ("U.S.
+/// government", "e.g. this", "so... and").
 fn ends_sentence(w: &Word, next: &Word) -> bool {
     let t = w.text.trim().trim_end_matches(['"', '\'', ')', ']', '”', '’']);
-    if !t.ends_with(['.', '?', '!', '…', '。', '？', '！']) {
+    if t.ends_with(['?', '!', '？', '！']) {
+        return true;
+    }
+    if !t.ends_with(['.', '…', '。']) {
         return false;
     }
     let word = t.trim_start_matches(|c: char| !c.is_alphanumeric()).to_lowercase();
@@ -218,21 +222,66 @@ fn cut(ws: &[Word], r: std::ops::Range<usize>, out: &mut Vec<std::ops::Range<usi
     cut(ws, best + 1..r.end, out);
 }
 
-/// The cues of one sentence, kept in order after `prev_end`.
+/// The cues of one sentence, kept in order after `prev_end`. A cue never ends
+/// after its last word, so it stays inside the audio the words came from: a
+/// part whose words take no time gets the millisecond before them. A part
+/// left no time of its own (its words end at or before `prev_end`) joins the
+/// part before it; a whole sentence left no time is dropped, as the segment
+/// cues before sentence cues dropped such a segment.
 fn sentence_cues(ws: &[Word], prev_end: &mut i64) -> Vec<Cue> {
-    let mut cues = Vec::new();
+    let mut cues: Vec<Cue> = Vec::new();
     for r in parts(ws) {
         let part = &ws[r];
         let text = text(part);
         if text.is_empty() {
             continue;
         }
-        let start = part[0].start_ms.max(*prev_end);
-        let end = part.last().unwrap().end_ms.max(start + 1);
+        let end = part.last().unwrap().end_ms;
+        let mut start = part[0].start_ms.max(*prev_end);
+        if end <= start && end > *prev_end {
+            start = end - 1;
+        }
+        if end <= start {
+            if let Some(before) = cues.last_mut() {
+                before.text = format!("{} {text}", before.text);
+            }
+            continue;
+        }
         *prev_end = end;
         cues.push(Cue { start_ms: start, end_ms: end, text, opens: cues.is_empty() });
     }
     cues
+}
+
+/// Which of the saved `cues` (in seq order) continue the sentence of the cue
+/// before: the grouping [`push`] made, rebuilt from their text and times where
+/// it was not kept (a saved version projected or received from another
+/// device, a re-translation of one). A cue opens a sentence after a sentence
+/// end, a pause of [`SENTENCE_GAP_MS`], an unpunctuated stretch past the cap
+/// at a pause of [`STRETCH_GAP_MS`], or once the sentence has reached
+/// [`STRETCH_MAX`]; these are the ends `push` makes, except that `push` may end
+/// a run-on earlier, at its last comma.
+pub fn rebuilt_parts(cues: &[crate::store::Cue]) -> std::collections::HashSet<i64> {
+    let mut out = std::collections::HashSet::new();
+    let mut sentence: Vec<Word> = Vec::new();
+    for (i, c) in cues.iter().enumerate() {
+        let words: Vec<Word> = c.source_text.split_whitespace().map(|t| Word { start_ms: c.start_ms, end_ms: c.end_ms, text: format!(" {t}") }).collect();
+        let Some(first) = words.first() else {
+            sentence.clear();
+            continue;
+        };
+        let continues = i > 0 && cues[i - 1].seq + 1 == c.seq && sentence.last().is_some_and(|last| {
+            let (gap, chars) = (c.start_ms - cues[i - 1].end_ms, len(&sentence));
+            !ends_sentence(last, first) && gap < SENTENCE_GAP_MS && !(chars >= CAP && gap >= STRETCH_GAP_MS && !punctuated(&sentence)) && chars < STRETCH_MAX
+        });
+        if continues {
+            out.insert(c.seq);
+        } else {
+            sentence.clear();
+        }
+        sentence.extend(words);
+    }
+    out
 }
 
 #[cfg(test)]

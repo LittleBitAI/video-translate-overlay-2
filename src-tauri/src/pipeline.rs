@@ -344,10 +344,11 @@ const GLOSSARY_TRIES: usize = 3;
 /// changes no request and no reply; only the waiting overlaps.
 const IN_FLIGHT: usize = 8;
 
-/// How often a sentence of several parts is asked for whole before its parts
-/// are asked for one by one: a reply that keeps merging or dropping parts must
-/// not stop the job.
-const WHOLE_TRIES: u32 = 3;
+/// How many passes in a row may save nothing before the job stops. A sentence
+/// is only ever asked for whole, so one whose replies keep merging or dropping
+/// parts stops the job (`translate_failed`) rather than being saved part by
+/// part; a re-translation asks again for what is left.
+const STALLED_PASSES: u32 = 3;
 
 /// The cues of `cues` grouped by sentence, in order: a cue whose seq `parts`
 /// holds continues the group before it. Each group is `(seq, source)` pairs.
@@ -412,9 +413,16 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
     };
 
     let video = store.video(&video_key)?.ok_or("internal")?;
-    let (glossary, mishearings): (Vec<Value>, Vec<Value>) = match video.terms.as_deref().and_then(|t| serde_json::from_str::<Vec<Value>>(t).ok()) {
-        Some(g) => (g, video.mishearings.as_deref().and_then(|m| serde_json::from_str(m).ok()).unwrap_or_default()),
-        None => {
+    let terms = video.terms.as_deref().and_then(|t| serde_json::from_str::<Vec<Value>>(t).ok());
+    let found = video.mishearings.as_deref().and_then(|m| serde_json::from_str::<Vec<Value>>(m).ok());
+    let left = cues.iter().any(|c| c.text_ko.is_none());
+    let (glossary, mishearings): (Vec<Value>, Vec<Value>) = match (terms, found) {
+        (Some(g), Some(m)) => (g, m),
+        (Some(g), None) if !left => (g, Vec::new()),
+        // No glossary yet, or a projected saved version's glossary without the
+        // mishearings of its transcript: the glossary request finds them; the
+        // version's own terms stay.
+        (terms, _) => {
             let transcript: Vec<String> = cues.iter().map(|c| c.source_text.clone()).collect();
             let glossary_started = std::time::Instant::now();
             let order = gemini::glossary_order(&video.title, &transcript);
@@ -431,35 +439,33 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
             }
             log(format!("timing job {job_id} glossary ms={} cues={}", glossary_started.elapsed().as_millis(), transcript.len()));
             let (g, m) = g.ok_or_else(|| "glossary_failed".to_string())?;
+            let g = terms.unwrap_or(g);
             store.set_glossary(&video_key, &Value::from(g.clone()).to_string(), &Value::from(m.clone()).to_string())?;
             (g, m)
         }
     };
 
-    // The sentences this job wrote; cues it did not write (a retranslation) are one sentence each.
-    let parts: std::collections::HashSet<i64> = job.parts.as_deref().and_then(|p| serde_json::from_str::<Vec<i64>>(p).ok()).unwrap_or_default().into_iter().collect();
+    // The sentences this job (or the job a re-translation came from) wrote; where none
+    // were kept, as for a projected saved version, they are rebuilt from the cues.
+    let parts: std::collections::HashSet<i64> = match job.parts.as_deref().and_then(|p| serde_json::from_str::<Vec<i64>>(p).ok()) {
+        Some(p) => p.into_iter().collect(),
+        None => crate::sentences::rebuilt_parts(&cues),
+    };
     let groups = sentences(&cues, &parts);
     let total = cues.len() as i64;
     let last = Mutex::new(Stage::new(Stage::TRANSLATING));
-    let tries: Mutex<std::collections::HashMap<i64, u32>> = Mutex::default();
     let mut stalls = 0;
     let (translating, calls) = (std::time::Instant::now(), AtomicUsize::new(0));
     loop {
         let done: std::collections::HashSet<i64> = store.translation_cues(&job)?.into_iter().filter(|c| c.text_ko.is_some()).map(|c| c.seq).collect();
         cx.percent(job_id, done.len() as i64 * 100 / total, &mut last.lock().unwrap());
-        // A sentence goes whole until it has failed WHOLE_TRIES times; then its parts go one by one.
-        let mut todo: Vec<(usize, Vec<(i64, String)>)> = Vec::new();
-        for (g, group) in groups.iter().enumerate() {
-            let left: Vec<(i64, String)> = group.iter().filter(|(s, _)| !done.contains(s)).cloned().collect();
-            if left.is_empty() {
-                continue;
-            }
-            if left.len() > 1 && tries.lock().unwrap().get(&group[0].0).copied().unwrap_or(0) < WHOLE_TRIES {
-                todo.push((g, left));
-            } else {
-                todo.extend(left.into_iter().map(|c| (g, vec![c])));
-            }
-        }
+        // Every sentence with a part left goes whole, all its parts in one request.
+        let todo: Vec<(usize, Vec<(i64, String)>)> = groups
+            .iter()
+            .enumerate()
+            .filter(|(_, group)| group.iter().any(|(s, _)| !done.contains(s)))
+            .map(|(g, group)| (g, group.clone()))
+            .collect();
         if todo.is_empty() {
             log(format!(
                 "timing job {job_id} translate ms={} cues={total} sentences={} calls={} in_flight={IN_FLIGHT}",
@@ -482,9 +488,6 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
             let ko = reply.as_ref().map(|r| gemini::parse_translations(r, asked)).unwrap_or_default();
             let _held = ledger.lock().unwrap();
             if ko.is_empty() {
-                if asked.len() > 1 {
-                    *tries.lock().unwrap().entry(groups[*g][0].0).or_default() += 1;
-                }
                 if let Some(r) = &reply {
                     // What came back, without its text: the ids and which `ko` were empty.
                     let got: Vec<String> = r["segments"].as_array().into_iter().flatten()
@@ -514,10 +517,8 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
         if let Some(e) = stop.into_inner().unwrap() {
             return Err(e);
         }
-        // A pass that only used up whole-sentence tries still moves toward the part-by-part requests.
-        let retrying = todo.iter().any(|(_, a)| a.len() > 1);
-        stalls = if progressed.into_inner() || retrying { 0 } else { stalls + 1 };
-        if stalls >= 2 {
+        stalls = if progressed.into_inner() { 0 } else { stalls + 1 };
+        if stalls >= STALLED_PASSES {
             return Err("translation_incomplete".into());
         }
     }

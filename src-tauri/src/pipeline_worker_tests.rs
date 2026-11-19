@@ -233,7 +233,7 @@ fn saved_subtitles(core: &Core) -> Value {
     let s = &core.store;
     s.create_job("original", &key, SAVED_PAGE, "other", "Saved speech", 3_600_000, None, "m").unwrap();
     s.save_region("original", &key, 0, &[(0, 900, "first".into()), (1000, 1900, "second".into())], None).unwrap();
-    s.set_terms(&key, "[]").unwrap();
+    s.set_glossary(&key, "[]", "[]").unwrap();
     s.set_translations("original", &[(0, "original first".into()), (1, "original second".into())]).unwrap();
     s.add_usage("original", 10, 10, gemini::cost_krw).unwrap();
     s.finish("original").unwrap();

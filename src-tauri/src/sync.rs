@@ -237,7 +237,7 @@ impl Change {
 }
 
 impl Record {
-    fn identity(&self) -> String {
+    pub(crate) fn identity(&self) -> String {
         match &self.change {
             Change::Video { video } => format!("v/{}", video.key),
             Change::Translation { translation } => format!(
@@ -362,6 +362,8 @@ impl Journal {
         db.exec("BEGIN IMMEDIATE")?;
         db.exec(SCHEMA)?;
         db.exec(crate::store::SCHEMA)?;
+        // Projection writes these columns before the library is opened as a store.
+        crate::store::add_columns(&db)?;
         db.exec(library::SCHEMA)?;
         db.exec(local::SCHEMA)?;
         let mut random = [0u8; 16];

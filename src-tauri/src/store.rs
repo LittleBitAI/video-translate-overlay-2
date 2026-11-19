@@ -156,7 +156,7 @@ pub struct Cue {
 /// Only `job` and `video` grow: every build inserts into them by column name,
 /// so an older build still reads and writes a file this one opened. (`cue` is
 /// filled by position in older builds and must keep its columns.)
-fn add_columns(db: &Db) -> R<()> {
+pub(crate) fn add_columns(db: &Db) -> R<()> {
     for (table, name, decl) in [
         ("job", "plan", "plan INTEGER NOT NULL DEFAULT 1"),
         ("job", "held", "held TEXT"),
@@ -305,10 +305,11 @@ impl Store {
                 }
             }
             let cost = self.retranslation_cost(&previous.video_key)?.max(previous.cost_krw);
+            // The sentences go with the cues: the same parts are asked together again.
             self.db.execute(
-                &format!("INSERT INTO job (id,video_key,stage,written_regions,translation_model,input_amount,output_amount,cost_krw,created_at,updated_at)
-                    VALUES (?,?,'translating',?,?,?,?,?,{NOW},{NOW})"),
-                p![id, previous.video_key.as_str(), previous.written_regions, model, previous.input_amount, previous.output_amount, cost],
+                &format!("INSERT INTO job (id,video_key,stage,written_regions,translation_model,input_amount,output_amount,cost_krw,parts,created_at,updated_at)
+                    VALUES (?,?,'translating',?,?,?,?,?,?,{NOW},{NOW})"),
+                p![id, previous.video_key.as_str(), previous.written_regions, model, previous.input_amount, previous.output_amount, cost, previous.parts.as_deref()],
             )?;
             self.db.execute("INSERT INTO retranslation_cue (job_id, seq) SELECT ?, seq FROM cue WHERE video_key=?", p![id, previous.video_key.as_str()])?;
             crate::sync::local::capture_job(&self.db, id, &previous.video_key)?;
@@ -483,7 +484,9 @@ impl Store {
                     parts.push(seq);
                 }
             }
-            let parts = (!parts.is_empty()).then(|| serde_json::to_string(&parts).unwrap());
+            // Kept even when empty: a job that wrote its cues knows its sentences;
+            // `parts` is unknown (NULL) only for cues it did not write.
+            let parts = serde_json::to_string(&parts).unwrap();
             self.db.execute(
                 &format!("UPDATE job SET written_regions=?, held=?, tail=?, parts=?, updated_at={NOW} WHERE id=?"),
                 p![region + 1, held, tail, parts, job_id],

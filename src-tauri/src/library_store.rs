@@ -106,20 +106,28 @@ impl Store {
     }
 
     /// Sends a failed re-make back to translating: what it wrote and
-    /// translated stays, so only the cues without Korean are asked again. It
-    /// becomes the video's newest job: a restore after the failure projected
-    /// the previous version as a newer job, and the newest ready job is the
-    /// one the overlay shows when no job matches the selected version.
+    /// translated stays, so only the cues without Korean are asked again.
+    /// Only while the cue table still holds its draft: every write of that
+    /// table (a projection, a restore, another job) makes a newer job, so a
+    /// re-make that is no longer the video's newest job has lost its draft and
+    /// is refused rather than translating the cues that replaced it.
     pub fn continue_remake(&self, id: &str) -> R<()> {
         self.library_write(|db| {
-            let n = db.execute("UPDATE job SET stage='translating', failure_reason=NULL, created_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=? AND id LIKE 'remake-%' AND stage='failed'", p![id])?;
-            if n == 0 { Err("no failed re-make with this id".into()) } else { Ok(()) }
+            let n = db.execute(
+                "UPDATE job SET stage='translating', failure_reason=NULL, created_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')
+                 WHERE id=? AND id LIKE 'remake-%' AND stage='failed'
+                   AND NOT EXISTS (SELECT 1 FROM job o WHERE o.video_key=job.video_key AND o.id<>job.id AND o.created_at>=job.created_at)",
+                p![id],
+            )?;
+            if n == 0 { Err("no failed re-make with this id whose draft is still in place".into()) } else { Ok(()) }
         })
     }
 
     /// Projects `identity` again after a failed re-make overwrote the cue
-    /// table. [`Self::select_translation`] keeps the table when the identity
-    /// is already selected, so the selection is dropped first.
+    /// table, giving the re-make up: its draft is replaced, and the projection
+    /// is a newer job, so [`Self::continue_remake`] refuses it from then on.
+    /// [`Self::select_translation`] keeps the table when the identity is
+    /// already selected, so the selection is dropped first.
     pub fn restore_translation(&self, key: &str, identity: &str) -> R<()> {
         self.library_write(|db| {
             db.execute("DELETE FROM sync_selected_translation WHERE video_key=?", p![key])?;

@@ -283,8 +283,11 @@ pub(super) fn video(db: &Db, key: &str) -> Result<bool> {
     }
     let terms =
         serde_json::to_string(&translation.terms).map_err(|_| "invalid glossary projection")?;
+    // A saved version does not carry its mishearings: the video's belong to
+    // whichever transcript found them, so they go, and the next translation of
+    // this version finds its own again.
     db.execute(
-        "UPDATE video SET duration_ms=?,source_language=?,terms=? WHERE video_key=?",
+        "UPDATE video SET duration_ms=?,source_language=?,terms=?,mishearings=NULL WHERE video_key=?",
         p![
             translation.duration_ms,
             translation.source_language,

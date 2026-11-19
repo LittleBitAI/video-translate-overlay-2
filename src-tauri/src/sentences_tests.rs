@@ -148,6 +148,73 @@ fn abbreviations_and_lower_case_continuations_do_not_end_a_sentence() {
 }
 
 #[test]
+fn a_question_or_exclamation_mark_ends_a_sentence_whatever_follows() {
+    for (said, sentences) in [
+        ("Any questions? we're done.", &["Any questions?", "we're done."][..]),
+        ("Stop! now we start.", &["Stop!", "now we start."]),
+        ("Is it fast? Yes it is.", &["Is it fast?", "Yes it is."]),
+        ("He asked \"why?\" and left.", &["He asked \"why?\"", "and left."]),
+        // A period before lower case still carries on.
+        ("Train on the U.S. data now.", &["Train on the U.S. data now."]),
+        ("so... and then it stops.", &["so... and then it stops."]),
+    ] {
+        let cues = all(vec![owned(&spoken(0, 200, 50, said))]);
+        assert_eq!(texts(&cues), sentences, "{said}");
+        assert!(cues.iter().all(|c| c.opens), "{said}: each is its own sentence");
+        ordered(&cues);
+    }
+}
+
+#[test]
+fn no_cue_ends_after_its_words_even_when_they_take_no_time() {
+    let at = |ws: &[(i64, i64, &str)]| piece(ws);
+    for (name, pieces, sentences) in [
+        // A sentence ends at the audio's end, and the model writes one more there with no time.
+        ("final", vec![at(&[(8_000, 9_000, "It"), (9_000, 10_000, "ends.")]), at(&[(10_000, 10_000, "Thanks.")])], &["It ends."][..]),
+        // A one-word sentence with no time, between two others.
+        ("between", vec![at(&[(0, 3_000, "First.")]), at(&[(5_000, 5_000, "Okay.")]), at(&[(6_000, 7_000, "Next.")])], &["First.", "Okay.", "Next."]),
+        // The second part of a long sentence takes no time after the first: it joins it.
+        (
+            "part",
+            vec![at(&[(0, 2_000, "When the learning rate is set far too high for this"), (2_000, 5_000, "particular model,")]), at(&[(5_000, 5_000, "the loss jumps around and never settles at all.")])],
+            &["When the learning rate is set far too high for this particular model, the loss jumps around and never settles at all."],
+        ),
+    ] {
+        let last_word = pieces.iter().flat_map(|p| &p.words).map(|w| w.end_ms).max().unwrap();
+        let cues = all(pieces);
+        assert_eq!(texts(&cues), sentences, "{name}");
+        assert!(cues.iter().all(|c| c.end_ms <= last_word), "{name}: a cue ends after the last word: {cues:?}");
+        ordered(&cues);
+    }
+}
+
+#[test]
+fn the_grouping_rebuilt_from_saved_cues_is_the_one_the_cues_were_made_with() {
+    let mut silence = spoken(0, 200, 50, "thank you all for coming welcome to the course");
+    for w in silence.iter_mut().skip(5) {
+        (w.0, w.1) = (w.0 + 20_000, w.1 + 20_000);
+    }
+    let mut paused = spoken(0, 300, 100, "So the model keeps the full precision weights for the updates and rounds them on every forward pass. Done.");
+    for w in paused.iter_mut().skip(9) {
+        (w.0, w.1) = (w.0 + 1_600, w.1 + 1_600);
+    }
+    for (name, words) in [
+        ("sentences", spoken(1_000, 300, 100, "Today we train a network. It learns from data. Then we test it on new images.")),
+        ("comma", spoken(0, 250, 50, "When the learning rate is set far too high for this particular model, the training loss jumps around and never settles. Then we lower it.")),
+        ("conjunction", spoken(0, 250, 50, "The encoder reads the whole input sentence once and the decoder writes the output one token at a time. Next.")),
+        ("questions", spoken(0, 200, 50, "Any questions? we're done. Is it fast? Yes it is.")),
+        ("unpunctuated", spoken(0, 250, 1_100, "so here the loss goes down and here it goes up again and then it settles somewhere in the middle of the range")),
+        ("silence", silence),
+        ("pause", paused),
+    ] {
+        let made = all(vec![owned(&words)]);
+        let saved: Vec<crate::store::Cue> = made.iter().enumerate().map(|(i, c)| crate::store::Cue { seq: i as i64, start_ms: c.start_ms, end_ms: c.end_ms, source_text: c.text.clone(), text_ko: None }).collect();
+        let parts: std::collections::HashSet<i64> = made.iter().enumerate().filter(|(_, c)| !c.opens).map(|(i, _)| i as i64).collect();
+        assert_eq!(rebuilt_parts(&saved), parts, "{name}: {:?}", texts(&made));
+    }
+}
+
+#[test]
 fn a_long_silence_ends_a_sentence_without_punctuation() {
     let mut ws = spoken(0, 200, 50, "thank you all for coming welcome to the course");
     for w in ws.iter_mut().skip(5) {
