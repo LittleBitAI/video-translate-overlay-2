@@ -137,13 +137,18 @@ fn ends_sentence(w: &Word, next: &Word) -> bool {
     !next.text.trim_start().trim_start_matches(|c: char| !c.is_alphanumeric()).starts_with(char::is_lowercase)
 }
 
-const CONJUNCTIONS: [&str; 24] = [
-    "and", "but", "or", "so", "because", "which", "that", "when", "where", "while", "if", "although", "though", "then", "since", "until",
-    "unless", "whereas", "whether", "who", "whose", "whom", "after", "before",
+const CONJUNCTIONS: [&str; 19] = [
+    "and", "but", "or", "so", "because", "when", "where", "while", "if", "although", "though", "then", "since", "until", "unless",
+    "whereas", "whether", "after", "before",
 ];
+/// A clause these open modifies the noun before it, and Korean puts it ahead
+/// of that noun: a cut before one leaves the Korean of the first part ending
+/// on the noun and the second on a dangling modifier ("…모델과 다릅니다 /
+/// 여러분이 아는.").
+const RELATIVES: [&str; 5] = ["that", "which", "who", "whose", "whom"];
 
 /// How good a place the boundary after `ws[k]` is: after a comma (3), before
-/// a conjunction (2), anywhere else (1).
+/// a conjunction (2), anywhere else (1), before a relative pronoun (0).
 fn kind(ws: &[Word], k: usize) -> u8 {
     if ws[k].text.trim_end().ends_with([',', ';', ':', '—', '–']) {
         return 3;
@@ -151,6 +156,8 @@ fn kind(ws: &[Word], k: usize) -> u8 {
     let next: String = ws[k + 1].text.trim().trim_matches(|c: char| !c.is_alphanumeric()).to_lowercase();
     if CONJUNCTIONS.contains(&next.as_str()) {
         2
+    } else if RELATIVES.contains(&next.as_str()) {
+        0
     } else {
         1
     }

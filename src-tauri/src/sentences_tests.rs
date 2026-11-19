@@ -78,6 +78,16 @@ fn a_sentence_over_the_cap_is_cut_at_a_comma_then_a_conjunction_then_the_longest
     let cues = all(vec![owned(&spoken(0, 200, 50, conjunction))]);
     assert_eq!(texts(&cues), ["The encoder reads the whole input sequence at once in parallel", "because attention needs no recurrence at any step."]);
 
+    // Never before a relative pronoun, even at the longest pause: Korean puts the clause ahead of its noun.
+    let mut ws = spoken(0, 200, 50, "This is unlike the many other large language models that you might already be familiar with.");
+    for w in ws.iter_mut().skip(9) {
+        w.0 += 700;
+        w.1 += 700;
+    }
+    let cues = all(vec![owned(&ws)]);
+    assert_eq!(cues.len(), 2, "{:?}", texts(&cues));
+    assert!(!cues[1].text.starts_with("that"), "{:?}", texts(&cues));
+
     // No comma or conjunction: the longest pause, here after "weights".
     let mut ws = spoken(0, 200, 50, "Every single layer of the network stores its own weights in memory on the graphics card itself.");
     for w in ws.iter_mut().skip(10) {

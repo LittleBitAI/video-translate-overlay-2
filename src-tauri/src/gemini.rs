@@ -45,9 +45,12 @@ mishears terms: a term's source is always the term meant, never a misheard spell
 transcript that the recognizer clearly misheard for a term (such as \"realu\" or \"a real U\" for ReLU, \"beef \
 float 16\" for bfloat16) goes under mishearings with the term meant; list one only when the title, the rest of \
 the transcript or the field's standard vocabulary makes the term certain. For {\"task\":\"translate\"}, segments are the consecutive parts of ONE \
-spoken sentence, in order. Translate the sentence as a whole, then divide the Korean into the same parts with \
-the same ids, in order: each part's Korean says what its English part says as far as Korean word order allows, \
-so each part keeps about its share of the length. Give every id exactly once; never merge, add or drop a part, \
+spoken sentence, in order. Translate the sentence as a whole in natural Korean word order, then divide that \
+Korean into the same parts with the same ids, in order, cutting at the word boundaries nearest the English \
+parts' boundaries: each part keeps about its share of the length and as much of what its English part says as \
+natural Korean allows. Never invert the Korean to follow the English order: for the parts \"This is unlike \
+many other models\" and \"that you might know.\" write \"이는 여러분이 알 만한\" and \"다른 많은 모델과 다릅니다.\", \
+not \"이는 다른 많은 모델과 다릅니다\" and \"여러분이 알 만한.\". Give every id exactly once; never merge, add or drop a part, \
 and never leave ko empty (write \"…\" for a part with nothing left to say). Leave out of the Korean fillers, \
 false starts, immediate repeats and verbal tics (uh, um, you know, I mean, a tag question like right? or okay?); \
 translate every other word, and add nothing that was not said: an incomplete sentence stays incomplete. \
