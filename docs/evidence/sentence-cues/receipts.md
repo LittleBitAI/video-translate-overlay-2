@@ -1,10 +1,11 @@
 # Sentence cues: execution receipts
 
 What ran, on what, and what it printed, for the code at
-`b0b123c` (the last code commit of this branch, review round 4; later
+`f25ed3d` (the last code commit of this branch, review round 5; later
 commits change only documents). The Rust checks ran on the working tree that
-was then committed as `b0b123c` with no change in between. Recorded on
-2026-11-19, with a clean working tree apart from the wiki's own files.
+was then committed as `f25ed3d`; between the runs and the commit only the
+research pages (`docs/research/`) changed. Recorded on 2026-11-20, with a
+clean working tree apart from the wiki's own files.
 
 ## Environment
 
@@ -16,66 +17,82 @@ was then committed as `b0b123c` with no change in between. Recorded on
 
 ## Focused offline checks (Rust unit tests)
 
-The tests `cargo test --lib -- sentences:: stitch:: pipeline:: sync::library library store:: gemini:: api::`
-(from `src-tauri`) selects: their lines as the whole library suite
-(`cargo test -p video-translate-overlay --lib`, below) printed them at
-`b0b123c`, in a fixed order (parallel runs print them in a different order
-each time). Against round 3, `the_grouping_rebuilt_from_saved_cues_is_the_one_the_cues_were_made_with`
-is gone and three tests are new (marked †):
+The tests `cargo test -p video-translate-overlay --lib -- sentences:: stitch:: pipeline:: sync::library library store:: gemini:: api::`
+(from `src-tauri`) selects, sorted by name (parallel runs print them in a
+different order each time), as printed at `f25ed3d`. Against round 4,
+`a_sentence_with_commas_goes_whole_however_long_and_only_a_bare_stretch_ends_at_the_limit`
+is renamed `a_punctuated_sentence_goes_whole_and_only_a_bare_stretch_ends_at_the_limit`
+(it gained the late-comma and end-mark-only forms), and seven tests are new
+(marked †):
 
 ```
+test account::tests::credential_expiry_keeps_local_library_ownership_and_account_switching_retires_that_scope ... ok
+test account::tests::production_library_requests_select_the_account_and_copy_legacy_data_only_with_current_consent ... ok
+test api::duration_tests::a_youtube_job_keeps_the_streams_length_not_the_players ... ok
+test api::duration_tests::resumed_youtube_source_refreshes_unavailable_hints_but_preserves_refusals ... ok
+test api::hold_tests::a_refused_check_lets_the_hold_go ... ok
+test api::hold_tests::a_refused_hold_refuses_the_job_before_any_check ... ok
+test api::hold_tests::the_service_is_held_before_the_media_check ... ok
 test api::key_tests::the_mask_keeps_four_characters_and_never_splits_one ... ok
 test api::tests::ids_and_titles_follow_the_entity_rules ... ok
-test api::hold_tests::a_refused_check_lets_the_hold_go ... ok
+test api::tests::privacy_opener_uses_only_the_fixed_public_page_and_preserves_account_and_video_state ... ok
 test api::tests::video_keys_follow_the_video_not_the_url_form ... ok
 test api::tests::youtube_sign_in_return_addresses_are_limited_to_youtube ... ok
-test api::hold_tests::a_refused_hold_refuses_the_job_before_any_check ... ok
-test api::tests::privacy_opener_uses_only_the_fixed_public_page_and_preserves_account_and_video_state ... ok
-test account::tests::credential_expiry_keeps_local_library_ownership_and_account_switching_retires_that_scope ... ok
+test gemini::key_tests::a_400_that_names_the_key_is_a_refused_key ... ok
+test gemini::key_tests::another_400_is_not_blamed_on_the_key ... ok
 test gemini::tests::cost_is_usage_times_price_and_rate ... ok
 test gemini::tests::glossary_is_deduplicated_and_sorted ... ok
 test gemini::tests::missing_duplicate_or_foreign_ids_never_fill_subtitle_slots ... ok
 test gemini::tests::replies_are_matched_by_id_only ... ok
-test gemini::key_tests::another_400_is_not_blamed_on_the_key ... ok
-test api::duration_tests::a_youtube_job_keeps_the_streams_length_not_the_players ... ok
-test api::hold_tests::the_service_is_held_before_the_media_check ... ok
-test gemini::key_tests::a_400_that_names_the_key_is_a_refused_key ... ok
 test pipeline::audio_tests::a_failed_delete_keeps_the_path_for_the_next_try ... ok
 test pipeline::audio_tests::audio_left_after_writing_is_deleted_on_the_next_round ... ok
-test account::tests::production_library_requests_select_the_account_and_copy_legacy_data_only_with_current_consent ... ok
+test pipeline::boundary_tests::a_job_made_before_plans_resumes_on_its_own_windows ... ok
 test pipeline::boundary_tests::a_remake_that_failed_writing_cannot_continue_or_be_retranslated_and_playback_keeps_the_selected_version ... ok
-test api::duration_tests::resumed_youtube_source_refreshes_unavailable_hints_but_preserves_refusals ... ok
-test pipeline::download_tests::the_first_attempt_uses_the_probed_source_and_reports_the_model_fetch ... ok
-test pipeline::glossary_tests::a_job_with_no_glossary_fails_before_any_batch ... ok
-test pipeline::tests::every_stop_maps_to_one_of_the_e2_reasons ... ok
-test pipeline::boundary_tests::every_spoken_word_is_written_once_in_order_and_in_time ... ok
 test pipeline::boundary_tests::a_write_killed_after_a_held_boundary_resumes_to_the_same_cues ... ok
 test pipeline::boundary_tests::a_write_killed_with_a_sentence_open_across_a_cut_resumes_to_the_same_cues ... ok
-test pipeline::glossary_tests::an_unusable_glossary_reply_is_asked_for_again ... ok
-test pipeline::boundary_tests::a_job_made_before_plans_resumes_on_its_own_windows ... ok
-test pipeline::translate_tests::a_selected_version_is_translated_with_its_own_terms_and_mishearings_found_for_it ... ok
-test pipeline::translate_tests::a_continued_remake_publishes_its_draft_and_a_restored_one_cannot_continue ... ok
+test pipeline::boundary_tests::a_write_killed_with_a_sentence_open_loses_no_word_when_the_released_build_resumes_it ... ok
+test pipeline::boundary_tests::a_write_the_released_build_advanced_resumes_without_its_stale_open_sentence ... ok
+test pipeline::boundary_tests::every_spoken_word_is_written_once_in_order_and_in_time ... ok
 test pipeline::boundary_tests::the_model_is_released_when_writing_ends_either_way ... ok
-test pipeline::translate_tests::only_a_remake_that_failed_translating_continues ... ok
+test pipeline::download_tests::the_first_attempt_uses_the_probed_source_and_reports_the_model_fetch ... ok
+test pipeline::glossary_tests::a_job_with_no_glossary_fails_before_any_batch ... ok
+test pipeline::glossary_tests::an_unusable_glossary_reply_is_asked_for_again ... ok
+test pipeline::tests::every_stop_maps_to_one_of_the_e2_reasons ... ok
+test pipeline::translate_tests::a_continued_remake_publishes_its_draft_and_a_restored_one_cannot_continue ... ok
 test pipeline::translate_tests::a_refused_remake_leaves_the_audio_of_an_interrupted_one_as_it_was ... ok
-test pipeline::translate_tests::every_translation_of_the_same_cues_asks_the_same_sentences ... ok †
-test pipeline::worker_tests::a_bug_fails_the_job_instead_of_leaving_it_running ... ok
-test pipeline::worker_tests::every_ten_percent_step_passed_is_reported_once ... ok
+test pipeline::translate_tests::a_selected_version_is_translated_with_its_own_terms_and_mishearings_found_for_it ... ok
+test pipeline::translate_tests::a_stopped_remake_finds_the_version_it_started_from_in_the_database_alone ... ok †
 test pipeline::translate_tests::an_older_builds_selection_never_pairs_a_transcript_with_another_ones_mishearings ... ok
+test pipeline::translate_tests::cost_is_metered_per_call_and_never_stops_translation ... ok
+test pipeline::translate_tests::cues_are_translated_one_per_request_with_requests_overlapping ... ok
+test pipeline::translate_tests::every_translation_of_the_same_cues_asks_the_same_sentences ... ok
+test pipeline::translate_tests::of_remakes_staged_at_once_under_one_job_id_one_wins_and_keeps_its_own_audio ... ok †
+test pipeline::translate_tests::only_a_remake_that_failed_translating_continues ... ok
+test pipeline::worker_tests::a_bug_fails_the_job_instead_of_leaving_it_running ... ok
 test pipeline::worker_tests::a_job_in_an_unselected_account_resumes_in_that_database_and_publishes_its_completed_result ... ok
+test pipeline::worker_tests::a_job_resumed_before_its_notice_went_out_notifies_once ... ok
+test pipeline::worker_tests::every_ten_percent_step_passed_is_reported_once ... ok
+test pipeline::worker_tests::failed_retranslation_preserves_completed_subtitles_for_every_stop ... ok
+test pipeline::worker_tests::retranslation_resumes_partial_work_and_publishes_only_a_complete_set ... ok
+test pipeline::worker_tests::transient_retries_are_independent_for_glossary_and_each_cue ... ok
+test sentences::tests::a_bare_stretch_before_a_long_pause_still_ends_at_the_limit ... ok †
 test sentences::tests::a_long_silence_ends_a_sentence_without_punctuation ... ok
+test sentences::tests::a_punctuated_sentence_goes_whole_and_only_a_bare_stretch_ends_at_the_limit ... ok
+test sentences::tests::a_saved_cue_holding_a_sentence_end_closes_its_sentence ... ok
 test sentences::tests::a_segment_without_word_times_is_spread_over_its_time ... ok
 test sentences::tests::a_sentence_ends_where_its_punctuation_ends_it ... ok
 test sentences::tests::a_sentence_over_the_cap_is_cut_at_a_comma_then_a_conjunction_then_the_longest_pause ... ok
 test sentences::tests::a_sentence_starting_mid_segment_starts_with_its_first_word ... ok
-test sentences::tests::a_sentence_with_commas_goes_whole_however_long_and_only_a_bare_stretch_ends_at_the_limit ... ok
+test sentences::tests::a_sentence_written_across_windows_is_grouped_as_in_one ... ok †
 test sentences::tests::a_stretch_without_punctuation_is_cut_at_pauses_and_the_cap ... ok
+test sentences::tests::after_an_initialism_etc_or_an_ellipsis_a_lower_case_word_carries_the_sentence_on ... ok †
 test sentences::tests::cues_keep_after_the_previous_one ... ok
 test sentences::tests::each_cue_is_one_sentence_and_none_holds_the_end_of_one_and_the_start_of_the_next ... ok
+test sentences::tests::grouping_an_hour_of_unpunctuated_speech_is_quick ... ok †
 test sentences::tests::no_cue_ends_after_its_words_even_when_they_take_no_time ... ok
-test sentences::tests::the_parts_of_a_sentence_are_asked_together_and_with_nothing_else ... ok †
-test sentences::tests::a_saved_cue_holding_a_sentence_end_closes_its_sentence ... ok †
+test sentences::tests::no_request_holds_more_than_the_ceiling ... ok †
 test sentences::tests::the_open_sentence_waits_for_the_next_window_and_ends_the_same ... ok
+test sentences::tests::the_parts_of_a_sentence_are_asked_together_and_with_nothing_else ... ok
 test stitch::tests::a_loop_on_a_sound_is_cut_and_said_repetition_and_numbers_stay ... ok
 test stitch::tests::a_side_that_heard_nothing_in_the_overlap_gives_way_to_the_other ... ok
 test stitch::tests::a_word_cut_by_the_window_edge_appears_once_and_the_split_sentence_is_one_cue ... ok
@@ -83,67 +100,65 @@ test stitch::tests::natural_repetition_across_the_cut_keeps_every_spoken_repeat 
 test stitch::tests::pieces_move_to_the_source_timeline_inside_their_window ... ok
 test stitch::tests::segments_without_words_are_reconciled_as_whole_units ... ok
 test stitch::tests::without_a_common_word_the_overlap_is_shared_at_its_middle ... ok
-test pipeline::worker_tests::a_job_resumed_before_its_notice_went_out_notifies_once ... ok
-test pipeline::translate_tests::cues_are_translated_one_per_request_with_requests_overlapping ... ok
-test pipeline::worker_tests::retranslation_resumes_partial_work_and_publishes_only_a_complete_set ... ok
-test pipeline::boundary_tests::a_write_killed_with_a_sentence_open_loses_no_word_when_the_released_build_resumes_it ... ok
-test pipeline::boundary_tests::a_write_the_released_build_advanced_resumes_without_its_stale_open_sentence ... ok
-test store::tests::a_late_sign_in_does_not_replace_the_newer_opened_url ... ok
-test store::tests::a_job_from_a_file_without_plans_keeps_plan_one_and_new_jobs_get_the_current_plan ... ok
-test store::library_tests::legacy_completed_rows_keep_timing_and_deletion_removes_all_owned_rows ... ok
-test store::tests::opening_a_current_file_does_not_wait_for_a_writer ... ok
-test store::wal_tests::reads_do_not_wait_for_an_open_write ... ok
-test store::tests::region_save_is_atomic_and_percent_never_drops ... ok
-test pipeline::worker_tests::transient_retries_are_independent_for_glossary_and_each_cue ... ok
-test pipeline::translate_tests::cost_is_metered_per_call_and_never_stops_translation ... ok
-test sync::library::tests::active_jobs_defer_projection_and_confirmed_deletion_stays_hidden_until_cleanup ... ok
 test store::library_tests::deletion_only_clears_the_browser_url_it_inspected ... ok
-test sync::library::tests::concurrent_order_ties_have_the_same_visible_order_on_both_replicas ... ok
-test sync::library::tests::failed_projection_rolls_back_received_records_and_cursor_together ... ok
+test store::library_tests::legacy_completed_rows_keep_timing_and_deletion_removes_all_owned_rows ... ok
+test store::tests::a_job_from_a_file_without_plans_keeps_plan_one_and_new_jobs_get_the_current_plan ... ok
+test store::tests::a_late_sign_in_does_not_replace_the_newer_opened_url ... ok
+test store::tests::opening_a_current_file_does_not_wait_for_a_writer ... ok
+test store::tests::region_save_is_atomic_and_percent_never_drops ... ok
+test store::wal_tests::reads_do_not_wait_for_an_open_write ... ok
+test sync::library::tests::active_jobs_defer_projection_and_confirmed_deletion_stays_hidden_until_cleanup ... ok
 test sync::library::tests::concurrent_completed_versions_are_retained_and_fresh_restoration_waits_for_cleanup ... ok
+test sync::library::tests::concurrent_order_ties_have_the_same_visible_order_on_both_replicas ... ok
+test sync::library::tests::deletion_and_a_fresh_link_or_translation_in_one_page_cannot_bypass_cleanup ... ok
+test sync::library::tests::failed_projection_rolls_back_received_records_and_cursor_together ... ok
 test sync::library::tests::invalid_legacy_completion_rolls_back_the_copy_and_active_jobs_stay_local ... ok
 test sync::library::tests::job_completion_cannot_adopt_a_deletion_received_after_the_job_started ... ok
+test sync::library::tests::legacy_import_is_a_copy_is_idempotent_and_cannot_assign_another_accounts_store ... ok
 test sync::library::tests::multi_place_moves_reach_the_peer_in_the_same_order ... ok
 test sync::library::tests::native_completion_and_its_journal_commit_atomically_and_do_not_replace_the_local_job ... ok
-test sync::library::tests::deletion_and_a_fresh_link_or_translation_in_one_page_cannot_bypass_cleanup ... ok
-test sync::library::tests::legacy_import_is_a_copy_is_idempotent_and_cannot_assign_another_accounts_store ... ok
-test sync::library::tests::silent_cue_repair_denies_any_change_to_the_inspected_selection_or_cue ... ok
-test sync::library::tests::queued_remote_deletion_invalidates_earlier_consent_before_projection ... ok
 test sync::library::tests::ordinary_library_mutations_publish_and_incoming_projection_does_not_echo ... ok
 test sync::library::tests::partial_dependencies_survive_restart_and_blocked_rows_do_not_starve_later_work ... ok
+test sync::library::tests::queued_remote_deletion_invalidates_earlier_consent_before_projection ... ok
 test sync::library::tests::received_ready_library_is_usable_without_processing_and_survives_restart ... ok
-test sync_channel::tests::different_signed_google_subjects_with_the_same_email_cannot_transfer_any_library_data ... ok
+test sync::library::tests::silent_cue_repair_denies_any_change_to_the_inspected_selection_or_cue ... ok
 test sync::library::tests::silent_cue_repair_is_atomic_retains_versions_cost_and_sync_selection ... ok
-test pipeline::worker_tests::failed_retranslation_preserves_completed_subtitles_for_every_stop ... ok
+test sync_channel::tests::different_signed_google_subjects_with_the_same_email_cannot_transfer_any_library_data ... ok
 ```
 
-That is 91 tests, all `ok`. The whole library suite,
-`cargo test -p video-translate-overlay --lib`, printed
-`test result: ok. 262 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 169.43s`.
+That is 98 tests, all `ok`: `test result: ok. 98 passed; 0 failed; 0 ignored; 0 measured; 173 filtered out; finished in 179.79s`.
+The whole library suite, `cargo test -q -p video-translate-overlay --lib`, run
+on the same tree, printed
+`test result: ok. 269 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 192.64s`.
 
-Before that final run, with the grouping change but not yet the cue-end rule,
-one whole run printed `257 passed; 4 failed`. Two failures were
-`media::hls_aes_tests` with `open audio: 지정된 파일을 찾을 수 없습니다` ("The system
-cannot find the file specified") on files their own test wrote, as in round
-3; no commit of this branch touches `media`. The other two were
-`pipeline::worker_tests::retranslation_resumes_partial_work_and_publishes_only_a_complete_set`
-and `transient_retries_are_independent_for_glossary_and_each_cue`, whose
-fixtures saved unpunctuated cues (`first`, `cue 0`) that `save_region` used
-to mark as separate sentences. With the grouping rebuilt from the text, those
-cues became one sentence, and their fake Gemini answers only one part. Their
-fixtures now say `First.` and `Cue 0.`. Run alone,
-`cargo test -q --lib -- pipeline::worker_tests media::hls_aes_tests` then
-printed `12 passed; 0 failed`.
+The new F5 and F6 tests were also run against the round-4 code, in a temporary
+worktree at `5d74d11`, with this round's `sentences_tests.rs` and a test-only
+`CEILING` constant. Four failed:
+- `after_an_initialism_etc_or_an_ellipsis_a_lower_case_word_carries_the_sentence_on`
+  split `It started at the U.S. this morning.` after 50 ms;
+- `a_punctuated_sentence_goes_whole_and_only_a_bare_stretch_ends_at_the_limit`
+  gave 2 sentences for the comma after twice the limit, and, run first, 3 for
+  the end-mark-only form, where 2 were expected;
+- `a_sentence_written_across_windows_is_grouped_as_in_one` gave 6 sentences
+  where 3 were expected;
+- `no_request_holds_more_than_the_ceiling` gave 1 sentence.
+
+The F12 form (`short-gap` in
+`a_write_the_released_build_advanced_resumes_without_its_stale_open_sentence`)
+failed before the fix with `[word0, word1, word0, word1, word2, word3]`, and
+`of_remakes_staged_at_once_under_one_job_id_one_wins_and_keeps_its_own_audio`
+failed before the fix with "round 0: the winner's audio was replaced or
+deleted". Both pass at `f25ed3d`. The worktree was removed.
 
 ## Isolated API checks (contract tests)
 
 The contract host is this commit's `vto-contract-host`, built with
 `cargo build -q -p video-translate-overlay --bin vto-contract-host` from the
-tree committed as `b0b123c` and passed as
+tree committed as `f25ed3d` and passed as
 `VTO_CONTRACT_HOST=C:/Users/dasdk/PycharmProjects/video-translate-overlay-2/target/debug/vto-contract-host.exe`:
 
-- 25,926,144 bytes, written 2026-11-19 20:17:07 +0900;
-- SHA-256 `24dd1ddd8db2e2091556fad237bfdce6c8522cbc872ce669ae2317cd0a35d2f4`.
+- 25,928,192 bytes, written 2026-11-20 06:39:01 +0900;
+- SHA-256 `0648599d035b50d9b4b4bceffc7593761b543b1124bac4813562234c86ce7ba3`.
 
 The harness (`contract-tests/src/lib.rs`) gives each test its own folder,
 `%TEMP%\vto-contract-<pid>-<nanos>-<n>`, for the host's data, keystore and
@@ -153,7 +168,19 @@ nothing reaches the network or the account library. `a_split_sentence_goes_to_ge
 also checks that `GET /videos/{key}/subtitles` returns cues of exactly
 `end_ms, seq, start_ms, text_ko`. Command:
 `cargo test -p vto-contract-tests --test <file>`, for the five files, with
-that host:
+that host. No contract test changed in round 5
+(`git diff --stat 5d74d11 f25ed3d -- contract-tests` prints nothing), so the
+test names are those below; their result lines at `f25ed3d` were:
+
+```
+sentences: test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.68s
+translation: test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 21.17s
+write_and_timing: test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.69s
+library: test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.34s
+jobs: test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 19.04s
+```
+
+The names, as printed by the same five files at `b0b123c`:
 
 ```
 == --test sentences
@@ -211,9 +238,9 @@ equal [measure/expected.json](measure/expected.json) for every surface, size,
 version and video. It also asserts that the new versions have no cue over two
 lines except 12 in the Watch screen on a phone.
 
-This run is reused from round 3: round 4 changes no UI code, harness, cue
-text or contract test (`git diff --stat ee4359c b0b123c -- src tests vitest.ui.config.ts docs/evidence/sentence-cues/measure contract-tests`
-prints nothing), and the measured Korean comes from the saved cues, which it
+This run is reused from round 3: rounds 4 and 5 change no UI code, harness,
+cue text or contract test (`git diff --stat ee4359c f25ed3d -- src tests vitest.ui.config.ts docs/evidence/sentence-cues/measure`
+and `git diff --stat b0b123c f25ed3d -- contract-tests src tests` print nothing), and the measured Korean comes from the saved cues, which it
 does not touch. The run was made at `ee4359c1c57007f74cbb83fd33546eb8fae72dac`. Right before
 it, `git status --porcelain` for the harness and everything it imports
 printed nothing, so each ran as committed, with these git blob ids
@@ -310,23 +337,26 @@ not committed, because they are the person's library. Their file
 (`artifacts/sentence-cues/ko.json`, 7,116 new and 4,293 old cues) had SHA-256
 `f6ad086f05c8522d8f9ae89689cd427014da8fd59eac290ec43a0be4f0ae16d0`. The UI
 code that renders them (`src/`, `tests/`) is the same at `3f8c8ed`,
-`57f7173`, `5c76696`, `ee4359c` and `b0b123c` (`git diff --stat 57f7173 b0b123c -- src/ tests/`
+`57f7173`, `5c76696`, `ee4359c`, `b0b123c` and `f25ed3d` (`git diff --stat 57f7173 f25ed3d -- src/ tests/`
 prints nothing).
 
 ## The installed Windows app
 
 This run is reused from the code at `57f7173`, by this task. None of
-`5c76696`, `ee4359c` and `b0b123c` changes what the released app runs: the
-app is the installed 0.1.9 build, and the library it opened is unchanged
-since. Re-checked on 2026-11-19 after `b0b123c`: the exe's SHA-256 is still
-`7ff268da…ce0c`; the library file is still 4,378,624 bytes, last written
-12:10:18 +0900, SHA-256 `d4c1aded…7756`. Its write-ahead log (238,992 bytes,
-last written 13:20:09 +0900) holds that app session's writes. The app is not
-running. The unchanged subtitle shape at `b0b123c` is shown by the contract
-test above. The regroup and request-size counts in the README were made on a
-copy of this library in the temporary folder, taken with SQLite's backup from
-a read-only connection. That read updated only the shared-memory index file
-(`sync.sqlite3-shm`, 20:07:36 +0900); the database and its log are as above.
+`5c76696`, `ee4359c`, `b0b123c` and `f25ed3d` changes what the released app
+runs: the app is the installed 0.1.9 build, and the library it opened is
+unchanged since. Re-checked on 2026-11-20 after `f25ed3d`: the exe's SHA-256
+is still `7ff268da…ce0c`; the library file is still 4,378,624 bytes, last
+written 2026-11-19 12:10:18 +0900, SHA-256
+`d4c1adedf23a2dd5fe9ff790ba46d6e24a5b20953f335e50787da9471ca77565`. Its
+write-ahead log (238,992 bytes, last written 13:20:09 +0900) holds that app
+session's writes. The app is not running. The unchanged subtitle shape at
+`f25ed3d` is shown by the contract test above. The regroup and request-size
+counts in the README were made on a copy of this library in the temporary
+folder, taken with SQLite's backup from a read-only connection, and the copy
+was deleted afterwards. That read updated only the shared-memory index file
+(`sync.sqlite3-shm`, 2026-11-19 21:31:39 +0900); the database and its log are
+as above.
 
 The installed app is version 0.1.9:
 
@@ -337,7 +367,7 @@ The installed app is version 0.1.9:
 The account library it opened is
 `%LOCALAPPDATA%\dev.vto.overlay\sync\9d06ffd2…5d956\sync.sqlite3`. Before
 launch it was 4,378,624 bytes with an empty write-ahead log, SHA-256
-`d4c1adedf23a2dd5fe9ff790ba46d6e24a5b20953f335e50787da9471ca7756`, and
+`d4c1adedf23a2dd5fe9ff790ba46d6e24a5b20953f335e50787da9471ca77565`, and
 `PRAGMA integrity_check` returned `ok`. In it, `wbc-oxFFV9c` has 2 saved
 versions. The selected one is
 `t/wbc-oxFFV9c/9d591a03…dac8506`, with 1,490 cues, the last ending at
