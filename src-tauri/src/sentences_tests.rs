@@ -137,7 +137,7 @@ fn sentences_of(cues: &[Cue]) -> Vec<String> {
 }
 
 #[test]
-fn a_sentence_with_commas_goes_whole_however_long_and_only_a_bare_stretch_ends_at_the_limit() {
+fn a_punctuated_sentence_goes_whole_and_only_a_bare_stretch_ends_at_the_limit() {
     let clause = "the weights for that repeated block stay the same each time";
     let chained = format!("{clause}, {clause}, {clause}, {clause}, and we get a lot more depth going on there.");
     let long = "When we move from four layers to eight layers and then all the way up to a hundred layers in this looped model, we are honestly not yet sure whether there is going to be any real benefit at all or even a small cost.";
@@ -146,12 +146,21 @@ fn a_sentence_with_commas_goes_whole_however_long_and_only_a_bare_stretch_ends_a
     // Its first comma comes after the limit: the opening clause alone is longer.
     let opening = (0..40).map(|i| format!("step{i}")).collect::<Vec<_>>().join(" ");
     let late = format!("{opening}, and only then does the sentence end.");
-    assert!(chained.len() > STRETCH_MAX && long.len() > STRETCH_MAX && bare.len() > STRETCH_MAX && opening.len() > STRETCH_MAX);
+    // The same past twice the limit, where the old look-ahead stopped.
+    let opening = (0..70).map(|i| format!("step{i}")).collect::<Vec<_>>().join(" ");
+    let later = format!("{opening}, and only then does the sentence end.");
+    // Its only punctuation is its own end mark.
+    let marked = (0..36).map(|i| format!("token{i}")).collect::<Vec<_>>().join(" ");
+    let marked = format!("{marked}. Then a second one.");
+    assert!(chained.len() > STRETCH_MAX && long.len() > STRETCH_MAX && bare.len() > STRETCH_MAX && late.len() > STRETCH_MAX);
+    assert!(opening.len() > 2 * STRETCH_MAX && marked.len() > STRETCH_MAX + 20);
     // (form, the text, how many sentences it is)
     for (name, said, count) in [
         ("comma-chained run-on", chained.as_str(), 1),
         ("one long sentence, one comma", long, 1),
         ("first comma after the limit", late.as_str(), 1),
+        ("first comma after twice the limit", later.as_str(), 1),
+        ("only its end mark", marked.as_str(), 2),
         ("no punctuation, no pause", bare.as_str(), 2),
     ] {
         let cues = all(vec![owned(&spoken(0, 200, 50, said))]);
@@ -164,6 +173,58 @@ fn a_sentence_with_commas_goes_whole_however_long_and_only_a_bare_stretch_ends_a
         }
         ordered(&cues);
     }
+}
+
+#[test]
+fn a_bare_stretch_before_a_long_pause_still_ends_at_the_limit() {
+    let mut words = spoken(0, 200, 50, &(0..60).map(|i| format!("word{i}")).collect::<Vec<_>>().join(" "));
+    let after = words.last().unwrap().1 + 3_200;
+    words.extend(spoken(after, 200, 50, "and then it ends."));
+    let sentences = sentences_of(&all(vec![owned(&words)]));
+    assert!(sentences.len() >= 3, "{sentences:?}");
+    // Ended at the cue that reaches the limit.
+    for s in &sentences {
+        assert!(s.chars().count() <= STRETCH_MAX + CAP, "{s}");
+    }
+}
+
+#[test]
+fn no_request_holds_more_than_the_ceiling() {
+    let clause = "the weights for that repeated block stay the same each time";
+    let said = format!("{}.", vec![clause; 2 * CEILING / clause.len() + 2].join(", "));
+    assert!(said.len() > 2 * CEILING);
+    let cues = all(vec![owned(&spoken(0, 200, 50, &said))]);
+    let sentences = sentences_of(&cues);
+    assert!(sentences.len() >= 3, "{} sentences", sentences.len());
+    for s in &sentences {
+        assert!(s.chars().count() <= CEILING, "{} characters", s.chars().count());
+    }
+    assert_eq!(sentences.join(" "), said, "every word once, in order");
+}
+
+#[test]
+fn a_sentence_written_across_windows_is_grouped_as_in_one() {
+    let said = (0..70).map(|i| format!("step{i}")).collect::<Vec<_>>().join(" ");
+    let said = format!("{said}, and only then does it end. Then {said}. Last.");
+    let words = spoken(0, 200, 50, &said);
+    let whole = all(vec![owned(&words)]);
+    let (mut tail, mut prev_end, mut cues) = (Tail::new(), 0, Vec::new());
+    let windows: Vec<&[(i64, i64, String)]> = words.chunks(17).collect();
+    for (i, w) in windows.iter().enumerate() {
+        cues.extend(push(&mut tail, vec![owned(w)], i + 1 == windows.len(), &mut prev_end));
+    }
+    assert_eq!(cues, whole);
+    assert_eq!(sentences_of(&cues).len(), 3);
+}
+
+#[test]
+fn grouping_an_hour_of_unpunctuated_speech_is_quick() {
+    let saved: Vec<crate::store::Cue> = (0..600)
+        .map(|i| crate::store::Cue { seq: i, start_ms: i * 1_100, end_ms: i * 1_100 + 1_000, source_text: (0..5).map(|k| format!("word{k}")).collect::<Vec<_>>().join(" "), text_ko: None })
+        .collect();
+    let started = std::time::Instant::now();
+    rebuilt_parts(&saved);
+    assert!(started.elapsed() < std::time::Duration::from_secs(1), "{:?}", started.elapsed());
 }
 
 #[test]
@@ -181,19 +242,30 @@ fn a_sentence_ends_where_its_punctuation_ends_it() {
         ("initialism before upper case", "It was made in the U.S. Then it shipped.", &["It was made in the U.S.", "Then it shipped."]),
         ("ellipsis before lower case", "so... and then it stops.", &["so... and then it stops."]),
         ("etc. before upper and lower case", "They ship GGUFs etc. So it runs locally, etc. and it is fast.", &["They ship GGUFs etc.", "So it runs locally, etc. and it is fast."]),
-        ("initialism ending before a clause in lower case", "The hardware was built in the U.S. the software was written in Canada.", &["The hardware was built in the U.S.", "the software was written in Canada."]),
-        ("etc. ending before a clause in lower case", "We tried GGUFs etc. it ran well.", &["We tried GGUFs etc.", "it ran well."]),
         ("ellipsis before a clause in lower case", "So... we start again.", &["So... we start again."]),
     ] {
         let cues = all(vec![owned(&spoken(0, 200, 50, said))]);
         assert_eq!(sentences_of(&cues), sentences, "{name}");
         ordered(&cues);
     }
-    // Every clause opener after an initialism or `etc.` starts a new sentence.
-    for (mark, opener) in ["U.S.", "a.m.", "etc."].iter().flat_map(|m| super::OPENERS.iter().map(move |o| (m, o))) {
-        let said = format!("It ended at the {mark} {opener} came next.");
-        let cues = all(vec![owned(&spoken(0, 200, 50, &said))]);
-        assert_eq!(sentences_of(&cues), [format!("It ended at the {mark}"), format!("{opener} came next.")], "{mark} {opener}");
+}
+
+#[test]
+fn after_an_initialism_etc_or_an_ellipsis_a_lower_case_word_carries_the_sentence_on() {
+    // Property: whatever lower-case word follows, and with or without a pause,
+    // the sentence goes on; before upper case it ends.
+    let marks = ["U.S.", "a.m.", "etc.", "so..."];
+    let follows = ["this morning", "the next day", "these days", "we know is big", "the same way", "the software was written in Canada", "it ran well"];
+    for (mark, follow) in marks.iter().flat_map(|m| follows.iter().map(move |f| (m, f))) {
+        for pause in [50, 400, 1_200] {
+            let mut words = spoken(0, 200, 50, &format!("It started at the {mark}"));
+            let at = words.last().unwrap().1 + pause;
+            words.extend(spoken(at, 200, 50, &format!("{follow}.")));
+            let said = format!("It started at the {mark} {follow}.");
+            assert_eq!(sentences_of(&all(vec![owned(&words)])), [said.clone()], "{said} after {pause} ms");
+        }
+        let said = format!("It started at the {mark} Then {follow}.");
+        assert_eq!(sentences_of(&all(vec![owned(&spoken(0, 200, 50, &said))])), [format!("It started at the {mark}"), format!("Then {follow}.")], "{said}");
     }
 }
 

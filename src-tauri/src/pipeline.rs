@@ -278,9 +278,16 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
         Some(t) => serde_json::from_str(t).map_err(|e| format!("open sentence: {e}"))?,
         None => Vec::new(),
     };
-    // The open sentence is also the first held piece (see below); here it is the tail only.
-    if !tail.is_empty() && held.first().is_some_and(|p| p.words == tail) {
-        held.remove(0);
+    // This build stores the open sentence as the first held piece too (see
+    // below); here it is the tail only. Where it is not the first held piece, a
+    // build that ignores `tail` (0.1.9) wrote `held` since and committed those
+    // words from it: the tail is stale, and resuming it would write them twice.
+    if !tail.is_empty() {
+        if held.first().is_some_and(|p| p.words == tail) {
+            held.remove(0);
+        } else {
+            tail.clear();
+        }
     }
     // The title helps the PC's model spell the talk's terms (A4); the phone ignores it.
     cx.core.svc.transcriber.set_hint(Some(&cx.title));

@@ -31,17 +31,28 @@ Changed after review, once the re-makes were done:
 - A question or exclamation mark ends a sentence, even before a lower-case
   word, unless it closes a quotation that carries on (`He asked "why?" and
   left.`). A period ends one even before a lower-case word, except after an
-  abbreviation; an ellipsis, `etc.` or an initialism (`U.S.`) does only
-  before a word that does not carry on in lower case. `etc.` and an
-  initialism also end one before a lower-case word that opens a clause
-  (`the`, `we`, `it`, `they` and eight more), as in "built in the U.S. the
-  software was written in Canada" (review round 3).
-- A sentence with a comma in it is no longer ended at the run-on limit: it
-  goes whole to its sentence end, however long (decided by the person on
-  2026-11-19, review round 2). The comma is looked for in the words still to
-  come as well, up to 420 characters, so a sentence whose first comma comes
-  after 210 characters also goes whole (review round 3). Only a stretch with
-  no punctuation is still ended at 210 characters.
+  abbreviation; after an ellipsis, `etc.` or an initialism (`U.S.`, `a.m.`) a
+  lower-case word always carries the sentence on, whatever the pause (decided
+  by the person on 2026-11-19, review round 5: the round-3 list of clause
+  openers split "9 a.m. this morning"). So "built in the U.S. the software was
+  written in Canada", said without a pause, stays one sentence: an accepted
+  limit. In the 7,116 saved cues the only two such places carry on
+  (`standard... uh instantiation`, `in the U.S. in English`), and in the two
+  transcripts with word times the gap at a true sentence end has a median of
+  110 ms while gaps inside sentences reach 190 ms at the 95th percentile, so a
+  pause could not tell them apart either.
+- A sentence with a comma, `;` or `:`, or its own end mark, goes whole, all its
+  parts in one request, up to 2,000 English characters (decided by the person
+  on 2026-11-19, review round 5). Only a bare stretch, one that reaches a
+  3-second pause or the end of the speech with no such punctuation and no end
+  mark, is ended at the run-on limit of 210 characters. Round 3 looked for a
+  comma only in the next 420 characters, so a sentence whose first comma came
+  later, or that had only its end mark, was ended at 210 characters. A
+  sentence longer than 2,000 characters is ended there: a reply holds at most
+  4,096 output tokens, and the eight videos' Korean took about 0.74 output
+  tokens per English character, so 2,000 characters is about 1,500 tokens. No
+  request passes 2,000 characters, also where the grouping is rebuilt from
+  saved cues.
 - A cue never ends after its last word. A word that ends no later than the
   word before it (one the model gives no time) stays in that word's sentence,
   so it is never dropped and the saved cues still show the sentence end it
@@ -68,10 +79,19 @@ Changed after review, once the re-makes were done:
 - The re-make tool copies its audio to a file named by the new job and
   deletes the copy if the job is refused, so a second `run` while a re-make
   is interrupted cannot replace the audio that re-make resumes from (review
-  round 3).
+  round 3). The copy is claimed by creating it (`create_new`), and only a copy
+  this call made is deleted, so of two `run`s started at once under one job id
+  one wins and keeps its own audio (review round 5).
+- The re-make tool finds the version a re-make started from in the database
+  alone, as the one still selected (a re-make changes the selection only when
+  it is ready), so `resume`, `continue` and `restore` need nothing from the
+  work folder; `restore` takes no work folder (review round 5).
 - A write stopped with a sentence open also keeps that sentence's words as the
   first held piece, so a build from before sentence cues (0.1.9), which
-  ignores the open sentence, resumes without losing them.
+  ignores the open sentence, resumes without losing them. Where the stored
+  open sentence is no longer the first held piece, 0.1.9 has written since and
+  committed those words, so it is dropped rather than written twice (review
+  round 5).
 
 None of these changes the cues of the eight saved versions. In their cues no
 part follows a `?` or `!`, no cue ends after the video, and no multi-part
@@ -79,27 +99,29 @@ sentence was ever answered part by part (the only replies with wrong ids, in
 `wbc-oxFFV9c` and `WJpeW9lCSUM`, were to one-part sentences, and were asked
 again). Their Korean was asked under the grouping each re-make's writer
 recorded at the time. A re-translation of any of them now asks the rebuilt
-grouping instead. Against the recorded one, the rebuild joins 192 cues to the
-sentence before them (sentences the run-on limit had ended at a comma) and
-splits 22 (a period before a lower-case word, a sentence end inside a cue, an
-unpunctuated stretch ended at the limit). Most requests stay as they were (the
-median request is the same size), but a sentence with a comma and no end mark
-for half a minute now goes in one request: the longest holds 18 parts, 763
-characters and 40.9 s (`QDX-1M5Nj7s`, from 45:11), and 5 run over 32 s.
-Counted with this round's rules on a copy of the account library (requests,
-multi-part requests, most parts, characters and the longest multi-part
-request, recorded / rebuilt):
+grouping instead. Against the recorded one, the rebuild joins 234 cues to the
+sentence before them (sentences the run-on limit had ended at a comma, or
+after a comma further on than 420 characters) and splits 14 (a period before a
+lower-case word, a sentence end inside a cue, a bare stretch ended at the
+limit). Most requests stay as they were (the median request is about the same
+size), but a sentence with a comma and no end mark for a minute now goes in one
+request: the longest holds 22 parts, 967 characters and 63.7 s
+(`QDX-1M5Nj7s`, from 36:55); no request passes 2,000 characters, and in all
+eight videos 8 pass 600 and 2 pass 800. Rebuilding a video's grouping took at
+most 16 ms. Counted with this round's rules on a copy of the account library
+(requests, multi-part requests, most parts, characters and the longest
+multi-part request, recorded / rebuilt):
 
 | Video | Cues | Requests | Multi-part | Most parts | Median chars | 95th pct chars | Most chars | Longest (s) | Joined | Split |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `QDX-1M5Nj7s` | 1,316 | 513 / 463 | 367 / 329 | 6 / 18 | 107 / 106 | 213 / 279 | 222 / 763 | 20.2 / 40.9 | 61 | 11 |
-| `QWNxQIq0hMo` | 313 | 142 / 136 | 91 / 86 | 5 / 10 | 84 / 84 | 210 / 214 | 215 / 438 | 15.5 / 31.5 | 8 | 2 |
+| `QDX-1M5Nj7s` | 1,316 | 513 / 433 | 367 / 304 | 6 / 22 | 107 / 104 | 213 / 343 | 222 / 967 | 20.2 / 63.7 | 86 | 6 |
+| `QWNxQIq0hMo` | 313 | 142 / 131 | 91 / 85 | 5 / 10 | 84 / 84 | 210 / 247 | 215 / 438 | 15.5 / 31.5 | 12 | 1 |
 | `WJpeW9lCSUM` | 496 | 235 / 224 | 143 / 135 | 5 / 8 | 85 / 85 | 192 / 214 | 215 / 423 | 17.8 / 28.8 | 11 | 0 |
-| `WjhDDeZ7DvM` | 770 | 344 / 323 | 220 / 206 | 5 / 12 | 91 / 90 | 208 / 236 | 223 / 513 | 17.6 / 32.4 | 25 | 4 |
-| `_MEqhFwnp8o` | 1,008 | 564 / 529 | 242 / 219 | 6 / 13 | 59 / 57 | 195 / 223 | 217 / 573 | 17.9 / 36.6 | 35 | 0 |
-| `vSCYL8ySh9g` | 314 | 132 / 126 | 97 / 93 | 5 / 7 | 106 / 106 | 199 / 215 | 215 / 336 | 14.5 / 20.0 | 6 | 0 |
-| `wbc-oxFFV9c` | 1,490 | 954 / 951 | 396 / 395 | 6 / 10 | 62 / 62 | 140 / 140 | 215 / 436 | 17.2 / 30.6 | 8 | 5 |
-| `zjkBMFhNj_g` | 1,409 | 669 / 631 | 411 / 386 | 6 / 10 | 84 / 84 | 199 / 223 | 223 / 430 | 16.6 / 24.0 | 38 | 0 |
+| `WjhDDeZ7DvM` | 770 | 344 / 315 | 220 / 204 | 5 / 12 | 90 / 91 | 208 / 254 | 223 / 513 | 17.6 / 32.4 | 32 | 3 |
+| `_MEqhFwnp8o` | 1,008 | 564 / 526 | 242 / 217 | 6 / 13 | 59 / 57 | 195 / 226 | 217 / 573 | 17.9 / 38.9 | 38 | 0 |
+| `vSCYL8ySh9g` | 314 | 132 / 126 | 97 / 93 | 5 / 7 | 106 / 106 | 197 / 215 | 215 / 336 | 14.5 / 20.0 | 6 | 0 |
+| `wbc-oxFFV9c` | 1,490 | 954 / 950 | 396 / 394 | 6 / 11 | 62 / 62 | 140 / 140 | 215 / 451 | 17.2 / 30.6 | 8 | 4 |
+| `zjkBMFhNj_g` | 1,409 | 669 / 628 | 411 / 385 | 6 / 10 | 84 / 84 | 199 / 226 | 223 / 430 | 16.6 / 24.0 | 41 | 0 |
 
 ## The re-makes (done items 12 and 13)
 

@@ -28,12 +28,19 @@ const PART_GAP_MS: i64 = 1_500;
 const SENTENCE_GAP_MS: i64 = 3_000;
 /// An unpunctuated stretch past the cap ends at a pause this long.
 const STRETCH_GAP_MS: i64 = 1_000;
-/// An unpunctuated stretch ends here at the latest whatever its pauses. A
-/// sentence with a comma in it, wherever the comma comes (searched up to
-/// [`LOOK`] characters), is never ended early: it goes whole, all its parts in
-/// one request, to its sentence end (or a pause of [`SENTENCE_GAP_MS`]),
-/// however long.
+/// An unpunctuated stretch ends here at the latest whatever its pauses: one
+/// that reaches a pause of [`SENTENCE_GAP_MS`] or the end of the speech with
+/// no comma (or the like) and no sentence end mark. A punctuated sentence, a
+/// comma or its own end mark anywhere in it, goes whole, all its parts in one
+/// request, up to [`CEILING`].
 const STRETCH_MAX: usize = 3 * CAP;
+/// The longest sentence asked in one request; a longer one is ended here
+/// (decided by the person on 2026-11-19). A reply holds at most
+/// [`crate::gemini::MAX_OUTPUT_TOKENS`] (4,096) tokens, and a sentence whose
+/// Korean is longer could never be saved: in the eight saved videos a reply
+/// took about 0.75 output tokens per English character, so this is about
+/// 1,500 tokens. The longest sentence there was 967 characters.
+pub(crate) const CEILING: usize = 2_000;
 
 /// One cue: its time on the source clock and its text.
 #[derive(Debug, Clone, PartialEq)]
@@ -73,7 +80,8 @@ fn ends(ws: &[Word], last: bool) -> Vec<usize> {
             Some(n) => {
                 let gap = n.start_ms - ws[i].end_ms;
                 let chars = len(&ws[from..=i]);
-                let end = if ends_sentence(&ws[i], n) || gap >= SENTENCE_GAP_MS {
+                let full = chars + 1 + n.text.trim().chars().count() > CEILING;
+                let end = if ends_sentence(&ws[i], n) || gap >= SENTENCE_GAP_MS || full {
                     true
                 } else if (chars >= CAP && gap >= STRETCH_GAP_MS) || chars >= STRETCH_MAX {
                     match bare(ws, from, last) {
@@ -153,24 +161,26 @@ fn punctuated(ws: &[Word]) -> bool {
     ws.iter().any(|w| w.text.trim_end().ends_with([',', ';', ':']))
 }
 
-/// How far a stretch is searched for its punctuation.
-const LOOK: usize = 2 * STRETCH_MAX;
-
-/// Whether the stretch starting at `from` is unpunctuated: it reaches its
-/// sentence end (a mark, or a pause of [`SENTENCE_GAP_MS`]), or [`LOOK`]
-/// characters, with no comma or the like. The words after the current one
-/// count, so a sentence whose first comma comes late still goes whole. `None`:
+/// Whether the stretch starting at `from` is unpunctuated: it reaches a pause
+/// of [`SENTENCE_GAP_MS`] or the end of the speech with no comma (or the
+/// like) and no sentence end mark. A mark or a comma anywhere before that,
+/// however late, makes it a sentence that goes whole (up to [`CEILING`]: a
+/// stretch longer than that is ended anyway, so it counts as bare). `None`:
 /// the words buffered run out first.
 fn bare(ws: &[Word], from: usize, last: bool) -> Option<bool> {
+    let mut chars = 0;
     for j in from..ws.len() {
-        if punctuated(&ws[j..=j]) {
+        if punctuated(&ws[j..=j]) || ws[j].text.trim_end().trim_end_matches(['"', '\'', ')', ']', '”', '’']).ends_with(['.', '?', '!', '…', '。', '？', '！']) {
             return Some(false);
         }
-        let ended = match ws.get(j + 1) {
-            Some(n) => ends_sentence(&ws[j], n) || n.start_ms - ws[j].end_ms >= SENTENCE_GAP_MS,
-            None => last,
-        };
-        if ended || len(&ws[from..=j]) >= LOOK {
+        match ws.get(j + 1) {
+            Some(n) if n.start_ms - ws[j].end_ms >= SENTENCE_GAP_MS => return Some(true),
+            Some(_) => {}
+            None if last => return Some(true),
+            None => return None,
+        }
+        chars += ws[j].text.trim().chars().count() + usize::from(j > from);
+        if chars >= CEILING {
             return Some(true);
         }
     }
@@ -187,10 +197,14 @@ const ABBREVIATIONS: [&str; 13] = ["mr.", "mrs.", "ms.", "dr.", "prof.", "jr.", 
 /// - A period does, even before lower case, unless it ends an abbreviation
 ///   (`Dr.`, `e.g.`).
 /// - An ellipsis, `etc.` and an initialism (`U.S.`, `a.m.`) do only before a
-///   word that does not carry on in lower case (`so... and`, `U.S. data`).
-///   `etc.` and an initialism also end one before a lower-case word that opens
-///   a clause ([`OPENERS`]: `in the U.S. the software`), which never carries a
-///   noun phrase on.
+///   word that does not carry on in lower case (`so... and`, `U.S. data`,
+///   `9 a.m. this morning`). Which lower-case word follows does not decide it:
+///   every word that can open a clause (`the`, `this`, `we`) also carries a
+///   noun phrase on, and the pause there does not either (in two transcripts,
+///   true sentence ends had a median gap of 110 ms, and gaps inside sentences
+///   reached 190 ms at the 95th percentile). So `in the U.S. the software was
+///   written` stays one sentence; in the eight saved videos both such places
+///   carry on.
 fn ends_sentence(w: &Word, next: &Word) -> bool {
     let raw = w.text.trim();
     let t = raw.trim_end_matches(['"', '\'', ')', ']', '”', '’']);
@@ -209,13 +223,8 @@ fn ends_sentence(w: &Word, next: &Word) -> bool {
     let body = word.trim_end_matches(['.', '…', '。']);
     let abbreviated = body == "etc" || body.contains('.');
     let trails = word.ends_with("..") || word.ends_with('…') || abbreviated;
-    let opener = next.text.trim().trim_end_matches(|c: char| !c.is_alphanumeric()).to_lowercase();
-    !(trails && lower) || (abbreviated && OPENERS.contains(&opener.as_str()))
+    !(trails && lower)
 }
-
-/// Words that open a clause: after `etc.` or an initialism, one of these in
-/// lower case starts a new sentence.
-const OPENERS: [&str; 12] = ["the", "we", "i", "you", "he", "she", "it", "they", "there", "this", "these", "those"];
 
 const CONJUNCTIONS: [&str; 19] = [
     "and", "but", "or", "so", "because", "when", "where", "while", "if", "although", "though", "then", "since", "until", "unless",
@@ -328,7 +337,8 @@ fn sentence_cues(ws: &[Word], prev_end: &mut i64) -> Vec<Cue> {
 /// that holds a sentence end anywhere, not only at its last word (cues written
 /// under earlier rules do: `…in the image. lines`), closes its sentence, as
 /// a cue cannot be split; otherwise a sentence with a comma before such an end
-/// would run on through every cue after it. It is close to, not always the
+/// would run on through every cue after it. No sentence it groups holds more
+/// than [`CEILING`] characters. It is close to, not always the
 /// same as, the grouping `push` wrote under: there words had their own times,
 /// which can move where a long stretch is ended. A sentence never runs across
 /// a gap in seq or a cue without words.
@@ -347,9 +357,16 @@ pub fn rebuilt_parts(cues: &[crate::store::Cue]) -> std::collections::HashSet<i6
             words.extend(c.source_text.split_whitespace().map(|t| Word { start_ms: c.start_ms, end_ms: c.end_ms, text: format!(" {t}") }));
         }
         let ends = ends(&words, true);
+        let size = |c: &crate::store::Cue| c.source_text.split_whitespace().map(|w| w.chars().count() + 1).sum::<usize>().saturating_sub(1);
+        let mut chars = size(&run[0]);
         for (i, c) in run.iter().enumerate().skip(1) {
-            if !ends.iter().any(|k| (firsts[i - 1]..firsts[i]).contains(k)) {
+            let closed = ends.iter().any(|k| (firsts[i - 1]..firsts[i]).contains(k));
+            // Never past the ceiling, even where a sentence end fell inside a cue.
+            if closed || chars + 1 + size(c) > CEILING {
+                chars = size(c);
+            } else {
                 out.insert(c.seq);
+                chars += 1 + size(c);
             }
         }
         i = j.max(i + 1);

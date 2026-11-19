@@ -344,20 +344,26 @@ fn a_write_the_released_build_advanced_resumes_without_its_stale_open_sentence()
     // each once, in order. Under the current plan and under plan 1, whose short
     // regions put a stale sentence within the pause that joins sentences.
     let words = |core: &Core| -> Vec<String> { cues(core).iter().flat_map(|c| c.2.split(' ').map(String::from).collect::<Vec<_>>()).collect() };
-    // Three short plan-1 regions, the middle one without words: the first
-    // region's last word ends 2.6 s before the third region's first word.
-    let short = {
-        let raw = talk(7_000, &[(500, 1_700, LOUD), (2_550, 2_950, LOUD), (3_800, 5_000, LOUD)]);
-        let file = std::env::temp_dir().join(format!("vto-boundary-short-{}.wav", std::process::id()));
+    // Three short plan-1 regions, the middle one without words, with the first
+    // region's last word ending 2.6 s, or (plan 1 pads both regions) 1.43 s,
+    // before the third region's first word: past and within the pause that
+    // keeps two parts of one sentence in one cue.
+    let short = |name: &'static str, spans: [(usize, usize); 3], words: [(i64, i64); 4]| {
+        let raw = talk(7_000, &spans.map(|(a, b)| (a, b, LOUD)));
+        let file = std::env::temp_dir().join(format!("vto-boundary-{name}-{}.wav", std::process::id()));
         std::fs::write(&file, wav(&raw)).unwrap();
         let pcm = audio::decode_file(&file).unwrap();
         let _ = std::fs::remove_file(&file);
-        let script: Script = [(600, 900), (1_000, 1_300), (3_900, 4_200), (4_300, 4_600)].iter().enumerate().map(|(i, &(a, b))| (a, b, format!("word{i}"))).collect();
-        assert_eq!(audio::plan(1, &pcm).len(), 3, "three regions");
-        ("short", 1, raw, pcm, script)
+        let script: Script = words.iter().enumerate().map(|(i, &(a, b))| (a, b, format!("word{i}"))).collect();
+        assert_eq!(audio::plan(1, &pcm).len(), 3, "{name}: three regions");
+        (name, 1, raw, pcm, script)
     };
+    let shorts = [
+        short("short", [(500, 1_700), (2_550, 2_950), (3_800, 5_000)], [(600, 900), (1_000, 1_300), (3_900, 4_200), (4_300, 4_600)]),
+        short("short-gap", [(500, 1_700), (2_520, 2_680), (3_500, 5_000)], [(600, 900), (1_000, 1_890), (3_320, 3_600), (3_700, 4_000)]),
+    ];
     let lectures = [("lecture", 1), ("lecture", audio::PLAN)].map(|(name, plan)| { let (raw, pcm, script) = lecture(plan); (name, plan, raw, pcm, sentences_of(&script)) });
-    for (name, plan, raw, pcm, script) in std::iter::once(short).chain(lectures) {
+    for (name, plan, raw, pcm, script) in shorts.into_iter().chain(lectures) {
         let windows = audio::plan(plan, &pcm);
         let mut whole = job_at_writing(&format!("advanced-{name}-{plan}-whole"), plan, &raw);
         write_with(&mut whole, &pcm, &script, None).0.unwrap();

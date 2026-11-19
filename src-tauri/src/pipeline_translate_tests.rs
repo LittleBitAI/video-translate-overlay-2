@@ -343,6 +343,86 @@ fn a_refused_remake_leaves_the_audio_of_an_interrupted_one_as_it_was() {
 }
 
 #[test]
+fn a_stopped_remake_finds_the_version_it_started_from_in_the_database_alone() {
+    use crate::sync::{Change, Cue as Saved, Deletions, Journal, Translation, Video};
+    // (form, what happened after the job committed)
+    for (form, stop) in [("stopped right after the job committed", None), ("failed writing", Some("write_failed")), ("failed translating", Some("translate_failed"))] {
+        let d = dir(&format!("stopped-{}", form.replace(' ', "-")));
+        let journal = Journal::open(&d.join("account"), &crate::google_auth::VerifiedIdentity::fixture("stopped-account")).unwrap();
+        let page = "https://lectures.example.org/stopped";
+        let key = crate::api::video_key(&url::Url::parse(page).unwrap());
+        let video = Video { key: key.clone(), page_url: page.into(), title: "Lecture".into() };
+        let cues = vec![Saved { start_ms: 0, end_ms: 900, source_text: "Said before.".into(), text_ko: "예전 번역".into() }];
+        journal.write(Change::Translation { translation: Translation { video, duration_ms: 5000, source_language: Some("en".into()), terms: vec![], model: "m".into(), cost_krw: 1.0, cues } }, Deletions::new()).unwrap();
+        let store = journal.library().unwrap();
+        let input = d.join("input.m4a");
+        std::fs::write(&input, b"audio").unwrap();
+        let work = d.join("work");
+        let previous = store.stage_remake("remake-a", &key, &input, &work.join("audio"), "m").unwrap();
+        if let Some(reason) = stop {
+            store.fail("remake-a", reason).unwrap();
+        }
+        let files: Vec<String> = std::fs::read_dir(&work).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().into_owned()).collect();
+        assert_eq!(files, ["audio"], "{form}: the work folder holds more than the staged audio");
+        assert_eq!(store.selected_version(&key).unwrap(), previous, "{form}");
+        match stop {
+            // `resume` takes the still active job and its staged audio.
+            None => {
+                let job = store.active_job().unwrap().unwrap();
+                assert!(job.id == "remake-a" && std::path::Path::new(&job.audio_path.unwrap()).exists(), "{form}");
+            }
+            // `restore`: the version is projected again.
+            Some(_) => {
+                store.restore_translation(&key, &store.selected_version(&key).unwrap()).unwrap();
+                assert_eq!(store.cues(&key).unwrap().iter().map(|c| c.text_ko.clone()).collect::<Vec<_>>(), [Some("예전 번역".to_string())], "{form}");
+            }
+        }
+    }
+}
+
+#[test]
+fn of_remakes_staged_at_once_under_one_job_id_one_wins_and_keeps_its_own_audio() {
+    use crate::sync::{Change, Cue as Saved, Deletions, Journal, Translation, Video};
+    const AT_ONCE: usize = 6;
+    for round in 0..8 {
+        let d = dir(&format!("staged-at-once-{round}"));
+        let journal = Journal::open(&d.join("account"), &crate::google_auth::VerifiedIdentity::fixture("staged-at-once")).unwrap();
+        let page = "https://lectures.example.org/at-once";
+        let key = crate::api::video_key(&url::Url::parse(page).unwrap());
+        let video = Video { key: key.clone(), page_url: page.into(), title: "Lecture".into() };
+        let cues = vec![Saved { start_ms: 0, end_ms: 900, source_text: "Said.".into(), text_ko: "번역".into() }];
+        journal.write(Change::Translation { translation: Translation { video, duration_ms: 5000, source_language: Some("en".into()), terms: vec![], model: "m".into(), cost_krw: 1.0, cues } }, Deletions::new()).unwrap();
+        let path = journal.library().unwrap().path().to_path_buf();
+        let (work, inputs) = (d.join("work"), d.join("inputs"));
+        std::fs::create_dir_all(&inputs).unwrap();
+        let start = Arc::new(std::sync::Barrier::new(AT_ONCE));
+        let results: Vec<(usize, bool)> = (0..AT_ONCE)
+            .map(|i| {
+                let (path, work, key, start) = (path.clone(), work.clone(), key.clone(), start.clone());
+                let input = inputs.join(format!("input-{i}.m4a"));
+                std::fs::write(&input, format!("audio {i} ").repeat(50_000)).unwrap();
+                std::thread::spawn(move || {
+                    let store = Store::open(&path).unwrap();
+                    start.wait();
+                    (i, store.stage_remake("remake-same", &key, &input, &work, "m").is_ok())
+                })
+            })
+            .collect::<Vec<_>>()
+            .into_iter()
+            .map(|t| t.join().unwrap())
+            .collect();
+        let won: Vec<usize> = results.iter().filter(|r| r.1).map(|r| r.0).collect();
+        assert_eq!(won.len(), 1, "round {round}: {results:?}");
+        let store = Store::open(&path).unwrap();
+        let staged = std::path::PathBuf::from(store.job("remake-same").unwrap().unwrap().audio_path.unwrap());
+        let kept = std::fs::read(&staged).ok();
+        assert!(kept == Some(format!("audio {} ", won[0]).repeat(50_000).into_bytes()), "round {round}: the winner's audio was replaced or deleted ({:?} bytes)", kept.map(|k| k.len()));
+        let left: Vec<String> = std::fs::read_dir(&work).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().into_owned()).collect();
+        assert_eq!(left, ["remake-same.m4a"], "round {round}");
+    }
+}
+
+#[test]
 fn an_older_builds_selection_never_pairs_a_transcript_with_another_ones_mishearings() {
     use crate::sync::{Change, Cue as Saved, Deletions, Journal, Term, Translation, Video};
     let (orders, most) = (Arc::new(Mutex::new(Vec::new())), Arc::new(AtomicUsize::new(0)));

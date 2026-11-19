@@ -142,7 +142,14 @@ The recurrence has two causes in bare(). (1) It tests the wrong property: the sp
 
 ## Result
 
-pending — the fix records what it observed here, with the tests and the commit.
+Observed with the fix (review round 5, the commit after `5d74d11` that adds this text):
+
+1) `bare()` now treats a reached end mark (`.?!…`, also inside closing quotes) as punctuation, so a stretch is bare only if it reaches a 3-second pause or the end of the speech with no comma, `;`, `:` and no end mark. `LOOK` is gone. Its character count is kept as it goes, and a stretch that reaches the ceiling counts as bare. `sentences::tests::a_punctuated_sentence_goes_whole_and_only_a_bare_stretch_ends_at_the_limit` (renamed from `…goes_whole_however_long…`) gained two forms: a first comma after twice the old limit, and a sentence with only its end mark. Both pass now. In a temporary worktree at `5d74d11`, the same test failed on both forms: the late comma gave 2 sentences where 1 was expected, and the end-mark-only form gave 3 where 2 were expected.
+2) The sentence ceiling is 2,000 English characters (`sentences::CEILING`), chosen by the person on 2026-11-19 from options. `ends()` ends a sentence that would pass it, and `rebuilt_parts` never joins a cue that would. `no_request_holds_more_than_the_ceiling` checks a comma-chained sentence longer than twice the ceiling: at least 3 sentences, none over 2,000 characters, every word kept. It failed at `5d74d11` with 1 sentence.
+3) Fallback check: `a_bare_stretch_before_a_long_pause_still_ends_at_the_limit` passes with 60 bare words and a 3,200 ms pause. Window check: `a_sentence_written_across_windows_is_grouped_as_in_one` passes, with `push` over 17-word windows equal to one window and 3 sentences; at `5d74d11` it gave 6 sentences. Performance guard: `grouping_an_hour_of_unpunctuated_speech_is_quick` groups 600 cues of 5 words in under 1 s; on the eight videos, the release rebuild took at most 16 ms per video.
+4) Recount on a read-only copy of the account library with the new definition: the largest request is 967 characters, 22 parts and 63.7 s (`QDX-1M5Nj7s`, 36:55). In all eight videos 8 requests pass 600 characters, 2 pass 800 and none passes 1,000. The saved Korean took 1.33–1.70 output tokens per Korean character, about 0.74 per English character, so the largest request is about 720 output tokens and the ceiling about 1,500, against the 4,096 cap. Against the recorded groupings, the rebuild joins 234 cues and splits 14 (table in `docs/evidence/sentence-cues/README.md`).
+5) A6 in `docs/design/backend.md`, the `sentences.rs` comments and the evidence README now state the 2,000-character ceiling in place of "however long" and "up to 420".
+6) Unit suite: `cargo test -p video-translate-overlay --lib`, 269 passed, 2 ignored. The full repository gate is run by the server.
 
 ## Unresolved limits
 

@@ -105,20 +105,32 @@ impl Store {
         })
     }
 
+    /// The saved version selected for `key`. Until a re-make is ready this is
+    /// the version it started from ([`Self::begin_remake`] leaves the
+    /// selection alone), so a stopped re-make needs nothing kept outside the
+    /// database to resume, continue or restore.
+    pub fn selected_version(&self, key: &str) -> R<String> {
+        Ok(self.db.query_one("SELECT identity FROM sync_selected_translation WHERE video_key=?", p![key])?.ok_or("no saved version is selected")?[0].text())
+    }
+
     /// [`Self::begin_remake`] on a copy of `audio` in `dir`, as the writing
-    /// stage deletes its audio when done. The copy is named by the job, so a
-    /// re-make refused here (another job running, as an interrupted re-make
-    /// is) never replaces the audio that job resumes from; a refused job's
-    /// copy is deleted.
+    /// stage deletes its audio when done. The copy is named by the job and
+    /// claimed atomically (created only if no file has that name), so a re-make
+    /// refused here (another job running, as an interrupted re-make is, or a
+    /// start with the same id at the same moment) never replaces or deletes
+    /// the audio another job resumes from; it deletes only the copy it made.
     pub fn stage_remake(&self, id: &str, key: &str, audio: &std::path::Path, dir: &std::path::Path, model: &str) -> R<String> {
         let ext = audio.extension().and_then(|e| e.to_str()).unwrap_or("m4a");
         let copy = dir.join(format!("{id}.{ext}"));
-        if copy.exists() {
-            return Err(format!("{} is another job's audio", copy.display()).into());
-        }
         std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
-        std::fs::copy(audio, &copy).map_err(|e| e.to_string())?;
-        let begun = self.begin_remake(id, key, &copy.to_string_lossy(), model);
+        let mut out = match std::fs::OpenOptions::new().write(true).create_new(true).open(&copy) {
+            Ok(f) => f,
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => return Err(format!("{} is another job's audio", copy.display()).into()),
+            Err(e) => return Err(e.to_string().into()),
+        };
+        let copied = std::fs::File::open(audio).and_then(|mut f| std::io::copy(&mut f, &mut out)).and_then(|_| out.sync_all());
+        drop(out);
+        let begun = copied.map_err(|e| e.to_string().into()).and_then(|_| self.begin_remake(id, key, &copy.to_string_lossy(), model));
         if begun.is_err() {
             let _ = std::fs::remove_file(&copy);
         }

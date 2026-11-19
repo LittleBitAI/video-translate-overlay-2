@@ -24,7 +24,7 @@
 //! Korean are asked. If it fails again its draft stays for another `continue`.
 //! One that failed writing has an unfinished transcript and is refused.
 //!
-//! `remake_saved restore <account-db> <video-key> <work-dir>` gives the failed
+//! `remake_saved restore <account-db> <video-key>` gives the failed
 //! re-make up and projects the previous version again. After that the draft
 //! is gone and `continue` refuses the re-make.
 
@@ -78,16 +78,18 @@ fn run(db: &Path, key: &str, audio: &Path, work: &Path, apply: bool) -> Result<(
     let core = start(work)?;
     let id = format!("remake-{key}-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
     let previous = store.stage_remake(&id, key, audio, &work.join("audio"), gemini::MODEL)?;
-    std::fs::write(work.join("previous.txt"), &previous).map_err(|e| e.to_string())?;
     println!("job {id} started; previous version {previous}");
     finish(&core, &store, &id, &previous)
 }
+
+// The previous version is the one still selected: a re-make changes the
+// selection only when it is ready, so nothing outside the database is needed.
 
 /// Carries on a re-make whose process was stopped: the job resumes from what it wrote.
 fn resume(db: &Path, key: &str, work: &Path) -> Result<(), String> {
     let store = Store::open(db)?;
     let job = store.active_job()?.filter(|j| j.video_key == key && j.id.starts_with("remake-")).ok_or("no re-make of this video is running")?;
-    let previous = std::fs::read_to_string(work.join("previous.txt")).map_err(|e| format!("previous.txt: {e}"))?;
+    let previous = store.selected_version(key)?;
     println!("job {} resumed at {}; previous version {previous}", job.id, job.stage);
     let core = start(work)?;
     finish(&core, &store, &job.id, &previous)
@@ -96,7 +98,7 @@ fn resume(db: &Path, key: &str, work: &Path) -> Result<(), String> {
 /// Translates what a failed re-make left without Korean.
 fn carry_on(db: &Path, key: &str, id: &str, work: &Path) -> Result<(), String> {
     let store = Store::open(db)?;
-    let previous = std::fs::read_to_string(work.join("previous.txt")).map_err(|e| format!("previous.txt: {e}"))?;
+    let previous = store.selected_version(key)?;
     store.continue_remake(id)?;
     println!("job {id} continued at translating; previous version {previous}");
     let core = start(work)?;
@@ -104,9 +106,10 @@ fn carry_on(db: &Path, key: &str, id: &str, work: &Path) -> Result<(), String> {
 }
 
 /// Gives a failed re-make up: the previous version is projected again.
-fn restore(db: &Path, key: &str, work: &Path) -> Result<(), String> {
-    let previous = std::fs::read_to_string(work.join("previous.txt")).map_err(|e| format!("previous.txt: {e}"))?;
-    Store::open(db)?.restore_translation(key, &previous)?;
+fn restore(db: &Path, key: &str) -> Result<(), String> {
+    let store = Store::open(db)?;
+    let previous = store.selected_version(key)?;
+    store.restore_translation(key, &previous)?;
     println!("{previous} is projected again");
     Ok(())
 }
@@ -142,7 +145,7 @@ fn main() -> Result<(), String> {
         Some("run") if a.len() == 6 || a.len() == 7 => run(Path::new(&a[2]), &a[3], Path::new(&a[4]), Path::new(&a[5]), a.get(6).is_some_and(|f| f == "--apply")),
         Some("resume") if a.len() == 5 => resume(Path::new(&a[2]), &a[3], Path::new(&a[4])),
         Some("continue") if a.len() == 6 => carry_on(Path::new(&a[2]), &a[3], &a[4], Path::new(&a[5])),
-        Some("restore") if a.len() == 5 => restore(Path::new(&a[2]), &a[3], Path::new(&a[4])),
-        _ => Err("usage: remake_saved fetch <page-url> <audio-out> | remake_saved run <account-db> <video-key> <audio> <work-dir> [--apply] | remake_saved resume <account-db> <video-key> <work-dir> | remake_saved continue <account-db> <video-key> <job-id> <work-dir> | remake_saved restore <account-db> <video-key> <work-dir>".into()),
+        Some("restore") if a.len() == 4 => restore(Path::new(&a[2]), &a[3]),
+        _ => Err("usage: remake_saved fetch <page-url> <audio-out> | remake_saved run <account-db> <video-key> <audio> <work-dir> [--apply] | remake_saved resume <account-db> <video-key> <work-dir> | remake_saved continue <account-db> <video-key> <job-id> <work-dir> | remake_saved restore <account-db> <video-key>".into()),
     }
 }

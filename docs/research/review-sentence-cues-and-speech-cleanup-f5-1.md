@@ -128,7 +128,18 @@ The slot 'etc./initialism/ellipsis + lower-case word' cannot be decided from the
 
 ## Result
 
-pending — the fix records what it observed here, with the tests and the commit.
+Observed with the fix (review round 5, the commit after `5d74d11` that adds this text):
+
+1) Calibration (experiment 3) came first. Word times came from re-transcribing two videos with the release build (`zjkBMFhNj_g`, 11,617 words; `vSCYL8ySh9g`, 2,796 words).
+   - At a period followed by an upper-case sentence start (624 and 116 places), the gap had a median of 110 ms in both videos (zjk p10/p25/p75 = 0/70/200 ms). Only 13.8% and 10.3% of these gaps were 300 ms or more.
+   - Gaps inside sentences reached 120 ms at p90 and 190 ms at p95 (zjk), and 190 ms at p95 (vSCYL).
+   - Neither transcript has an abbreviation, `etc.` or ellipsis followed by a lower-case word.
+   - In the 7,116 saved cues of the eight videos there are two such places, `standard... uh instantiation` and `in the U.S. in English`, and both carry the sentence on.
+   - So the two distributions overlap heavily, and no threshold T can split (b) without also splitting real sentences elsewhere. The hypothesis's pause rule was not used. The fallback alternative, always continue, was taken, and the person chose it from options on 2026-11-19. The no-pause case (c) is recorded as an accepted limit in A6.
+2) `OPENERS` is deleted. After an ellipsis, `etc.` or an initialism, a lower-case word now carries the sentence on. The `?`, `!` and plain-period rules are unchanged.
+3) The property is tested by `sentences::tests::after_an_initialism_etc_or_an_ellipsis_a_lower_case_word_carries_the_sentence_on`. Marks (`U.S.`, `a.m.`, `etc.`, `so...`) × seven lower-case follow-ups (time expressions, a reduced relative clause, a full clause) × pauses of 50, 400 and 1,200 ms each give one sentence. The same follow-up in upper case gives two. It passes now. At `5d74d11` it failed at its first form, the initialism with "this morning" after 50 ms, split in two. The two punctuation-table rows that asserted the old split before a clause in lower case were superseded by this property and removed.
+4) Consistency (experiment 2) is covered by the same test: the cues come from `push` and the grouping from `rebuilt_parts` over them, the same path as `every_translation_of_the_same_cues_asks_the_same_sentences`.
+5) Unit suite: `cargo test -p video-translate-overlay --lib`, 269 passed, 2 ignored.
 
 ## Unresolved limits
 
