@@ -52,7 +52,8 @@ natural Korean allows. Never invert the Korean to follow the English order: for 
 many other models\" and \"that you might know.\" write \"이는 여러분이 알 만한\" and \"다른 많은 모델과 다릅니다.\", \
 not \"이는 다른 많은 모델과 다릅니다\" and \"여러분이 알 만한.\". Give every id exactly once; never merge, add or drop a part, \
 and never leave ko empty (write \"…\" for a part with nothing left to say). Leave out of the Korean fillers, \
-false starts, immediate repeats and verbal tics (uh, um, you know, I mean, a tag question like right? or okay?); \
+false starts, immediate repeats and verbal tics (uh, um, you know, I mean, a tag question like right? or okay?), \
+and write a sentence that is only an interjection (Okay. All right.) as \"자,\", never as \"알겠습니다\"; \
 translate every other word, and add nothing that was not said: an incomplete sentence stays incomplete. \
 context_before is the sentence before, read-only: use it to resolve grammar and reference, but never translate \
 or repeat it. Always use the glossary's target for its source term. mishearings are transcript spellings of a \

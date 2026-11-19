@@ -11,6 +11,9 @@
 //! Gemini key, as a job of the account library `account-db`; the new version
 //! is selected when ready. Without `--apply` it only prints the allowance. The
 //! installed app must be closed: its worker would take the job too.
+//!
+//! `remake_saved resume <account-db> <video-key> <work-dir>` carries on a
+//! re-make whose process was stopped, from what its job last wrote.
 
 use std::path::Path;
 use std::sync::Arc;
@@ -64,8 +67,38 @@ fn run(db: &Path, key: &str, audio: &Path, work: &Path, apply: bool) -> Result<(
     // The writing stage deletes its audio when done: it gets a copy.
     let copy = work.join("audio").join(format!("{key}.{}", audio.extension().and_then(|e| e.to_str()).unwrap_or("m4a")));
     std::fs::copy(audio, &copy).map_err(|e| e.to_string())?;
+    let core = start(work)?;
+    let id = format!("remake-{key}-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
+    let previous = store.begin_remake(&id, key, &copy.to_string_lossy(), gemini::MODEL)?;
+    std::fs::write(work.join("previous.txt"), &previous).map_err(|e| e.to_string())?;
+    println!("job {id} started; previous version {previous}");
+    finish(&core, &store, &id, key, &previous)
+}
+
+/// Carries on a re-make whose process was stopped: the job resumes from what it wrote.
+fn resume(db: &Path, key: &str, work: &Path) -> Result<(), String> {
+    let store = Store::open(db)?;
+    let job = store.active_job()?.filter(|j| j.video_key == key && j.id.starts_with("remake-")).ok_or("no re-make of this video is running")?;
+    let previous = std::fs::read_to_string(work.join("previous.txt")).map_err(|e| format!("previous.txt: {e}"))?;
+    println!("job {} resumed at {}; previous version {previous}", job.id, job.stage);
+    let core = start(work)?;
+    finish(&core, &store, &job.id, key, &previous)
+}
+
+fn finish(core: &Core, store: &Store, id: &str, key: &str, previous: &str) -> Result<(), String> {
+    vto::pipeline::run_pending(core, store)?;
+    let job = store.job(id)?.ok_or("job vanished")?;
+    println!("job {id} {}: cost {:.4} KRW (input {} output {} tokens), failure {:?}", job.stage, job.cost_krw, job.input_amount, job.output_amount, job.failure_reason);
+    if job.stage != "ready" {
+        store.select_translation(key, previous)?;
+        return Err(format!("the re-make failed; {previous} is selected again"));
+    }
+    Ok(())
+}
+
+fn start(work: &Path) -> Result<Arc<Core>, String> {
     let models = std::env::var_os("VTO_WHISPER_MODEL").map(Into::into);
-    let core: Arc<Core> = Core::start(
+    Core::start(
         Config { data_dir: work.to_path_buf(), gemini_base_url: vto::GEMINI_BASE_URL.into(), allow_loopback_media: false },
         Services {
             keystore: Box::new(vto::platform::CredentialStore::default()),
@@ -74,18 +107,7 @@ fn run(db: &Path, key: &str, audio: &Path, work: &Path, apply: bool) -> Result<(
             transcriber: Box::new(vto::whisper::Whisper::new(work, models)),
             extractor: Box::new(vto::youtube::InnertubeExtractor),
         },
-    )?;
-    let id = format!("remake-{key}-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
-    let previous = store.begin_remake(&id, key, &copy.to_string_lossy(), gemini::MODEL)?;
-    println!("job {id} started; previous version {previous}");
-    vto::pipeline::run_pending(&core, &store)?;
-    let job = store.job(&id)?.ok_or("job vanished")?;
-    println!("job {id} {}: cost {:.4} KRW (input {} output {} tokens), failure {:?}", job.stage, job.cost_krw, job.input_amount, job.output_amount, job.failure_reason);
-    if job.stage != "ready" {
-        store.select_translation(key, &previous)?;
-        return Err(format!("the re-make failed; {previous} is selected again"));
-    }
-    Ok(())
+    )
 }
 
 fn main() -> Result<(), String> {
@@ -93,6 +115,7 @@ fn main() -> Result<(), String> {
     match a.get(1).map(String::as_str) {
         Some("fetch") if a.len() == 4 => fetch(&a[2], Path::new(&a[3])),
         Some("run") if a.len() == 6 || a.len() == 7 => run(Path::new(&a[2]), &a[3], Path::new(&a[4]), Path::new(&a[5]), a.get(6).is_some_and(|f| f == "--apply")),
-        _ => Err("usage: remake_saved fetch <page-url> <audio-out> | remake_saved run <account-db> <video-key> <audio> <work-dir> [--apply]".into()),
+        Some("resume") if a.len() == 5 => resume(Path::new(&a[2]), &a[3], Path::new(&a[4])),
+        _ => Err("usage: remake_saved fetch <page-url> <audio-out> | remake_saved run <account-db> <video-key> <audio> <work-dir> [--apply] | remake_saved resume <account-db> <video-key> <work-dir>".into()),
     }
 }

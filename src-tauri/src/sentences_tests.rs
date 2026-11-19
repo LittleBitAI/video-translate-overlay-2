@@ -122,6 +122,23 @@ fn a_stretch_without_punctuation_is_cut_at_pauses_and_the_cap() {
 }
 
 #[test]
+fn a_run_on_sentence_past_the_limit_ends_at_its_last_comma() {
+    // Clauses joined by commas, no sentence end, no pause: over three caps long.
+    let clause = "the weights for that repeated block stay the same each time";
+    let text = format!("{}, {}, {}, {}, and we get a lot more depth going on there.", clause, clause, clause, clause);
+    let cues = all(vec![owned(&spoken(0, 200, 50, &text))]);
+    let joined: Vec<&str> = cues.iter().flat_map(|c| c.text.split(' ')).collect();
+    assert_eq!(joined, text.split(' ').collect::<Vec<_>>(), "every word once, in order");
+    // Where a sentence was forced to end, it ends after a comma, never mid-clause.
+    for w in cues.windows(2).filter(|w| w[1].opens) {
+        assert!(w[0].text.ends_with(','), "a sentence cut mid-clause: {:?}", texts(&cues));
+    }
+    assert!(cues.iter().skip(1).any(|c| c.opens), "the run-on was not ended at the limit: {:?}", texts(&cues));
+    assert!(!cues.iter().any(|c| c.text == "on there."), "{:?}", texts(&cues));
+    ordered(&cues);
+}
+
+#[test]
 fn abbreviations_and_lower_case_continuations_do_not_end_a_sentence() {
     let cues = all(vec![owned(&spoken(0, 200, 50, "We compare e.g. ResNet with Dr. Smith's model on the U.S. dataset. Fine."))]);
     assert_eq!(texts(&cues), ["We compare e.g. ResNet with Dr. Smith's model on the U.S. dataset.", "Fine."]);

@@ -28,7 +28,8 @@ const PART_GAP_MS: i64 = 1_500;
 const SENTENCE_GAP_MS: i64 = 3_000;
 /// An unpunctuated stretch past the cap ends at a pause this long.
 const STRETCH_GAP_MS: i64 = 1_000;
-/// An unpunctuated stretch ends here whatever its pauses.
+/// A sentence ends here at the latest whatever its pauses: at its last comma
+/// if it has one, so a run-on is not cut mid-clause.
 const STRETCH_MAX: usize = 3 * CAP;
 
 /// One cue: its time on the source clock, its text, and whether it opens a
@@ -60,12 +61,20 @@ pub fn push(tail: &mut Tail, pieces: Vec<Piece>, last: bool, prev_end: &mut i64)
             Some(n) => {
                 let gap = n.start_ms - tail[i].end_ms;
                 let chars = len(&tail[from..=i]);
-                ends_sentence(&tail[i], n) || gap >= SENTENCE_GAP_MS || (chars >= CAP && gap >= STRETCH_GAP_MS && !punctuated(&tail[from..=i])) || chars >= STRETCH_MAX
+                ends_sentence(&tail[i], n) || gap >= SENTENCE_GAP_MS || (chars >= CAP && gap >= STRETCH_GAP_MS && !punctuated(&tail[from..=i]))
             }
         };
-        if end {
-            cues.extend(sentence_cues(&tail[from..=i], prev_end));
-            from = i + 1;
+        let stop = if end {
+            Some(i)
+        } else if len(&tail[from..=i]) >= STRETCH_MAX {
+            // A run-on past the limit ends at its last comma, not mid-clause.
+            Some((from..i).rev().find(|&k| tail[k].text.trim_end().ends_with([',', ';', ':']) && len(&tail[from..=k]) >= CAP).unwrap_or(i))
+        } else {
+            None
+        };
+        if let Some(k) = stop {
+            cues.extend(sentence_cues(&tail[from..=k], prev_end));
+            from = k + 1;
         }
         i += 1;
     }
