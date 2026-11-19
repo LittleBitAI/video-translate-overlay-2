@@ -5,11 +5,6 @@
  "edges": [
   {
    "a": "README.md",
-   "b": "docs/design/backend.md",
-   "kind": "link"
-  },
-  {
-   "a": "README.md",
    "b": "docs/design/desktop-transcription-speed.md",
    "kind": "link"
   },
@@ -20,32 +15,17 @@
   },
   {
    "a": "README.md",
-   "b": "docs/design/frontend.md",
-   "kind": "link"
-  },
-  {
-   "a": "README.md",
-   "b": "docs/design/google-auth-setup.md",
-   "kind": "link"
-  },
-  {
-   "a": "README.md",
-   "b": "docs/design/local-network-sync.md",
-   "kind": "link"
-  },
-  {
-   "a": "README.md",
    "b": "docs/design/transcription-speed.md",
    "kind": "link"
   },
   {
    "a": "README.md",
-   "b": "docs/releases/0.1.8.md",
+   "b": "docs/development.md",
    "kind": "link"
   },
   {
-   "a": "README.md",
-   "b": "docs/releases/procedure.md",
+   "a": "docs/design/backend.md",
+   "b": "docs/evidence/sentence-cues/README.md",
    "kind": "link"
   },
   {
@@ -109,6 +89,31 @@
    "kind": "link"
   },
   {
+   "a": "docs/development.md",
+   "b": "README.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/development.md",
+   "b": "docs/design/backend.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/development.md",
+   "b": "docs/design/frontend.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/development.md",
+   "b": "docs/design/google-auth-setup.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/development.md",
+   "b": "docs/releases/procedure.md",
+   "kind": "link"
+  },
+  {
    "a": "docs/evidence/download-speed/README.md",
    "b": "docs/design/download-speed.md",
    "kind": "link"
@@ -129,6 +134,36 @@
    "kind": "link"
   },
   {
+   "a": "docs/evidence/sentence-cues/README.md",
+   "b": "docs/design/backend.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/evidence/sentence-cues/README.md",
+   "b": "docs/evidence/sentence-cues/places.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/evidence/sentence-cues/README.md",
+   "b": "docs/evidence/sentence-cues/receipts.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/evidence/sentence-cues/places.md",
+   "b": "docs/evidence/sentence-cues/README.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/evidence/sentence-cues/receipts.md",
+   "b": "docs/evidence/sentence-cues/README.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/evidence/sentence-cues/receipts.md",
+   "b": "docs/evidence/sentence-cues/places.md",
+   "kind": "link"
+  },
+  {
    "a": "docs/releases/acceptance.md",
    "b": "docs/releases/0.1.7.md",
    "kind": "link"
@@ -136,6 +171,11 @@
   {
    "a": "docs/releases/acceptance.md",
    "b": "docs/releases/0.1.8.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/releases/acceptance.md",
+   "b": "docs/releases/0.1.9.md",
    "kind": "link"
   },
   {
@@ -164,10 +204,19 @@
    "kind": "link"
   },
   {
-   "a": ".wiki/cost-budget-per-hour",
-   "b": "README.md",
-   "kind": "reads",
-   "cross": true
+   "a": "docs/research/review-sentence-cues-and-speech-cleanup-f2-1.md",
+   "b": "docs/evidence/sentence-cues/README.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/research/review-sentence-cues-and-speech-cleanup-f6-1.md",
+   "b": "docs/design/backend.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/research/review-sentence-cues-and-speech-cleanup-f6-1.md",
+   "b": "docs/evidence/sentence-cues/README.md",
+   "kind": "link"
   },
   {
    "a": ".wiki/cost-budget-per-hour",
@@ -234,13 +283,17 @@
   "docs/design/library-acceptance.md",
   "docs/design/library-verification.md",
   "docs/evidence/fullscreen-subtitles/README.md",
-  "docs/evidence/library-rail/README.md"
+  "docs/evidence/library-rail/README.md",
+  "docs/research/review-sentence-cues-and-speech-cleanup-f2-1.md",
+  "docs/research/review-sentence-cues-and-speech-cleanup-f5-1.md",
+  "docs/research/review-sentence-cues-and-speech-cleanup-f6-1.md",
+  "docs/research/review-sentence-cues-and-speech-cleanup-f8-1.md"
  ],
  "counts": {
-  "docs": 23,
-  "linked": 16,
+  "docs": 32,
+  "linked": 21,
   "read": 3,
-  "orphans": 4,
+  "orphans": 8,
   "pages": 7,
   "decisions": 19,
   "injectable_decisions": 4
