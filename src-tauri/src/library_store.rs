@@ -106,10 +106,13 @@ impl Store {
     }
 
     /// Sends a failed re-make back to translating: what it wrote and
-    /// translated stays, so only the cues without Korean are asked again.
+    /// translated stays, so only the cues without Korean are asked again. It
+    /// becomes the video's newest job: a restore after the failure projected
+    /// the previous version as a newer job, and the newest ready job is the
+    /// one the overlay shows when no job matches the selected version.
     pub fn continue_remake(&self, id: &str) -> R<()> {
         self.library_write(|db| {
-            let n = db.execute("UPDATE job SET stage='translating', failure_reason=NULL WHERE id=? AND id LIKE 'remake-%' AND stage='failed'", p![id])?;
+            let n = db.execute("UPDATE job SET stage='translating', failure_reason=NULL, created_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=? AND id LIKE 'remake-%' AND stage='failed'", p![id])?;
             if n == 0 { Err("no failed re-make with this id".into()) } else { Ok(()) }
         })
     }
