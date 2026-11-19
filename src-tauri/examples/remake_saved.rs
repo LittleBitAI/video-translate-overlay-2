@@ -75,13 +75,9 @@ fn run(db: &Path, key: &str, audio: &Path, work: &Path, apply: bool) -> Result<(
         println!("preview only; nothing changed");
         return Ok(());
     }
-    std::fs::create_dir_all(work.join("audio")).map_err(|e| e.to_string())?;
-    // The writing stage deletes its audio when done: it gets a copy.
-    let copy = work.join("audio").join(format!("{key}.{}", audio.extension().and_then(|e| e.to_str()).unwrap_or("m4a")));
-    std::fs::copy(audio, &copy).map_err(|e| e.to_string())?;
     let core = start(work)?;
     let id = format!("remake-{key}-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
-    let previous = store.begin_remake(&id, key, &copy.to_string_lossy(), gemini::MODEL)?;
+    let previous = store.stage_remake(&id, key, audio, &work.join("audio"), gemini::MODEL)?;
     std::fs::write(work.join("previous.txt"), &previous).map_err(|e| e.to_string())?;
     println!("job {id} started; previous version {previous}");
     finish(&core, &store, &id, &previous)

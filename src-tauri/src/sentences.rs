@@ -29,9 +29,10 @@ const SENTENCE_GAP_MS: i64 = 3_000;
 /// An unpunctuated stretch past the cap ends at a pause this long.
 const STRETCH_GAP_MS: i64 = 1_000;
 /// An unpunctuated stretch ends here at the latest whatever its pauses. A
-/// sentence with a comma in it is never ended early: it goes whole, all its
-/// parts in one request, to its sentence end (or a pause of
-/// [`SENTENCE_GAP_MS`]), however long.
+/// sentence with a comma in it, wherever the comma comes (searched up to
+/// [`LOOK`] characters), is never ended early: it goes whole, all its parts in
+/// one request, to its sentence end (or a pause of [`SENTENCE_GAP_MS`]),
+/// however long.
 const STRETCH_MAX: usize = 3 * CAP;
 
 /// One cue: its time on the source clock, its text, and whether it opens a
@@ -74,8 +75,33 @@ fn ends(ws: &[Word], last: bool) -> Vec<usize> {
             Some(n) => {
                 let gap = n.start_ms - ws[i].end_ms;
                 let chars = len(&ws[from..=i]);
-                let bare = !punctuated(&ws[from..=i]);
-                ends_sentence(&ws[i], n) || gap >= SENTENCE_GAP_MS || (bare && chars >= CAP && gap >= STRETCH_GAP_MS) || (bare && chars >= STRETCH_MAX)
+                let end = if ends_sentence(&ws[i], n) || gap >= SENTENCE_GAP_MS {
+                    true
+                } else if (chars >= CAP && gap >= STRETCH_GAP_MS) || chars >= STRETCH_MAX {
+                    match bare(ws, from, last) {
+                        Some(bare) => bare,
+                        None => break, // its punctuation, if any, is still to come
+                    }
+                } else {
+                    false
+                };
+                // A word that ends no later than this one adds no time: as a
+                // sentence of its own it has no time to be shown in and would
+                // be dropped, and the grouping rebuilt from the saved cues,
+                // which no longer hold it, would not see the end it made. So it
+                // stays in this sentence, except as the very last word, where
+                // the model writes such a word after the speech has ended.
+                // (Words rebuilt from one saved cue share its start and take
+                // time, so this never applies to them.)
+                if end && n.end_ms <= ws[i].end_ms && (n.start_ms == n.end_ms || n.start_ms > ws[i].start_ms) {
+                    match ws.get(i + 2) {
+                        Some(_) => false,
+                        None if !last => break,
+                        None => true,
+                    }
+                } else {
+                    end
+                }
             }
         };
         if end {
@@ -131,6 +157,30 @@ fn punctuated(ws: &[Word]) -> bool {
     ws.iter().any(|w| w.text.trim_end().ends_with([',', ';', ':']))
 }
 
+/// How far a stretch is searched for its punctuation.
+const LOOK: usize = 2 * STRETCH_MAX;
+
+/// Whether the stretch starting at `from` is unpunctuated: it reaches its
+/// sentence end (a mark, or a pause of [`SENTENCE_GAP_MS`]), or [`LOOK`]
+/// characters, with no comma or the like. The words after the current one
+/// count, so a sentence whose first comma comes late still goes whole. `None`:
+/// the words buffered run out first.
+fn bare(ws: &[Word], from: usize, last: bool) -> Option<bool> {
+    for j in from..ws.len() {
+        if punctuated(&ws[j..=j]) {
+            return Some(false);
+        }
+        let ended = match ws.get(j + 1) {
+            Some(n) => ends_sentence(&ws[j], n) || n.start_ms - ws[j].end_ms >= SENTENCE_GAP_MS,
+            None => last,
+        };
+        if ended || len(&ws[from..=j]) >= LOOK {
+            return Some(true);
+        }
+    }
+    None
+}
+
 // Never followed by a new sentence.
 const ABBREVIATIONS: [&str; 13] = ["mr.", "mrs.", "ms.", "dr.", "prof.", "jr.", "sr.", "vs.", "e.g.", "i.e.", "fig.", "eq.", "approx."];
 
@@ -142,6 +192,9 @@ const ABBREVIATIONS: [&str; 13] = ["mr.", "mrs.", "ms.", "dr.", "prof.", "jr.", 
 ///   (`Dr.`, `e.g.`).
 /// - An ellipsis, `etc.` and an initialism (`U.S.`, `a.m.`) do only before a
 ///   word that does not carry on in lower case (`so... and`, `U.S. data`).
+///   `etc.` and an initialism also end one before a lower-case word that opens
+///   a clause ([`OPENERS`]: `in the U.S. the software`), which never carries a
+///   noun phrase on.
 fn ends_sentence(w: &Word, next: &Word) -> bool {
     let raw = w.text.trim();
     let t = raw.trim_end_matches(['"', '\'', ')', ']', '”', '’']);
@@ -158,9 +211,15 @@ fn ends_sentence(w: &Word, next: &Word) -> bool {
         return false;
     }
     let body = word.trim_end_matches(['.', '…', '。']);
-    let trails = word.ends_with("..") || word.ends_with('…') || body == "etc" || body.contains('.');
-    !(trails && lower)
+    let abbreviated = body == "etc" || body.contains('.');
+    let trails = word.ends_with("..") || word.ends_with('…') || abbreviated;
+    let opener = next.text.trim().trim_end_matches(|c: char| !c.is_alphanumeric()).to_lowercase();
+    !(trails && lower) || (abbreviated && OPENERS.contains(&opener.as_str()))
 }
+
+/// Words that open a clause: after `etc.` or an initialism, one of these in
+/// lower case starts a new sentence.
+const OPENERS: [&str; 12] = ["the", "we", "i", "you", "he", "she", "it", "they", "there", "this", "these", "those"];
 
 const CONJUNCTIONS: [&str; 19] = [
     "and", "but", "or", "so", "because", "when", "where", "while", "if", "although", "though", "then", "since", "until", "unless",

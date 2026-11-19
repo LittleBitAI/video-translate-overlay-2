@@ -81,6 +81,9 @@ const NOW: &str = "strftime('%Y-%m-%dT%H:%M:%fZ','now')";
 
 pub const ACTIVE: [&str; 3] = ["downloading", "writing", "translating"];
 
+/// Why [`Store::retranslate`] refuses while a re-make's draft is in the cue table.
+pub const REMAKE_UNFINISHED: &str = "a re-make of this video is unfinished";
+
 #[derive(Debug, Clone)]
 pub struct Job {
     pub id: String,
@@ -327,6 +330,10 @@ impl Store {
                     || !crate::sync::local::deletions_cleaned(&self.db, &previous.video_key)? {
                     return Err("sync deletion confirmation required".into());
                 }
+            }
+            // The cue table holds an unfinished re-make's draft, not a saved version.
+            if self.covered_by_remake(&previous.video_key)?.is_some() {
+                return Err(REMAKE_UNFINISHED.into());
             }
             let cost = self.retranslation_cost(&previous.video_key)?.max(previous.cost_krw);
             // The sentences go with the cues: the same parts are asked together again.

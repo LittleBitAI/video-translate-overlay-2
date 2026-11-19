@@ -105,6 +105,26 @@ impl Store {
         })
     }
 
+    /// [`Self::begin_remake`] on a copy of `audio` in `dir`, as the writing
+    /// stage deletes its audio when done. The copy is named by the job, so a
+    /// re-make refused here (another job running, as an interrupted re-make
+    /// is) never replaces the audio that job resumes from; a refused job's
+    /// copy is deleted.
+    pub fn stage_remake(&self, id: &str, key: &str, audio: &std::path::Path, dir: &std::path::Path, model: &str) -> R<String> {
+        let ext = audio.extension().and_then(|e| e.to_str()).unwrap_or("m4a");
+        let copy = dir.join(format!("{id}.{ext}"));
+        if copy.exists() {
+            return Err(format!("{} is another job's audio", copy.display()).into());
+        }
+        std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+        std::fs::copy(audio, &copy).map_err(|e| e.to_string())?;
+        let begun = self.begin_remake(id, key, &copy.to_string_lossy(), model);
+        if begun.is_err() {
+            let _ = std::fs::remove_file(&copy);
+        }
+        begun
+    }
+
     /// Sends a failed re-make back to translating: what it wrote and
     /// translated stays, so only the cues without Korean are asked again.
     /// Only a re-make that failed while translating, so its transcript is

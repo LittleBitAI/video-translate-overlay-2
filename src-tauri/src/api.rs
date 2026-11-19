@@ -394,6 +394,10 @@ fn retranslate_job_in(library: &crate::library_scope::Library<'_>, page_url: &st
     }
     let (previous, video) = library.run(|store| {
         let ready = store.ready_job(&key)?.is_some();
+        // The cue table holds an unfinished re-make's draft (Store::retranslate refuses it too).
+        if store.covered_by_remake(&key)?.is_some() {
+            return Err(err(409, "not_ready", "다시 만드는 중인 자막은 다시 번역할 수 없습니다."));
+        }
         let mut previous = store.latest_job(&key)?.filter(|_| ready)
             .ok_or_else(|| err(409, "not_ready", "완료된 자막만 다시 번역할 수 있습니다."))?;
         previous.cost_krw = store.retranslation_cost(&key)?;

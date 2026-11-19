@@ -284,13 +284,16 @@ fn a_write_killed_with_a_sentence_open_across_a_cut_resumes_to_the_same_cues() {
 
 /// The writing loop of a build from before sentence cues (0.1.9): it resumes
 /// from `held` and knows no `tail`, and commits each piece as a cue of its own.
-fn write_as_released(core: &Core, pcm: &[i16], script: &Script) {
+/// Its save is 0.1.9's own SQL, which leaves `tail` and `parts` as they were.
+/// It stops after `windows` windows, if given, as a process killed there would.
+fn write_as_released(core: &Core, pcm: &[i16], script: &Script, windows: Option<usize>) {
     let job = core.store.job("j").unwrap().unwrap();
     let model = Heard { source: pcm.to_vec(), script: script.clone(), calls: Default::default(), fail_at: None, unloads: Default::default() };
     let regions = audio::plan(job.plan, pcm);
     let mut prev_end = core.store.last_cue_end("v").unwrap();
     let mut held: Vec<stitch::Piece> = job.held.as_deref().map(|h| serde_json::from_str(h).unwrap()).unwrap_or_default();
-    for (i, r) in regions.iter().enumerate().skip(job.written_regions as usize) {
+    let db = crate::db::Db::open(core.store.path()).unwrap();
+    for (i, r) in regions.iter().enumerate().skip(job.written_regions as usize).take(windows.unwrap_or(usize::MAX)) {
         let samples: Vec<f32> = pcm[r.start..r.end].iter().map(|&s| s as f32 / 32768.0).collect();
         let segs = model.transcribe(&samples, &mut |_| {}).unwrap();
         let committed;
@@ -305,7 +308,13 @@ fn write_as_released(core: &Core, pcm: &[i16], script: &Script) {
             cues.push((start, p.end_ms, p.text()));
         }
         let kept = (!held.is_empty()).then(|| serde_json::to_string(&held).unwrap());
-        core.store.save_region("j", "v", i as i64, &cues, kept.as_deref()).unwrap();
+        db.exec("BEGIN IMMEDIATE").unwrap();
+        let next = db.query_one("SELECT COALESCE(MAX(seq),-1)+1 FROM cue WHERE video_key='v'", &[]).unwrap().unwrap()[0].int();
+        for (k, (a, b, text)) in cues.iter().enumerate() {
+            db.execute("INSERT INTO cue (video_key, seq, start_ms, end_ms, source_text) VALUES ('v',?,?,?,?)", crate::p![next + k as i64, *a, *b, text.as_str()]).unwrap();
+        }
+        db.execute("UPDATE job SET written_regions=?, held=? WHERE id='j'", crate::p![i as i64 + 1, kept.as_deref()]).unwrap();
+        db.exec("COMMIT").unwrap();
     }
 }
 
@@ -320,7 +329,7 @@ fn a_write_killed_with_a_sentence_open_loses_no_word_when_the_released_build_res
         let mut core = job_at_writing(&format!("released-{k}"), audio::PLAN, &raw);
         assert!(write_with(&mut core, &pcm, &script, Some(k)).0.is_err());
         let open = core.store.job("j").unwrap().unwrap().tail.is_some();
-        write_as_released(&core, &pcm, &script);
+        write_as_released(&core, &pcm, &script, None);
         let written: Vec<String> = cues(&core).iter().flat_map(|c| c.2.split(' ').map(String::from).collect::<Vec<_>>()).collect();
         assert_eq!(written, spoken, "killed at window {k} (a sentence open: {open})");
         let cs = cues(&core);
@@ -329,23 +338,76 @@ fn a_write_killed_with_a_sentence_open_loses_no_word_when_the_released_build_res
 }
 
 #[test]
-fn a_remake_that_failed_writing_cannot_continue_and_playback_keeps_the_selected_version() {
-    use crate::sync::{Change, Cue as Saved, Deletions, Journal, Translation, Video};
+fn a_write_the_released_build_advanced_resumes_without_its_stale_open_sentence() {
+    // Killed with a sentence open, advanced one or two windows by 0.1.9 (which
+    // commits the open sentence from `held` and leaves `tail` alone), killed
+    // again, and finished by this build: the words of an uninterrupted write,
+    // each once, in order. Under the current plan and under plan 1, whose short
+    // regions put a stale sentence within the pause that joins sentences.
+    let words = |core: &Core| -> Vec<String> { cues(core).iter().flat_map(|c| c.2.split(' ').map(String::from).collect::<Vec<_>>()).collect() };
+    // Three short plan-1 regions, the middle one without words: the first
+    // region's last word ends 2.6 s before the third region's first word.
+    let short = {
+        let raw = talk(7_000, &[(500, 1_700, LOUD), (2_550, 2_950, LOUD), (3_800, 5_000, LOUD)]);
+        let file = std::env::temp_dir().join(format!("vto-boundary-short-{}.wav", std::process::id()));
+        std::fs::write(&file, wav(&raw)).unwrap();
+        let pcm = audio::decode_file(&file).unwrap();
+        let _ = std::fs::remove_file(&file);
+        let script: Script = [(600, 900), (1_000, 1_300), (3_900, 4_200), (4_300, 4_600)].iter().enumerate().map(|(i, &(a, b))| (a, b, format!("word{i}"))).collect();
+        assert_eq!(audio::plan(1, &pcm).len(), 3, "three regions");
+        ("short", 1, raw, pcm, script)
+    };
+    let lectures = [("lecture", 1), ("lecture", audio::PLAN)].map(|(name, plan)| { let (raw, pcm, script) = lecture(plan); (name, plan, raw, pcm, sentences_of(&script)) });
+    for (name, plan, raw, pcm, script) in std::iter::once(short).chain(lectures) {
+        let windows = audio::plan(plan, &pcm);
+        let mut whole = job_at_writing(&format!("advanced-{name}-{plan}-whole"), plan, &raw);
+        write_with(&mut whole, &pcm, &script, None).0.unwrap();
+        let spoken = words(&whole);
+        let mut open = 0;
+        for k in 1..windows.len() - 1 {
+            for advanced in [1, 2].into_iter().filter(|n| k + n < windows.len()) {
+                let mut core = job_at_writing(&format!("advanced-{name}-{plan}-{k}-{advanced}"), plan, &raw);
+                assert!(write_with(&mut core, &pcm, &script, Some(k)).0.is_err());
+                if core.store.job("j").unwrap().unwrap().tail.is_none() {
+                    continue;
+                }
+                open += 1;
+                write_as_released(&core, &pcm, &script, Some(advanced));
+                let j = core.store.job("j").unwrap().unwrap();
+                assert!(j.tail.is_some() && j.written_regions == (k + advanced) as i64, "{name}: 0.1.9 advanced the job and left its open sentence");
+                write_with(&mut core, &pcm, &script, None).0.unwrap();
+                assert_eq!(words(&core), spoken, "{name}, plan {plan}, killed at window {k}, advanced {advanced} by 0.1.9");
+                let cs = cues(&core);
+                assert!(cs.windows(2).all(|w| w[0].1 <= w[1].0), "plan {plan}, window {k}, advanced {advanced}: cues overlap");
+            }
+        }
+        assert!(open > 0, "{name}, plan {plan}: no kill left a sentence open");
+    }
+}
+
+#[test]
+fn a_remake_that_failed_writing_cannot_continue_or_be_retranslated_and_playback_keeps_the_selected_version() {
+    use crate::sync::{Change, Cue as Saved, Deletions, Translation, Video};
     let (raw, pcm, script) = lecture(audio::PLAN);
     let dir = std::env::temp_dir().join(format!("vto-boundary-remake-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     let mut core = super::worker_tests::idle_core(&dir, "");
-    let journal = Journal::open(&dir.join("account"), &crate::google_auth::VerifiedIdentity::fixture("remake-writing")).unwrap();
+    // Signed in, so the API's re-translation works on the account library the re-make used.
+    core.account = crate::account::tests::signed_in_manager(&dir, "remake-writing");
     let page = "https://lectures.example.org/unfinished";
     let key = crate::api::video_key(&url::Url::parse(page).unwrap());
     let video = Video { key: key.clone(), page_url: page.into(), title: "Talk".into() };
     let old = vec![Saved { start_ms: 500, end_ms: 1_400, source_text: "Said before.".into(), text_ko: "예전 번역".into() }];
-    journal.write(Change::Translation { translation: Translation { video, duration_ms: 106_000, source_language: Some("en".into()), terms: vec![], model: "m".into(), cost_krw: 1.0, cues: old } }, Deletions::new()).unwrap();
-    let store = journal.library().unwrap();
+    let scope = core.account.capture_library().unwrap();
+    let store = core.account.with_library(&scope, |journal| {
+        let journal = journal.expect("an account library");
+        journal.write(Change::Translation { translation: Translation { video, duration_ms: 106_000, source_language: Some("en".into()), terms: vec![], model: "m".into(), cost_krw: 1.0, cues: old } }, Deletions::new())?;
+        journal.library()
+    }).unwrap();
     let audio = dir.join("audio.wav");
     std::fs::write(&audio, wav(&raw)).unwrap();
-    store.begin_remake("remake-w", &key, &audio.to_string_lossy(), "m").unwrap();
+    let selected = store.begin_remake("remake-w", &key, &audio.to_string_lossy(), "m").unwrap();
     // The model stops on the second window, after the first one's cues were committed.
     core.svc.transcriber = Box::new(Heard { source: pcm.clone(), script: sentences_of(&script), calls: Default::default(), fail_at: Some(1), unloads: Default::default() });
     run_job(&core, &store, store.job("remake-w").unwrap().unwrap());
@@ -354,7 +416,17 @@ fn a_remake_that_failed_writing_cannot_continue_and_playback_keeps_the_selected_
     assert!(!store.cues(&key).unwrap().is_empty(), "the first window's cues were committed");
 
     assert!(store.continue_remake("remake-w").is_err(), "a re-make with an unfinished transcript continued");
+    // Neither an ordinary re-translation nor the store under it takes the draft as its source.
+    let asked = crate::api::retranslate_job(&core, page).unwrap_err();
+    assert_eq!((asked.status, asked.error.as_str()), (409, "not_ready"));
+    let previous = store.latest_job(&key).unwrap().unwrap();
+    assert_eq!(store.retranslate("again", &previous, "m").unwrap_err(), crate::store::REMAKE_UNFINISHED);
+    assert!(store.job("again").unwrap().is_none());
     assert_eq!(store.job("remake-w").unwrap().unwrap().stage, "failed");
     let played = crate::api::subtitles(&store, &key).unwrap();
     assert_eq!(played, serde_json::json!({"video_key": key, "duration_ms": 106_000, "source_language": "en", "cues": [{"seq": 0, "start_ms": 500, "end_ms": 1_400, "text_ko": "예전 번역"}]}));
+    // Once the selected version is restored, it can be re-translated again.
+    store.restore_translation(&key, &selected).unwrap();
+    let again = crate::api::retranslate_job(&core, page).unwrap();
+    assert_eq!(again["stage"], "translating");
 }

@@ -32,14 +32,21 @@ Changed after review, once the re-makes were done:
   word, unless it closes a quotation that carries on (`He asked "why?" and
   left.`). A period ends one even before a lower-case word, except after an
   abbreviation; an ellipsis, `etc.` or an initialism (`U.S.`) does only
-  before a word that does not carry on in lower case.
+  before a word that does not carry on in lower case. `etc.` and an
+  initialism also end one before a lower-case word that opens a clause
+  (`the`, `we`, `it`, `they` and eight more), as in "built in the U.S. the
+  software was written in Canada" (review round 3).
 - A sentence with a comma in it is no longer ended at the run-on limit: it
   goes whole to its sentence end, however long (decided by the person on
-  2026-11-19, review round 2). Only a stretch with no punctuation is still
-  ended at 210 characters.
-- A cue never ends after its last word: a word that takes no time at the end
-  of the audio joins the part before it, or is dropped if it is a sentence of
-  its own.
+  2026-11-19, review round 2). The comma is looked for in the words still to
+  come as well, up to 420 characters, so a sentence whose first comma comes
+  after 210 characters also goes whole (review round 3). Only a stretch with
+  no punctuation is still ended at 210 characters.
+- A cue never ends after its last word. A word that ends no later than the
+  word before it (one the model gives no time) stays in that word's sentence,
+  so it is never dropped and the saved cues still show the sentence end it
+  made (`No... Okay.` / `we left.`, review round 3). Only at the end of the
+  audio, where the model writes such a word after the speech, is it dropped.
 - A re-translation asks for the same sentences as the first translation. A
   saved version that was received or selected again has its sentences rebuilt
   by running its cues' words through the same sentence ends. It also gets its
@@ -49,7 +56,13 @@ Changed after review, once the re-makes were done:
   `continue` refuses a re-make that failed writing, whose transcript is
   unfinished, and one whose previous version was restored. While a re-make's
   draft is in the cue table, playback is given the selected saved version,
-  not the draft.
+  not the draft, and an ordinary re-translation is refused (409 `not_ready`),
+  so it cannot take the draft as its source (review round 3); after
+  `restore` it is accepted again.
+- The re-make tool copies its audio to a file named by the new job and
+  deletes the copy if the job is refused, so a second `run` while a re-make
+  is interrupted cannot replace the audio that re-make resumes from (review
+  round 3).
 - A write stopped with a sentence open also keeps that sentence's words as the
   first held piece, so a build from before sentence cues (0.1.9), which
   ignores the open sentence, resumes without losing them.
@@ -61,20 +74,21 @@ sentence was ever answered part by part (the only replies with wrong ids, in
 again). Re-translating a selected re-made version keeps the grouping its
 re-make recorded. Only a version selected again or received from another
 device has its grouping rebuilt with the new rules. Against the recorded
-groupings, the rebuild joins 183 cues to the sentence before them (sentences
-the run-on limit had ended at a comma) and splits 7 (a period before a
-lower-case word):
+groupings, the rebuild joins 193 cues to the sentence before them (sentences
+the run-on limit had ended at a comma, ten of them sentences whose first
+comma comes after 210 characters) and splits 6 (a period before a lower-case
+word). Counted with this round's rules on a copy of the account library:
 
 | Video | Cues | Recorded parts | Rebuilt parts | Joined | Split |
 | --- | --- | --- | --- | --- | --- |
-| `QDX-1M5Nj7s` | 1,316 | 803 | 857 | 56 | 2 |
+| `QDX-1M5Nj7s` | 1,316 | 803 | 862 | 61 | 2 |
 | `QWNxQIq0hMo` | 313 | 171 | 179 | 8 | 0 |
 | `WJpeW9lCSUM` | 496 | 261 | 273 | 12 | 0 |
-| `WjhDDeZ7DvM` | 770 | 426 | 449 | 23 | 0 |
-| `_MEqhFwnp8o` | 1,008 | 444 | 478 | 34 | 0 |
+| `WjhDDeZ7DvM` | 770 | 426 | 451 | 25 | 0 |
+| `_MEqhFwnp8o` | 1,008 | 444 | 479 | 35 | 0 |
 | `vSCYL8ySh9g` | 314 | 182 | 188 | 6 | 0 |
-| `wbc-oxFFV9c` | 1,490 | 536 | 538 | 7 | 5 |
-| `zjkBMFhNj_g` | 1,409 | 740 | 777 | 37 | 0 |
+| `wbc-oxFFV9c` | 1,490 | 536 | 540 | 8 | 4 |
+| `zjkBMFhNj_g` | 1,409 | 740 | 778 | 38 | 0 |
 
 ## The re-makes (done items 12 and 13)
 

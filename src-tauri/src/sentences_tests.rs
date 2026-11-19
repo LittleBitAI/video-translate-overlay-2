@@ -148,9 +148,17 @@ fn a_sentence_with_commas_goes_whole_however_long_and_only_a_bare_stretch_ends_a
     let long = "When we move from four layers to eight layers and then all the way up to a hundred layers in this looped model, we are honestly not yet sure whether there is going to be any real benefit at all or even a small cost.";
     let bare: Vec<String> = (0..60).map(|i| format!("word{i}")).collect();
     let bare = bare.join(" ");
-    assert!(chained.len() > STRETCH_MAX && long.len() > STRETCH_MAX && bare.len() > STRETCH_MAX);
+    // Its first comma comes after the limit: the opening clause alone is longer.
+    let opening = (0..40).map(|i| format!("step{i}")).collect::<Vec<_>>().join(" ");
+    let late = format!("{opening}, and only then does the sentence end.");
+    assert!(chained.len() > STRETCH_MAX && long.len() > STRETCH_MAX && bare.len() > STRETCH_MAX && opening.len() > STRETCH_MAX);
     // (form, the text, how many sentences it is)
-    for (name, said, count) in [("comma-chained run-on", chained.as_str(), 1), ("one long sentence, one comma", long, 1), ("no punctuation, no pause", bare.as_str(), 2)] {
+    for (name, said, count) in [
+        ("comma-chained run-on", chained.as_str(), 1),
+        ("one long sentence, one comma", long, 1),
+        ("first comma after the limit", late.as_str(), 1),
+        ("no punctuation, no pause", bare.as_str(), 2),
+    ] {
         let cues = all(vec![owned(&spoken(0, 200, 50, said))]);
         let joined: Vec<&str> = cues.iter().flat_map(|c| c.text.split(' ')).collect();
         assert_eq!(joined, said.split(' ').collect::<Vec<_>>(), "{name}: every word once, in order");
@@ -179,11 +187,21 @@ fn a_sentence_ends_where_its_punctuation_ends_it() {
         ("initialism before upper case", "It was made in the U.S. Then it shipped.", &["It was made in the U.S.", "Then it shipped."]),
         ("ellipsis before lower case", "so... and then it stops.", &["so... and then it stops."]),
         ("etc. before upper and lower case", "They ship GGUFs etc. So it runs locally, etc. and it is fast.", &["They ship GGUFs etc.", "So it runs locally, etc. and it is fast."]),
+        ("initialism ending before a clause in lower case", "The hardware was built in the U.S. the software was written in Canada.", &["The hardware was built in the U.S.", "the software was written in Canada."]),
+        ("etc. ending before a clause in lower case", "We tried GGUFs etc. it ran well.", &["We tried GGUFs etc.", "it ran well."]),
+        ("ellipsis before a clause in lower case", "So... we start again.", &["So... we start again."]),
     ] {
         let cues = all(vec![owned(&spoken(0, 200, 50, said))]);
         assert_eq!(sentences_of(&cues), sentences, "{name}");
         rebuilt_as_made(name, &cues);
         ordered(&cues);
+    }
+    // Every clause opener after an initialism or `etc.` starts a new sentence.
+    for (mark, opener) in ["U.S.", "a.m.", "etc."].iter().flat_map(|m| super::OPENERS.iter().map(move |o| (m, o))) {
+        let said = format!("It ended at the {mark} {opener} came next.");
+        let cues = all(vec![owned(&spoken(0, 200, 50, &said))]);
+        assert_eq!(sentences_of(&cues), [format!("It ended at the {mark}"), format!("{opener} came next.")], "{mark} {opener}");
+        rebuilt_as_made(&said, &cues);
     }
 }
 
@@ -201,11 +219,21 @@ fn no_cue_ends_after_its_words_even_when_they_take_no_time() {
             vec![at(&[(0, 2_000, "When the learning rate is set far too high for this"), (2_000, 5_000, "particular model,")]), at(&[(5_000, 5_000, "the loss jumps around and never settles at all.")])],
             &["When the learning rate is set far too high for this particular model, the loss jumps around and never settles at all."],
         ),
+        // A sentence with no time right after an ellipsis that it ends: it stays
+        // with the sentence before, so the saved cues still show that end.
+        ("after an ellipsis", vec![at(&[(0, 500, "No...")]), at(&[(500, 500, "Okay.")]), at(&[(510, 800, "we"), (800, 1_100, "left.")])], &["No... Okay.", "we left."]),
+        // The same with a word that overlaps the one before and ends with it.
+        ("overlapping", vec![at(&[(0, 500, "No...")]), at(&[(450, 500, "Okay.")]), at(&[(510, 800, "we"), (800, 1_100, "left.")])], &["No... Okay.", "we left."]),
     ] {
         let last_word = pieces.iter().flat_map(|p| &p.words).map(|w| w.end_ms).max().unwrap();
+        let said: Vec<String> = pieces.iter().flat_map(|p| &p.words).flat_map(|w| w.text.split_whitespace().map(String::from).collect::<Vec<_>>()).collect();
         let cues = all(pieces);
         assert_eq!(texts(&cues), sentences, "{name}");
         assert!(cues.iter().all(|c| c.end_ms <= last_word), "{name}: a cue ends after the last word: {cues:?}");
+        if name != "final" {
+            assert_eq!(cues.iter().flat_map(|c| c.text.split(' ')).collect::<Vec<_>>(), said, "{name}: a word was dropped");
+        }
+        rebuilt_as_made(name, &cues);
         ordered(&cues);
     }
 }

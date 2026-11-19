@@ -253,6 +253,41 @@ fn only_a_remake_that_failed_translating_continues() {
 }
 
 #[test]
+fn a_refused_remake_leaves_the_audio_of_an_interrupted_one_as_it_was() {
+    use crate::sync::{Change, Cue as Saved, Deletions, Journal, Translation, Video};
+    let d = dir("staged-audio");
+    let journal = Journal::open(&d.join("account"), &crate::google_auth::VerifiedIdentity::fixture("staged-account")).unwrap();
+    let page = "https://lectures.example.org/staged";
+    let key = crate::api::video_key(&url::Url::parse(page).unwrap());
+    let video = Video { key: key.clone(), page_url: page.into(), title: "Lecture".into() };
+    let cues = vec![Saved { start_ms: 0, end_ms: 900, source_text: "Said.".into(), text_ko: "번역".into() }];
+    journal.write(Change::Translation { translation: Translation { video, duration_ms: 5000, source_language: Some("en".into()), terms: vec![], model: "m".into(), cost_krw: 1.0, cues } }, Deletions::new()).unwrap();
+    let store = journal.library().unwrap();
+    let (work, inputs) = (d.join("work"), d.join("inputs"));
+    std::fs::create_dir_all(&inputs).unwrap();
+    let input = |name: &str, bytes: &[u8]| { let p = inputs.join(name); std::fs::write(&p, bytes).unwrap(); p };
+    // A re-make interrupted while writing: still the active job, its audio staged.
+    let first = input("first.m4a", b"first audio");
+    store.stage_remake("remake-a", &key, &first, &work, "m").unwrap();
+    let job = store.job("remake-a").unwrap().unwrap();
+    let staged = std::path::PathBuf::from(job.audio_path.unwrap());
+    assert_eq!(job.stage, "writing");
+    // (form, video, job id, its input): every one is refused.
+    for (form, video, id, file) in [
+        ("same video, same extension", key.as_str(), "remake-b", input("second.m4a", b"second audio")),
+        ("same video, another extension", key.as_str(), "remake-c", input("second.webm", b"second audio")),
+        ("another video", "no-such-video", "remake-d", input("third.m4a", b"third audio")),
+        ("the same job id again", key.as_str(), "remake-a", input("again.m4a", b"again audio")),
+    ] {
+        assert!(store.stage_remake(id, video, &file, &work, "m").is_err(), "{form}: accepted");
+        assert_eq!(std::fs::read(&staged).unwrap(), b"first audio", "{form}: the interrupted job's audio changed");
+        let left: Vec<String> = std::fs::read_dir(&work).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().into_owned()).collect();
+        assert_eq!(left, ["remake-a.m4a"], "{form}: a refused copy stayed");
+        assert_eq!(store.active_job().unwrap().unwrap().id, "remake-a", "{form}");
+    }
+}
+
+#[test]
 fn an_older_builds_selection_never_pairs_a_transcript_with_another_ones_mishearings() {
     use crate::sync::{Change, Cue as Saved, Deletions, Journal, Term, Translation, Video};
     let (orders, most) = (Arc::new(Mutex::new(Vec::new())), Arc::new(AtomicUsize::new(0)));
