@@ -23,6 +23,28 @@ old against new Korean. Everything here was measured after the last re-make
   is still metered per call and recorded on top of the video's earlier
   spending.
 
+Changed after review, once the re-makes were done:
+
+- A sentence whose reply keeps getting its parts wrong is asked again whole,
+  never part by part; after three passes that save nothing the job stops
+  (`translate_failed`).
+- A question or exclamation mark always ends a sentence, even before a
+  lower-case word.
+- A cue never ends after its last word: a word that takes no time at the end
+  of the audio joins the part before it, or is dropped if it is a sentence of
+  its own.
+- A re-translation asks for the same sentences as the first translation. A
+  saved version that was received or selected again has its sentences rebuilt
+  from its cues, and gets its mishearings found again; mishearings belong to
+  the transcript they were found in.
+- A re-make that fails keeps its draft for the re-make tool's `continue`;
+  once the previous version is restored, `continue` refuses it.
+
+None of these changes the eight saved versions. In their cues no part follows
+a `?` or `!`, no cue ends after the video, and no multi-part sentence was ever
+answered part by part (the only replies with wrong ids, in `wbc-oxFFV9c` and
+`WJpeW9lCSUM`, were to one-part sentences, and were asked again).
+
 ## The re-makes (done items 12 and 13)
 
 The account library was copied before the first re-make
@@ -142,6 +164,20 @@ than 2 lines.
 | Watch screen | fullscreen PC 1920×1080 | 2,089 / 2,070 / 134 (up to 7) | 6,838 / 278 / 0 |
 | Watch screen | phone 384×854 | 997 / 2,210 / 1,086 (up to 10) | 4,791 / 2,313 / 12 |
 
+Per video, the cues on more than 2 lines, old → new:
+
+| Video | Overlay, windowed | Overlay, fullscreen | Overlay, phone | Watch, windowed | Watch, fullscreen | Watch, phone |
+| --- | --- | --- | --- | --- | --- | --- |
+| `QDX-1M5Nj7s` | 41 → 0 | 41 → 0 | 102 → 0 | 43 → 0 | 41 → 0 | 156 → 1 |
+| `QWNxQIq0hMo` | 15 → 0 | 15 → 0 | 37 → 0 | 15 → 0 | 15 → 0 | 57 → 2 |
+| `WJpeW9lCSUM` | 8 → 0 | 6 → 0 | 34 → 0 | 8 → 0 | 6 → 0 | 71 → 3 |
+| `WjhDDeZ7DvM` | 24 → 0 | 23 → 0 | 74 → 0 | 24 → 0 | 23 → 0 | 124 → 0 |
+| `_MEqhFwnp8o` | 12 → 0 | 12 → 0 | 73 → 0 | 12 → 0 | 12 → 0 | 135 → 2 |
+| `vSCYL8ySh9g` | 1 → 0 | 1 → 0 | 24 → 0 | 1 → 0 | 1 → 0 | 45 → 0 |
+| `wbc-oxFFV9c` | 18 → 0 | 18 → 0 | 187 → 0 | 19 → 0 | 18 → 0 | 312 → 3 |
+| `zjkBMFhNj_g` | 18 → 0 | 18 → 0 | 105 → 0 | 20 → 0 | 18 → 0 | 186 → 1 |
+| All 8 | 137 → 0 | 134 → 0 | 636 → 0 | 142 → 0 | 134 → 0 | 1,086 → 12 |
+
 Exceptions: 12 new cues take three lines in the Watch screen at phone size,
 and in no other place. Its player is 352 px wide, and its subtitle font fits
 about 20 Korean characters a line. These 12 cues have 47 to 71 Korean
@@ -158,13 +194,19 @@ the Korean, which is sometimes longer than the cap assumed. The longest,
 
 In the page overlay at phone size, these cues fit two lines.
 
+The measurement's command, its output and the identity of its input are in
+[receipts.md](receipts.md), with the receipts of the tests named in this
+document.
+
 ## The installed app (done item 16)
 
 The installed Windows app is version 0.1.9. It opened `wbc-oxFFV9c` from its
-Library. Its overlay showed:
+Library, twice. [receipts.md](receipts.md) holds the second time: the app's
+file version and hash, the library's hash and selected version, and the app's
+own command output. Its overlay showed:
 
 - the new first cue ("1시간만 투자하세요, …"), with "자막 준비됨 · 966.8원";
-- during playback, the new cue at 16:59 ("정확히 얼마나 적을까요?"; the old one was "얼마나 적을까요?").
+- during playback, the new cue at 16:59 ("정확히 얼마나 적을까요?"; the old one was "얼마나 적을까요?"), and on the second opening at 17:01 ("이제 코드로 16개의 필터를 만들고 개수를 세어 봅시다."; the old one was "코드로 16개의 필터를 만들어서 세어 봅시다.").
 
 From the video window, `get_subtitles` returned 1,490 cues with
 `video_key`, `duration_ms`, `source_language`, `account_generation` and
@@ -241,8 +283,11 @@ regressions below.
 ## Reading old and new Korean (done item 15)
 
 I read the old and new Korean side by side, place by place, for each video.
-Each place is one new sentence with the old cues that overlap it. The places
-are:
+Each place is one new sentence with the old cues that overlap it. The old and
+new Korean of every place, with its verdict, are in [places.md](places.md); the
+tables below give the verdicts and reasons, grouping places that share one. A
+place given as a range spans several new sentences, each a row there. The
+places are:
 
 - every place where the old version had a filler or an immediate repeat;
 - every place where the old version had a term the glossary lists as misheard;
