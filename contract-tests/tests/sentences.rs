@@ -36,6 +36,12 @@ fn talk(lines: &[&str], gemini: GeminiOptions) -> (App, Vec<Value>) {
 fn a_split_sentence_goes_to_gemini_as_one_request_of_its_parts() {
     let (app, cues) = talk(&[LONG, SHORT], GeminiOptions::default());
     assert_eq!(cues.len(), 3, "the long sentence is two cues, the short one one: {cues:?}");
+    // GET /videos/{key}/subtitles keeps its cue shape: sentence grouping stays inside the job.
+    for c in &cues {
+        let mut keys: Vec<&str> = c.as_object().unwrap().keys().map(String::as_str).collect();
+        keys.sort();
+        assert_eq!(keys, ["end_ms", "seq", "start_ms", "text_ko"], "{c}");
+    }
     let calls = translate_calls(&app);
     assert_eq!(calls.len(), 2, "one request per sentence");
     let whole = segments(&calls.iter().find(|c| segments(c).len() == 2).expect("the split sentence went out in parts"));
