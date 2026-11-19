@@ -15,9 +15,10 @@
 use crate::stitch::Piece;
 use crate::Word;
 
-/// The most characters of English one cue holds: about two lines of Korean on
-/// the phone (Korean runs at roughly 0.6 of the English length in saved cues).
-pub const CAP: usize = 80;
+/// The most characters of English one cue holds. The phone fits about 56
+/// Korean characters on two lines. In saved cues, 6 % of 70–80-character English
+/// cues ran past that in Korean, against 2 % at 60–70.
+pub const CAP: usize = 70;
 /// A part shorter than this is not cut off on its own (except at a long pause).
 const MIN_PART: usize = 20;
 /// A pause this long always separates two parts of a sentence.

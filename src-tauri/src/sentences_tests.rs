@@ -113,8 +113,8 @@ fn a_stretch_without_punctuation_is_cut_at_pauses_and_the_cap() {
 
 #[test]
 fn abbreviations_and_lower_case_continuations_do_not_end_a_sentence() {
-    let cues = all(vec![owned(&spoken(0, 200, 50, "We compare it with e.g. ResNet and Dr. Smith's model on the U.S. dataset today. Fine."))]);
-    assert_eq!(texts(&cues), ["We compare it with e.g. ResNet and Dr. Smith's model on the U.S. dataset today.", "Fine."]);
+    let cues = all(vec![owned(&spoken(0, 200, 50, "We compare e.g. ResNet with Dr. Smith's model on the U.S. dataset. Fine."))]);
+    assert_eq!(texts(&cues), ["We compare e.g. ResNet with Dr. Smith's model on the U.S. dataset.", "Fine."]);
 }
 
 #[test]
