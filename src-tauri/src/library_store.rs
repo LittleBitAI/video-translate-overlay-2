@@ -71,8 +71,38 @@ impl Store {
         Ok(json!({"videos":videos,"playlists":playlists}))
     }
 
-    pub(crate) fn select_translation(&self, key: &str, identity: &str) -> R<()> {
+    pub fn select_translation(&self, key: &str, identity: &str) -> R<()> {
         self.library_write(|db| local::select_translation(db, key, identity))
+    }
+
+    /// Starts making a saved video again from its audio (`audio`, already on
+    /// this device), as a new job at writing in this account library. The
+    /// selected saved version stays and is returned, to select again if the
+    /// job fails; the new version is selected when it is ready. The job starts
+    /// with everything the video has spent, so it stays within its allowance.
+    pub fn begin_remake(&self, id: &str, key: &str, audio: &str, model: &str) -> R<String> {
+        self.library_write(|db| {
+            if !local::owned(db)? {
+                return Err("a re-make needs an account library with saved versions".into());
+            }
+            if db.query_one("SELECT id FROM job WHERE stage IN ('downloading','writing','translating')", &[])?.is_some()
+                || db.query_one("SELECT video_key FROM deleted_video WHERE video_key=?", p![key])?.is_some()
+                || !local::deletions_cleaned(db, key)?
+            {
+                return Err("another job is running, or the video is being deleted".into());
+            }
+            let selected = db.query_one("SELECT identity FROM sync_selected_translation WHERE video_key=?", p![key])?.ok_or("no saved version is selected")?[0].text();
+            let spent = self.retranslation_cost(key)?;
+            db.execute(
+                "INSERT INTO job (id, video_key, stage, audio_path, plan, translation_model, cost_krw, created_at, updated_at)
+                 VALUES (?,?,'writing',?,?,?,?,strftime('%Y-%m-%dT%H:%M:%fZ','now'),strftime('%Y-%m-%dT%H:%M:%fZ','now'))",
+                p![id, key, audio, crate::audio::PLAN, model, spent],
+            )?;
+            db.execute("DELETE FROM cue WHERE video_key=?", p![key])?;
+            db.execute("UPDATE video SET terms=NULL, mishearings=NULL, source_language=NULL WHERE video_key=?", p![key])?;
+            local::capture_job(db, id, key)?;
+            Ok(selected)
+        })
     }
 
     /// Capture the requested selection and projected cue in one SQLite snapshot before audio inspection.

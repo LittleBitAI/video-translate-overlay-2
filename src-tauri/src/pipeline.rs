@@ -58,6 +58,15 @@ pub fn run_worker(core: Arc<Core>) {
     }
 }
 
+/// Runs the jobs in progress in `store` to their end, here and now: the
+/// worker's steps for one library a tool names (`examples/remake_saved.rs`).
+pub fn run_pending(core: &Core, store: &Store) -> Result<(), String> {
+    while let Some(job) = store.active_job()? {
+        run_job(core, store, job);
+    }
+    Ok(())
+}
+
 struct Ctx<'a> {
     core: &'a Core,
     store: &'a Store,

@@ -322,7 +322,8 @@ impl Store {
         Ok(self.db.query_one(&format!("SELECT {JOB_COLS} FROM job WHERE id=?"), p![id])?.map(|r| job(&r)))
     }
 
-    pub(crate) fn retranslation_cost(&self, video_key: &str) -> R<f64> {
+    /// What the video has spent on translation so far, over all its jobs and saved versions.
+    pub fn retranslation_cost(&self, video_key: &str) -> R<f64> {
         let spent = self.db.query_one("SELECT COALESCE(MAX(cost_krw),0) FROM job WHERE video_key=?", p![video_key])?.ok_or("missing cost summary")?[0].real();
         Ok(spent.max(crate::sync::local::retained_cost(&self.db, video_key)?))
     }
