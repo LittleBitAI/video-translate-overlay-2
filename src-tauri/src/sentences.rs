@@ -35,14 +35,12 @@ const STRETCH_GAP_MS: i64 = 1_000;
 /// however long.
 const STRETCH_MAX: usize = 3 * CAP;
 
-/// One cue: its time on the source clock, its text, and whether it opens a
-/// sentence (false: it continues the cue before it).
+/// One cue: its time on the source clock and its text.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Cue {
     pub start_ms: i64,
     pub end_ms: i64,
     pub text: String,
-    pub opens: bool,
 }
 
 /// Words of the sentence not finished yet, carried from window to window.
@@ -87,12 +85,10 @@ fn ends(ws: &[Word], last: bool) -> Vec<usize> {
                 };
                 // A word that ends no later than this one adds no time: as a
                 // sentence of its own it has no time to be shown in and would
-                // be dropped, and the grouping rebuilt from the saved cues,
-                // which no longer hold it, would not see the end it made. So it
-                // stays in this sentence, except as the very last word, where
-                // the model writes such a word after the speech has ended.
-                // (Words rebuilt from one saved cue share its start and take
-                // time, so this never applies to them.)
+                // be dropped. So it stays in this sentence, except as the very
+                // last word, where the model writes such a word after the
+                // speech has ended. (Words rebuilt from one saved cue share its
+                // start and take time, so this never applies to them.)
                 if end && n.end_ms <= ws[i].end_ms && (n.start_ms == n.end_ms || n.start_ms > ws[i].start_ms) {
                     match ws.get(i + 2) {
                         Some(_) => false,
@@ -319,18 +315,23 @@ fn sentence_cues(ws: &[Word], prev_end: &mut i64) -> Vec<Cue> {
             continue;
         }
         *prev_end = end;
-        cues.push(Cue { start_ms: start, end_ms: end, text, opens: cues.is_empty() });
+        cues.push(Cue { start_ms: start, end_ms: end, text });
     }
     cues
 }
 
 /// Which of the saved `cues` (in seq order) continue the sentence of the cue
-/// before: the grouping [`push`] made, rebuilt where it was not kept (a saved
-/// version projected or received from another device, a re-translation of
-/// one). The cues' words go through the same sentence ends as when they were
-/// written, each word at its cue's time: every end `push` makes falls on a cue
-/// boundary and depends only on the text and the pause there. A sentence never
-/// runs across a gap in seq or a cue without words.
+/// before: the only grouping translation uses, so every translation of the
+/// same cues (the first, a re-translation, a version selected again or
+/// received from another device) asks the same sentences. The cues' words go
+/// through the sentence ends [`push`] uses, each word at its cue's time. A cue
+/// that holds a sentence end anywhere, not only at its last word (cues written
+/// under earlier rules do: `…in the image. lines`), closes its sentence, as
+/// a cue cannot be split; otherwise a sentence with a comma before such an end
+/// would run on through every cue after it. It is close to, not always the
+/// same as, the grouping `push` wrote under: there words had their own times,
+/// which can move where a long stretch is ended. A sentence never runs across
+/// a gap in seq or a cue without words.
 pub fn rebuilt_parts(cues: &[crate::store::Cue]) -> std::collections::HashSet<i64> {
     let mut out = std::collections::HashSet::new();
     let mut i = 0;
@@ -345,9 +346,9 @@ pub fn rebuilt_parts(cues: &[crate::store::Cue]) -> std::collections::HashSet<i6
             firsts.push(words.len());
             words.extend(c.source_text.split_whitespace().map(|t| Word { start_ms: c.start_ms, end_ms: c.end_ms, text: format!(" {t}") }));
         }
-        let opens: std::collections::HashSet<usize> = ends(&words, true).into_iter().map(|k| k + 1).collect();
-        for (c, first) in run.iter().zip(&firsts).skip(1) {
-            if !opens.contains(first) {
+        let ends = ends(&words, true);
+        for (i, c) in run.iter().enumerate().skip(1) {
+            if !ends.iter().any(|k| (firsts[i - 1]..firsts[i]).contains(k)) {
                 out.insert(c.seq);
             }
         }

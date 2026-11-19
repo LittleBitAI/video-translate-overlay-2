@@ -50,8 +50,8 @@ fn each_cue_is_one_sentence_and_none_holds_the_end_of_one_and_the_start_of_the_n
     assert_eq!(texts(&cues), ["Today we train a network.", "It learns from data.", "Then we test it on new images."]);
     for c in &cues {
         assert_eq!(ends(&c.text), 1, "{c:?}");
-        assert!(c.opens);
     }
+    assert_eq!(sentences_of(&cues).len(), 3, "a request holds two sentences");
     ordered(&cues);
 }
 
@@ -72,7 +72,7 @@ fn a_sentence_over_the_cap_is_cut_at_a_comma_then_a_conjunction_then_the_longest
     let comma = "When the learning rate is too high for this model, the loss jumps around and never settles down at all.";
     let cues = all(vec![owned(&spoken(0, 200, 50, comma))]);
     assert_eq!(texts(&cues), ["When the learning rate is too high for this model,", "the loss jumps around and never settles down at all."]);
-    assert!(cues[0].opens && !cues[1].opens);
+    assert_eq!(sentences_of(&cues), [comma], "the parts are not asked together");
 
     let conjunction = "The encoder reads the whole input sequence at once in parallel because attention needs no recurrence at any step.";
     let cues = all(vec![owned(&spoken(0, 200, 50, conjunction))]);
@@ -121,24 +121,19 @@ fn a_stretch_without_punctuation_is_cut_at_pauses_and_the_cap() {
     ordered(&cues);
 }
 
-/// The sentences of `cues`: the texts of each sentence's parts joined by " ".
+/// The sentences translation asks for `cues` once saved ([`rebuilt_parts`]):
+/// the texts of each sentence's parts joined by " ".
 fn sentences_of(cues: &[Cue]) -> Vec<String> {
+    let saved: Vec<crate::store::Cue> = cues.iter().enumerate().map(|(i, c)| crate::store::Cue { seq: i as i64, start_ms: c.start_ms, end_ms: c.end_ms, source_text: c.text.clone(), text_ko: None }).collect();
+    let parts = rebuilt_parts(&saved);
     let mut out: Vec<String> = Vec::new();
-    for c in cues {
+    for (i, c) in cues.iter().enumerate() {
         match out.last_mut() {
-            Some(s) if !c.opens => *s = format!("{s} {}", c.text),
+            Some(s) if parts.contains(&(i as i64)) => *s = format!("{s} {}", c.text),
             _ => out.push(c.text.clone()),
         }
     }
     out
-}
-
-/// The cues as saved, and the grouping [`rebuilt_parts`] finds in them, which
-/// must be the one they were made with.
-fn rebuilt_as_made(name: &str, made: &[Cue]) {
-    let saved: Vec<crate::store::Cue> = made.iter().enumerate().map(|(i, c)| crate::store::Cue { seq: i as i64, start_ms: c.start_ms, end_ms: c.end_ms, source_text: c.text.clone(), text_ko: None }).collect();
-    let parts: std::collections::HashSet<i64> = made.iter().enumerate().filter(|(_, c)| !c.opens).map(|(i, _)| i as i64).collect();
-    assert_eq!(rebuilt_parts(&saved), parts, "{name}: {:?}", texts(made));
 }
 
 #[test]
@@ -167,7 +162,6 @@ fn a_sentence_with_commas_goes_whole_however_long_and_only_a_bare_stretch_ends_a
         for c in &cues {
             assert!(c.text.chars().count() <= STRETCH_MAX, "{name}: {c:?}");
         }
-        rebuilt_as_made(name, &cues);
         ordered(&cues);
     }
 }
@@ -193,7 +187,6 @@ fn a_sentence_ends_where_its_punctuation_ends_it() {
     ] {
         let cues = all(vec![owned(&spoken(0, 200, 50, said))]);
         assert_eq!(sentences_of(&cues), sentences, "{name}");
-        rebuilt_as_made(name, &cues);
         ordered(&cues);
     }
     // Every clause opener after an initialism or `etc.` starts a new sentence.
@@ -201,7 +194,6 @@ fn a_sentence_ends_where_its_punctuation_ends_it() {
         let said = format!("It ended at the {mark} {opener} came next.");
         let cues = all(vec![owned(&spoken(0, 200, 50, &said))]);
         assert_eq!(sentences_of(&cues), [format!("It ended at the {mark}"), format!("{opener} came next.")], "{mark} {opener}");
-        rebuilt_as_made(&said, &cues);
     }
 }
 
@@ -233,32 +225,57 @@ fn no_cue_ends_after_its_words_even_when_they_take_no_time() {
         if name != "final" {
             assert_eq!(cues.iter().flat_map(|c| c.text.split(' ')).collect::<Vec<_>>(), said, "{name}: a word was dropped");
         }
-        rebuilt_as_made(name, &cues);
         ordered(&cues);
     }
 }
 
 #[test]
-fn the_grouping_rebuilt_from_saved_cues_is_the_one_the_cues_were_made_with() {
-    let mut silence = spoken(0, 200, 50, "thank you all for coming welcome to the course");
-    for w in silence.iter_mut().skip(5) {
-        (w.0, w.1) = (w.0 + 20_000, w.1 + 20_000);
-    }
+fn the_parts_of_a_sentence_are_asked_together_and_with_nothing_else() {
     let mut paused = spoken(0, 300, 100, "So the model keeps the full precision weights for the updates and rounds them on every forward pass. Done.");
     for w in paused.iter_mut().skip(9) {
         (w.0, w.1) = (w.0 + 1_600, w.1 + 1_600);
     }
-    for (name, words) in [
-        ("sentences", spoken(1_000, 300, 100, "Today we train a network. It learns from data. Then we test it on new images.")),
-        ("comma", spoken(0, 250, 50, "When the learning rate is set far too high for this particular model, the training loss jumps around and never settles. Then we lower it.")),
-        ("conjunction", spoken(0, 250, 50, "The encoder reads the whole input sentence once and the decoder writes the output one token at a time. Next.")),
-        ("questions", spoken(0, 200, 50, "Any questions? we're done. Is it fast? Yes it is.")),
-        ("unpunctuated", spoken(0, 250, 1_100, "so here the loss goes down and here it goes up again and then it settles somewhere in the middle of the range")),
-        ("silence", silence),
-        ("pause", paused),
+    // (form, words, the sentences asked)
+    for (name, words, sentences) in [
+        (
+            "comma",
+            spoken(0, 250, 50, "When the learning rate is set far too high for this particular model, the training loss jumps around and never settles. Then we lower it."),
+            &["When the learning rate is set far too high for this particular model, the training loss jumps around and never settles.", "Then we lower it."][..],
+        ),
+        (
+            "conjunction",
+            spoken(0, 250, 50, "The encoder reads the whole input sentence once and the decoder writes the output one token at a time. Next."),
+            &["The encoder reads the whole input sentence once and the decoder writes the output one token at a time.", "Next."],
+        ),
+        ("pause", paused, &["So the model keeps the full precision weights for the updates and rounds them on every forward pass.", "Done."]),
     ] {
-        rebuilt_as_made(name, &all(vec![owned(&words)]));
+        let cues = all(vec![owned(&words)]);
+        assert!(cues.len() > sentences.len(), "{name}: not cut into parts: {:?}", texts(&cues));
+        assert_eq!(sentences_of(&cues), sentences, "{name}");
     }
+}
+
+#[test]
+fn a_saved_cue_holding_a_sentence_end_closes_its_sentence() {
+    // Cues written under earlier rules hold a sentence end before their last
+    // word; after the comma, the sentence would otherwise run on to the end.
+    let saved: Vec<Cue> = [
+        "So if we wanted to detect a face,",
+        "it first has to detect edges in the image. lines",
+        "and edges and when you combine those lines",
+        "you get corners and curves and then eyes and noses",
+    ]
+    .iter()
+    .enumerate()
+    .map(|(i, t)| Cue { start_ms: i as i64 * 3_000, end_ms: i as i64 * 3_000 + 2_900, text: t.to_string() })
+    .collect();
+    assert_eq!(
+        sentences_of(&saved),
+        [
+            "So if we wanted to detect a face, it first has to detect edges in the image. lines",
+            "and edges and when you combine those lines you get corners and curves and then eyes and noses"
+        ]
+    );
 }
 
 #[test]
@@ -270,7 +287,7 @@ fn a_long_silence_ends_a_sentence_without_punctuation() {
     }
     let cues = all(vec![owned(&ws)]);
     assert_eq!(texts(&cues), ["thank you all for coming", "welcome to the course"]);
-    assert!(cues.iter().all(|c| c.opens), "two sentences, never translated together");
+    assert_eq!(sentences_of(&cues).len(), 2, "two sentences, never translated together");
 }
 
 #[test]

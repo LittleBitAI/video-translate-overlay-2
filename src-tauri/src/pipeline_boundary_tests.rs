@@ -272,9 +272,8 @@ fn a_write_killed_with_a_sentence_open_across_a_cut_resumes_to_the_same_cues() {
     assert_eq!(job.written_regions, k as i64);
     assert!(job.tail.is_some(), "the sentence open at the kill was not kept");
     write_with(&mut core, &pcm, &script, None).0.unwrap();
+    // The sentences translation asks are rebuilt from these cues, so they match too.
     assert_eq!(cues(&core), cues(&whole));
-    let parts = |c: &Core| c.store.job("j").unwrap().unwrap().parts;
-    assert_eq!(parts(&core), parts(&whole));
     // One sentence per cue: no sentence end before a cue's last word.
     for c in cues(&whole) {
         let words: Vec<&str> = c.2.split(' ').collect();
@@ -284,7 +283,7 @@ fn a_write_killed_with_a_sentence_open_across_a_cut_resumes_to_the_same_cues() {
 
 /// The writing loop of a build from before sentence cues (0.1.9): it resumes
 /// from `held` and knows no `tail`, and commits each piece as a cue of its own.
-/// Its save is 0.1.9's own SQL, which leaves `tail` and `parts` as they were.
+/// Its save is 0.1.9's own SQL, which leaves `tail` as it was.
 /// It stops after `windows` windows, if given, as a process killed there would.
 fn write_as_released(core: &Core, pcm: &[i16], script: &Script, windows: Option<usize>) {
     let job = core.store.job("j").unwrap().unwrap();

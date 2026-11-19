@@ -47,11 +47,17 @@ Changed after review, once the re-makes were done:
   so it is never dropped and the saved cues still show the sentence end it
   made (`No... Okay.` / `we left.`, review round 3). Only at the end of the
   audio, where the model writes such a word after the speech, is it dropped.
-- A re-translation asks for the same sentences as the first translation. A
-  saved version that was received or selected again has its sentences rebuilt
-  by running its cues' words through the same sentence ends. It also gets its
-  mishearings found again: they are kept with a digest of the transcript they
-  were found in, and used only while the cues hold that transcript.
+- Which cues make one sentence is no longer recorded by the writer: every
+  translation (the first, a re-translation, a version selected again or
+  received from another device) rebuilds it from the saved cues alone, by
+  running their words through the same sentence ends, so all of them ask the
+  same sentences (review round 4: a recorded grouping and a rebuilt one could
+  differ, and 109 of 3,000 random word sequences still did under the round-3
+  rules). A saved cue holding a sentence end before its last word, as cues
+  written under earlier rules do (`…in the image. lines`), closes its
+  sentence. A version selected again or received also gets its mishearings
+  found again: they are kept with a digest of the transcript they were found
+  in, and used only while the cues hold that transcript.
 - A re-make that fails keeps its draft for the re-make tool's `continue`.
   `continue` refuses a re-make that failed writing, whose transcript is
   unfinished, and one whose previous version was restored. While a re-make's
@@ -71,24 +77,29 @@ None of these changes the cues of the eight saved versions. In their cues no
 part follows a `?` or `!`, no cue ends after the video, and no multi-part
 sentence was ever answered part by part (the only replies with wrong ids, in
 `wbc-oxFFV9c` and `WJpeW9lCSUM`, were to one-part sentences, and were asked
-again). Re-translating a selected re-made version keeps the grouping its
-re-make recorded. Only a version selected again or received from another
-device has its grouping rebuilt with the new rules. Against the recorded
-groupings, the rebuild joins 193 cues to the sentence before them (sentences
-the run-on limit had ended at a comma, ten of them sentences whose first
-comma comes after 210 characters) and splits 6 (a period before a lower-case
-word). Counted with this round's rules on a copy of the account library:
+again). Their Korean was asked under the grouping each re-make's writer
+recorded at the time. A re-translation of any of them now asks the rebuilt
+grouping instead. Against the recorded one, the rebuild joins 192 cues to the
+sentence before them (sentences the run-on limit had ended at a comma) and
+splits 22 (a period before a lower-case word, a sentence end inside a cue, an
+unpunctuated stretch ended at the limit). Most requests stay as they were (the
+median request is the same size), but a sentence with a comma and no end mark
+for half a minute now goes in one request: the longest holds 18 parts, 763
+characters and 40.9 s (`QDX-1M5Nj7s`, from 45:11), and 5 run over 32 s.
+Counted with this round's rules on a copy of the account library (requests,
+multi-part requests, most parts, characters and the longest multi-part
+request, recorded / rebuilt):
 
-| Video | Cues | Recorded parts | Rebuilt parts | Joined | Split |
-| --- | --- | --- | --- | --- | --- |
-| `QDX-1M5Nj7s` | 1,316 | 803 | 862 | 61 | 2 |
-| `QWNxQIq0hMo` | 313 | 171 | 179 | 8 | 0 |
-| `WJpeW9lCSUM` | 496 | 261 | 273 | 12 | 0 |
-| `WjhDDeZ7DvM` | 770 | 426 | 451 | 25 | 0 |
-| `_MEqhFwnp8o` | 1,008 | 444 | 479 | 35 | 0 |
-| `vSCYL8ySh9g` | 314 | 182 | 188 | 6 | 0 |
-| `wbc-oxFFV9c` | 1,490 | 536 | 540 | 8 | 4 |
-| `zjkBMFhNj_g` | 1,409 | 740 | 778 | 38 | 0 |
+| Video | Cues | Requests | Multi-part | Most parts | Median chars | 95th pct chars | Most chars | Longest (s) | Joined | Split |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `QDX-1M5Nj7s` | 1,316 | 513 / 463 | 367 / 329 | 6 / 18 | 107 / 106 | 213 / 279 | 222 / 763 | 20.2 / 40.9 | 61 | 11 |
+| `QWNxQIq0hMo` | 313 | 142 / 136 | 91 / 86 | 5 / 10 | 84 / 84 | 210 / 214 | 215 / 438 | 15.5 / 31.5 | 8 | 2 |
+| `WJpeW9lCSUM` | 496 | 235 / 224 | 143 / 135 | 5 / 8 | 85 / 85 | 192 / 214 | 215 / 423 | 17.8 / 28.8 | 11 | 0 |
+| `WjhDDeZ7DvM` | 770 | 344 / 323 | 220 / 206 | 5 / 12 | 91 / 90 | 208 / 236 | 223 / 513 | 17.6 / 32.4 | 25 | 4 |
+| `_MEqhFwnp8o` | 1,008 | 564 / 529 | 242 / 219 | 6 / 13 | 59 / 57 | 195 / 223 | 217 / 573 | 17.9 / 36.6 | 35 | 0 |
+| `vSCYL8ySh9g` | 314 | 132 / 126 | 97 / 93 | 5 / 7 | 106 / 106 | 199 / 215 | 215 / 336 | 14.5 / 20.0 | 6 | 0 |
+| `wbc-oxFFV9c` | 1,490 | 954 / 951 | 396 / 395 | 6 / 10 | 62 / 62 | 140 / 140 | 215 / 436 | 17.2 / 30.6 | 8 | 5 |
+| `zjkBMFhNj_g` | 1,409 | 669 / 631 | 411 / 386 | 6 / 10 | 84 / 84 | 199 / 223 | 223 / 430 | 16.6 / 24.0 | 38 | 0 |
 
 ## The re-makes (done items 12 and 13)
 
@@ -803,8 +814,9 @@ Fixed during the task, before the final re-makes:
 - Stray one-word cues from windows written before the run-on fix
   (`WJpeW9lCSUM` 1:43, 2:09, 2:58): the video was re-made after the fix.
 
-Fixed in the pipeline after review, for new jobs and for a version whose
-grouping is rebuilt. The saved cues keep them until the video is made again:
+Fixed in the pipeline after review, for new jobs and for every later
+translation of a saved version, whose grouping is rebuilt from its cues. The
+saved cues keep them until the video is made again:
 
 - A sentence with a comma ended at the run-on limit, which changed or cut its
   meaning: `_MEqhFwnp8o` 24:23, `QWNxQIq0hMo` 2:16, `WjhDDeZ7DvM` 32:26–32:38.

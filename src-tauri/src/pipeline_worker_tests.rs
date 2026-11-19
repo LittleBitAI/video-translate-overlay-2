@@ -232,7 +232,7 @@ fn saved_subtitles(core: &Core) -> Value {
     let key = api::video_key(&url::Url::parse(SAVED_PAGE).unwrap());
     let s = &core.store;
     s.create_job("original", &key, SAVED_PAGE, "other", "Saved speech", 3_600_000, None, "m").unwrap();
-    s.save_region("original", &key, 0, &[(0, 900, "first".into()), (1000, 1900, "second".into())], None).unwrap();
+    s.save_region("original", &key, 0, &[(0, 900, "First.".into()), (1000, 1900, "Second.".into())], None).unwrap();
     s.set_glossary(&key, "[]", "[]").unwrap();
     s.set_translations("original", &[(0, "original first".into()), (1, "original second".into())]).unwrap();
     s.add_usage("original", 10, 10, gemini::cost_krw).unwrap();
@@ -330,7 +330,7 @@ fn transient_retries_are_independent_for_glossary_and_each_cue() {
     let core = idle_core(&dir, &endpoint);
     let s = &core.store;
     s.create_job("j", "v", SAVED_PAGE, "other", "Lecture", 3_600_000, None, "m").unwrap();
-    let cues: Vec<_> = (0..9).map(|i| (i * 1000, i * 1000 + 900, format!("cue {i}"))).collect();
+    let cues: Vec<_> = (0..9).map(|i| (i * 1000, i * 1000 + 900, format!("Cue {i}."))).collect();
     s.save_region("j", "v", 0, &cues, None).unwrap();
     s.end_writing("j").unwrap();
     run_job(&core, s, s.job("j").unwrap().unwrap());

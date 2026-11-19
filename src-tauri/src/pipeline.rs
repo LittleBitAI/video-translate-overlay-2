@@ -458,13 +458,10 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
         }
     };
 
-    // The sentences this job (or the job a re-translation came from) wrote; where none
-    // were kept, as for a projected saved version, they are rebuilt from the cues.
-    let parts: std::collections::HashSet<i64> = match job.parts.as_deref().and_then(|p| serde_json::from_str::<Vec<i64>>(p).ok()) {
-        Some(p) => p.into_iter().collect(),
-        None => crate::sentences::rebuilt_parts(&cues),
-    };
-    let groups = sentences(&cues, &parts);
+    // The sentences are a function of the saved cues alone, so the first
+    // translation, a re-translation and a version selected again or received
+    // from another device all ask the same groups.
+    let groups = sentences(&cues, &crate::sentences::rebuilt_parts(&cues));
     let total = cues.len() as i64;
     let last = Mutex::new(Stage::new(Stage::TRANSLATING));
     let mut stalls = 0;

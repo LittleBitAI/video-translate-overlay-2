@@ -100,8 +100,6 @@ pub struct Job {
     pub held: Option<String>,
     /// The words of the sentence still open after the last written window (JSON, [`crate::sentences::Tail`]).
     pub tail: Option<String>,
-    /// The `seq` of every cue this job wrote that continues the sentence of the cue before it (JSON).
-    pub parts: Option<String>,
     pub translation_model: String,
     pub input_amount: i64,
     pub output_amount: i64,
@@ -110,7 +108,7 @@ pub struct Job {
 }
 
 const JOB_COLS: &str = "id, video_key, media_url, stage, percent, failure_reason, audio_path, written_regions, \
-    translation_model, input_amount, output_amount, cost_krw, notified_at, plan, held, tail, parts";
+    translation_model, input_amount, output_amount, cost_krw, notified_at, plan, held, tail";
 
 fn job(r: &Row) -> Job {
     Job {
@@ -130,7 +128,6 @@ fn job(r: &Row) -> Job {
         plan: r[13].int(),
         held: r[14].opt_text(),
         tail: r[15].opt_text(),
-        parts: r[16].opt_text(),
     }
 }
 
@@ -164,7 +161,6 @@ pub(crate) fn add_columns(db: &Db) -> R<()> {
         ("job", "plan", "plan INTEGER NOT NULL DEFAULT 1"),
         ("job", "held", "held TEXT"),
         ("job", "tail", "tail TEXT"),
-        ("job", "parts", "parts TEXT"),
         ("video", "mishearings", "mishearings TEXT"),
         ("video", "mishearings_of", "mishearings_of TEXT"),
     ] {
@@ -336,11 +332,10 @@ impl Store {
                 return Err(REMAKE_UNFINISHED.into());
             }
             let cost = self.retranslation_cost(&previous.video_key)?.max(previous.cost_krw);
-            // The sentences go with the cues: the same parts are asked together again.
             self.db.execute(
-                &format!("INSERT INTO job (id,video_key,stage,written_regions,translation_model,input_amount,output_amount,cost_krw,parts,created_at,updated_at)
-                    VALUES (?,?,'translating',?,?,?,?,?,?,{NOW},{NOW})"),
-                p![id, previous.video_key.as_str(), previous.written_regions, model, previous.input_amount, previous.output_amount, cost, previous.parts.as_deref()],
+                &format!("INSERT INTO job (id,video_key,stage,written_regions,translation_model,input_amount,output_amount,cost_krw,created_at,updated_at)
+                    VALUES (?,?,'translating',?,?,?,?,?,{NOW},{NOW})"),
+                p![id, previous.video_key.as_str(), previous.written_regions, model, previous.input_amount, previous.output_amount, cost],
             )?;
             self.db.execute("INSERT INTO retranslation_cue (job_id, seq) SELECT ?, seq FROM cue WHERE video_key=?", p![id, previous.video_key.as_str()])?;
             crate::sync::local::capture_job(&self.db, id, &previous.video_key)?;
@@ -487,41 +482,30 @@ impl Store {
 
     // ------------------------------------------------------------ cues
 
-    /// Stores cues of one written region, each its own sentence, and moves the
-    /// resume point past it, with the cues `held` for the next window's overlap.
+    /// Stores cues of one written region and moves the resume point past it,
+    /// with the cues `held` for the next window's overlap.
     pub fn save_region(&self, job_id: &str, video_key: &str, region: i64, cues: &[(i64, i64, String)], held: Option<&str>) -> R<()> {
-        let cues: Vec<crate::sentences::Cue> = cues.iter().map(|(a, b, t)| crate::sentences::Cue { start_ms: *a, end_ms: *b, text: t.clone(), opens: true }).collect();
+        let cues: Vec<crate::sentences::Cue> = cues.iter().map(|(a, b, t)| crate::sentences::Cue { start_ms: *a, end_ms: *b, text: t.clone() }).collect();
         self.save_window(job_id, video_key, region, &cues, held, None)
     }
 
     /// Stores the sentence cues of one written region and moves the resume
     /// point past it, with the cues `held` for the next window's overlap and the
-    /// sentence still open (`tail`), atomically. A cue that continues a
-    /// sentence is added to the job's `parts`.
+    /// sentence still open (`tail`), atomically. Which cues make one sentence is
+    /// not kept: translation rebuilds it from the saved cues
+    /// ([`crate::sentences::rebuilt_parts`]).
     pub fn save_window(&self, job_id: &str, video_key: &str, region: i64, cues: &[crate::sentences::Cue], held: Option<&str>, tail: Option<&str>) -> R<()> {
         self.db.exec("BEGIN IMMEDIATE")?;
         let r = (|| {
             // seq counts from 0 in start_ms order (E3).
             let next = self.db.query_one("SELECT COALESCE(MAX(seq),-1)+1 FROM cue WHERE video_key=?", p![video_key])?.unwrap()[0].int();
-            let job = self.job(job_id)?.ok_or("job vanished")?;
-            let mut parts: Vec<i64> = job.parts.as_deref().map(serde_json::from_str).transpose().map_err(|e| format!("parts: {e}"))?.unwrap_or_default();
             for (i, c) in cues.iter().enumerate() {
-                let seq = next + i as i64;
                 self.db.execute(
                     "INSERT INTO cue (video_key, seq, start_ms, end_ms, source_text) VALUES (?,?,?,?,?)",
-                    p![video_key, seq, c.start_ms, c.end_ms, c.text.as_str()],
+                    p![video_key, next + i as i64, c.start_ms, c.end_ms, c.text.as_str()],
                 )?;
-                if !c.opens && seq > 0 {
-                    parts.push(seq);
-                }
             }
-            // Kept even when empty: a job that wrote its cues knows its sentences;
-            // `parts` is unknown (NULL) only for cues it did not write.
-            let parts = serde_json::to_string(&parts).unwrap();
-            self.db.execute(
-                &format!("UPDATE job SET written_regions=?, held=?, tail=?, parts=?, updated_at={NOW} WHERE id=?"),
-                p![region + 1, held, tail, parts, job_id],
-            )?;
+            self.db.execute(&format!("UPDATE job SET written_regions=?, held=?, tail=?, updated_at={NOW} WHERE id=?"), p![region + 1, held, tail, job_id])?;
             Ok(())
         })();
         self.db.exec(if r.is_ok() { "COMMIT" } else { "ROLLBACK" })?;

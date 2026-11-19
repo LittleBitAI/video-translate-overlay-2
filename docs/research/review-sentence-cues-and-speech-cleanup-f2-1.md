@@ -128,7 +128,12 @@ The grouping has two sources of truth: the writer's `opens`, computed from full 
 
 ## Result
 
-pending — the fix records what it observed here, with the tests and the commit.
+Observed with the fix (round 4):
+
+1) Run on the round-3 code (`845191a`) in a temporary worktree, the randomized round trip (3,000 sequences of 20–80 words mixing `,` `.` `...` `?`, words with no time and overlapping words, gaps 0–3,500 ms, a fixed seed) found 109 sequences whose rebuilt grouping differs from the writer's. Patching `ends()` would not converge.
+2) The grouping is now taken only from `rebuilt_parts(cues)` (`pipeline.rs`); `job.parts`, its column entry, its writing in `save_window` and its copy in `retranslate`, and `sentences::Cue.opens` are gone. `pipeline::translate_tests::every_translation_of_the_same_cues_asks_the_same_sentences` writes the round-4, round-3 (ellipsis) and round-2 (late comma) fixtures, translates, projects the saved version again (`restore_translation`), re-translates, and finds the same `translate` request groups. Run on the round-3 code, the same test fails on the round-4 fixture: the first translation (the writer's grouping) asked a four-part and a two-part request, and the re-translation (rebuilt) asked one six-part request.
+3) Request sizes under rebuild-only grouping, on a read-only copy of the account library, exposed a second problem. Cues written under earlier rules hold sentence ends before their last word (`…in the image. lines`). The rebuild counted ends only at cue boundaries, so after a comma a sentence ran on through such ends, up to 21 parts and 43 s. Now a cue holding a sentence end anywhere closes its sentence (`sentences::tests::a_saved_cue_holding_a_sentence_end_closes_its_sentence`). After that, against the recorded groupings the rebuild joins 192 cues and splits 22. The median request size is unchanged; the largest is 18 parts, 763 characters, 40.9 s, and 5 requests run over 32 s. These are comma sentences with no end mark, which the person decided go whole. The per-video table is in `docs/evidence/sentence-cues/README.md`.
+4) The README promise that re-translating a re-made version keeps its recorded grouping is replaced: its re-translation now asks the rebuilt grouping.
 
 ## Unresolved limits
 

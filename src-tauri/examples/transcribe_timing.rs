@@ -50,7 +50,7 @@ fn replay(report: &str, out: &str) {
         let committed;
         (committed, held) = vto::stitch::window_cues(r, segs, std::mem::take(&mut held), i.checked_sub(1).map(|p| &regions[p]), regions.get(i + 1), &mut tail, &mut prev_end);
         for c in committed {
-            cues.push(json!({"region": i, "start_ms": c.start_ms, "end_ms": c.end_ms, "text": c.text, "opens": c.opens}));
+            cues.push(json!({"region": i, "start_ms": c.start_ms, "end_ms": c.end_ms, "text": c.text}));
         }
     }
     d["runs"][0]["cues"] = Value::from(cues);
@@ -121,7 +121,7 @@ fn main() {
             let committed;
             (committed, held) = vto::stitch::window_cues(r, segs, std::mem::take(&mut held), i.checked_sub(1).map(|p| &regions[p]), regions.get(i + 1), &mut tail, &mut prev_end);
             for c in committed {
-                cues.push(json!({"region": i, "start_ms": c.start_ms, "end_ms": c.end_ms, "text": c.text, "opens": c.opens}));
+                cues.push(json!({"region": i, "start_ms": c.start_ms, "end_ms": c.end_ms, "text": c.text}));
             }
         }
         let wall_ms = started.elapsed().as_millis();

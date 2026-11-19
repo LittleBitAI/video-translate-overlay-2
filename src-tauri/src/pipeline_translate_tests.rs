@@ -49,8 +49,8 @@ fn gemini(bill: Bill, orders: Arc<Mutex<Vec<Value>>>, most: Arc<AtomicUsize>) ->
                 let text = if order["task"] == "glossary" {
                     json!({"terms": [{"source": "attention", "target": "어텐션"}], "mishearings": [{"heard": "realu", "meant": "ReLU"}]})
                 } else {
-                    let id = &order["segments"][0]["id"];
-                    json!({"segments": [{"id": id, "ko": format!("번역 {id}")}]})
+                    let segments: Vec<Value> = order["segments"].as_array().unwrap().iter().map(|s| json!({"id": s["id"], "ko": format!("번역 {}", s["id"])})).collect();
+                    json!({ "segments": segments })
                 };
                 orders.lock().unwrap().push(order);
                 let body = json!({
@@ -74,11 +74,11 @@ fn dir(name: &str) -> std::path::PathBuf {
     dir
 }
 
-/// A job past writing with `n` cues, "cue 0" to "cue n-1", for an hour of video.
+/// A job past writing with `n` one-cue sentences, "Cue 0." to "Cue n-1.", for an hour of video.
 fn written(core: &Core, n: i64) {
     let s = &core.store;
     s.create_job("j", "v", "https://a.example/talk", "other", "Lecture", 3_600_000, None, "m").unwrap();
-    let cues: Vec<_> = (0..n).map(|i| (i * 1000, i * 1000 + 900, format!("cue {i}"))).collect();
+    let cues: Vec<_> = (0..n).map(|i| (i * 1000, i * 1000 + 900, format!("Cue {i}."))).collect();
     s.save_region("j", "v", 0, &cues, None).unwrap();
     s.end_writing("j").unwrap();
 }
@@ -101,8 +101,8 @@ fn cues_are_translated_one_per_request_with_requests_overlapping() {
         let segs = o["segments"].as_array().unwrap();
         assert_eq!(segs.len(), 1, "a request with more than one cue: {o}");
         let id = segs[0]["id"].as_i64().unwrap();
-        assert_eq!(segs[0]["text"], format!("cue {id}"));
-        let before = (id > 0).then(|| format!("cue {}", id - 1));
+        assert_eq!(segs[0]["text"], format!("Cue {id}."));
+        let before = (id > 0).then(|| format!("Cue {}.", id - 1));
         assert_eq!(o["context_before"].as_str().map(String::from), before, "the context is not the cue before: {o}");
         assert_eq!(o["glossary"], json!([{"source": "attention", "target": "어텐션"}]));
     }
@@ -227,6 +227,61 @@ fn a_selected_version_is_translated_with_its_own_terms_and_mishearings_found_for
     assert_eq!(asked[0]["glossary"], json!([{"source": "decoder", "target": "decoder 번역"}]), "the version's own terms");
     assert_eq!(asked[0]["mishearings"], json!([{"heard": "realu", "meant": "ReLU"}]), "the mishearings found for this transcript");
     assert_eq!(store.video(&key).unwrap().unwrap().mishearings.as_deref(), Some(r#"[{"heard":"realu","meant":"ReLU"}]"#));
+}
+
+#[test]
+fn every_translation_of_the_same_cues_asks_the_same_sentences() {
+    use crate::sentences::{push, Tail};
+    use crate::Word;
+    let word = |a: i64, b: i64, t: &str| Word { start_ms: a, end_ms: b, text: format!(" {t}") };
+    let said = |at: i64, text: &str| -> Vec<Word> { text.split(' ').enumerate().map(|(i, t)| word(at + i as i64 * 300, at + i as i64 * 300 + 250, t)).collect() };
+    let bare = (0..40).map(|i| format!("word{i:02}")).collect::<Vec<_>>().join(" ");
+    let opening = (0..40).map(|i| format!("step{i}")).collect::<Vec<_>>().join(" ");
+    // (form, the words the writer got): the forms on which the writer's own
+    // grouping and the one rebuilt from its cues have come apart.
+    let forms = [
+        // A word with no time after a sentence end, then a bare run past the limit.
+        ("no time, then a bare run", [vec![word(0, 500, "Done."), word(500, 500, "now")], said(600, &bare)].concat()),
+        // A sentence with no time right after an ellipsis.
+        ("after an ellipsis", vec![word(0, 500, "No..."), word(500, 500, "Okay."), word(510, 800, "we"), word(800, 1_100, "left.")]),
+        // The first comma comes after the limit.
+        ("first comma after the limit", said(0, &format!("{opening}, and only then does the sentence end. Next one."))),
+    ];
+    for (name, words) in forms {
+        let (orders, most) = (Arc::new(Mutex::new(Vec::new())), Arc::new(AtomicUsize::new(0)));
+        let d = dir(&format!("same-{}", name.replace(' ', "-")));
+        let core = super::worker_tests::idle_core(&d, &gemini(flat(0, 1), orders.clone(), most));
+        let journal = crate::sync::Journal::open(&d.join("account"), &crate::google_auth::VerifiedIdentity::fixture("same-account")).unwrap();
+        let store = journal.library().unwrap();
+        let page = "https://lectures.example.org/same";
+        let key = crate::api::video_key(&url::Url::parse(page).unwrap());
+        // The sentences of each translation, as the requests asked them.
+        let asked = || -> Vec<Vec<String>> {
+            let mut orders = orders.lock().unwrap();
+            let mut groups: Vec<Vec<String>> = orders.drain(..).filter(|o| o["task"] == "translate").map(|o| o["segments"].as_array().unwrap().iter().map(|s| s["text"].as_str().unwrap().to_string()).collect()).collect();
+            groups.sort();
+            groups
+        };
+
+        store.create_job("j", &key, page, "other", "Lecture", 60_000, None, "m").unwrap();
+        let (mut tail, mut prev_end) = (Tail::new(), 0);
+        let cues = push(&mut tail, vec![crate::stitch::Piece { start_ms: words[0].start_ms, end_ms: words.last().unwrap().end_ms, words }], true, &mut prev_end);
+        store.save_window("j", &key, 0, &cues, None, None).unwrap();
+        store.end_writing("j").unwrap();
+        run_job(&core, &store, store.job("j").unwrap().unwrap());
+        assert_eq!(store.job("j").unwrap().unwrap().stage, "ready", "{name}");
+        let first = asked();
+        assert!(name == "after an ellipsis" || first.iter().any(|g| g.len() > 1), "{name}: no sentence in parts: {first:?}");
+
+        // The saved version projected again (as when selected again or received), then re-translated.
+        let version = store.library().unwrap()["videos"][0]["versions"].as_array().unwrap().iter().find(|v| v["selected"] == true).unwrap()["id"].as_str().unwrap().to_string();
+        store.restore_translation(&key, &version).unwrap();
+        std::thread::sleep(Duration::from_millis(5));
+        store.retranslate("again", &store.latest_job(&key).unwrap().unwrap(), "m").unwrap();
+        run_job(&core, &store, store.job("again").unwrap().unwrap());
+        assert_eq!(store.job("again").unwrap().unwrap().stage, "ready", "{name}");
+        assert_eq!(asked(), first, "{name}: the re-translation asked other sentences");
+    }
 }
 
 #[test]
