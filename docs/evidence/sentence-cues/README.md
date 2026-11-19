@@ -45,21 +45,25 @@ The installed 0.1.9 Library shows "저장본 2개" or "저장본 3개" on every 
 | --- | ---: | ---: | ---: | ---: |
 | `QDX-1M5Nj7s` (58:12) | 276.29 | 296.70 | 572.99 | 970.0 |
 | `QWNxQIq0hMo` (15:16), two re-makes | 52.70 | 76.27 + 75.70 | 204.67 | 254.4 |
-| `WJpeW9lCSUM` (23:14) | 122.99 | 139.25 | 262.24 | 387.2 |
+| `WJpeW9lCSUM` (23:14), two re-makes | 122.99 | 139.25 + 127.55 | 389.79 | 387.2 |
 | `WjhDDeZ7DvM` (39:57) | 143.56 | 199.18 | 342.74 | 665.8 |
 | `_MEqhFwnp8o` (49:51) | 203.63 | 249.09 | 452.72 | 830.8 |
 | `vSCYL8ySh9g` (15:04), two re-makes | 90.28 | 73.96 + 73.86 | 238.10 | 251.1 |
 | `wbc-oxFFV9c` (1:16:12) | 462.01 | 502.81 + 0.99 + 1.02 | 966.84 | 1,270.0 |
 | `zjkBMFhNj_g` (59:48) | 373.09 | 408.01 | 781.10 | 996.7 |
 
-All amounts are in KRW. Paid Gemini spending for the task was 2,152.51 KRW:
-55.66 KRW of trials on short excerpts and 2,096.85 KRW of re-makes. Every
-video stayed under 1,000 KRW per hour of video, including what it had spent
-before. The re-makes cost 290 to 410 KRW per hour.
+All amounts are in KRW. Paid Gemini spending for the task was 2,280.06 KRW:
+55.66 KRW of trials on short excerpts and 2,224.40 KRW of re-makes. The
+re-makes cost 290 to 410 KRW per hour of video. The last column is the old
+1,000 KRW per hour target. Seven videos stayed under it, including what they
+had spent before. `WJpeW9lCSUM` ended 2.6 KRW over it after its second
+re-make. That re-make ran after the person removed the per-hour stop from the
+app and the spending ceilings from this task (`ed008fc`).
 
-- Dory and the 15-minute DeepSeek video were made a second time, as the
-  person approved, after the run-on fix (`e3eec07`). The first re-make of
-  each stays as a saved version.
+- Dory, the 15-minute DeepSeek video and `WJpeW9lCSUM` were made a second
+  time, as the person approved, after the run-on fix (`e3eec07`). Their first
+  re-makes had windows written before that fix. The first re-make of each
+  stays as a saved version, so these three have three saved versions.
 - wbc's first run ended `translate_failed` with one cue untranslated (cue
   1388, 70:46). Gemini answered that one-part sentence with two segments
   (ids 1388 and an invented 1389), which the id check refused. The tool's
@@ -69,8 +73,6 @@ before. The re-makes cost 290 to 410 KRW per hour.
   the two left a newer job row for the old version, so the installed app showed
   the old cost. The tool now makes a continued re-make the newest job, and
   that row was repaired in the library.
-- `WJpeW9lCSUM`'s first 34 writing windows were made before the run-on fix;
-  its stray cues below come from that part.
 
 ## Cue shape (done item 14)
 
@@ -92,22 +94,22 @@ totals reproduce the spec's baseline. The counts are made by
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `QDX-1M5Nj7s` MIT 6.S191 lecture (58 min) | 754 → 1,316 | 285 → 886 | 803 / 86 | 288 → 880 | 48 → 3 | 92 → 0 | 0 → 1 | 10 → 16 | 3 → 0 | 1 → 0 |
 | `QWNxQIq0hMo` Build DeepSeek: Series Introduction (15 min) | 165 → 313 | 70 → 183 | 171 / 12 | 71 → 162 | 7 → 1 | 39 → 1 | 1 → 0 | 3 → 2 | 3 → 0 | 0 → 0 |
-| `WJpeW9lCSUM` Nemotron Bolt 2 Bit (23 min) | 309 → 499 | 175 → 269 | 259 / 10 | 171 → 256 | 2 → 0 | 41 → 0 | 0 → 0 | 1 → 1 | 3 → 0 | 0 → 0 |
+| `WJpeW9lCSUM` Nemotron Bolt 2 Bit (23 min) | 309 → 496 | 175 → 273 | 261 / 12 | 171 → 258 | 2 → 0 | 41 → 2 | 0 → 0 | 1 → 0 | 3 → 1 | 0 → 0 |
 | `WjhDDeZ7DvM` Build DeepSeek: Series Introduction (40 min) | 408 → 770 | 167 → 458 | 426 / 32 | 164 → 434 | 14 → 0 | 86 → 2 | 2 → 3 | 4 → 2 | 3 → 0 | 1 → 0 |
 | `_MEqhFwnp8o` Ask the Experts: Dory (50 min) | 678 → 1,008 | 398 → 485 | 444 / 40 | 394 → 453 | 17 → 0 | 78 → 0 | 139 → 7 | 50 → 10 | 60 → 0 | 4 → 0 |
 | `vSCYL8ySh9g` Dory - looped transformer (15 min) | 202 → 314 | 106 → 188 | 182 / 6 | 103 → 176 | 7 → 0 | 22 → 0 | 0 → 0 | 3 → 3 | 0 → 0 | 0 → 0 |
 | `wbc-oxFFV9c` Give Me 1 Hour, Deep Learning (76 min) | 885 → 1,490 | 307 → 540 | 536 / 8 | 311 → 520 | 91 → 1 | 202 → 2 | 0 → 0 | 5 → 3 | 1 → 1 | 1 → 1 |
 | `zjkBMFhNj_g` Intro to Large Language Models (60 min) | 892 → 1,409 | 375 → 781 | 740 / 41 | 366 → 745 | 53 → 0 | 97 → 0 | 8 → 1 | 3 → 3 | 17 → 0 | 0 → 1 |
-| All 8 | 4,293 → 7,119 | 1,883 → 3,790 | 3,561 / 235 | 1,868 → 3,626 | 239 → 5 | 657 → 5 | 150 → 12 | 79 → 40 | 90 → 1 | 7 → 2 |
+| All 8 | 4,293 → 7,116 | 1,883 → 3,794 | 3,563 / 237 | 1,868 → 3,628 | 239 → 5 | 657 → 7 | 150 → 12 | 79 → 39 | 90 → 2 | 7 → 2 |
 
 Reading the table:
 
 - Most cues that do not end at a sentence end, or start mid-sentence, are
-  now parts of a split sentence. 3,561 of the 3,790 are such parts.
+  now parts of a split sentence. 3,563 of the 3,794 are such parts.
   - Their sentence was translated in one request, so the Korean of each part
     is in Korean order.
   - In the old version, every such cut was translated alone.
-  - The rest, 235, are forced ends in unpunctuated stretches; QDX has 86 of
+  - The rest, 237, are forced ends in unpunctuated stretches; QDX has 86 of
     them.
 - Cues holding two sentences fell from 239 to 5. None of the 5 holds two real
   sentences:
@@ -116,8 +118,10 @@ Reading the table:
   - two are abbreviations ("Dr.", "U.S.").
 - The English fillers and repeats fell because the new transcripts write fewer
   of them, not because they were removed. The saved English is kept as heard.
-- In the Korean, fillers fell from 90 to 1, and that one is a false match on
-  `'cat'에` (wbc 27:28). Repeats fell from 7 to 2:
+- In the Korean, fillers fell from 90 to 2:
+  - `'cat'에` (wbc 27:28) is a false match;
+  - "음," for a spoken "Well," (`WJpeW9lCSUM` 12:23) is a filler kept, listed below.
+- Repeats in the Korean fell from 7 to 2:
   - "0, 0, 0, 그리고 1" (wbc 5:20) is real content;
   - "덩어리" ×7 (zjk 36:55) is a regression, listed below.
 
@@ -131,22 +135,23 @@ than 2 lines.
 
 | Surface | Size | Old | New |
 | --- | --- | --- | --- |
-| Page overlay | windowed PC 1280×800 | 2,064 / 2,092 / 137 (up to 7) | 6,834 / 285 / 0 |
-| Page overlay | fullscreen PC 1920×1080 | 2,098 / 2,061 / 134 (up to 7) | 6,854 / 265 / 0 |
-| Page overlay | phone 384×854 | 1,261 / 2,396 / 636 (up to 9) | 5,580 / 1,539 / 0 |
-| Watch screen | windowed PC 1280×800 | 2,046 / 2,105 / 142 (up to 7) | 6,823 / 296 / 0 |
-| Watch screen | fullscreen PC 1920×1080 | 2,089 / 2,070 / 134 (up to 7) | 6,846 / 273 / 0 |
-| Watch screen | phone 384×854 | 997 / 2,210 / 1,086 (up to 10) | 4,803 / 2,306 / 10 |
+| Page overlay | windowed PC 1280×800 | 2,064 / 2,092 / 137 (up to 7) | 6,828 / 288 / 0 |
+| Page overlay | fullscreen PC 1920×1080 | 2,098 / 2,061 / 134 (up to 7) | 6,845 / 271 / 0 |
+| Page overlay | phone 384×854 | 1,261 / 2,396 / 636 (up to 9) | 5,582 / 1,534 / 0 |
+| Watch screen | windowed PC 1280×800 | 2,046 / 2,105 / 142 (up to 7) | 6,817 / 299 / 0 |
+| Watch screen | fullscreen PC 1920×1080 | 2,089 / 2,070 / 134 (up to 7) | 6,838 / 278 / 0 |
+| Watch screen | phone 384×854 | 997 / 2,210 / 1,086 (up to 10) | 4,791 / 2,313 / 12 |
 
-Exceptions: 10 new cues take three lines in the Watch screen at phone size,
+Exceptions: 12 new cues take three lines in the Watch screen at phone size,
 and in no other place. Its player is 352 px wide, and its subtitle font fits
-about 20 Korean characters a line. These 10 cues have 47 to 60 Korean
+about 20 Korean characters a line. These 12 cues have 47 to 71 Korean
 characters with few break points. The 70-character English cap does not bound
-the Korean, which is sometimes longer than the cap assumed.
+the Korean, which is sometimes longer than the cap assumed. The longest,
+`WJpeW9lCSUM` 226, adds the English term in parentheses after its Korean name.
 
 - `QDX-1M5Nj7s` 1271
 - `QWNxQIq0hMo` 87, 221
-- `WJpeW9lCSUM` 143
+- `WJpeW9lCSUM` 141, 226, 291
 - `_MEqhFwnp8o` 86, 906 (an e-mail address)
 - `wbc-oxFFV9c` 227, 484, 1317
 - `zjkBMFhNj_g` 1224
@@ -251,13 +256,13 @@ by the counts above, and by sampling here.
 | --- | ---: | ---: | ---: | ---: |
 | `QDX-1M5Nj7s` | 38 | 17 | 16 | 5 |
 | `QWNxQIq0hMo` | 23 | 11 | 8 | 4 |
-| `WJpeW9lCSUM` | 30 | 16 | 8 | 6 |
+| `WJpeW9lCSUM` | 33 | 15 | 11 | 7 |
 | `WjhDDeZ7DvM` | 75 | 43 | 23 | 9 |
 | `_MEqhFwnp8o` | 263 | 200 | 48 | 15 |
 | `vSCYL8ySh9g` | 28 | 13 | 10 | 5 |
 | `wbc-oxFFV9c` | 60 | 26 | 29 | 5 |
 | `zjkBMFhNj_g` | 57 | 25 | 28 | 4 |
-| All 8 | 574 | 351 | 170 | 53 |
+| All 8 | 577 | 350 | 173 | 54 |
 
 ### QDX-1M5Nj7s — MIT Introduction to Deep Learning (2023) | 6.S191 (lecture)
 
@@ -311,34 +316,39 @@ Tally: better 11, same 8, worse 4.
 
 ### WJpeW9lCSUM — NVIDIA's Nemotron Bolt 74B-A9B 2 Bit (talk, single speaker)
 
-Old 309 cues, new 499 cues in 240 sentences. Mishearings: 4950 → 4090 and GDUF → GGUF. Its first 34 writing windows were made before the run-on fix, and the video could not be re-run because its remaining room (125 KRW) is below the 139 KRW its run cost. I read 25 places: all 2 filler places, all 3 term places, and 20 spread evenly. I also looked at every place my earlier scan flagged: duplicates, words cut off a sentence end, and lost clauses.
+Old 309 cues, new 496 cues in 235 sentences. Mishearings: GDUF → GGUF and unslothed → Unsloth. This video was re-made a second time, after the run-on fix, because 34 of its windows in the first re-make predated that fix. The reading below is of the second re-make.
+
+I read 33 places: both old filler places, all 5 term places, 20 spread evenly, and the 6 places where the first re-make was worse. Tally: better 15, same 11, worse 7.
 
 | At | Old → new (Korean) | Verdict | Why |
 |---|---|---|---|
-| 0:00 | "경험칙은 꽤" / "간단했습니다. 4-bit로…" → "자, 오랫동안 …경험칙은" / "꽤 간단했습니다." | better | The old cue ended mid-word-group, and the next one carried two sentences. |
-| 1:16 | "It's a mixture of experts models." at 76.7 s and 78.4 s | worse | The sentence is shown twice. Two overlapping windows both kept it; this is a stitching duplicate from the pre-fix part of the run. |
-| 1:43 | "your other apps." → "다른 앱들과 함께 실행할 수 있습니다." after "…24GB 장치 하나에서 함께 실행할 수 있다는 것입니다." | worse | The sentence's last two words were cut off as their own cue, so the Korean repeats "함께 실행할 수 있습니다". Pre-fix run-on cut. |
-| 2:09 | "these / days." → "…지도를 얻은 셈입니다." / "날들입니다." | worse | A one-word stray cue whose Korean ("days are") means nothing. Pre-fix. |
-| 2:17 | orphan "Hugging Face에서 보기 시작한 2-bit 범위입니다." → 4 parts in Korean order | better | The Korean moved "Hugging Face" one part earlier, which stays inside the sentence. |
-| 2:58 | "as they come / out." → "…확인하실 수 있을 겁니다." / "나옵니다." | worse | A stray one-word cue. Pre-fix. |
-| 3:01 | GDUF; one 4-line cue with "(PTQ)" → 3 parts | better | Term correct in the Korean (as before). The added parenthetical is gone, and each cue fits two lines. |
-| 3:11 | orphan "더 적은 비트로요." → "…더 적은 비트로 반올림한 것입니다." | better | The fragment is gone. |
-| 3:29, 5:48, 10:24, 20:24 | same sentence, same Korean | same | — |
-| 4:07 | "where you see a huge / amount of deterioration." → "상전이 구간에서 큰 변화가 나타납니다." / "성능 저하가 크게 나타납니다." | worse | Pre-fix cut. The Korean states the change twice instead of once across two parts. |
-| 4:32 | 2 cues → 3 parts | better | Korean order; nothing cut. |
-| 6:38 | "…바로 품질입니다." / orphan "설계상의 선택입니다." → 3 parts ending "…설계상의 선택이라는 점입니다." | better | The old Korean misread the sentence ("the third reason is quality"). |
-| 7:32 | "실제로" / "각 레이어에 가장 적합한 양자화 수준으로" / "레이어를 구성하는 것이 타당합니다." | same | The first part is one word; the meaning is kept. |
-| 8:25 | "몇 개의 Mixture of Experts (MoE)를 유지할지" → "얼마나 많은 전문가를 유지할지" | better | The old version replaced "experts" with the glossary term. "층별로 학습합니다," is slightly stiff. |
-| 9:29 | "(지도 미세 조정)", "(강화 학습)" added → removed | better | No added content. |
-| 10:06 | "…for the updates so the model itself… instead of just getting rounded at the end" → "…사본은 유지해야 합니다..." / "…양자화 그리드에 맞춰…" | worse | Lost content: "for the updates" and "instead of just getting rounded at the end" are not in the new English, because the transcript differs at this point. |
-| 11:31 | 1 cue → 4 parts, ending "…좋아야 한다는 것을요." | same | Postposed object, natural in speech. |
-| 12:35, 14:52, 16:54, 19:06 | long cues → sentence parts | better | No cue carries two sentences or ends mid-clause. |
-| 13:39 | "right?" kept as "…높겠죠?" → "…높습니다." | better | Tic dropped. |
-| 16:00 | "where okay that's" → "…볼 수 있는데, 자, 이건," | same | The false start is kept as "자, 이건,", and the old version kept it too. |
-| 17:57 | orphans "모두 얻게 될 것입니다" / "일종의 에이전트 도구 사례들이 작동하고 있습니다." → 4 parts, one sentence | better | The old Korean contradicted itself. |
-| 18:32 | "I find that it sometimes can be" → "가끔씩" / … / "예를 들면 여기 있는 프롬프트 주입 저항성 같은 경우입니다." | better | — |
-| 18:42 | "all all eight" → "8점 만점에 8점" | better | Repeat dropped. |
-| 20:57 | "495090" / "4950, 90" → "3090이나 4090" | same | The old Korean already said 4090; the mishearing is right. |
+| 0:00 | "경험칙은 꽤" / "간단했습니다. 4-bit로…" → "자, 오랫동안 …경험 법칙은" / "꽤 간단했습니다." | better | The old cue ended mid-word-group, and the next one carried two sentences. |
+| 1:16 | "It's a mixture of experts models." at 76.7 s for 1.7 s and again at 78.4 s for 0.28 s | worse | The sentence is shown twice. Both copies come from one writing window: whisper repeated the window's last sentence in 280 ms. Remaining. |
+| 1:35 | "…24GB 장치 하나에서 로컬로 실행할 수 있습니다." → "핵심은" / "이 모델이 기본적으로" / "로컬에서 실행 가능한 에이전트 모델이며" / "24GB 장치 하나에서 다른 앱과 함께 구동할 수 있다는 것입니다." | better | The first re-make's stray cue "your other apps.", with its repeated verb, is gone. |
+| 2:03 | "…지도를 손에 넣은 셈입니다." / "…모든 기술에 대한 지도를 갖게 된 셈입니다." → "…모든 기법에 대한 지도를 얻게 된 셈입니다." / "요즘 사람들이 더 작은 모델을 만들기 위해 사용하는." | worse | The first re-make's one-word cue "날들입니다." is gone. But the Korean moved the head noun into the first part, so the second part is a modifier with nothing to modify. Remaining. |
+| 2:17 | orphan "Hugging Face에서 보기 시작한 2-bit 범위입니다." → 4 parts ending "2비트 범위의 Hugging Face 모델들 말이죠." | better | The Korean moved "이제 막 보이기 시작한" one part earlier, which stays inside the sentence. |
+| 2:53 | "영상이 올라올 때마다…" → "좋아요와 구독을 눌러주시면" / "더 많은 사람들에게 영상이 노출되어" / "영상이 나올 때마다 바로 확인하실 수 있을 겁니다." | better | The first re-make's one-word cue "나옵니다." is gone. |
+| 3:01 | GDUF; one 4-line cue with "(PTQ)" → 3 parts | better | The term is correct in the Korean, as before. The added parenthetical is gone, and each cue fits two lines. |
+| 3:11 | orphan "더 적은 비트로요." → "…모든 가중치를 더 적은 비트로 반올림한 것입니다." | better | The fragment is gone. |
+| 3:20 | "…가장 흔한 방법들은" / "nvfp4가 있고, …" → "아마도 현재 가장 흔한 방식은 NVFP4일 것입니다." | better | One sentence, and the term is capitalised. |
+| 3:24 | "unslothed 모델들도 있으며" → "Unsloth 모델도 있습니다." | better | The mishearing is corrected. The old Korean passed "unslothed" through. |
+| 3:26 | "…다른 방식들도 있습니다" / "또한 인기를 얻고 있습니다" → "그 외에도 인기를 얻고 있는 몇 가지 모델이 더 있습니다." | better | The old cut left a sentence with no subject. |
+| 3:46 | same sentence, same Korean | same | — |
+| 4:07 | "where you see a huge / amount of deterioration." → "상전이 구간에서 큰 차이가 나타납니다." / "성능 저하가 크게 나타납니다." | worse | The Korean says the change twice, once per part, and "차이" is not in the English. Remaining. |
+| 4:54 | "(PTQ)" added, 2 cues → 3 parts | better | No added content; the parts follow the Korean order. |
+| 6:00, 7:04, 8:41, 11:52, 12:57, 14:04 | same sentence, same Korean | same | — |
+| 7:52 | "Qwen 3.6이나 Gemma 4 모델보다 뒤처져 있죠." → "Nemotron 3.6과 Gemma 4 모델보다 뒤처지는 성능입니다." | worse | Wrong term: whisper wrote "QN 3.6", and the translator made it the video's own model instead of Qwen. The old Korean was right. Remaining. |
+| 9:46 | "양자화 인식 학습 (QAT)이 등장하며…" → "이 단계에서 바로 QAT가 도입됩니다." | same | The term is kept; the rest of the old cue is the next sentence. |
+| 10:06 | "업데이트를 위해서요. 그래서…" → "가중치의 전체 정밀도 사본은 유지해야 합니다..." / "그래서 모델 자체가…" | worse | Lost content: "for the updates" is not in the new transcript, which trails off at "for...". Remaining. |
+| 10:37 | "…이 작업에서 흥미로운 부분입니다." / "영상에서…" → "두 가지 모바일 버전이" / "사실 이번 영상에서 흥미로운 부분입니다." | better | The old cut split "this / video" across two cues. |
+| 15:19 | 3 cues of a run-on → "코드인지 텍스트인지에 따라," / "초당 500에서 600 토큰 정도의 속도가 나옵니다." | better | One sentence, nothing cut. |
+| 16:22 | "…이건 확실히" → "여기 다른 실행에서 나온 결과가 하나 있습니다." | better | The old cue ended mid-clause. |
+| 17:13, 18:30 | same meaning | same | — |
+| 18:32 | "…약간 혼동할 수 있다는 것을 발견했습니다." → "가끔" / "약간 혼동하는 경우가 있는데," / "여기 있는 프롬프트 주입 저항 같은 특정 항목들에서 그렇습니다." | same | Both read well; the new drops "I find", which carries no content. |
+| 18:42 | "all all eight" → "때때로 여기서 8개 중 8개를 모두 맞히는 것을 볼 수 있습니다." | better | The repeat is dropped. |
+| 19:21 | 4 cues → 5 parts of one sentence | better | The old Korean ended a cue on "알 수 있습니다," and started the next with a new claim. |
+| 20:48 | "…3090이나 4090 같은 것을 가지고 계시다면," → "RTX Pro 6000이나 심지어 3090 정도만 가지고 있어도 충분하다는 것입니다." | worse | Changed meaning. The new transcript ends a sentence after "3090,", and the Korean closes it with "is enough". The speaker says owners of these cards are better off with a bigger model. Remaining. |
+| 21:02 | "3090이나 4090" → "495090을 사용하신다면," | worse | The mishearing "495090" is passed through. The old Korean said 4090, and this run's glossary did not list it. Remaining. |
 
 ### WjhDDeZ7DvM — Build DeepSeek from Scratch: Series Introduction (lecture)
 
@@ -635,6 +645,8 @@ Fixed during the task, before the final re-makes:
   (`3d0eaf9`).
 - Korean over two phone lines (`2941558`).
 - A failed re-make that left the new cues in place (`2c78179`).
+- Stray one-word cues from windows written before the run-on fix
+  (`WJpeW9lCSUM` 1:43, 2:09, 2:58): the video was re-made after the fix.
 
 Remaining, as read above. None was fixed after the final re-makes; a fix
 would need another paid run of the video.
@@ -646,7 +658,10 @@ would need another paid run of the video.
   - `_MEqhFwnp8o` 1:38: a dropped subject.
 - Added content:
   - `vSCYL8ySh9g` 14:09: "중요하다고" ("it is important") completes a clause cut by the run-on limit;
-  - `WjhDDeZ7DvM` 24:47: a spoken "Um," written as the title phrase.
+  - `WjhDDeZ7DvM` 24:47: a spoken "Um," written as the title phrase;
+  - `WJpeW9lCSUM` 20:48: "충분하다는 것입니다" ("is enough") closes a sentence the transcript ended after "3090,", which changes the meaning;
+  - `WJpeW9lCSUM` 4:07: the change is stated once per part, with "차이" ("difference") added.
+- A filler kept in the Korean: `WJpeW9lCSUM` 12:23 ("Well," → "음,").
 - Changed meaning:
   - `WjhDDeZ7DvM` 13:55, 21:20;
   - `_MEqhFwnp8o` 20:52, 24:23, 25:27, 29:29, 39:56, 43:03;
@@ -657,22 +672,26 @@ would need another paid run of the video.
   - `zjkBMFhNj_g` 36:52 (a sound effect rendered as "덩어리" seven times).
 - Content shown before or after its place inside a sentence:
   - `WjhDDeZ7DvM` 18:32–18:45 (a condition after its main clause);
-  - `QDX-1M5Nj7s` 41:44 (a self-correction split).
+  - `QDX-1M5Nj7s` 41:44 (a self-correction split);
+  - `WJpeW9lCSUM` 2:03 (the head noun moved to the first part, leaving a modifier alone in the second).
   - No content moved across sentences in any place read.
 - Wrong term corrections:
   - `WjhDDeZ7DvM` 19:22 (GPT-4Go → GPT-4, should be GPT-4o);
   - `zjkBMFhNj_g` 5:14 (70B → 7B), 56:27 (sleeper → backdoor agent);
   - `_MEqhFwnp8o` 2:48 (Chain of Thought), 17:34 (Nemotron Switchyard), 19:55 and 23:45 (names), 30:00 (COT);
   - `wbc-oxFFV9c` 40:07 (seq2seq → Sequence to Sequence twice), 44:09 (end token → N token);
-  - `vSCYL8ySh9g` 14:33 (loop → latent recurrent transformer).
+  - `vSCYL8ySh9g` 14:33 (loop → latent recurrent transformer);
+  - `WJpeW9lCSUM` 7:52 (QN 3.6 → Nemotron 3.6, should be Qwen 3.6), 21:02 ("495090" passed through, should be 4090).
 - Forced ends in unpunctuated stretches:
   - `QDX-1M5Nj7s` 0:09, 0:23, 0:36 (course name cut);
   - `wbc-oxFFV9c` 4:02, 4:04 (spoken arithmetic cut into fragments);
   - `QWNxQIq0hMo` 7:44, 12:37 (parts ending on "어쩌면", "끝 무렵에는");
   - `WjhDDeZ7DvM` 32:26–32:38 (a trailing fragment).
 - Parts too short to read: `vSCYL8ySh9g` 8:35 (two one-word parts).
-- Stray or duplicate cues from the pre-fix part of `WJpeW9lCSUM`: 1:16
-  (shown twice), 1:43, 2:09, 2:58, 4:07.
+- A sentence shown twice: `WJpeW9lCSUM` 1:16. Both copies come from one
+  writing window. The speech model repeated the window's last sentence in
+  280 ms, and the cue builder keeps every segment it is given. It is still
+  there after the second re-make.
 
 ## Reproducing
 
