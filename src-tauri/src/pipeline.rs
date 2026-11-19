@@ -7,7 +7,7 @@ use crate::{api, audio, log, media, stitch, Core};
 use serde_json::Value;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 /// Why a job stopped for good; becomes `failure_reason`.
@@ -164,11 +164,11 @@ fn give_up(core: &Core, store: &Store, job_id: &str, title: &str, detail: &str) 
 /// precision); also that job's `failure_reason`.
 pub const UNSUPPORTED_CPU: &str = "unsupported_cpu";
 
-/// The `failure_reason` stored for a stop: one of the six values E2 allows.
+/// The `failure_reason` stored for a stop: one of the values E2 allows
+/// (`cost_limit` is only on jobs from before translation stopped at a cost).
 /// `detail` is the internal cause (logged); `stage` is where the job stopped.
 pub fn failure_reason(detail: &str, stage: &str) -> &'static str {
     match detail {
-        "cost_limit" => "cost_limit",
         UNSUPPORTED_CPU => UNSUPPORTED_CPU,
         "key_rejected" | "no_key" => "key_rejected",
         "no_speech" => "no_speech",
@@ -362,14 +362,6 @@ fn sentences(cues: &[crate::store::Cue], parts: &std::collections::HashSet<i64>)
     out
 }
 
-/// The calls under way, what they may cost at most together, and the dearest
-/// call so far, in KRW.
-struct Ledger {
-    in_flight: usize,
-    reserved: f64,
-    dearest: f64,
-}
-
 fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
     let store = cx.store;
     let job = store.job(job_id)?.ok_or("job vanished")?;
@@ -381,48 +373,17 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
     let key = cx.core.svc.keystore.get()?.ok_or_else(|| "no_key".to_string())?;
     let model = store.job(job_id)?.map(|j| j.translation_model).unwrap_or_else(|| gemini::MODEL.into());
     let client = Client { base_url: cx.core.cfg.gemini_base_url.clone(), key, model };
-    let limit = gemini::limit_krw(store.video(&video_key)?.map(|v| v.duration_ms).unwrap_or(0));
 
     // The worker's connection holds one transaction at a time, so every store
-    // access of the calls below (the limit, usage, translations, progress) is
-    // made holding `ledger`; only the requests themselves run side by side.
-    let ledger = Mutex::new(Ledger { in_flight: 0, reserved: 0.0, dearest: 0.0 });
-    let settled = Condvar::new();
+    // access of the calls below (usage, translations, progress) is made
+    // holding `ledger`; only the requests themselves run side by side.
+    let ledger = Mutex::new(());
 
-    // Every call is billed, so usage is added and the limit checked after each
-    // one, and before each one too: a job resumed after a kill may already be
-    // over the limit with its failure not yet recorded (A6: no call past it).
-    // A call alone starts while anything is left, as one at a time did. Beside
-    // others it starts only while what is spent, with every call in flight
-    // costed at the most it can bill (its prompt's bytes and the output cap,
-    // or the dearest call so far if that is more), stays under the limit. So
-    // only a call that started alone can cross the limit, by its own cost.
+    // Every call is billed, so its usage is added to the job's cost after it (A6).
     let call = |order: &Value| -> Result<Option<Value>, Stop> {
         let mut attempts = 0u32;
         loop {
-            let mut l = ledger.lock().unwrap();
-            let reserve = gemini::max_cost_krw(order).max(l.dearest);
-            loop {
-                let spent = store.job(job_id)?.ok_or("job vanished")?.cost_krw;
-                if spent >= limit {
-                    log(format!("job {job_id}: cost {spent:.2} KRW already at the limit {limit:.2}"));
-                    return Err("cost_limit".into());
-                }
-                if l.in_flight == 0 || spent + l.reserved + reserve.max(l.dearest) < limit {
-                    break;
-                }
-                l = settled.wait(l).unwrap();
-            }
-            let reserve = reserve.max(l.dearest);
-            l.in_flight += 1;
-            l.reserved += reserve;
-            drop(l);
-            let got = client.order(order);
-            let mut l = ledger.lock().unwrap();
-            l.in_flight -= 1;
-            l.reserved = if l.in_flight == 0 { 0.0 } else { l.reserved - reserve };
-            settled.notify_all();
-            let (reply, usage) = match got {
+            let (reply, usage) = match client.order(order) {
                 Ok((v, u)) => (Some(v), u),
                 Err(gemini::Error::Reply(e, u)) => {
                     log(format!("job {job_id}: unusable reply: {e}"));
@@ -440,17 +401,12 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
                     }
                     let wait = (1u64 << attempts.min(5)).min(30);
                     log(format!("job {job_id}: Gemini failed ({e}), retry in {wait}s"));
-                    drop(l);
                     std::thread::sleep(Duration::from_secs(wait));
                     continue;
                 }
             };
-            let j = store.add_usage(job_id, usage.input, usage.output, gemini::cost_krw)?;
-            l.dearest = l.dearest.max(gemini::cost_krw(usage.input, usage.output));
-            if j.cost_krw > limit {
-                log(format!("job {job_id}: cost {:.2} KRW passed the limit {limit:.2}", j.cost_krw));
-                return Err("cost_limit".into());
-            }
+            let _held = ledger.lock().unwrap();
+            store.add_usage(job_id, usage.input, usage.output, gemini::cost_krw)?;
             return Ok(reply);
         }
     };
@@ -588,10 +544,6 @@ mod translate_tests;
 mod download_tests;
 
 #[cfg(test)]
-#[path = "pipeline_cost_tests.rs"]
-mod cost_tests;
-
-#[cfg(test)]
 #[path = "pipeline_glossary_tests.rs"]
 mod glossary_tests;
 
@@ -600,9 +552,8 @@ mod tests {
     use super::failure_reason;
 
     #[test]
-    fn every_stop_maps_to_one_of_the_six_reasons() {
+    fn every_stop_maps_to_one_of_the_e2_reasons() {
         let cases = [
-            ("cost_limit", "translating", "cost_limit"),
             ("no_key", "translating", "key_rejected"),
             ("key_rejected", "translating", "key_rejected"),
             ("no_speech", "writing", "no_speech"),

@@ -9,7 +9,7 @@
 //! `remake_saved run <account-db> <video-key> <audio> <work-dir> [--apply]`
 //! writes `audio` with the PC's speech model and translates it with the saved
 //! Gemini key, as a job of the account library `account-db`; the new version
-//! is selected when ready. Without `--apply` it only prints the allowance. The
+//! is selected when ready. Without `--apply` it only prints what was spent. The
 //! installed app must be closed: its worker would take the job too.
 //!
 //! `remake_saved resume <account-db> <video-key> <work-dir>` carries on a
@@ -65,9 +65,8 @@ fn fetch(page: &str, out: &Path) -> Result<(), String> {
 fn run(db: &Path, key: &str, audio: &Path, work: &Path, apply: bool) -> Result<(), String> {
     let store = Store::open(db)?;
     let video = store.video(key)?.ok_or("no such video")?;
-    let limit = gemini::limit_krw(video.duration_ms);
     let spent = store.retranslation_cost(key)?;
-    println!("{key} {:?}: allowance {limit:.2} KRW, spent {spent:.2}, room {:.2}", video.title, limit - spent);
+    println!("{key} {:?}: spent {spent:.2} KRW so far", video.title);
     if !apply {
         println!("preview only; nothing changed");
         return Ok(());

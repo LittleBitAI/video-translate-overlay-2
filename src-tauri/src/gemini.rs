@@ -10,8 +10,6 @@ pub const MODEL: &str = "gemini-3.1-flash-lite";
 pub const INPUT_USD_PER_MILLION: f64 = 0.25;
 pub const OUTPUT_USD_PER_MILLION: f64 = 1.50;
 pub const KRW_PER_USD: f64 = 1_450.0;
-/// The budget: this many KRW per hour of video, write (on device, free) and translation together.
-pub const KRW_PER_HOUR: f64 = 1_000.0;
 
 pub fn cost_krw(input: i64, output: i64) -> f64 {
     (input as f64 * INPUT_USD_PER_MILLION + output as f64 * OUTPUT_USD_PER_MILLION) / 1e6 * KRW_PER_USD
@@ -22,17 +20,6 @@ pub fn cost_krw(input: i64, output: i64) -> f64 {
 /// 120 s timeout; one that ran past the timeout was billed but never counted.
 /// The glossary, the longest reply, is about 1,000 tokens.
 pub const MAX_OUTPUT_TOKENS: i64 = 4096;
-
-/// The most `order` can cost: no token is shorter than one UTF-8 byte, so the
-/// prompt (system text, the order, a margin for the turn's markers) bills at
-/// most its bytes, and the reply at most [`MAX_OUTPUT_TOKENS`].
-pub fn max_cost_krw(order: &Value) -> f64 {
-    cost_krw((SYSTEM.len() + order.to_string().len() + 64) as i64, MAX_OUTPUT_TOKENS)
-}
-
-pub fn limit_krw(duration_ms: i64) -> f64 {
-    duration_ms.max(0) as f64 / 3_600_000.0 * KRW_PER_HOUR
-}
 
 // One sentence per request: its parts, never the next sentence (A6).
 pub const BATCH: usize = 1;
@@ -223,8 +210,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn an_hour_of_budget_is_a_thousand_won() {
-        assert!((limit_krw(3_600_000) - 1_000.0).abs() < 1e-9);
+    fn cost_is_usage_times_price_and_rate() {
         // 1M input + 1M output tokens: (0.25 + 1.5) USD at 1450 KRW.
         assert!((cost_krw(1_000_000, 1_000_000) - 2_537.5).abs() < 1e-9);
     }

@@ -247,7 +247,6 @@ fn failed_retranslation_preserves_completed_subtitles_for_every_stop() {
         ("transient", 503, json!({}), 1, "translate_failed"),
         ("unusable", 200, json!({}), 1, "translate_failed"),
         ("key", 403, json!({}), 1, "key_rejected"),
-        ("cost", 200, json!({"segments":[{"id":1,"ko":"replacement second"}]}), 40_000_000, "cost_limit"),
     ] {
         let endpoint = local_gemini(move |_| (status, text.clone(), input));
         let dir = temp_dir(&format!("retranslation-{case}"));
@@ -270,14 +269,9 @@ fn failed_retranslation_preserves_completed_subtitles_for_every_stop() {
         let reused = api::create_job(&core, SAVED_PAGE, None, "Saved", 3_600_000).unwrap();
         assert_eq!(reused["job_id"], "original", "{case}: detecting again discarded the saved set");
         assert_eq!(reused["reused"], true);
-        let next = api::retranslate_job(&core, SAVED_PAGE);
-        if case == "cost" {
-            assert_eq!(next.unwrap_err().error, "cost_limit");
-        } else {
-            let next = next.unwrap();
-            let next = core.store.job(next["job_id"].as_str().unwrap()).unwrap().unwrap();
-            assert_eq!(next.cost_krw, failed.cost_krw, "a retry forgot earlier usage");
-        }
+        let next = api::retranslate_job(&core, SAVED_PAGE).unwrap();
+        let next = core.store.job(next["job_id"].as_str().unwrap()).unwrap().unwrap();
+        assert_eq!(next.cost_krw, failed.cost_krw, "{case}: a retry forgot earlier usage");
     }
 }
 

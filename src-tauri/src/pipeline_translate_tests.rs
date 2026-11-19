@@ -1,6 +1,6 @@
 //! Translation requests run side by side, and each is still one cue with the
-//! glossary and only the cue before it (A6, R9); the cost limit still stops
-//! new requests, with no more than one call past it, as one at a time did.
+//! glossary and only the cue before it (A6, R9); every call is metered, and
+//! cost never stops a job.
 
 use super::*;
 use serde_json::json;
@@ -74,7 +74,7 @@ fn dir(name: &str) -> std::path::PathBuf {
     dir
 }
 
-/// A job past writing with `n` cues, "cue 0" to "cue n-1", for an hour of video (a 1,000 KRW limit).
+/// A job past writing with `n` cues, "cue 0" to "cue n-1", for an hour of video.
 fn written(core: &Core, n: i64) {
     let s = &core.store;
     s.create_job("j", "v", "https://a.example/talk", "other", "Lecture", 3_600_000, None, "m").unwrap();
@@ -113,48 +113,17 @@ fn cues_are_translated_one_per_request_with_requests_overlapping() {
 }
 
 #[test]
-fn the_limit_stops_new_requests_while_others_are_in_flight() {
-    // 100,000 prompt tokens a call: 36.25 KRW, so the 1,000 KRW limit holds 27 calls.
+fn cost_is_metered_per_call_and_never_stops_translation() {
+    // An hour's lecture that already spent 1,450 KRW, then 61 calls of 36.25 KRW each.
     let (orders, most) = (Arc::new(Mutex::new(Vec::new())), Arc::new(AtomicUsize::new(0)));
-    let core = super::worker_tests::idle_core(&dir("limit"), &gemini(flat(50, 100_000), orders.clone(), most.clone()));
+    let core = super::worker_tests::idle_core(&dir("metered"), &gemini(flat(50, 100_000), orders.clone(), most));
     written(&core, 60);
+    core.store.add_usage("j", 0, 0, |_, _| 1_450.0).unwrap();
     run_job(&core, &core.store, core.store.job("j").unwrap().unwrap());
 
     let job = core.store.job("j").unwrap().unwrap();
-    assert_eq!((job.stage.as_str(), job.failure_reason.as_deref()), ("failed", Some("cost_limit")));
-    let call = gemini::cost_krw(100_000, 1);
-    // As with one call at a time: at most the one call that crossed the limit is past it.
-    assert!(job.cost_krw <= 1_000.0 + call + 1e-6, "spent {} KRW", job.cost_krw);
-    assert_eq!(orders.lock().unwrap().len(), (job.cost_krw / call).round() as usize, "a call was not metered");
-    assert!(most.load(Ordering::SeqCst) >= 2, "the requests never overlapped");
-}
-
-#[test]
-fn calls_side_by_side_never_spend_past_the_limit_by_more_than_one_call() {
-    // Whatever a call bills (within the output cap), spending stops at most one
-    // call past the limit, as one at a time did: a call that is cheap first must
-    // not let dearer ones start together past it.
-    let dear = |output: i64| -> Bill { Arc::new(move |n| if n == 0 { (0, 1_000, 1) } else { (200, 1_000, output) }) };
-    let cases: Vec<(&str, f64, Bill)> = vec![
-        ("cheap first, then 2,000 output tokens each", 990.0, dear(2_000)),
-        ("cheap first, then the output cap each", 960.0, dear(gemini::MAX_OUTPUT_TOKENS)),
-        ("every call dearer than the one before", 950.0, Arc::new(|n| (100, 1_000, (200 * n as i64).min(gemini::MAX_OUTPUT_TOKENS)))),
-        ("the output cap from the start", 900.0, Arc::new(|_| (100, 1_000, gemini::MAX_OUTPUT_TOKENS))),
-    ];
-    for (i, (name, spent, bill)) in cases.into_iter().enumerate() {
-        let (orders, most) = (Arc::new(Mutex::new(Vec::new())), Arc::new(AtomicUsize::new(0)));
-        let core = super::worker_tests::idle_core(&dir(&format!("bound{i}")), &gemini(bill.clone(), orders.clone(), most));
-        written(&core, 40);
-        core.store.set_terms("v", r#"[{"source":"attention","target":"어텐션"}]"#).unwrap();
-        core.store.add_usage("j", 0, 0, |_, _| spent).unwrap();
-        run_job(&core, &core.store, core.store.job("j").unwrap().unwrap());
-
-        let job = core.store.job("j").unwrap().unwrap();
-        assert_eq!((job.stage.as_str(), job.failure_reason.as_deref()), ("failed", Some("cost_limit")), "{name}");
-        let calls = orders.lock().unwrap().len();
-        let billed: Vec<f64> = (0..calls).map(|n| { let (_, a, b) = bill(n); gemini::cost_krw(a, b) }).collect();
-        let dearest = billed.iter().cloned().fold(0.0, f64::max);
-        assert!(job.cost_krw <= 1_000.0 + dearest + 1e-6, "{name}: spent {} KRW in {calls} calls", job.cost_krw);
-        assert!((job.cost_krw - spent - billed.iter().sum::<f64>()).abs() < 1e-6, "{name}: a call was not metered");
-    }
+    assert_eq!((job.stage.as_str(), job.failure_reason.as_deref()), ("ready", None));
+    let calls = orders.lock().unwrap().len();
+    assert_eq!(calls, 61, "the glossary and one request per cue");
+    assert!((job.cost_krw - 1_450.0 - calls as f64 * gemini::cost_krw(100_000, 1)).abs() < 1e-6, "a call was not metered: {} KRW", job.cost_krw);
 }

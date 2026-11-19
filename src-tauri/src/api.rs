@@ -403,9 +403,6 @@ fn retranslate_job_in(library: &crate::library_scope::Library<'_>, page_url: &st
     if core.svc.keystore.get()?.is_none() {
         return Err(err(428, "no_key", "설정에서 Gemini API 키를 먼저 넣어 주세요."));
     }
-    if previous.cost_krw >= gemini::limit_krw(video.duration_ms) {
-        return Err(err(409, "cost_limit", "이 영상의 번역 비용 한도에 도달했습니다."));
-    }
     let id = new_job_id();
     core.svc.notifier.hold(&id, &video.title).map_err(|_| err(409, "background_refused", "앱 화면에서 다시 눌러 주세요."))?;
     if let Err(e) = library.run(|store| Ok(store.retranslate(&id, &previous, MODEL)?)) {

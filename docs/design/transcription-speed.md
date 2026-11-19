@@ -185,6 +185,9 @@ is shorter) and the 4,096-token reply cap, or the dearest request so far if
 that is more. So only a request that started alone can cross the limit, by
 its own cost, as before. Costing in-flight requests at the dearest one seen
 was not enough: a cheap first reply let eight dear ones start together.
+Since 2026-11-19 cost no longer stops translation (backend.md A6), so none of
+this gating remains: a request starts whenever one of the 8 slots is free, and
+its usage is added to the job's cost when its reply comes back.
 The store is accessed under one lock, because the worker's connection holds one
 transaction at a time.
 

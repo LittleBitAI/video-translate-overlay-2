@@ -1,4 +1,4 @@
-//! Translation with Gemini: the model used, the cost, the cost limit and the glossary.
+//! Translation with Gemini: the model used, the cost (metered, never a stop) and the glossary.
 
 use vto_contract_tests::*;
 use serde_json::{json, Value};
@@ -68,24 +68,23 @@ fn test_one_hour_lecture_costs_under_budget() {
 }
 
 #[test]
-fn test_cost_limit_stops_translation() {
+fn test_cost_never_stops_translation() {
+    // Every call bills tens of thousands of KRW: far past 1,000 KRW per hour, the job still finishes.
     let mut app = App::new(Options { gemini: GeminiOptions { huge_usage: true, ..Default::default() }, ..Options::default() });
     let url = app.media.serve("/talks/42.wav", "audio/wav", speech_wav(36_000, &regular_spans(45, 100, 800, 400)));
     app.launch();
     app.set_key(KEY);
-    let before = app.gemini.generate_calls().len();
-    let r = app.create_job(TALK, Some(&url), "A lecture with a runaway bill", 36_000);
-    assert_eq!(r.status, 200, "POST /jobs: {r:?}");
+    let before = app.gemini.task_calls().len();
+    app.run_job(TALK, Some(&url), "A lecture with a runaway bill", 36_000);
 
-    let seen = app.poll_job(TALK, 20, 180, |b| {
-        assert_ne!(b["stage"], "ready", "translation finished past the cost limit: {b}");
-        b["stage"] == "failed"
-    });
-    let last = seen.last().unwrap();
-    assert_eq!(last["failure_reason"], "cost_limit", "{last}");
-    sleep_ms(1_500);
-    let made = app.gemini.generate_calls().len() - before;
-    assert_eq!(made, 1, "Gemini was called {made} times; the first reply already broke the limit");
+    let calls: Vec<GeminiCall> = app.gemini.task_calls().into_iter().skip(before).collect();
+    assert!(calls.len() >= 2, "the glossary and at least one translation: {} calls", calls.len());
+    let (usd_in, usd_out, krw) = app.pricing();
+    let expected: f64 = calls.iter().map(|c| (c.prompt_tokens as f64 * usd_in + c.output_tokens as f64 * usd_out) / 1e6 * krw).sum();
+    let j = app.job(TALK);
+    assert_eq!(j.body["stage"], "ready", "{:?}", j.body);
+    let cost = j.body["cost_krw"].as_f64().unwrap();
+    assert!((cost - expected).abs() <= 0.01 && cost > 1_000.0, "cost_krw {cost}, usage x price x rate {expected}");
 }
 
 #[test]

@@ -79,7 +79,7 @@ impl Store {
     /// this device), as a new job at writing in this account library. The
     /// selected saved version stays and is returned, to select again if the
     /// job fails; the new version is selected when it is ready. The job starts
-    /// with everything the video has spent, so it stays within its allowance.
+    /// with everything the video has spent, so its cost adds to that record.
     pub fn begin_remake(&self, id: &str, key: &str, audio: &str, model: &str) -> R<String> {
         self.library_write(|db| {
             if !local::owned(db)? {
