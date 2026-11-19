@@ -2,7 +2,7 @@
 //! speech-region planning, model loading and inference per region. Run on the
 //! phone under `adb shell`, or on the PC for the large-model reference:
 //!
-//! `transcribe_timing <audio> <model> <out.json> [--passes N] [--limit-s S] [--plan P] [--mobile] [--overlap-ms MS] [--forced-cuts]`
+//! `transcribe_timing <audio> <model> <out.json> [--passes N] [--limit-s S] [--plan P] [--mobile] [--overlap-ms MS] [--forced-cuts] [--hint TITLE]`
 //!
 //! Pass 1 runs in a fresh process (cold: the model is loaded first); later
 //! passes reuse the loaded model (warm). `--limit-s` writes only the regions
@@ -39,7 +39,7 @@ fn replay(report: &str, out: &str) {
     let timed = d["runs"][0]["regions"].as_array().expect("regions").clone();
     let ms = |v: &Value| v.as_i64().unwrap() as usize * vto::audio::RATE / 1000;
     let regions: Vec<vto::audio::Region> = timed.iter().map(|r| vto::audio::Region { start: ms(&r["start_ms"]), end: ms(&r["end_ms"]) }).collect();
-    let (mut prev_end, mut cues, mut held) = (0i64, Vec::<Value>::new(), Vec::new());
+    let (mut prev_end, mut cues, mut held, mut tail) = (0i64, Vec::<Value>::new(), Vec::new(), Vec::new());
     for (i, (r, t)) in regions.iter().zip(&timed).enumerate() {
         let segs = t["segs"].as_array().expect("segs: run the report with this harness").iter().map(|s| vto::Segment {
             start_ms: s["start_ms"].as_i64().unwrap(),
@@ -48,9 +48,9 @@ fn replay(report: &str, out: &str) {
             words: s["words"].as_array().unwrap().iter().map(|w| vto::Word { start_ms: w[0].as_i64().unwrap(), end_ms: w[1].as_i64().unwrap(), text: w[2].as_str().unwrap().into() }).collect(),
         }).collect();
         let committed;
-        (committed, held) = vto::stitch::window_cues(r, segs, std::mem::take(&mut held), i.checked_sub(1).map(|p| &regions[p]), regions.get(i + 1), &mut prev_end);
-        for (start, end, text) in committed {
-            cues.push(json!({"region": i, "start_ms": start, "end_ms": end, "text": text}));
+        (committed, held) = vto::stitch::window_cues(r, segs, std::mem::take(&mut held), i.checked_sub(1).map(|p| &regions[p]), regions.get(i + 1), &mut tail, &mut prev_end);
+        for c in committed {
+            cues.push(json!({"region": i, "start_ms": c.start_ms, "end_ms": c.end_ms, "text": c.text, "opens": c.opens}));
         }
     }
     d["runs"][0]["cues"] = Value::from(cues);
@@ -94,6 +94,9 @@ fn main() {
     if args.iter().any(|a| a == "--mobile") {
         whisper = whisper.with_mobile_params();
     }
+    // `--hint <title>`: the title the app gives the PC's model as its prompt.
+    let hint: Option<String> = arg(&args, "--hint");
+    whisper.set_hint(hint.as_deref());
     let t = Instant::now();
     whisper.load().expect("model load");
     let load_ms = t.elapsed().as_millis();
@@ -103,7 +106,7 @@ fn main() {
     for pass in 1..=passes {
         whisper.prepare(std::path::Path::new("."), &mut |_| {}).expect("prepare");
         let started = Instant::now();
-        let (mut prev_end, mut cues, mut timed, mut held) = (0i64, Vec::<Value>::new(), Vec::<Value>::new(), Vec::new());
+        let (mut prev_end, mut cues, mut timed, mut held, mut tail) = (0i64, Vec::<Value>::new(), Vec::<Value>::new(), Vec::new(), Vec::new());
         for (i, r) in regions.iter().enumerate() {
             let samples: Vec<f32> = pcm[r.start..r.end].iter().map(|&s| s as f32 / 32768.0).collect();
             let t = Instant::now();
@@ -116,9 +119,9 @@ fn main() {
             timed.last_mut().unwrap()["words"] = Value::from(words);
             timed.last_mut().unwrap()["segs"] = segs.iter().map(seg_json).collect();
             let committed;
-            (committed, held) = vto::stitch::window_cues(r, segs, std::mem::take(&mut held), i.checked_sub(1).map(|p| &regions[p]), regions.get(i + 1), &mut prev_end);
-            for (start, end, text) in committed {
-                cues.push(json!({"region": i, "start_ms": start, "end_ms": end, "text": text}));
+            (committed, held) = vto::stitch::window_cues(r, segs, std::mem::take(&mut held), i.checked_sub(1).map(|p| &regions[p]), regions.get(i + 1), &mut tail, &mut prev_end);
+            for c in committed {
+                cues.push(json!({"region": i, "start_ms": c.start_ms, "end_ms": c.end_ms, "text": c.text, "opens": c.opens}));
             }
         }
         let wall_ms = started.elapsed().as_millis();

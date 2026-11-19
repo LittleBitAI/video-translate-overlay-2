@@ -95,6 +95,10 @@ pub struct Job {
     pub plan: i64,
     /// The cues of the last written window that reach into the next one's overlap, not yet committed (JSON).
     pub held: Option<String>,
+    /// The words of the sentence still open after the last written window (JSON, [`crate::sentences::Tail`]).
+    pub tail: Option<String>,
+    /// The `seq` of every cue this job wrote that continues the sentence of the cue before it (JSON).
+    pub parts: Option<String>,
     pub translation_model: String,
     pub input_amount: i64,
     pub output_amount: i64,
@@ -103,7 +107,7 @@ pub struct Job {
 }
 
 const JOB_COLS: &str = "id, video_key, media_url, stage, percent, failure_reason, audio_path, written_regions, \
-    translation_model, input_amount, output_amount, cost_krw, notified_at, plan, held";
+    translation_model, input_amount, output_amount, cost_krw, notified_at, plan, held, tail, parts";
 
 fn job(r: &Row) -> Job {
     Job {
@@ -122,6 +126,8 @@ fn job(r: &Row) -> Job {
         notified: r[12] != Val::Null,
         plan: r[13].int(),
         held: r[14].opt_text(),
+        tail: r[15].opt_text(),
+        parts: r[16].opt_text(),
     }
 }
 
@@ -133,6 +139,8 @@ pub struct Video {
     pub duration_ms: i64,
     pub source_language: Option<String>,
     pub terms: Option<String>,
+    /// Transcript spellings the glossary request found to be mishearings of a term (JSON), kept with the glossary.
+    pub mishearings: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -144,12 +152,21 @@ pub struct Cue {
     pub text_ko: Option<String>,
 }
 
-/// Adds the job columns a file made by an older build lacks; its jobs keep plan 1.
-fn add_job_columns(db: &Db) -> R<()> {
-    let have: Vec<String> = db.query("SELECT name FROM pragma_table_info('job')", p![])?.iter().map(|r| r[0].text()).collect();
-    for (name, decl) in [("plan", "plan INTEGER NOT NULL DEFAULT 1"), ("held", "held TEXT")] {
-        if !have.iter().any(|h| h == name) {
-            db.exec(&format!("ALTER TABLE job ADD COLUMN {decl}"))?;
+/// Adds the columns a file made by an older build lacks; its jobs keep plan 1.
+/// Only `job` and `video` grow: every build inserts into them by column name,
+/// so an older build still reads and writes a file this one opened. (`cue` is
+/// filled by position in older builds and must keep its columns.)
+fn add_columns(db: &Db) -> R<()> {
+    for (table, name, decl) in [
+        ("job", "plan", "plan INTEGER NOT NULL DEFAULT 1"),
+        ("job", "held", "held TEXT"),
+        ("job", "tail", "tail TEXT"),
+        ("job", "parts", "parts TEXT"),
+        ("video", "mishearings", "mishearings TEXT"),
+    ] {
+        let have = db.query_one(&format!("SELECT 1 FROM pragma_table_info('{table}') WHERE name=?"), p![name])?.is_some();
+        if !have {
+            db.exec(&format!("ALTER TABLE {table} ADD COLUMN {decl}"))?;
         }
     }
     Ok(())
@@ -177,7 +194,7 @@ impl Store {
         if db.query_one("SELECT 1 FROM setting WHERE id=1", p![])?.is_none() {
             db.exec("INSERT OR IGNORE INTO setting (id) VALUES (1)")?;
         }
-        add_job_columns(&db)?;
+        add_columns(&db)?;
         Ok(Store { db, path: path.to_path_buf() })
     }
 
@@ -186,7 +203,7 @@ impl Store {
     pub fn video(&self, key: &str) -> R<Option<Video>> {
         Ok(self
             .db
-            .query_one("SELECT video_key, page_url, title, duration_ms, source_language, terms FROM video WHERE video_key=?", p![key])?
+            .query_one("SELECT video_key, page_url, title, duration_ms, source_language, terms, mishearings FROM video WHERE video_key=?", p![key])?
             .map(|r| Video {
                 video_key: r[0].text(),
                 page_url: r[1].text(),
@@ -194,11 +211,18 @@ impl Store {
                 duration_ms: r[3].int(),
                 source_language: r[4].opt_text(),
                 terms: r[5].opt_text(),
+                mishearings: r[6].opt_text(),
             }))
     }
 
     pub fn set_terms(&self, key: &str, terms: &str) -> R<()> {
         self.db.execute("UPDATE video SET terms=? WHERE video_key=?", p![terms, key])?;
+        Ok(())
+    }
+
+    /// The glossary and the mishearings found with it, in one write.
+    pub fn set_glossary(&self, key: &str, terms: &str, mishearings: &str) -> R<()> {
+        self.db.execute("UPDATE video SET terms=?, mishearings=? WHERE video_key=?", p![terms, mishearings, key])?;
         Ok(())
     }
 
@@ -254,7 +278,7 @@ impl Store {
                 p![key, page_url, site, title, duration_ms],
             )?;
             db.execute("DELETE FROM cue WHERE video_key=?", p![key])?;
-            db.execute("UPDATE video SET terms=NULL, source_language=NULL WHERE video_key=?", p![key])?;
+            db.execute("UPDATE video SET terms=NULL, mishearings=NULL, source_language=NULL WHERE video_key=?", p![key])?;
             db.execute(
                 &format!(
                     "INSERT INTO job (id, video_key, media_url, stage, translation_model, plan, created_at, updated_at)
@@ -430,20 +454,39 @@ impl Store {
 
     // ------------------------------------------------------------ cues
 
-    /// Stores the cues of one written region and moves the resume point past it,
-    /// with the cues `held` for the next window's overlap, atomically.
+    /// Stores cues of one written region, each its own sentence, and moves the
+    /// resume point past it, with the cues `held` for the next window's overlap.
     pub fn save_region(&self, job_id: &str, video_key: &str, region: i64, cues: &[(i64, i64, String)], held: Option<&str>) -> R<()> {
+        let cues: Vec<crate::sentences::Cue> = cues.iter().map(|(a, b, t)| crate::sentences::Cue { start_ms: *a, end_ms: *b, text: t.clone(), opens: true }).collect();
+        self.save_window(job_id, video_key, region, &cues, held, None)
+    }
+
+    /// Stores the sentence cues of one written region and moves the resume
+    /// point past it, with the cues `held` for the next window's overlap and the
+    /// sentence still open (`tail`), atomically. A cue that continues a
+    /// sentence is added to the job's `parts`.
+    pub fn save_window(&self, job_id: &str, video_key: &str, region: i64, cues: &[crate::sentences::Cue], held: Option<&str>, tail: Option<&str>) -> R<()> {
         self.db.exec("BEGIN IMMEDIATE")?;
         let r = (|| {
             // seq counts from 0 in start_ms order (E3).
             let next = self.db.query_one("SELECT COALESCE(MAX(seq),-1)+1 FROM cue WHERE video_key=?", p![video_key])?.unwrap()[0].int();
-            for (i, (a, b, text)) in cues.iter().enumerate() {
+            let job = self.job(job_id)?.ok_or("job vanished")?;
+            let mut parts: Vec<i64> = job.parts.as_deref().map(serde_json::from_str).transpose().map_err(|e| format!("parts: {e}"))?.unwrap_or_default();
+            for (i, c) in cues.iter().enumerate() {
+                let seq = next + i as i64;
                 self.db.execute(
                     "INSERT INTO cue (video_key, seq, start_ms, end_ms, source_text) VALUES (?,?,?,?,?)",
-                    p![video_key, next + i as i64, *a, *b, text],
+                    p![video_key, seq, c.start_ms, c.end_ms, c.text.as_str()],
                 )?;
+                if !c.opens && seq > 0 {
+                    parts.push(seq);
+                }
             }
-            self.db.execute(&format!("UPDATE job SET written_regions=?, held=?, updated_at={NOW} WHERE id=?"), p![region + 1, held, job_id])?;
+            let parts = (!parts.is_empty()).then(|| serde_json::to_string(&parts).unwrap());
+            self.db.execute(
+                &format!("UPDATE job SET written_regions=?, held=?, tail=?, parts=?, updated_at={NOW} WHERE id=?"),
+                p![region + 1, held, tail, parts, job_id],
+            )?;
             Ok(())
         })();
         self.db.exec(if r.is_ok() { "COMMIT" } else { "ROLLBACK" })?;

@@ -88,9 +88,9 @@ fn mit_music_and_contrasting_speech_keep_their_source_clock() {
         assert!(!segs.is_empty() && segs.iter().all(|s| s.start_ms >= 8500));
         assert!(segs.iter().map(|s| s.text.to_lowercase()).collect::<String>().contains("afternoon"));
         let mut end = 0;
-        let (cues, _) = crate::stitch::window_cues(&crate::audio::Region { start: 0, end: 20 * rate }, segs, Vec::new(), None, None, &mut end);
-        assert!(cues.windows(2).all(|w| w[0].1 <= w[1].0));
-        assert!((cues[0].0 - 9100).abs() <= 300, "speech timing moved: {cues:?}");
+        let (cues, _) = crate::stitch::window_cues(&crate::audio::Region { start: 0, end: 20 * rate }, segs, Vec::new(), None, None, &mut Vec::new(), &mut end);
+        assert!(cues.windows(2).all(|w| w[0].end_ms <= w[1].start_ms));
+        assert!((cues[0].start_ms - 9100).abs() <= 300, "speech timing moved: {cues:?}");
         drop(w);
         std::fs::remove_dir_all(dir).unwrap();
     }

@@ -22,6 +22,7 @@ mod google_registration;
 pub mod http;
 pub mod media;
 pub mod pipeline;
+pub mod sentences;
 pub mod platform;
 pub mod screens;
 pub mod stitch;
@@ -80,6 +81,9 @@ pub trait Transcriber: Send + Sync {
         Ok(())
     }
     fn transcribe(&self, pcm: &[f32], progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String>;
+    /// Text that tells the model what the talk is about (its title), for the
+    /// windows transcribed after it; `None` clears it.
+    fn set_hint(&self, _hint: Option<&str>) {}
     /// Frees the loaded model (memory, and on a GPU its video memory); the
     /// next [`Transcriber::load`] reads it again.
     fn unload(&self) {}

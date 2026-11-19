@@ -238,3 +238,46 @@ fn the_model_is_released_when_writing_ends_either_way() {
         assert!(fail_at.is_some() || cues(&core).len() > 1, "{name}: the lecture was written");
     }
 }
+
+/// The script as sentences of nine words: a period on every ninth word and
+/// a capital on the word after it, so sentences run across the windows' cuts.
+fn sentences_of(script: &Script) -> Script {
+    let mut out = script.clone();
+    for k in 0..out.len() {
+        if k % 9 == 8 {
+            out[k].2.push('.');
+        } else if k > 0 && k % 9 == 0 {
+            let w = &mut out[k].2;
+            *w = w[..1].to_uppercase() + &w[1..];
+        }
+    }
+    out
+}
+
+#[test]
+fn a_write_killed_with_a_sentence_open_across_a_cut_resumes_to_the_same_cues() {
+    let (raw, pcm, script) = lecture(audio::PLAN);
+    let script = sentences_of(&script);
+    let mut whole = job_at_writing("sentences-uncut", audio::PLAN, &raw);
+    write_with(&mut whole, &pcm, &script, None).0.unwrap();
+    // Killed on the window after the first cut through speech, with a sentence running across that cut.
+    let windows = audio::plan(audio::PLAN, &pcm);
+    let k = windows.windows(2).position(|w| w[1].start < w[0].end).unwrap() + 1;
+    let cut = windows[k].start_ms();
+    assert!(cues(&whole).iter().any(|c| c.0 < cut && cut < c.1), "no cue runs across the cut at {cut} ms");
+
+    let mut core = job_at_writing("sentences-killed", audio::PLAN, &raw);
+    assert!(write_with(&mut core, &pcm, &script, Some(k)).0.is_err());
+    let job = core.store.job("j").unwrap().unwrap();
+    assert_eq!(job.written_regions, k as i64);
+    assert!(job.tail.is_some(), "the sentence open at the kill was not kept");
+    write_with(&mut core, &pcm, &script, None).0.unwrap();
+    assert_eq!(cues(&core), cues(&whole));
+    let parts = |c: &Core| c.store.job("j").unwrap().unwrap().parts;
+    assert_eq!(parts(&core), parts(&whole));
+    // One sentence per cue: no sentence end before a cue's last word.
+    for c in cues(&whole) {
+        let words: Vec<&str> = c.2.split(' ').collect();
+        assert!(words[..words.len() - 1].iter().all(|w| !w.ends_with('.')), "two sentences in {c:?}");
+    }
+}

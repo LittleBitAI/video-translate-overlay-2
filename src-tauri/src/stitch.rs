@@ -32,17 +32,11 @@ const SLACK_MS: i64 = 1_000;
 const RUN_TOLERANCE_MS: i64 = 1_000;
 const WORD_TOLERANCE_MS: i64 = 500;
 
-/// What window `r` adds: the cues to commit now, and those held for `next`
-/// when it overlaps `r`. `held` are the previous window's held cues, `prev`
-/// that window; the cues committed keep starting at or after `prev_end`.
-pub fn window_cues(
-    r: &Region,
-    segs: Vec<Segment>,
-    held: Vec<Piece>,
-    prev: Option<&Region>,
-    next: Option<&Region>,
-    prev_end: &mut i64,
-) -> (Vec<(i64, i64, String)>, Vec<Piece>) {
+/// What window `r` adds: the pieces to commit now, and those held for `next`
+/// when it overlaps `r`. `held` are the previous window's held pieces, `prev`
+/// that window. A committed piece whose text loops is cut to its first
+/// repeats and becomes one word ([`collapse_repeats`]).
+pub fn window_pieces(r: &Region, segs: Vec<Segment>, held: Vec<Piece>, prev: Option<&Region>, next: Option<&Region>) -> (Vec<Piece>, Vec<Piece>) {
     let mut ps = pieces(r, segs);
     if !held.is_empty() {
         let shared_until = prev.map_or(r.start_ms(), |p| p.end_ms()).max(r.start_ms());
@@ -55,17 +49,34 @@ pub fn window_cues(
         }
         None => Vec::new(),
     };
-    let mut cues = Vec::new();
-    for p in ps {
-        let text = collapse_repeats(&p.text());
-        let start = p.start_ms.max(*prev_end);
-        if text.is_empty() || p.end_ms <= start {
-            continue;
-        }
-        *prev_end = p.end_ms;
-        cues.push((start, p.end_ms, text));
-    }
-    (cues, held)
+    let committed = ps
+        .into_iter()
+        .map(|mut p| {
+            let text = collapse_repeats(&p.text());
+            if text != p.text() {
+                p.words = vec![Word { start_ms: p.start_ms, end_ms: p.end_ms, text: format!(" {text}") }];
+            }
+            p
+        })
+        .collect();
+    (committed, held)
+}
+
+/// What window `r` adds as sentence cues: its committed pieces go to the open
+/// sentence `tail` ([`crate::sentences::push`]); the last window (no `next`)
+/// ends it. Returns the cues of the sentences completed and the pieces held.
+pub fn window_cues(
+    r: &Region,
+    segs: Vec<Segment>,
+    held: Vec<Piece>,
+    prev: Option<&Region>,
+    next: Option<&Region>,
+    tail: &mut crate::sentences::Tail,
+    prev_end: &mut i64,
+) -> (Vec<crate::sentences::Cue>, Vec<Piece>) {
+    let last = next.is_none();
+    let (committed, held) = window_pieces(r, segs, held, prev, next);
+    (crate::sentences::push(tail, committed, last, prev_end), held)
 }
 
 /// How many times in a row a unit may repeat in a committed cue.

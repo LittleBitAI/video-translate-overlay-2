@@ -40,6 +40,8 @@ pub struct Whisper {
     // model's first special token (end of text), below which tokens are text.
     state: Mutex<Option<(WhisperState, i32)>>,
     language: Mutex<Option<String>>,
+    /// The talk's title, given to the model as its prompt on the PC only.
+    hint: Mutex<Option<String>>,
     mobile: bool,
     voice: voice::Detector,
 }
@@ -51,7 +53,7 @@ impl Whisper {
         let fetch = model_override.is_none();
         let path = model_override.unwrap_or_else(|| data_dir.join("models").join(MODEL_FILE));
         let voice = voice::Detector::new(&data_dir.join("models"));
-        Whisper { path, fetch, state: Mutex::new(None), language: Mutex::new(None), mobile: cfg!(target_os = "android"), voice }
+        Whisper { path, fetch, state: Mutex::new(None), language: Mutex::new(None), hint: Mutex::new(None), mobile: cfg!(target_os = "android"), voice }
     }
 
     /// The phone's decoding (greedy, no temperature retries, at most 4 threads)
@@ -164,13 +166,15 @@ impl Transcriber for Whisper {
         let eot = *eot;
         let total = regions.iter().map(|r| r.end - r.start).sum::<usize>();
         let mut done = 0;
+        // The phone's decoding takes no prompt: its cost in decoding time there is unmeasured.
+        let hint = if self.mobile { None } else { self.hint.lock().unwrap().clone() };
         let mut out = Vec::new();
         for r in regions {
             // Keep short pauses, but never let a musical interval corrupt the next speech's decoding.
             let samples = &pcm[r.start..r.end];
             let mut report = |p| progress((done as f32 + p * samples.len() as f32) / total as f32);
             let known = self.language.lock().unwrap().clone();
-            let mut segs = decode(state, eot, known.as_deref(), inference_params(self.mobile), samples, &mut report)?;
+            let mut segs = decode(state, eot, known.as_deref(), hint.as_deref(), inference_params(self.mobile), samples, &mut report)?;
             if known.is_none() {
                 *self.language.lock().unwrap() = whisper_rs::get_lang_str(state.full_lang_id_from_state()).map(String::from);
             }
@@ -178,7 +182,7 @@ impl Transcriber for Whisper {
             if greedy(self.mobile) && segs.iter().any(|s| crate::stitch::collapse_repeats(&s.text) != s.text) {
                 let mut params = inference_params(self.mobile);
                 params.set_temperature_inc(0.2);
-                segs = decode(state, eot, self.language().as_deref(), params, samples, &mut report)?;
+                segs = decode(state, eot, self.language().as_deref(), hint.as_deref(), params, samples, &mut report)?;
             }
             for s in &mut segs {
                 s.start_ms += r.start_ms();
@@ -198,11 +202,25 @@ impl Transcriber for Whisper {
     fn language(&self) -> Option<String> {
         self.language.lock().unwrap().clone()
     }
+
+    fn set_hint(&self, hint: Option<&str>) {
+        *self.hint.lock().unwrap() = hint.map(prompt);
+    }
+}
+
+/// The prompt a title becomes: written as a sentence, since the model carries
+/// its prompt's style (capitals, punctuation) into what it writes.
+fn prompt(title: &str) -> String {
+    let t = title.trim();
+    if t.ends_with(['.', '?', '!']) { t.to_string() } else { format!("{t}.") }
 }
 
 /// One window decoded with `params`, as segments on the window's clock.
-fn decode<'a>(state: &mut WhisperState, eot: i32, known: Option<&'a str>, mut params: FullParams<'a, 'a>, pcm: &[f32], progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String> {
+fn decode<'a>(state: &mut WhisperState, eot: i32, known: Option<&'a str>, hint: Option<&'a str>, mut params: FullParams<'a, 'a>, pcm: &[f32], progress: &mut dyn FnMut(f32)) -> Result<Vec<Segment>, String> {
     params.set_language(Some(known.unwrap_or("auto")));
+    if let Some(h) = hint.filter(|h| !h.trim().is_empty()) {
+        params.set_initial_prompt(h);
+    }
     params.set_no_context(true);
     params.set_suppress_blank(true);
     params.set_suppress_nst(true);

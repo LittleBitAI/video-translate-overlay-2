@@ -279,6 +279,6 @@ mod tests {
         };
         assert!(!gemini::parse_terms(&ask(gemini::glossary_order("t", &[]))).is_empty());
         let asked = vec![(7, "Attention is all you need.".to_string())];
-        assert_eq!(gemini::parse_translations(&ask(gemini::translate_order(&[], &asked)), &asked), vec![(7, "어텐션만 있으면 됩니다.".to_string())]);
+        assert_eq!(gemini::parse_translations(&ask(gemini::translate_order(&[], &[], &asked)), &asked), vec![(7, "어텐션만 있으면 됩니다.".to_string())]);
     }
 }

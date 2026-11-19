@@ -1,4 +1,4 @@
-//! Cues of a window on the source timeline, and words two overlapping
+//! Pieces of a window on the source timeline, and words two overlapping
 //! windows both heard kept once.
 
 use super::*;
@@ -14,42 +14,40 @@ fn seg(words: &[(i64, i64, &str)]) -> Segment {
     Segment { start_ms: words[0].start_ms, end_ms: words.last().unwrap().end_ms, text: words.iter().map(|w| w.text.as_str()).collect(), words }
 }
 
-fn texts(cues: &[(i64, i64, String)]) -> Vec<&str> {
-    cues.iter().map(|c| c.2.as_str()).collect()
+fn texts(ps: &[Piece]) -> Vec<String> {
+    ps.iter().map(Piece::text).collect()
 }
 
 /// Window `a` then window `b` (which starts inside `a`), through JSON in between
-/// as a resumed job would have it.
-fn two(a: Region, sa: Vec<Segment>, b: Region, sb: Vec<Segment>) -> Vec<(i64, i64, String)> {
-    let mut prev_end = 0;
-    let (mut cues, held) = window_cues(&a, sa, Vec::new(), None, Some(&b), &mut prev_end);
+/// as a resumed job would have it: the pieces committed, in order.
+fn two(a: Region, sa: Vec<Segment>, b: Region, sb: Vec<Segment>) -> Vec<Piece> {
+    let (mut ps, held) = window_pieces(&a, sa, Vec::new(), None, Some(&b));
     let held: Vec<Piece> = serde_json::from_str(&serde_json::to_string(&held).unwrap()).unwrap();
-    let (more, left) = window_cues(&b, sb, held, Some(&a), None, &mut prev_end);
+    let (more, left) = window_pieces(&b, sb, held, Some(&a), None);
     assert!(left.is_empty());
-    cues.extend(more);
-    for c in &cues {
-        assert!(c.0 < c.1, "empty or reversed cue {c:?}");
+    ps.extend(more);
+    for p in &ps {
+        assert!(p.start_ms < p.end_ms, "empty or reversed piece {p:?}");
     }
-    for w in cues.windows(2) {
-        assert!(w[0].1 <= w[1].0, "cues overlap: {w:?}");
+    for w in ps.windows(2) {
+        assert!(w[0].start_ms <= w[1].start_ms, "pieces out of order: {w:?}");
     }
-    cues
+    ps
 }
 
 #[test]
-fn cues_move_to_the_source_timeline_inside_their_window() {
+fn pieces_move_to_the_source_timeline_inside_their_window() {
     let r = region(10_000, 20_000);
-    let mut prev_end = 10_500;
     let segs = vec![
         Segment { start_ms: 0, end_ms: 2_000, text: " early".into(), words: Vec::new() },
         Segment { start_ms: 3_000, end_ms: 12_000, text: " late".into(), words: Vec::new() },
         Segment { start_ms: 4_000, end_ms: 5_000, text: "  ".into(), words: Vec::new() },
     ];
-    let (cues, held) = window_cues(&r, segs, Vec::new(), None, None, &mut prev_end);
+    let (ps, held) = window_pieces(&r, segs, Vec::new(), None, None);
     assert!(held.is_empty());
-    // After the previous cue, and never past the window's end.
-    assert_eq!(cues, vec![(10_500, 12_000, "early".into()), (13_000, 20_000, "late".into())]);
-    assert_eq!(prev_end, 20_000);
+    // Never past the window's end; a blank segment is dropped.
+    let got: Vec<(i64, i64, String)> = ps.iter().map(|p| (p.start_ms, p.end_ms, p.text())).collect();
+    assert_eq!(got, vec![(10_000, 12_000, "early".into()), (13_000, 20_000, "late".into())]);
 }
 
 #[test]
@@ -61,9 +59,9 @@ fn a_word_cut_by_the_window_edge_appears_once_and_the_split_sentence_is_one_cue(
         seg(&[(26_000, 26_400, "the"), (26_500, 27_400, "transformer"), (27_500, 28_300, "uses"), (28_400, 28_900, "self"), (29_000, 29_500, "attention"), (29_600, 30_000, "archi")]),
     ];
     let sb = vec![seg(&[(0, 200, "uses"), (400, 900, "self"), (1_000, 1_500, "attention"), (1_600, 2_400, "architecture"), (2_500, 3_000, "everywhere")])];
-    let cues = two(a, sa, b, sb);
-    assert_eq!(texts(&cues), ["Hello", "the transformer uses self attention architecture everywhere"]);
-    assert_eq!((cues[1].0, cues[1].1), (26_000, 31_000));
+    let ps = two(a, sa, b, sb);
+    assert_eq!(texts(&ps), ["Hello", "the transformer uses self attention architecture everywhere"]);
+    assert_eq!((ps[1].start_ms, ps[1].end_ms), (26_000, 31_000));
 }
 
 #[test]
@@ -116,6 +114,6 @@ fn a_loop_on_a_sound_is_cut_and_said_repetition_and_numbers_stay() {
     // Applied to what a window commits.
     let r = region(0, 10_000);
     let words: Vec<(i64, i64, &str)> = (0..40).map(|k| (k * 200, k * 200 + 150, "chon")).collect();
-    let (cues, _) = window_cues(&r, vec![seg(&words)], Vec::new(), None, None, &mut 0);
-    assert_eq!(texts(&cues), [vec!["chon"; 8].join(" ")]);
+    let (ps, _) = window_pieces(&r, vec![seg(&words)], Vec::new(), None, None);
+    assert_eq!(texts(&ps), [vec!["chon"; 8].join(" ")]);
 }

@@ -446,6 +446,8 @@ pub struct GeminiCall {
     /// `glossary`, `translate`, or `None` for anything else (such as a key check).
     pub task: Option<String>,
     pub order: Option<Value>,
+    /// The request's system instruction.
+    pub system: String,
     pub prompt_tokens: u64,
     /// Candidates plus thoughts: everything billed at the output rate.
     pub output_tokens: u64,
@@ -456,7 +458,14 @@ pub struct GeminiOptions {
     pub delay_ms: u64,
     /// Every reply reports an absurd usage (40M prompt, 10M output tokens).
     pub huge_usage: bool,
+    /// Every reply to a request of several parts gets its ids wrong: `missing`
+    /// drops the last part, `extra` adds an id, `duplicate` answers the first id
+    /// twice. Each Korean text of such a reply starts with `BROKEN`.
+    pub parts_fault: Option<&'static str>,
 }
+
+/// Mishearings the fake's glossary reports when the transcript holds them.
+const MISHEARD: [(&str, &str); 1] = [("realu", "ReLU")];
 
 /// Terms the fake recognises: how it renders each one when the request's
 /// glossary names it, and the renderings it falls back to otherwise, varying
@@ -541,6 +550,7 @@ fn gemini_reply(req: &HttpRequest, opts: GeminiOptions, log: &Mutex<Vec<GeminiCa
         api_key,
         task: None,
         order: None,
+        system: String::new(),
         prompt_tokens: 0,
         output_tokens: 0,
     };
@@ -581,7 +591,8 @@ fn gemini_reply(req: &HttpRequest, opts: GeminiOptions, log: &Mutex<Vec<GeminiCa
                 .filter(|(src, _, _)| find_ci(&all, src).is_some())
                 .map(|(src, ko, _)| json!({"source": src, "target": ko}))
                 .collect();
-            json!({ "terms": terms }).to_string()
+            let misheard: Vec<Value> = MISHEARD.iter().filter(|(h, _)| find_ci(&all, h).is_some()).map(|(h, m)| json!({"heard": h, "meant": m})).collect();
+            json!({ "terms": terms, "mishearings": misheard }).to_string()
         }
         (Some("translate"), Some(o)) => {
             let glossary: Vec<(String, String)> = o["glossary"]
@@ -608,6 +619,19 @@ fn gemini_reply(req: &HttpRequest, opts: GeminiOptions, log: &Mutex<Vec<GeminiCa
                     json!({"id": s["id"].clone(), "ko": format!("한국어 번역: {text}")})
                 })
                 .collect();
+            let segs = match opts.parts_fault.filter(|_| segs.len() > 1) {
+                Some(fault) => {
+                    let mut broken: Vec<Value> = segs.iter().map(|s| json!({"id": s["id"].clone(), "ko": format!("BROKEN {}", s["ko"].as_str().unwrap_or(""))})).collect();
+                    match fault {
+                        "missing" => drop(broken.pop()),
+                        "extra" => broken.push(json!({"id": 1_000_000, "ko": "BROKEN extra"})),
+                        "duplicate" => *broken.last_mut().unwrap() = broken[0].clone(),
+                        other => panic!("unknown parts fault {other}"),
+                    }
+                    broken
+                }
+                None => segs,
+            };
             json!({ "segments": segs }).to_string()
         }
         _ => "OK".to_string(),
@@ -621,6 +645,7 @@ fn gemini_reply(req: &HttpRequest, opts: GeminiOptions, log: &Mutex<Vec<GeminiCa
     };
     call.task = task;
     call.order = order;
+    call.system = system.join("\n");
     call.prompt_tokens = prompt;
     call.output_tokens = candidates + thoughts;
     guard.push(call);

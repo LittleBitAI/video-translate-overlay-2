@@ -4,10 +4,11 @@
 import { expect, onTestFinished, test } from 'vitest';
 import { page } from 'vitest/browser';
 import { mountOverlay } from '../../src/overlay/index';
+import { LONG_CUE, lineWidths } from '../subtitle-lines';
 
 const CUE = { seq: 1, start_ms: 0, end_ms: 60_000, text_ko: '어텐션은 질의와 키의 내적으로 가중치를 구합니다.' };
 
-function setup(width: string, height: string) {
+function setup(width: string, height: string, cue = CUE) {
   document.body.innerHTML = '';
   document.body.style.margin = '0';
   const player = document.createElement('div');
@@ -28,7 +29,7 @@ function setup(width: string, height: string) {
     mediaUrl: null,
     request: async (method, path) => {
       if (method === 'GET' && path === '/jobs') return { status: 200, body: { stage: 'ready', video_key: 'vk-1', percent: 100 } };
-      if (path.startsWith('/videos/')) return { status: 200, body: { video_key: 'vk-1', duration_ms: 120_000, cues: [CUE] } };
+      if (path.startsWith('/videos/')) return { status: 200, body: { video_key: 'vk-1', duration_ms: 120_000, cues: [cue] } };
       return { status: 404, body: {} };
     },
   });
@@ -68,6 +69,18 @@ test('test_overlay_lies_over_the_video_and_follows_it_into_full_screen', async (
   window.scrollTo(0, 30);
   await expect.poll(() => o.root.getBoundingClientRect().top, { timeout: 2_000 }).toBe(Math.max(0, before - 30));
   window.scrollTo(0, 0);
+});
+
+test('a long Korean cue renders on two balanced lines at phone, windowed and fullscreen sizes', async () => {
+  for (const [w, h, player] of [[384, 854, '216px'], [1280, 800, '720px'], [1920, 1080, '1080px']] as const) {
+    await page.viewport(w, h);
+    const o = setup('100%', player, { ...CUE, text_ko: LONG_CUE });
+    await expect.poll(() => o.sub.textContent, { timeout: 5_000 }).toBe(LONG_CUE);
+    const widths = lineWidths(o.sub);
+    expect(widths.length, `${w}x${h}: ${widths}`).toBe(2);
+    expect(Math.min(...widths) / Math.max(...widths), `${w}x${h}: lines of ${widths}`).toBeGreaterThan(0.75);
+    o.host.remove();
+  }
 });
 
 test('test_a_video_too_small_to_hold_it_puts_the_overlay_at_the_bottom', async () => {

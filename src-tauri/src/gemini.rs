@@ -34,18 +34,27 @@ pub fn limit_krw(duration_ms: i64) -> f64 {
     duration_ms.max(0) as f64 / 3_600_000.0 * KRW_PER_HOUR
 }
 
-// One target per request; preceding context contains no future speech to pull into its slot.
+// One sentence per request: its parts, never the next sentence (A6).
 pub const BATCH: usize = 1;
 
-const SYSTEM: &str = "You translate subtitles of technical talks and lectures (deep learning, programming, \
-science) into natural Korean. Each work order is JSON. For {\"task\":\"glossary\"}, find the technical terms, \
-model names and proper nouns in the transcript and give each one fixed Korean rendering; keep product, model \
-and code names (such as GPT-4o, PyTorch, ReLU) exactly as written. For {\"task\":\"translate\"}, translate every \
-segment on its own, keep its id, never merge, split, drop or reorder segments. Translate incomplete \
-fragments as fragments; never complete them or add content from another segment. context_before is \
-read-only preceding speech: use it to resolve grammar and negation, but never translate or repeat it. Always use the glossary's \
-target for its source term. Reply with JSON only: {\"terms\":[{\"source\":\"…\",\"target\":\"…\"}]} for a glossary, \
-{\"segments\":[{\"id\":1,\"ko\":\"…\"}]} for a translation.";
+pub(crate) const SYSTEM: &str = "You translate subtitles of technical talks and lectures (deep learning, programming, science) into natural \
+Korean. The English comes from speech recognition. Each work order is JSON. For {\"task\":\"glossary\"}, find \
+the technical terms, model names and proper nouns in the transcript and give each one fixed Korean rendering; \
+keep product, model and code names (such as GPT-4o, PyTorch, ReLU) exactly as written. Also list under \
+mishearings every spelling in the transcript that the recognizer clearly misheard for one of those terms (such \
+as \"realu\" or \"a real U\" for ReLU), with the term meant; list one only when the title or the rest of the \
+transcript makes the term certain. For {\"task\":\"translate\"}, segments are the consecutive parts of ONE \
+spoken sentence, in order. Translate the sentence as a whole, then divide the Korean into the same parts with \
+the same ids, in order: each part's Korean says what its English part says as far as Korean word order allows, \
+so each part keeps about its share of the length. Give every id exactly once; never merge, add or drop a part, \
+and never leave ko empty (write \"…\" for a part with nothing left to say). Leave out of the Korean fillers, \
+false starts, immediate repeats and verbal tics (uh, um, you know, I mean, a tag question like right? or okay?); \
+translate every other word, and add nothing that was not said: an incomplete sentence stays incomplete. \
+context_before is the sentence before, read-only: use it to resolve grammar and reference, but never translate \
+or repeat it. Always use the glossary's target for its source term. mishearings are transcript spellings of a \
+term the recognizer misheard: translate each as the term meant. Reply with JSON only: \
+{\"terms\":[{\"source\":\"…\",\"target\":\"…\"}],\"mishearings\":[{\"heard\":\"…\",\"meant\":\"…\"}]} for a \
+glossary, {\"segments\":[{\"id\":1,\"ko\":\"…\"}]} for a translation.";
 
 #[derive(Debug)]
 pub enum Error {
@@ -160,12 +169,32 @@ pub fn parse_terms(reply: &Value) -> Vec<Value> {
     terms
 }
 
-pub fn translate_order(glossary: &[Value], segments: &[(i64, String)]) -> Value {
-    let segs: Vec<Value> = segments.iter().map(|(id, text)| json!({"id": id, "text": text})).collect();
-    json!({"task": "translate", "glossary": glossary, "segments": segs})
+/// The mishearings of a glossary reply: each a transcript spelling and the
+/// term meant, both non-empty and different, in a stable order.
+pub fn parse_mishearings(reply: &Value) -> Vec<Value> {
+    let mut found: Vec<Value> = reply["mishearings"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|m| {
+            let (h, t) = (m["heard"].as_str()?.trim(), m["meant"].as_str()?.trim());
+            (!h.is_empty() && !t.is_empty() && h != t).then(|| json!({"heard": h, "meant": t}))
+        })
+        .collect();
+    found.sort_by_key(|m| m["heard"].as_str().unwrap_or("").to_lowercase());
+    found.dedup_by_key(|m| m["heard"].as_str().unwrap_or("").to_lowercase());
+    found
 }
 
-/// The `(id, ko)` pairs of a reply that answer ids that were asked for.
+/// One sentence's parts, with the glossary and the mishearings found with it.
+pub fn translate_order(glossary: &[Value], mishearings: &[Value], segments: &[(i64, String)]) -> Value {
+    let segs: Vec<Value> = segments.iter().map(|(id, text)| json!({"id": id, "text": text})).collect();
+    json!({"task": "translate", "glossary": glossary, "mishearings": mishearings, "segments": segs})
+}
+
+/// The `(id, ko)` pairs of a reply when it answers exactly the ids asked
+/// for, each once with Korean; nothing otherwise.
 pub fn parse_translations(reply: &Value, asked: &[(i64, String)]) -> Vec<(i64, String)> {
     let Some(segments) = reply["segments"].as_array().filter(|s| s.len() == asked.len()) else { return Vec::new() };
     let parsed: Vec<_> = segments
