@@ -1,8 +1,9 @@
 # Sentence cues: execution receipts
 
 What ran, on what, and what it printed, for the code at
-`ee4359c1c57007f74cbb83fd33546eb8fae72dac` (the last code commit of this
-branch, review round 3; later commits change only documents). Recorded on
+`b0b123c` (the last code commit of this branch, review round 4; later
+commits change only documents). The Rust checks ran on the working tree that
+was then committed as `b0b123c` with no change in between. Recorded on
 2026-11-19, with a clean working tree apart from the wiki's own files.
 
 ## Environment
@@ -15,9 +16,12 @@ branch, review round 3; later commits change only documents). Recorded on
 
 ## Focused offline checks (Rust unit tests)
 
-`cargo test --lib -- sentences:: stitch:: pipeline:: sync::library library store:: gemini:: api::`
-(from `src-tauri`): every test line it printed, in a fixed order (parallel runs
-print them in a different order each time), and its result line:
+The tests `cargo test --lib -- sentences:: stitch:: pipeline:: sync::library library store:: gemini:: api::`
+(from `src-tauri`) selects: their lines as the whole library suite
+(`cargo test -p video-translate-overlay --lib`, below) printed them at
+`b0b123c`, in a fixed order (parallel runs print them in a different order
+each time). Against round 3, `the_grouping_rebuilt_from_saved_cues_is_the_one_the_cues_were_made_with`
+is gone and three tests are new (marked †):
 
 ```
 test api::key_tests::the_mask_keeps_four_characters_and_never_splits_one ... ok
@@ -54,6 +58,7 @@ test pipeline::translate_tests::a_continued_remake_publishes_its_draft_and_a_res
 test pipeline::boundary_tests::the_model_is_released_when_writing_ends_either_way ... ok
 test pipeline::translate_tests::only_a_remake_that_failed_translating_continues ... ok
 test pipeline::translate_tests::a_refused_remake_leaves_the_audio_of_an_interrupted_one_as_it_was ... ok
+test pipeline::translate_tests::every_translation_of_the_same_cues_asks_the_same_sentences ... ok †
 test pipeline::worker_tests::a_bug_fails_the_job_instead_of_leaving_it_running ... ok
 test pipeline::worker_tests::every_ten_percent_step_passed_is_reported_once ... ok
 test pipeline::translate_tests::an_older_builds_selection_never_pairs_a_transcript_with_another_ones_mishearings ... ok
@@ -68,7 +73,8 @@ test sentences::tests::a_stretch_without_punctuation_is_cut_at_pauses_and_the_ca
 test sentences::tests::cues_keep_after_the_previous_one ... ok
 test sentences::tests::each_cue_is_one_sentence_and_none_holds_the_end_of_one_and_the_start_of_the_next ... ok
 test sentences::tests::no_cue_ends_after_its_words_even_when_they_take_no_time ... ok
-test sentences::tests::the_grouping_rebuilt_from_saved_cues_is_the_one_the_cues_were_made_with ... ok
+test sentences::tests::the_parts_of_a_sentence_are_asked_together_and_with_nothing_else ... ok †
+test sentences::tests::a_saved_cue_holding_a_sentence_end_closes_its_sentence ... ok †
 test sentences::tests::the_open_sentence_waits_for_the_next_window_and_ends_the_same ... ok
 test stitch::tests::a_loop_on_a_sound_is_cut_and_said_repetition_and_numbers_stay ... ok
 test stitch::tests::a_side_that_heard_nothing_in_the_overlap_gives_way_to_the_other ... ok
@@ -109,29 +115,35 @@ test sync::library::tests::received_ready_library_is_usable_without_processing_a
 test sync_channel::tests::different_signed_google_subjects_with_the_same_email_cannot_transfer_any_library_data ... ok
 test sync::library::tests::silent_cue_repair_is_atomic_retains_versions_cost_and_sync_selection ... ok
 test pipeline::worker_tests::failed_retranslation_preserves_completed_subtitles_for_every_stop ... ok
-test result: ok. 89 passed; 0 failed; 0 ignored; 0 measured; 173 filtered out; finished in 181.36s
 ```
 
-The whole library suite (`cargo test -q --lib`) at the same commit was run
-twice. The first run printed `258 passed; 2 failed; 2 ignored`. The two
-failures were `media::hls_aes_tests::encrypted_byte_ranges_and_a_key_that_ends_decrypt_piece_by_piece`
-and `media::hls_aes_tests::ts_segments_decrypt_with_their_media_sequence_numbers`,
-both with `open media: unsupported feature: core (probe): no suitable format
-reader found` on audio their own local server served. No commit of this
-branch touches `media` (`git log main..HEAD -- src-tauri/src/media*` is
-empty). Run alone right after, `cargo test -q --lib -- hls_aes` printed
-`5 passed; 0 failed`, and the second whole run printed
-`260 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 174.05s`.
+That is 91 tests, all `ok`. The whole library suite,
+`cargo test -p video-translate-overlay --lib`, printed
+`test result: ok. 262 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 169.43s`.
+
+Before that final run, with the grouping change but not yet the cue-end rule,
+one whole run printed `257 passed; 4 failed`. Two failures were
+`media::hls_aes_tests` with `open audio: 지정된 파일을 찾을 수 없습니다` ("The system
+cannot find the file specified") on files their own test wrote, as in round
+3; no commit of this branch touches `media`. The other two were
+`pipeline::worker_tests::retranslation_resumes_partial_work_and_publishes_only_a_complete_set`
+and `transient_retries_are_independent_for_glossary_and_each_cue`, whose
+fixtures saved unpunctuated cues (`first`, `cue 0`) that `save_region` used
+to mark as separate sentences. With the grouping rebuilt from the text, those
+cues became one sentence, and their fake Gemini answers only one part. Their
+fixtures now say `First.` and `Cue 0.`. Run alone,
+`cargo test -q --lib -- pipeline::worker_tests media::hls_aes_tests` then
+printed `12 passed; 0 failed`.
 
 ## Isolated API checks (contract tests)
 
 The contract host is this commit's `vto-contract-host`, built with
-`cargo build -q -p video-translate-overlay --bin vto-contract-host` at
-`ee4359c` with a clean tree and passed as
+`cargo build -q -p video-translate-overlay --bin vto-contract-host` from the
+tree committed as `b0b123c` and passed as
 `VTO_CONTRACT_HOST=C:/Users/dasdk/PycharmProjects/video-translate-overlay-2/target/debug/vto-contract-host.exe`:
 
-- 25,953,792 bytes, written 2026-11-19 19:01:35 +0900;
-- SHA-256 `c7ffb6da8792afb6ff2ef16f49f4df350069ea8ef093152d1e17b0f74e661250`.
+- 25,926,144 bytes, written 2026-11-19 20:17:07 +0900;
+- SHA-256 `24dd1ddd8db2e2091556fad237bfdce6c8522cbc872ce669ae2317cd0a35d2f4`.
 
 The harness (`contract-tests/src/lib.rs`) gives each test its own folder,
 `%TEMP%\vto-contract-<pid>-<nanos>-<n>`, for the host's data, keystore and
@@ -145,23 +157,23 @@ that host:
 
 ```
 == --test sentences
-test fillers_stay_in_the_saved_source_and_the_instruction_leaves_them_out_of_the_korean ... ok
-test a_split_sentence_goes_to_gemini_as_one_request_of_its_parts ... ok
 test a_retranslation_asks_for_each_sentence_as_the_first_translation_did ... ok
+test a_split_sentence_goes_to_gemini_as_one_request_of_its_parts ... ok
+test fillers_stay_in_the_saved_source_and_the_instruction_leaves_them_out_of_the_korean ... ok
 test mishearings_found_with_the_glossary_are_stored_and_carried_in_every_request ... ok
 test a_reply_with_a_missing_extra_or_duplicate_part_is_not_saved ... ok
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.09s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.65s
 == --test translation
 test retranslation_keeps_saved_source_times_and_the_cost_already_spent ... ok
 test test_translation_makes_korean_cues ... ok
 test test_cost_never_stops_translation ... ok
 test test_terms_stay_consistent_across_batches ... ok
 test test_one_hour_lecture_costs_under_budget ... ok
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.39s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 22.31s
 == --test write_and_timing
 test test_silent_span_has_no_cue ... ok
 test test_cue_times_match_source_after_silence_trim ... ok
-test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.30s
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.42s
 == --test library
 test moves_span_several_places_in_one_request_and_clamp_at_the_ends ... ok
 test playlist_crud_order_and_untranslated_links_persist_without_paid_calls ... ok
@@ -170,18 +182,18 @@ test deletion_rejects_active_processing ... ok
 test saved_library_reopens_after_restart_without_transcription_translation_or_cost ... ok
 test deletion_clears_only_matching_open_video_urls ... ok
 test deletion_confirmation_retry_and_multiple_memberships_preserve_unrelated_data ... ok
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.64s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.89s
 == --test jobs
 test test_job_without_key_asks_for_key ... ok
-test test_detect_button_starts_downloading_job ... ok
 test test_undownloadable_video_shows_reason ... ok
+test test_detect_button_starts_downloading_job ... ok
 test test_subtitles_refused_until_ready ... ok
 test test_repeat_detect_reuses_saved_subtitles ... ok
 test test_other_site_media_follows_same_stages ... ok
 test test_write_finishes_offline_on_device ... ok
 test test_write_percent_and_ongoing_notice ... ok
 test test_job_advances_in_background_and_resumes ... ok
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 18.89s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 18.60s
 ```
 
 ## Chromium checks and the line measurement
@@ -199,7 +211,10 @@ equal [measure/expected.json](measure/expected.json) for every surface, size,
 version and video. It also asserts that the new versions have no cue over two
 lines except 12 in the Watch screen on a phone.
 
-The run was made at `ee4359c1c57007f74cbb83fd33546eb8fae72dac`. Right before
+This run is reused from round 3: round 4 changes no UI code, harness, cue
+text or contract test (`git diff --stat ee4359c b0b123c -- src tests vitest.ui.config.ts docs/evidence/sentence-cues/measure contract-tests`
+prints nothing), and the measured Korean comes from the saved cues, which it
+does not touch. The run was made at `ee4359c1c57007f74cbb83fd33546eb8fae72dac`. Right before
 it, `git status --porcelain` for the harness and everything it imports
 printed nothing, so each ran as committed, with these git blob ids
 (`git ls-files -s`):
@@ -295,21 +310,23 @@ not committed, because they are the person's library. Their file
 (`artifacts/sentence-cues/ko.json`, 7,116 new and 4,293 old cues) had SHA-256
 `f6ad086f05c8522d8f9ae89689cd427014da8fd59eac290ec43a0be4f0ae16d0`. The UI
 code that renders them (`src/`, `tests/`) is the same at `3f8c8ed`,
-`57f7173`, `5c76696` and `ee4359c` (`git diff --stat 57f7173 ee4359c -- src/ tests/`
+`57f7173`, `5c76696`, `ee4359c` and `b0b123c` (`git diff --stat 57f7173 b0b123c -- src/ tests/`
 prints nothing).
 
 ## The installed Windows app
 
-This run is reused from the code at `57f7173`, by this task. Neither
-`5c76696` nor `ee4359c` changes what the released app runs: the app is the
-installed 0.1.9 build, and the library it opened is unchanged since.
-Re-checked on 2026-11-19 after `ee4359c`: the exe's SHA-256 is still
+This run is reused from the code at `57f7173`, by this task. None of
+`5c76696`, `ee4359c` and `b0b123c` changes what the released app runs: the
+app is the installed 0.1.9 build, and the library it opened is unchanged
+since. Re-checked on 2026-11-19 after `b0b123c`: the exe's SHA-256 is still
 `7ff268da…ce0c`; the library file is still 4,378,624 bytes, last written
 12:10:18 +0900, SHA-256 `d4c1aded…7756`. Its write-ahead log (238,992 bytes,
 last written 13:20:09 +0900) holds that app session's writes. The app is not
-running. The unchanged subtitle shape at `ee4359c` is shown by the contract
-test above. The regroup count in the README was made on a copy of this
-library in the temporary folder, not on the file itself.
+running. The unchanged subtitle shape at `b0b123c` is shown by the contract
+test above. The regroup and request-size counts in the README were made on a
+copy of this library in the temporary folder, taken with SQLite's backup from
+a read-only connection. That read updated only the shared-memory index file
+(`sync.sqlite3-shm`, 20:07:36 +0900); the database and its log are as above.
 
 The installed app is version 0.1.9:
 
