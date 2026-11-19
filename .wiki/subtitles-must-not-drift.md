@@ -3,7 +3,7 @@ scope: project
 severity: contract
 triggers: ["밀림", "싱크", "sync", "타이밍", "타임스탬프", "자막.*(늦|빠르|어긋|맞)", "자막 ?정렬"]
 slots: []
-sources: [README.md, docs/design/backend.md, contract-tests/tests/write_and_timing.rs, tests/overlay/overlay.test.ts]
+sources: [README.md, docs/design/backend.md, contract-tests/tests/write_and_timing.rs, contract-tests/tests/sentences.rs, tests/overlay/overlay.test.ts]
 links: [translate-text-not-audio, repository-gate, project]
 ---
 
@@ -11,9 +11,13 @@ links: [translate-text-not-audio, repository-gate, project]
 
 Rule. Each Korean cue carries the start and end time of the speech it
 translates, set at the write (transcription) stage. Translation never
-changes them: per assumption A6 in `docs/design/backend.md`, segments go to
-Gemini as numbered batches with no timestamps and come back under the same
-numbers. The overlay shows cues by the player's current position. Two
+changes them: per assumption A6 in `docs/design/backend.md`, one request
+carries one whole sentence as numbered parts, with no timestamps. The parts
+come back under the same numbers, so content can move only between the parts
+of one sentence, never into an earlier sentence's time. A reply with a part
+missing, extra or repeated is not saved. Cues are rebuilt by sentence from
+the speech model's word times, so a sentence that begins mid-segment starts at
+its first word. The overlay shows cues by the player's current position. Two
 designed checks pin this, and they are the evidence for a change to
 segmentation, silence trimming, batching or translation:
 - T5, `test_cue_times_match_source_after_silence_trim` in
