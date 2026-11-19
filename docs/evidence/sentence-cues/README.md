@@ -390,17 +390,27 @@ better, not same: 4:28, 9:50, 23:25 and 26:19, where the old version cut a
 phrase across cues. One `vSCYL8ySh9g` row at 9:44 covered two sentences and
 is now two places.
 
+The totals here and each video's place count and tally are counts of the
+verdicts in [places.md](places.md), and every place judged worse there is
+listed under [Regressions](#regressions).
+[measure/check_readme.py](measure/check_readme.py) counts them again. Before
+review round 6, `WjhDDeZ7DvM` read 75 places (43 better, 23 same), a hand
+count made before its time ranges were expanded into one row per sentence:
+places.md has held 76 since it was first written. The extra place is 10:45,
+an untagged sentence inside the 10:26–10:45 term range. `_MEqhFwnp8o` 30:18,
+judged worse, was missing from Regressions.
+
 | Video | Places read | Better | Same | Worse |
 | --- | ---: | ---: | ---: | ---: |
 | `QDX-1M5Nj7s` | 38 | 17 | 16 | 5 |
 | `QWNxQIq0hMo` | 23 | 11 | 8 | 4 |
 | `WJpeW9lCSUM` | 33 | 15 | 11 | 7 |
-| `WjhDDeZ7DvM` | 75 | 43 | 23 | 9 |
+| `WjhDDeZ7DvM` | 76 | 45 | 22 | 9 |
 | `_MEqhFwnp8o` | 263 | 204 | 44 | 15 |
 | `vSCYL8ySh9g` | 29 | 13 | 11 | 5 |
 | `wbc-oxFFV9c` | 60 | 26 | 29 | 5 |
 | `zjkBMFhNj_g` | 57 | 25 | 28 | 4 |
-| All 8 | 578 | 354 | 170 | 54 |
+| All 8 | 579 | 356 | 169 | 54 |
 
 ### QDX-1M5Nj7s — MIT Introduction to Deep Learning (2023) | 6.S191 (lecture)
 
@@ -508,7 +518,7 @@ I read 33 places: both old filler places, all 5 term places, 20 spread evenly, a
 
 ### WjhDDeZ7DvM — Build DeepSeek from Scratch: Series Introduction (lecture)
 
-Old 408 cues, new 770 cues in 344 sentences. I read every old filler/repeat place (9 F), every misheard-term place (52 T/MT), and 14 sampled mid-sentence places: 75 in all. Tally: better 43, same 23, worse 9.
+Old 408 cues, new 770 cues in 344 sentences. I read every old filler/repeat place (9 F), every misheard-term place (52 T/MT), and 15 sampled places, 5 of them at old mid-sentence cuts (10:45 came in with the 10:26–10:45 term range): 76 in all. Tally: better 45, same 22, worse 9.
 
 | At | Old → new (Korean) | Verdict | Why |
 |---|---|---|---|
@@ -861,7 +871,7 @@ re-makes; that would need another paid run of the video.
 - A filler kept in the Korean: `WJpeW9lCSUM` 12:23 ("Well," → "음,").
 - Changed meaning:
   - `WjhDDeZ7DvM` 13:55, 21:20;
-  - `_MEqhFwnp8o` 20:52, 24:23, 25:27, 29:29, 39:56, 43:03;
+  - `_MEqhFwnp8o` 20:52, 24:23, 25:27, 29:29, 30:18 ("Christian" heard as "question"), 39:56, 43:03;
   - `QDX-1M5Nj7s` 42:21;
   - `vSCYL8ySh9g` 11:40 (two sentences joined by a comma in the transcript);
   - `QWNxQIq0hMo` 2:16, 3:41;

@@ -108,7 +108,16 @@ Extend check_readme.py to count verdicts per places.md section and compare them 
 
 ## Result
 
-pending — the fix records what it observed here, with the tests and the commit.
+Observed with the fix (review round 6, the commit after `d079478` that adds this text):
+
+1) `docs/evidence/sentence-cues/measure/check_readme.py` now counts the verdicts in each `places.md` section and compares them with:
+   - the reading summary rows and the All 8 row;
+   - each section's `Tally:` line and its place count (`N in all`, else `I read N places`).
+   It also checks that every place judged worse in `places.md` is listed under the README's Regressions, within 10 s of the time named there. That is the rule `places.py` uses to put an old cue's time at a new sentence. An optional argument names another places file, which is how the controls below were run.
+2) On the tree at `d079478` it printed exactly the predicted rows, and nothing for the other seven videos: the `WjhDDeZ7DvM` summary row (counted 76/45/22/9), its tally (43/23/9 against 45/22/9), its place count (75 against 76), and the All 8 row (579/356/169/54). The regressions check, added in the same pass, found one more place: `_MEqhFwnp8o` 30:18, judged worse ("Christian" heard as "question") but missing from Regressions. Two other worse places, `zjkBMFhNj_g` 26:55 and 56:30, are listed there as 26:58 and 56:27, the times of the title-hint comparison, and fall within the 10 s rule.
+3) Which category the 76th place belongs to: reading the 76 rows' tags in `read/WjhDDeZ7DvM.txt` gives 9 F, 52 T/MT and 15 untagged or M places. The extra place is 10:45, an untagged sentence inside the judged range 10:26–10:45 that `places.py` expanded into one row per sentence. `places.md` has held 76 `WjhDDeZ7DvM` rows (45/22/9) at every commit that touched it (`1ff5752`, `5c76696`, `f25ed3d`), so the README count was a hand count from before the expansion and was never derived. The README now says 15 sampled places, 5 of them at old mid-sentence cuts, 76 in all, tally 45/22/9. The summary table reads 76/45/22/9 and All 8 579/356/169/54, and Regressions lists `_MEqhFwnp8o` 30:18.
+4) After the correction: `differences 0`. Negative controls on scratch copies of `places.md` were each reported, with 3 or 4 differences per control: one verdict flipped, one row removed, one row duplicated, one video renamed, and one same place made worse (reported as not listed under Regressions).
+5) What the check cannot see: the F/T/sampled breakdown sentences, because rows carry no category tag, and the grouped per-video tables in the README, whose ranges are checked only through the totals.
 
 ## Unresolved limits
 

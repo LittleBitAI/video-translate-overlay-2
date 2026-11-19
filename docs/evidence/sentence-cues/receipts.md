@@ -317,7 +317,25 @@ byte those of the round-2 run at `5c76696`:
 
 `python -I -X utf8 docs/evidence/sentence-cues/measure/check_readme.py`
 checks that the README's rendered-line tables are sums of `expected.json`
-and that every exception it holds is listed. It printed `differences 0`.
+and that every exception it holds is listed. Since review round 6 it also
+counts the verdicts in `places.md` again. It compares them with the reading
+summary rows, the All 8 row, and each video's place count and tally, and it
+checks that every place judged worse is listed under Regressions (within 10 s
+of the time named there, the same rule `places.md` uses to place an old cue's
+time). At the fix commit, the one after `d079478`, it printed `differences 0`.
+
+On the README committed before that fix (`d079478`), the same script printed
+`differences 5`:
+- the `WjhDDeZ7DvM` summary row, tally and place count;
+- the All 8 row;
+- `_MEqhFwnp8o` 30:18, a place judged worse that was not listed.
+
+Negative controls on scratch copies of `places.md` were each reported:
+- one verdict flipped: 3 differences;
+- one row removed: 4;
+- one row duplicated: 4;
+- a video renamed: 4;
+- one place changed from same to worse: 4, including "worse place not listed under Regressions".
 
 Line counts from that run (cues on 1 / 2 / more than 2 lines; the most lines
 one cue took). They are the same as the tables in [README.md](README.md):
