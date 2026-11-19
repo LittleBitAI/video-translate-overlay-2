@@ -988,3 +988,26 @@ fn deletion_and_a_fresh_link_or_translation_in_one_page_cannot_bypass_cleanup() 
         }
     }
 }
+
+#[test]
+fn a_failed_remake_continues_at_translating_or_projects_its_previous_version_again() {
+    let profile = Profile::new();
+    let journal = profile.journal();
+    let Change::Translation { translation } = translation() else { unreachable!() };
+    let key = translation.video.key.clone();
+    let previous = journal.write(Change::Translation { translation }, Deletions::new()).unwrap().identity();
+    let store = journal.library().unwrap();
+    let before = store.cues(&key).unwrap();
+    assert_eq!(store.begin_remake("remake-x", &key, "a.m4a", "m").unwrap(), previous);
+    Db::open(store.path()).unwrap().execute("INSERT INTO cue VALUES (?,0,0,900,'Written again.',NULL)", p![key.as_str()]).unwrap();
+    store.fail("remake-x", "translate_failed").unwrap();
+    store.continue_remake("remake-x").unwrap();
+    let job = store.job("remake-x").unwrap().unwrap();
+    assert_eq!((job.stage.as_str(), job.failure_reason), ("translating", None));
+    assert!(store.continue_remake("remake-x").is_err(), "only a failed re-make continues");
+    store.fail("remake-x", "translate_failed").unwrap();
+    // Selecting the version that is still selected would leave the written cues.
+    store.restore_translation(&key, &previous).unwrap();
+    assert_eq!(store.cues(&key).unwrap(), before);
+    assert!(store.library().unwrap()["videos"][0]["versions"].as_array().unwrap().iter().any(|v| v["id"] == previous && v["selected"] == true));
+}

@@ -528,7 +528,13 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
             if ko.is_empty() {
                 if asked.len() > 1 {
                     *tries.lock().unwrap().entry(groups[*g][0].0).or_default() += 1;
-                    log(format!("job {job_id}: the reply for sentence {} did not answer its {} parts", groups[*g][0].0, asked.len()));
+                }
+                if let Some(r) = &reply {
+                    // What came back, without its text: the ids and which `ko` were empty.
+                    let got: Vec<String> = r["segments"].as_array().into_iter().flatten()
+                        .map(|s| format!("{}{}", s["id"], if s["ko"].as_str().is_some_and(|k| !k.trim().is_empty()) { "" } else { ":empty" }))
+                        .collect();
+                    log(format!("job {job_id}: the reply for sentence {} did not answer its {} parts; it held [{}]", groups[*g][0].0, asked.len(), got.join(",")));
                 }
                 return Ok(());
             }

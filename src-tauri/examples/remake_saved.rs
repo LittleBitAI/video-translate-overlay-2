@@ -14,6 +14,15 @@
 //!
 //! `remake_saved resume <account-db> <video-key> <work-dir>` carries on a
 //! re-make whose process was stopped, from what its job last wrote.
+//!
+//! `remake_saved continue <account-db> <video-key> <job-id> <work-dir>` sends
+//! a failed re-make back to translating; only cues without Korean are asked.
+//! If it fails again its cues stay for another `continue`; the previous
+//! version is still the selected one.
+//!
+//! `remake_saved restore <account-db> <video-key> <work-dir>` gives a failed
+//! re-make up and projects the previous version again, as `run` and `resume`
+//! do when their re-make does not end ready.
 
 use std::path::Path;
 use std::sync::Arc;
@@ -72,7 +81,7 @@ fn run(db: &Path, key: &str, audio: &Path, work: &Path, apply: bool) -> Result<(
     let previous = store.begin_remake(&id, key, &copy.to_string_lossy(), gemini::MODEL)?;
     std::fs::write(work.join("previous.txt"), &previous).map_err(|e| e.to_string())?;
     println!("job {id} started; previous version {previous}");
-    finish(&core, &store, &id, key, &previous)
+    finish(&core, &store, &id, key, &previous, true)
 }
 
 /// Carries on a re-make whose process was stopped: the job resumes from what it wrote.
@@ -82,15 +91,36 @@ fn resume(db: &Path, key: &str, work: &Path) -> Result<(), String> {
     let previous = std::fs::read_to_string(work.join("previous.txt")).map_err(|e| format!("previous.txt: {e}"))?;
     println!("job {} resumed at {}; previous version {previous}", job.id, job.stage);
     let core = start(work)?;
-    finish(&core, &store, &job.id, key, &previous)
+    finish(&core, &store, &job.id, key, &previous, true)
 }
 
-fn finish(core: &Core, store: &Store, id: &str, key: &str, previous: &str) -> Result<(), String> {
+/// Translates what a failed re-make left without Korean.
+fn carry_on(db: &Path, key: &str, id: &str, work: &Path) -> Result<(), String> {
+    let store = Store::open(db)?;
+    let previous = std::fs::read_to_string(work.join("previous.txt")).map_err(|e| format!("previous.txt: {e}"))?;
+    store.continue_remake(id)?;
+    println!("job {id} continued at translating; previous version {previous}");
+    let core = start(work)?;
+    finish(&core, &store, id, key, &previous, false)
+}
+
+/// Gives a failed re-make up: the previous version is projected again.
+fn restore(db: &Path, key: &str, work: &Path) -> Result<(), String> {
+    let previous = std::fs::read_to_string(work.join("previous.txt")).map_err(|e| format!("previous.txt: {e}"))?;
+    Store::open(db)?.restore_translation(key, &previous)?;
+    println!("{previous} is projected again");
+    Ok(())
+}
+
+fn finish(core: &Core, store: &Store, id: &str, key: &str, previous: &str, restore: bool) -> Result<(), String> {
     vto::pipeline::run_pending(core, store)?;
     let job = store.job(id)?.ok_or("job vanished")?;
     println!("job {id} {}: cost {:.4} KRW (input {} output {} tokens), failure {:?}", job.stage, job.cost_krw, job.input_amount, job.output_amount, job.failure_reason);
+    if job.stage != "ready" && !restore {
+        return Err(format!("the re-make failed again; its cues stay for `continue`, and {previous} is still selected"));
+    }
     if job.stage != "ready" {
-        store.select_translation(key, previous)?;
+        store.restore_translation(key, previous)?;
         return Err(format!("the re-make failed; {previous} is selected again"));
     }
     Ok(())
@@ -116,6 +146,8 @@ fn main() -> Result<(), String> {
         Some("fetch") if a.len() == 4 => fetch(&a[2], Path::new(&a[3])),
         Some("run") if a.len() == 6 || a.len() == 7 => run(Path::new(&a[2]), &a[3], Path::new(&a[4]), Path::new(&a[5]), a.get(6).is_some_and(|f| f == "--apply")),
         Some("resume") if a.len() == 5 => resume(Path::new(&a[2]), &a[3], Path::new(&a[4])),
-        _ => Err("usage: remake_saved fetch <page-url> <audio-out> | remake_saved run <account-db> <video-key> <audio> <work-dir> [--apply] | remake_saved resume <account-db> <video-key> <work-dir>".into()),
+        Some("continue") if a.len() == 6 => carry_on(Path::new(&a[2]), &a[3], &a[4], Path::new(&a[5])),
+        Some("restore") if a.len() == 5 => restore(Path::new(&a[2]), &a[3], Path::new(&a[4])),
+        _ => Err("usage: remake_saved fetch <page-url> <audio-out> | remake_saved run <account-db> <video-key> <audio> <work-dir> [--apply] | remake_saved resume <account-db> <video-key> <work-dir> | remake_saved continue <account-db> <video-key> <job-id> <work-dir> | remake_saved restore <account-db> <video-key> <work-dir>".into()),
     }
 }

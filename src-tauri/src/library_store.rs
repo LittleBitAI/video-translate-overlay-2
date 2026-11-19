@@ -105,6 +105,25 @@ impl Store {
         })
     }
 
+    /// Sends a failed re-make back to translating: what it wrote and
+    /// translated stays, so only the cues without Korean are asked again.
+    pub fn continue_remake(&self, id: &str) -> R<()> {
+        self.library_write(|db| {
+            let n = db.execute("UPDATE job SET stage='translating', failure_reason=NULL WHERE id=? AND id LIKE 'remake-%' AND stage='failed'", p![id])?;
+            if n == 0 { Err("no failed re-make with this id".into()) } else { Ok(()) }
+        })
+    }
+
+    /// Projects `identity` again after a failed re-make overwrote the cue
+    /// table. [`Self::select_translation`] keeps the table when the identity
+    /// is already selected, so the selection is dropped first.
+    pub fn restore_translation(&self, key: &str, identity: &str) -> R<()> {
+        self.library_write(|db| {
+            db.execute("DELETE FROM sync_selected_translation WHERE video_key=?", p![key])?;
+            local::select_translation(db, key, identity)
+        })
+    }
+
     /// Capture the requested selection and projected cue in one SQLite snapshot before audio inspection.
     pub fn inspect_silent_cue(&self, key: &str, identity: &str, seq: usize) -> R<Cue> {
         let seq = i64::try_from(seq).map_err(|_| "cue unavailable")?;

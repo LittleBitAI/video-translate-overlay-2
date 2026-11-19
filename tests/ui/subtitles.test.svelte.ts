@@ -62,7 +62,7 @@ test('a long Korean cue renders on two balanced lines at phone, windowed and ful
   }
 });
 
-const deletionCases =['native', 'broadcast'].flatMap(source => ['ready', 'failed'].map(stage => ({source, stage})));
+const deletionCases = ['native', 'broadcast'].flatMap(source => ['ready', 'failed'].map(stage => ({source, stage})));
 function deletedVideo(source: string, key: string) {
   if (source === 'native') window.dispatchEvent(new CustomEvent('vto-video-deleted', {detail: key}));
   else {
