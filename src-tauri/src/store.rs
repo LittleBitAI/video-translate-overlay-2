@@ -163,6 +163,7 @@ pub(crate) fn add_columns(db: &Db) -> R<()> {
         ("job", "tail", "tail TEXT"),
         ("job", "parts", "parts TEXT"),
         ("video", "mishearings", "mishearings TEXT"),
+        ("video", "mishearings_of", "mishearings_of TEXT"),
     ] {
         let have = db.query_one(&format!("SELECT 1 FROM pragma_table_info('{table}') WHERE name=?"), p![name])?.is_some();
         if !have {
@@ -220,10 +221,33 @@ impl Store {
         Ok(())
     }
 
-    /// The glossary and the mishearings found with it, in one write.
+    /// The glossary and the mishearings found with it, in one write; the
+    /// mishearings are marked with the transcript (the cues' English) they
+    /// were found in.
     pub fn set_glossary(&self, key: &str, terms: &str, mishearings: &str) -> R<()> {
-        self.db.execute("UPDATE video SET terms=?, mishearings=? WHERE video_key=?", p![terms, mishearings, key])?;
+        let of = self.transcript_digest(key)?;
+        self.db.execute("UPDATE video SET terms=?, mishearings=?, mishearings_of=? WHERE video_key=?", p![terms, mishearings, of, key])?;
         Ok(())
+    }
+
+    /// The video's mishearings, if they were found in the transcript its cues
+    /// hold now. Any write of the cues that does not find them again (a saved
+    /// version selected here or by a build that does not know them, a
+    /// re-make) leaves them belonging to another transcript: then `None`.
+    pub fn current_mishearings(&self, key: &str) -> R<Option<String>> {
+        let Some(row) = self.db.query_one("SELECT mishearings, mishearings_of FROM video WHERE video_key=?", p![key])? else { return Ok(None) };
+        let (Some(found), Some(of)) = (row[0].opt_text(), row[1].opt_text()) else { return Ok(None) };
+        Ok((of == self.transcript_digest(key)?).then_some(found))
+    }
+
+    fn transcript_digest(&self, key: &str) -> R<String> {
+        use sha2::Digest;
+        let mut h = sha2::Sha256::new();
+        for r in self.db.query("SELECT source_text FROM cue WHERE video_key=? ORDER BY seq", p![key])? {
+            h.update(r[0].text().as_bytes());
+            h.update(b"\n");
+        }
+        Ok(format!("{:x}", h.finalize()))
     }
 
     pub fn set_language(&self, key: &str, lang: &str) -> R<()> {

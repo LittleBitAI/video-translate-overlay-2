@@ -281,3 +281,80 @@ fn a_write_killed_with_a_sentence_open_across_a_cut_resumes_to_the_same_cues() {
         assert!(words[..words.len() - 1].iter().all(|w| !w.ends_with('.')), "two sentences in {c:?}");
     }
 }
+
+/// The writing loop of a build from before sentence cues (0.1.9): it resumes
+/// from `held` and knows no `tail`, and commits each piece as a cue of its own.
+fn write_as_released(core: &Core, pcm: &[i16], script: &Script) {
+    let job = core.store.job("j").unwrap().unwrap();
+    let model = Heard { source: pcm.to_vec(), script: script.clone(), calls: Default::default(), fail_at: None, unloads: Default::default() };
+    let regions = audio::plan(job.plan, pcm);
+    let mut prev_end = core.store.last_cue_end("v").unwrap();
+    let mut held: Vec<stitch::Piece> = job.held.as_deref().map(|h| serde_json::from_str(h).unwrap()).unwrap_or_default();
+    for (i, r) in regions.iter().enumerate().skip(job.written_regions as usize) {
+        let samples: Vec<f32> = pcm[r.start..r.end].iter().map(|&s| s as f32 / 32768.0).collect();
+        let segs = model.transcribe(&samples, &mut |_| {}).unwrap();
+        let committed;
+        (committed, held) = stitch::window_pieces(r, segs, std::mem::take(&mut held), i.checked_sub(1).map(|p| &regions[p]), regions.get(i + 1));
+        let mut cues = Vec::new();
+        for p in committed {
+            let start = p.start_ms.max(prev_end);
+            if p.text().is_empty() || p.end_ms <= start {
+                continue;
+            }
+            prev_end = p.end_ms;
+            cues.push((start, p.end_ms, p.text()));
+        }
+        let kept = (!held.is_empty()).then(|| serde_json::to_string(&held).unwrap());
+        core.store.save_region("j", "v", i as i64, &cues, kept.as_deref()).unwrap();
+    }
+}
+
+#[test]
+fn a_write_killed_with_a_sentence_open_loses_no_word_when_the_released_build_resumes_it() {
+    let (raw, pcm, script) = lecture(audio::PLAN);
+    let script = sentences_of(&script);
+    let windows = audio::plan(audio::PLAN, &pcm);
+    let spoken: Vec<&str> = script.iter().map(|w| w.2.as_str()).collect();
+    // Killed on each window from the second on, so it stops with a sentence open at every kind of cut.
+    for k in 1..windows.len() {
+        let mut core = job_at_writing(&format!("released-{k}"), audio::PLAN, &raw);
+        assert!(write_with(&mut core, &pcm, &script, Some(k)).0.is_err());
+        let open = core.store.job("j").unwrap().unwrap().tail.is_some();
+        write_as_released(&core, &pcm, &script);
+        let written: Vec<String> = cues(&core).iter().flat_map(|c| c.2.split(' ').map(String::from).collect::<Vec<_>>()).collect();
+        assert_eq!(written, spoken, "killed at window {k} (a sentence open: {open})");
+        let cs = cues(&core);
+        assert!(cs.windows(2).all(|w| w[0].1 <= w[1].0), "killed at window {k}: cues overlap");
+    }
+}
+
+#[test]
+fn a_remake_that_failed_writing_cannot_continue_and_playback_keeps_the_selected_version() {
+    use crate::sync::{Change, Cue as Saved, Deletions, Journal, Translation, Video};
+    let (raw, pcm, script) = lecture(audio::PLAN);
+    let dir = std::env::temp_dir().join(format!("vto-boundary-remake-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let mut core = super::worker_tests::idle_core(&dir, "");
+    let journal = Journal::open(&dir.join("account"), &crate::google_auth::VerifiedIdentity::fixture("remake-writing")).unwrap();
+    let page = "https://lectures.example.org/unfinished";
+    let key = crate::api::video_key(&url::Url::parse(page).unwrap());
+    let video = Video { key: key.clone(), page_url: page.into(), title: "Talk".into() };
+    let old = vec![Saved { start_ms: 500, end_ms: 1_400, source_text: "Said before.".into(), text_ko: "예전 번역".into() }];
+    journal.write(Change::Translation { translation: Translation { video, duration_ms: 106_000, source_language: Some("en".into()), terms: vec![], model: "m".into(), cost_krw: 1.0, cues: old } }, Deletions::new()).unwrap();
+    let store = journal.library().unwrap();
+    let audio = dir.join("audio.wav");
+    std::fs::write(&audio, wav(&raw)).unwrap();
+    store.begin_remake("remake-w", &key, &audio.to_string_lossy(), "m").unwrap();
+    // The model stops on the second window, after the first one's cues were committed.
+    core.svc.transcriber = Box::new(Heard { source: pcm.clone(), script: sentences_of(&script), calls: Default::default(), fail_at: Some(1), unloads: Default::default() });
+    run_job(&core, &store, store.job("remake-w").unwrap().unwrap());
+    let job = store.job("remake-w").unwrap().unwrap();
+    assert_eq!((job.stage.as_str(), job.written_regions), ("failed", 1));
+    assert!(!store.cues(&key).unwrap().is_empty(), "the first window's cues were committed");
+
+    assert!(store.continue_remake("remake-w").is_err(), "a re-make with an unfinished transcript continued");
+    assert_eq!(store.job("remake-w").unwrap().unwrap().stage, "failed");
+    let played = crate::api::subtitles(&store, &key).unwrap();
+    assert_eq!(played, serde_json::json!({"video_key": key, "duration_ms": 106_000, "source_language": "en", "cues": [{"seq": 0, "start_ms": 500, "end_ms": 1_400, "text_ko": "예전 번역"}]}));
+}

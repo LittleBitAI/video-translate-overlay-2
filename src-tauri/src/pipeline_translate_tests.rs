@@ -156,9 +156,14 @@ fn a_continued_remake_publishes_its_draft_and_a_restored_one_cannot_continue() {
     };
     let selected = |store: &Store| store.library().unwrap()["videos"][0]["versions"].as_array().unwrap().iter().find(|v| v["selected"] == true).unwrap()["id"].as_str().unwrap().to_string();
 
+    let played = |store: &Store| crate::api::subtitles(store, &key).unwrap();
+    let was = json!({"video_key": key, "duration_ms": 5000, "source_language": "en", "cues": [{"seq": 0, "start_ms": 0, "end_ms": 900, "text_ko": "예전 번역"}]});
+
     // Continued: only the untranslated draft cue is asked, and the draft is published.
     draft("remake-a", "Draft one.", "Draft two.");
+    assert_eq!(played(&store), was, "playback was given the failed re-make's draft, not the selected version");
     store.continue_remake("remake-a").unwrap();
+    assert_eq!(played(&store), was, "playback was given the draft while it is translated");
     assert_eq!(store.latest_job(&key).unwrap().unwrap().id, "remake-a", "the overlay shows the newest job's cost");
     run_job(&core, &store, store.job("remake-a").unwrap().unwrap());
     assert_eq!(store.job("remake-a").unwrap().unwrap().stage, "ready");
@@ -171,6 +176,7 @@ fn a_continued_remake_publishes_its_draft_and_a_restored_one_cannot_continue() {
     assert_eq!(texts, [("Draft one.".into(), Some("초안 번역".into())), ("Draft two.".into(), Some("번역 1".into()))]);
     assert!(journal.records().unwrap().iter().any(|r| r.identity() == made
         && matches!(&r.change, Change::Translation { translation } if translation.cues.iter().map(|c| c.source_text.as_str()).collect::<Vec<_>>() == ["Draft one.", "Draft two."])));
+    assert_eq!(played(&store)["cues"].as_array().unwrap().iter().map(|c| c["text_ko"].as_str().unwrap()).collect::<Vec<_>>(), ["초안 번역", "번역 1"], "the ready re-make is played");
 
     // Restored instead: the previous version is back, and the re-make can no longer continue.
     draft("remake-b", "Another one.", "Another two.");
@@ -221,4 +227,74 @@ fn a_selected_version_is_translated_with_its_own_terms_and_mishearings_found_for
     assert_eq!(asked[0]["glossary"], json!([{"source": "decoder", "target": "decoder 번역"}]), "the version's own terms");
     assert_eq!(asked[0]["mishearings"], json!([{"heard": "realu", "meant": "ReLU"}]), "the mishearings found for this transcript");
     assert_eq!(store.video(&key).unwrap().unwrap().mishearings.as_deref(), Some(r#"[{"heard":"realu","meant":"ReLU"}]"#));
+}
+
+#[test]
+fn only_a_remake_that_failed_translating_continues() {
+    use crate::sync::{Change, Cue as Saved, Deletions, Journal, Translation, Video};
+    let d = dir("continue-table");
+    let journal = Journal::open(&d.join("account"), &crate::google_auth::VerifiedIdentity::fixture("continue-account")).unwrap();
+    let page = "https://lectures.example.org/stops";
+    let key = crate::api::video_key(&url::Url::parse(page).unwrap());
+    let video = Video { key: key.clone(), page_url: page.into(), title: "Lecture".into() };
+    let cues = vec![Saved { start_ms: 0, end_ms: 900, source_text: "Said.".into(), text_ko: "번역".into() }];
+    journal.write(Change::Translation { translation: Translation { video, duration_ms: 5000, source_language: Some("en".into()), terms: vec![], model: "m".into(), cost_krw: 1.0, cues } }, Deletions::new()).unwrap();
+    let store = journal.library().unwrap();
+    // (where it stopped, as stored; whether its transcript is whole)
+    for (n, (reason, whole)) in [("translate_failed", true), ("key_rejected", true), ("download_failed", false), ("no_speech", false), ("unsupported_cpu", false)].into_iter().enumerate() {
+        std::thread::sleep(Duration::from_millis(5));
+        let id = format!("remake-{n}");
+        store.begin_remake(&id, &key, "a.m4a", "m").unwrap();
+        store.fail(&id, reason).unwrap();
+        assert_eq!(store.continue_remake(&id).is_ok(), whole, "{reason}");
+        assert_eq!(store.job(&id).unwrap().unwrap().stage, if whole { "translating" } else { "failed" }, "{reason}");
+        store.fail(&id, reason).unwrap();
+    }
+}
+
+#[test]
+fn an_older_builds_selection_never_pairs_a_transcript_with_another_ones_mishearings() {
+    use crate::sync::{Change, Cue as Saved, Deletions, Journal, Term, Translation, Video};
+    let (orders, most) = (Arc::new(Mutex::new(Vec::new())), Arc::new(AtomicUsize::new(0)));
+    let d = dir("older-selection");
+    let core = super::worker_tests::idle_core(&d, &gemini(flat(0, 1), orders.clone(), most));
+    let journal = Journal::open(&d.join("account"), &crate::google_auth::VerifiedIdentity::fixture("older-account")).unwrap();
+    let page = "https://lectures.example.org/older";
+    let key = crate::api::video_key(&url::Url::parse(page).unwrap());
+    let version = |term: &str, said: &str| {
+        let video = Video { key: key.clone(), page_url: page.into(), title: "Lecture".into() };
+        let cues = vec![Saved { start_ms: 0, end_ms: 900, source_text: said.into(), text_ko: "번역".into() }];
+        let terms = vec![Term { source: term.into(), target: format!("{term} 번역") }];
+        journal.write(Change::Translation { translation: Translation { video, duration_ms: 5000, source_language: Some("en".into()), terms, model: "m".into(), cost_krw: 1.0, cues } }, Deletions::new()).unwrap().identity()
+    };
+    let a = version("encoder", "The encoder reads it.");
+    let b = version("decoder", "The decoder writes it.");
+    let store = journal.library().unwrap();
+    let retranslate = |id: &str| {
+        std::thread::sleep(Duration::from_millis(5));
+        let previous = store.latest_job(&key).unwrap().unwrap();
+        store.retranslate(id, &previous, "m").unwrap();
+        run_job(&core, &store, store.job(id).unwrap().unwrap());
+        assert_eq!(store.job(id).unwrap().unwrap().stage, "ready", "{id}");
+    };
+    // This build finds B's mishearings for B's transcript.
+    store.select_translation(&key, &b).unwrap();
+    retranslate("b-again");
+    let db = crate::db::Db::open(store.path()).unwrap();
+    let left = db.query_one("SELECT mishearings, mishearings_of FROM video WHERE video_key=?", crate::p![key.as_str()]).unwrap().unwrap();
+    assert!(store.current_mishearings(&key).unwrap().is_some());
+    // An older build selects A: its projection writes A's terms and cues and leaves the columns it does not know.
+    store.select_translation(&key, &a).unwrap();
+    db.execute("UPDATE video SET mishearings=?, mishearings_of=? WHERE video_key=?", crate::p![left[0].text(), left[1].text(), key.as_str()]).unwrap();
+    assert_eq!(store.current_mishearings(&key).unwrap(), None, "B's mishearings were taken for A's transcript");
+    // Reopened here, A's re-translation finds A's own first.
+    let before = orders.lock().unwrap().len();
+    retranslate("a-again");
+    let orders = orders.lock().unwrap();
+    let asked: Vec<&Value> = orders[before..].iter().collect();
+    assert_eq!(asked.iter().map(|o| o["task"].as_str().unwrap()).collect::<Vec<_>>(), ["glossary", "translate"]);
+    assert_eq!(asked[0]["transcript"], json!(["The encoder reads it."]), "the mishearings were found in A's transcript");
+    assert_eq!(asked[1]["glossary"], json!([{"source": "encoder", "target": "encoder 번역"}]));
+    assert_eq!(asked[1]["segments"], json!([{"id": 0, "text": "The encoder reads it."}]));
+    assert!(store.current_mishearings(&key).unwrap().is_some(), "A's mishearings are kept for A's transcript");
 }

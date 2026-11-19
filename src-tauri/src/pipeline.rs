@@ -278,6 +278,10 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
         Some(t) => serde_json::from_str(t).map_err(|e| format!("open sentence: {e}"))?,
         None => Vec::new(),
     };
+    // The open sentence is also the first held piece (see below); here it is the tail only.
+    if !tail.is_empty() && held.first().is_some_and(|p| p.words == tail) {
+        held.remove(0);
+    }
     // The title helps the PC's model spell the talk's terms (A4); the phone ignores it.
     cx.core.svc.transcriber.set_hint(Some(&cx.title));
     for (i, r) in regions.iter().enumerate().skip(job.written_regions as usize) {
@@ -296,7 +300,15 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
         let prev = i.checked_sub(1).map(|p| &regions[p]);
         let cues;
         (cues, held) = stitch::window_cues(r, segs, std::mem::take(&mut held), prev, regions.get(i + 1), &mut tail, &mut prev_end);
-        let kept = (!held.is_empty()).then(|| serde_json::to_string(&held).unwrap());
+        // A build from before sentence cues resumes from `held` and ignores
+        // `tail`, so the open sentence's words, already past the resume point,
+        // also go first in `held`: such a build commits them as a cue of their
+        // own instead of losing them.
+        let mut keep = held.clone();
+        if let (Some(a), Some(b)) = (tail.first(), tail.last()) {
+            keep.insert(0, stitch::Piece { start_ms: a.start_ms, end_ms: b.end_ms, words: tail.clone() });
+        }
+        let kept = (!keep.is_empty()).then(|| serde_json::to_string(&keep).unwrap());
         let open = (!tail.is_empty()).then(|| serde_json::to_string(&tail).unwrap());
         cx.store.save_window(&job.id, &job.video_key, i as i64, &cues, kept.as_deref(), open.as_deref()).map_err(|e| e.to_string())?;
         done += len;
@@ -414,14 +426,15 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
 
     let video = store.video(&video_key)?.ok_or("internal")?;
     let terms = video.terms.as_deref().and_then(|t| serde_json::from_str::<Vec<Value>>(t).ok());
-    let found = video.mishearings.as_deref().and_then(|m| serde_json::from_str::<Vec<Value>>(m).ok());
+    let found = store.current_mishearings(video_key)?.and_then(|m| serde_json::from_str::<Vec<Value>>(&m).ok());
     let left = cues.iter().any(|c| c.text_ko.is_none());
     let (glossary, mishearings): (Vec<Value>, Vec<Value>) = match (terms, found) {
         (Some(g), Some(m)) => (g, m),
         (Some(g), None) if !left => (g, Vec::new()),
-        // No glossary yet, or a projected saved version's glossary without the
-        // mishearings of its transcript: the glossary request finds them; the
-        // version's own terms stay.
+        // No glossary yet, or a saved version's glossary without mishearings
+        // found in its own transcript (none kept, or another transcript's left
+        // by a build that does not know them): the glossary request finds them;
+        // the version's own terms stay.
         (terms, _) => {
             let transcript: Vec<String> = cues.iter().map(|c| c.source_text.clone()).collect();
             let glossary_started = std::time::Instant::now();

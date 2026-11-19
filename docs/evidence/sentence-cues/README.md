@@ -28,22 +28,53 @@ Changed after review, once the re-makes were done:
 - A sentence whose reply keeps getting its parts wrong is asked again whole,
   never part by part; after three passes that save nothing the job stops
   (`translate_failed`).
-- A question or exclamation mark always ends a sentence, even before a
-  lower-case word.
+- A question or exclamation mark ends a sentence, even before a lower-case
+  word, unless it closes a quotation that carries on (`He asked "why?" and
+  left.`). A period ends one even before a lower-case word, except after an
+  abbreviation; an ellipsis, `etc.` or an initialism (`U.S.`) does only
+  before a word that does not carry on in lower case.
+- A sentence with a comma in it is no longer ended at the run-on limit: it
+  goes whole to its sentence end, however long (decided by the person on
+  2026-11-19, review round 2). Only a stretch with no punctuation is still
+  ended at 210 characters.
 - A cue never ends after its last word: a word that takes no time at the end
   of the audio joins the part before it, or is dropped if it is a sentence of
   its own.
 - A re-translation asks for the same sentences as the first translation. A
   saved version that was received or selected again has its sentences rebuilt
-  from its cues, and gets its mishearings found again; mishearings belong to
-  the transcript they were found in.
-- A re-make that fails keeps its draft for the re-make tool's `continue`;
-  once the previous version is restored, `continue` refuses it.
+  by running its cues' words through the same sentence ends. It also gets its
+  mishearings found again: they are kept with a digest of the transcript they
+  were found in, and used only while the cues hold that transcript.
+- A re-make that fails keeps its draft for the re-make tool's `continue`.
+  `continue` refuses a re-make that failed writing, whose transcript is
+  unfinished, and one whose previous version was restored. While a re-make's
+  draft is in the cue table, playback is given the selected saved version,
+  not the draft.
+- A write stopped with a sentence open also keeps that sentence's words as the
+  first held piece, so a build from before sentence cues (0.1.9), which
+  ignores the open sentence, resumes without losing them.
 
-None of these changes the eight saved versions. In their cues no part follows
-a `?` or `!`, no cue ends after the video, and no multi-part sentence was ever
-answered part by part (the only replies with wrong ids, in `wbc-oxFFV9c` and
-`WJpeW9lCSUM`, were to one-part sentences, and were asked again).
+None of these changes the cues of the eight saved versions. In their cues no
+part follows a `?` or `!`, no cue ends after the video, and no multi-part
+sentence was ever answered part by part (the only replies with wrong ids, in
+`wbc-oxFFV9c` and `WJpeW9lCSUM`, were to one-part sentences, and were asked
+again). Re-translating a selected re-made version keeps the grouping its
+re-make recorded. Only a version selected again or received from another
+device has its grouping rebuilt with the new rules. Against the recorded
+groupings, the rebuild joins 183 cues to the sentence before them (sentences
+the run-on limit had ended at a comma) and splits 7 (a period before a
+lower-case word):
+
+| Video | Cues | Recorded parts | Rebuilt parts | Joined | Split |
+| --- | --- | --- | --- | --- | --- |
+| `QDX-1M5Nj7s` | 1,316 | 803 | 857 | 56 | 2 |
+| `QWNxQIq0hMo` | 313 | 171 | 179 | 8 | 0 |
+| `WJpeW9lCSUM` | 496 | 261 | 273 | 12 | 0 |
+| `WjhDDeZ7DvM` | 770 | 426 | 449 | 23 | 0 |
+| `_MEqhFwnp8o` | 1,008 | 444 | 478 | 34 | 0 |
+| `vSCYL8ySh9g` | 314 | 182 | 188 | 6 | 0 |
+| `wbc-oxFFV9c` | 1,490 | 536 | 538 | 7 | 5 |
+| `zjkBMFhNj_g` | 1,409 | 740 | 777 | 37 | 0 |
 
 ## The re-makes (done items 12 and 13)
 
@@ -194,7 +225,15 @@ the Korean, which is sometimes longer than the cap assumed. The longest,
 
 In the page overlay at phone size, these cues fit two lines.
 
-The measurement's command, its output and the identity of its input are in
+The measurement is
+[measure/measure.test.svelte.ts](measure/measure.test.svelte.ts). It renders
+every cue and asserts the count on each number of lines, and the list of cues
+over two lines, for every surface, size, version and video, against
+[measure/expected.json](measure/expected.json). It also asserts the totals for
+the new versions given above. The tables above are sums of that file, which
+[measure/check_readme.py](measure/check_readme.py) checks. Its input, every
+Korean cue of the 16 versions, stays out of Git as the person's subtitles. The
+run's command, output and the input's SHA-256 are in
 [receipts.md](receipts.md), with the receipts of the tests named in this
 document.
 
@@ -297,17 +336,24 @@ places are:
 The person narrowed this on 2026-11-19. Mid-sentence cuts are covered in full
 by the counts above, and by sampling here.
 
+After review round 2, every place has a reason of its own. 65 places had none
+("—") and 32 had only "Same." or "Same meaning.". Each was read again from its
+pair in [places.md](places.md). Four Dory places read again turned out
+better, not same: 4:28, 9:50, 23:25 and 26:19, where the old version cut a
+phrase across cues. One `vSCYL8ySh9g` row at 9:44 covered two sentences and
+is now two places.
+
 | Video | Places read | Better | Same | Worse |
 | --- | ---: | ---: | ---: | ---: |
 | `QDX-1M5Nj7s` | 38 | 17 | 16 | 5 |
 | `QWNxQIq0hMo` | 23 | 11 | 8 | 4 |
 | `WJpeW9lCSUM` | 33 | 15 | 11 | 7 |
 | `WjhDDeZ7DvM` | 75 | 43 | 23 | 9 |
-| `_MEqhFwnp8o` | 263 | 200 | 48 | 15 |
-| `vSCYL8ySh9g` | 28 | 13 | 10 | 5 |
+| `_MEqhFwnp8o` | 263 | 204 | 44 | 15 |
+| `vSCYL8ySh9g` | 29 | 13 | 11 | 5 |
 | `wbc-oxFFV9c` | 60 | 26 | 29 | 5 |
 | `zjkBMFhNj_g` | 57 | 25 | 28 | 4 |
-| All 8 | 577 | 350 | 173 | 54 |
+| All 8 | 578 | 354 | 170 | 54 |
 
 ### QDX-1M5Nj7s — MIT Introduction to Deep Learning (2023) | 6.S191 (lecture)
 
@@ -325,15 +371,18 @@ I read 38 places: every old filler place (20), the two misheard-term places, and
 | 11:34 | "you know the the technical part" in 3 cues → 5 parts of one sentence | better | Fillers and the repeat dropped; Korean order. |
 | 15:05, 15:06, 15:10 | one 3-line cue, "매우, 매우" → 3 sentences, "매우 간단한" | better | Repeat dropped; one sentence per cue. |
 | 18:34 | "the Relu function" → "the ReLU function," (Korean ReLU in both) | same | The old Korean already said ReLU. |
-| 28:49 | "all the deep neural network is is" → "깊은 신경망이란 그저…" | same | — |
+| 28:49 | "all the deep neural network is is" → "깊은 신경망이란 그저…" | same | Both say a deep network is layers stacked on layers. The new keeps the speaker's restart ("깊은 신경망을… 깊은 신경망이란 그저") but nothing is lost or added; the old second line belongs to the next sentence. |
 | 32:04, 32:09, 32:12 | one 4-line run-on with "right" ×2 → 3 sentences | better | Tics dropped. |
-| 42:10 | 5 old fragments → 4 parts | better | — |
+| 42:10 | 5 old fragments → 4 parts | better | The old spread the back-propagation sentence over five cues, with "맞습니다" and "그렇죠?" tics and the weights stranded in a later cue. The new is one sentence in four parts ending on "the weights we care about", tics dropped. |
 | 42:21 | "…also with W1. That's why we really call it back propagation" → "이 정보를 활용하기 때문에 이를 역전파라고 부르는 것입니다." | worse | The new transcript dropped "also with W1", and the Korean turns "that's why" into "because it uses this information": changed meaning. |
 | 42:34, 42:46, 42:57 | one cue of 7+ lines → 3 sentences in parts | better | The old cue could not be read in its time. |
 | 43:41 | "very, very deep" → "매우, ‖ 깊은" | same | The cut falls inside the repeat, leaving "매우," at the end of a part. |
-| 51:17, 51:26 | old fragments "…분할할 수 있습니다 / 배치를…" → one sentence each; "very, very" → "아주" | better | — |
+| 51:17 | old "…우리는 분할할 수 있습니다 / 배치를…" → one sentence | better | The old ended a cue on "we can split" with its object "the batch" in the next cue. The new says it in one sentence: split the batch across workers for a bigger speed-up with GPUs. |
+| 51:26 | "very, very" → "아주"; old fragments → one sentence | better | The old cut "the last topic is this / the topic of overfitting" across two cues. The new is one sentence, "the last topic I want to cover very briefly is overfitting", with the repeat "very, very" said once. |
 | 41:44 | "w2가 아니라, 죄송합니다, w1이 됩니다" → "경우에는 w2가 아니라 w1, ‖ 아니, w1이 됩니다." | worse | A forced end inside an unpunctuated stretch splits the speaker's self-correction ("not w1, but w, excuse me, not w2, but w1"), and the Korean garbles it. |
-| 1:01, 9:12, 45:11 | old cue repeating "금요일" / fragments → one sentence in parts | better | — |
+| 1:01 | old fragments → one sentence in parts | better | The old broke "problems we never thought we could solve" over three cues and said "생각" twice. The new is one sentence in five parts, said once. |
+| 9:12 | old cue repeating "금요일" → one sentence in parts | better | The old said "금요일 … 다음 단계" in two cues in a row. The new says it once, in one sentence about the project pitch competition. |
+| 45:11 | old fragments → one sentence in parts | better | The old split "too small and / too large" across cues and left "최솟값!" as a cue of its own. The new keeps the comparison in one sentence ending on the value large enough to pass local minima. |
 | 5:19, 13:26, 16:41, 19:41, 22:50, 26:36, 30:16, 32:20, 35:12, 38:52, 48:52, 53:12 | sampled; same sentences | same | Same meaning; the parts are in Korean order. |
 
 ### QWNxQIq0hMo — Build DeepSeek from Scratch: Series Introduction (talk, single speaker; re-made twice)
@@ -351,10 +400,19 @@ Tally: better 11, same 8, worse 4.
 | 3:08, 3:12 | "not very very deep" | same | The old Korean already dropped the repeat. |
 | 9:46, 9:55 | "…다시 인터넷을 검색해 보니 구축 / DeepSeek를 처음부터 구축하는 것에 대해 다시 인터넷에서 검색해 보았고…" / "DeepSeek R1으로 돌아와서," → two clean sentences; "it it" dropped | better | The old repeated a clause across the cut and mistranslated "to DeepSeek R1". |
 | 13:36, 13:42 | "음, 하지만 최종 목표는…" → "하지만 최종 목표는 여러분이 ‖ …" / "그러니 제가 MLA, 즉 Multi-Head Latent Attention을 보여드릴 때, ‖ …" | better | Filler dropped; one sentence per cue. |
-| 0:04, 0:58, 4:23, 6:11, 8:37, 13:32 | — | same | Same meaning. |
+| 0:04 | greeting | same | The same welcome; "만들기" → "구현하기" for "from scratch". |
+| 0:58 | 1 cue → 3 parts | same | The same sentence (researchers, engineers and companies moving from OpenAI to DeepSeek calls). The old cue also held the next sentence. |
+| 4:23 | same sentence | same | The same wish that you enjoy the series, worded differently. |
+| 6:11 | 1 cue → 3 parts | same | The same sentence; the new puts the reaction verb at the end as Korean does, in three parts. |
+| 8:37 | 1 cue → 3 parts | same | The same sentence (huge view counts, all 10 or 15 minutes long). The old cue also held the next sentence about an 8-minute video. |
+| 13:32 | same sentence | same | The same sentence about the team's time and effort. The old cue also held the sentence before it ("I spent a lot of time compiling this"). |
 | 2:16 | → "…그 영상들에서 저는 여러분께 ‖ 모든 구성 요소를 하나하나 가르쳐 드릴 것입니다. ‖ DeepSeek 아키텍처의 가르침이란," | worse | Changed meaning. The run-on limit ended the sentence at "and by teach,". Gemini moved "of the DeepSeek architecture" into the last part and made it "the teaching of the DeepSeek architecture is". |
 | 3:41 | "이 재생 목록을 모두 마치고 나면 말이죠." → "이 과정을 모두 마친 후에 말이죠." / "전체 재생 목록입니다." | worse | The cap cut "this / entire playlist" inside the noun phrase. Gemini translated the last part as a sentence of its own ("it is the entire playlist"). |
-| 5:17, 7:05, 9:40, 11:02, 11:53 | old cues cut mid-sentence ("그 이유는 바로 /", a duplicated "가르치기 위한 계획을 세웠습니다") → one sentence each | better | — |
+| 5:17 | old "그 이유는 바로 /" → one sentence | better | The old left "the reason is" alone in a cue. The new joins it to its clause: the losses came because DeepSeek built a reasoning model that competes with OpenAI's best. |
+| 7:05 | old cut mid-sentence → one sentence | better | The old split "R1 was not the first / from this company" across cues, with the next sentence's start. The new is one sentence: R1 was not the first thing this company made. |
+| 9:40 | old cut mid-sentence → one sentence | better | The old cue ran into the next sentence ("다시 인터넷을 검색해 보니 구축"). The new holds this sentence alone: the real power is here, not in building on what exists. |
+| 11:02 | old duplicated "가르치기 위한 계획을 세웠습니다" → one sentence | better | The old said "made a plan to teach" twice in two cues. The new says it once. |
+| 11:53 | old cut mid-sentence → one sentence | better | The old cue ran into the next sentence ("MLA 부분을 살펴보면 이런 종류의"). The new is just "I can show you some of my Canva notes". |
 | 7:44 | four old sentences → "이는 정말 모두를 놀라게 했는데 ‖ … ‖ 모델이었기 때문이며, 이는 2025년 1월에야 발표되었으니 ‖ 1년 정도의 연구가 있었거나 어쩌면" | worse | The new transcript has "R1. which" (a period before a lower-case word), so three sentences run together, and the run-on limit ends the last part on "어쩌면" ("or maybe"). |
 | 9:07 | "…짚어주는 영상 말이죠, 그렇죠?" → "…짚어주는 영상 말입니다." | better | The tic "right?" is dropped. |
 | 12:37 | → "…비로소 우리는 어떻게 모든 ‖ DeepSeek의 요소가 처음부터 조립되는지 알게 될 것이고 ‖ 이 과정의 끝 무렵에는" | worse | A run-on stretch. "모든" ("every") is cut away from its noun across parts, and the sentence ends on "이 과정의 끝 무렵에는" ("towards the end of this"). |
@@ -378,17 +436,23 @@ I read 33 places: both old filler places, all 5 term places, 20 spread evenly, a
 | 3:20 | "…가장 흔한 방법들은" / "nvfp4가 있고, …" → "아마도 현재 가장 흔한 방식은 NVFP4일 것입니다." | better | One sentence, and the term is capitalised. |
 | 3:24 | "unslothed 모델들도 있으며" → "Unsloth 모델도 있습니다." | better | The mishearing is corrected. The old Korean passed "unslothed" through. |
 | 3:26 | "…다른 방식들도 있습니다" / "또한 인기를 얻고 있습니다" → "그 외에도 인기를 얻고 있는 몇 가지 모델이 더 있습니다." | better | The old cut left a sentence with no subject. |
-| 3:46 | same sentence, same Korean | same | — |
+| 3:46 | same sentence, same Korean | same | The same sentence and meaning (4-bit costs almost nothing on most models). The old cue also held the next sentence, which now has its own. |
 | 4:07 | "where you see a huge / amount of deterioration." → "상전이 구간에서 큰 차이가 나타납니다." / "성능 저하가 크게 나타납니다." | worse | The Korean says the change twice, once per part, and "차이" is not in the English. Remaining. |
 | 4:54 | "(PTQ)" added, 2 cues → 3 parts | better | No added content; the parts follow the Korean order. |
-| 6:00, 7:04, 8:41, 11:52, 12:57, 14:04 | same sentence, same Korean | same | — |
+| 6:00 | same sentence, same Korean | same | Identical Korean. |
+| 7:04 | same sentence, same Korean | same | The same Korean ("분명히" → "분명"). The old cue also held the next sentence about the 2-bit MoE numbers, which now has its own. |
+| 8:41 | same sentence, same Korean | same | The same sentence without the subject "그들은", which Korean leaves out anyway. The next sentence, which the old cue held, is now its own. |
+| 11:52 | same sentence, same Korean | same | Same meaning. The new drops the acronym "QAD" the old added in brackets; the English here says only "quantize-aware distillation", so nothing said is lost. |
+| 12:57 | same sentence, same Korean | same | Same meaning ("트레이드오프" → "절충안"), now in two parts. |
+| 14:04 | same sentence, same Korean | same | Identical but "1.58-bit" → "1.58비트". |
 | 7:52 | "Qwen 3.6이나 Gemma 4 모델보다 뒤처져 있죠." → "Nemotron 3.6과 Gemma 4 모델보다 뒤처지는 성능입니다." | worse | Wrong term: whisper wrote "QN 3.6", and the translator made it the video's own model instead of Qwen. The old Korean was right. Remaining. |
 | 9:46 | "양자화 인식 학습 (QAT)이 등장하며…" → "이 단계에서 바로 QAT가 도입됩니다." | same | The term is kept; the rest of the old cue is the next sentence. |
 | 10:06 | "업데이트를 위해서요. 그래서…" → "가중치의 전체 정밀도 사본은 유지해야 합니다..." / "그래서 모델 자체가…" | worse | Lost content: "for the updates" is not in the new transcript, which trails off at "for...". Remaining. |
 | 10:37 | "…이 작업에서 흥미로운 부분입니다." / "영상에서…" → "두 가지 모바일 버전이" / "사실 이번 영상에서 흥미로운 부분입니다." | better | The old cut split "this / video" across two cues. |
 | 15:19 | 3 cues of a run-on → "코드인지 텍스트인지에 따라," / "초당 500에서 600 토큰 정도의 속도가 나옵니다." | better | One sentence, nothing cut. |
 | 16:22 | "…이건 확실히" → "여기 다른 실행에서 나온 결과가 하나 있습니다." | better | The old cue ended mid-clause. |
-| 17:13, 18:30 | same meaning | same | — |
+| 17:13 | same meaning | same | The new sentence is only "you'll see that, sure enough, it's going through" ("보시다시피 확실히 잘 작동하고 있습니다"), which is right. The faster token speeds that the old cue added belong to the next sentence. |
+| 18:30 | same meaning | same | Same trailing-off phrase ("Now, with the pro calls..."); "pro" became "프로". |
 | 18:32 | "…약간 혼동할 수 있다는 것을 발견했습니다." → "가끔" / "약간 혼동하는 경우가 있는데," / "여기 있는 프롬프트 주입 저항 같은 특정 항목들에서 그렇습니다." | same | Both read well; the new drops "I find", which carries no content. |
 | 18:42 | "all all eight" → "때때로 여기서 8개 중 8개를 모두 맞히는 것을 볼 수 있습니다." | better | The repeat is dropped. |
 | 19:21 | 4 cues → 5 parts of one sentence | better | The old Korean ended a cue on "알 수 있습니다," and started the next with a new claim. |
@@ -430,27 +494,32 @@ Old 408 cues, new 770 cues in 344 sentences. I read every old filler/repeat plac
 | 21:20 | "…Lama와 비교했을 때의 내용입니다." → "자, 그럼 DeepSeek와 GPT-4를 비교해 보면" / "Llama와 비교했을 때도 마찬가지입니다." | worse | It reads as starting a comparison, but the speaker is closing one. |
 | 22:34 | "…저울질해야 합니다." ("right" kept as 잘) → "…고려해야 합니다." | better | The tic was dropped. |
 | 22:37 | GPT-44 → Korean "GPT-4" (old: GPT-4o) | same | The audio could be either GPT-4o or GPT-4; uncertain, not counted as a regression. |
-| 22:44 | one 4-sentence cue → 3 parts | better | — |
+| 22:44 | one 4-sentence cue → 3 parts | better | The old cue held four sentences at once (the GPT-4o advice, the startup advice, the cost, open source). The new shows this sentence alone in three parts: a small, fast-growing startup should pick DeepSeek for the cost; it performs well and is open source. |
 | 23:18 | GPT-40 → GPT-4o in 2 parts | same | Already correct. |
 | 24:47 | "Um," / "음," → "DeepSeek from Scratch" / "DeepSeek를 처음부터 구현하면" | worse | The title hint wrote title words that were not said, and the Korean adds content. |
 | 26:19 | "which which … 어떤 부분이 결정하는" → 3 parts | better | Repeat dropped; the old Korean was garbled. |
-| 28:28 | 2 cues → 2 sentences | better | — |
+| 28:28 | 2 cues → 2 sentences | better | The old cut "instead of encoding it in the token / instead of in the embedding itself" across cues, saying "대신" twice. The new is one sentence in two parts: encode position at the query and key stage, not in the token embedding. |
 | 28:38 | "rotary … which which is the fifth key innovation which / The DeepSeek architecture implemented." | same | The source itself breaks the clause; the Korean "…관한 것으로," / "DeepSeek 아키텍처에 구현되었습니다." keeps the meaning. |
-| 29:41 | 3 parts | better | — |
+| 29:41 | 3 parts | better | The old cue began with the previous sentence about the RL training mechanism. The new holds this sentence alone in three parts: this is why DeepSeek R1 is such a good reasoning model. |
 | 32:26–32:38 | "…Llama 등과 비교했을 때 말이죠." / "the cost requirements which they use to train the models." → "그들이 모델을 학습시키는 데 사용하는 비용 요건입니다." | worse | The run-on limit ended the sentence at its last comma, so the closing phrase stands alone as a fragment. |
-| 32:41 | "So it's like..." → "그러니까," | same | — |
+| 32:41 | "So it's like..." → "그러니까," | same | A phrase the speaker trails off on. Both render it as "그러니까", the old at the end of the cost sentence, the new on its own. |
 | 35:01 | "you you go through" → "이전 시리즈를 먼저 학습했다고 가정합니다." | better | Repeat dropped. |
 | 35:07, 35:13 | "phase three gpu / optimization text" → "3단계는 GPU 최적화입니다." | better | The misheard "text" was dropped from the Korean, and there are no orphans. |
-| 38:16 | GRPO in 2 parts | same | — |
+| 38:16 | GRPO in 2 parts | same | The run-on limit ended the sentence before "which is also known as…", so this part went alone. Its Korean still says GRPO is the reward used instead of human-labelled data, so nothing is lost; the term is split across the two lines. |
 | 38:22 | PTA → PTX | better | Mishearing corrected; the expansion "Parallel Thread Execution" is not repeated in the Korean (minor). |
 | 0:04 | "여러분 안녕하세요," / "'Build DeepSeek from Scratch' 시리즈의…" | same | Said in the audio; the series name is left in English. |
 | 2:44 | "your effort will take you 2." "당신을 2로 이끌 것입니다" → "여러분의 수고는 결실을 맺을 것입니다." | worse | Lost content: the example is about predicting the next token ("to"), and the new Korean drops it. |
 | 5:14, 16:53, 24:55, 30:23, 32:56 | long cues → 2–3 parts | better | Korean order; no fragments. |
-| 7:48, 10:00, 14:51, 22:17, 27:16, 37:06 | sentence split, same content | same | — |
+| 7:48 | sentence split, same content | same | The same opening ("you've all used ChatGPT"). The old cue also held the next sentence about early models and e-mails. |
+| 10:00 | sentence split, same content | same | Same meaning; "fine-tune" → "미세 조정", "라벨링된" → "레이블이 지정된". |
+| 14:51 | sentence split, same content | same | The new transcript has a period after "LLMs", so "the different LLMs DeepSeek built" is the next sentence. The Korean of each is right. |
+| 22:17 | sentence split, same content | same | Same content in three parts. The new transcript heard "671 billion" where the old had "670" (DeepSeek-V3 has 671B), and the Korean follows it. |
+| 27:16 | sentence split, same content | same | The same sentence ("the best way to understand quantization is to look here"). The old cue also held the sentence before. |
+| 37:06 | sentence split, same content | same | The same heading, "strengths and weaknesses". The old cue also held the next sentence, now on its own. |
 
 ### _MEqhFwnp8o — Ask the Experts: Dory Looped Transformer Model (live stream, four speakers)
 
-Old 678 cues, new 1,008 cues in 564 sentences. Mishearings: "loopy boys" → Looped Transformer (wrong: that is the host's joke name, though the Korean did not use it), "Star Elastics" → Star Elastic, "4B model" → 4B. I read 263 places: every old filler or repeat place (239), every misheard-term place (12, marks F/T), and 16 spread evenly. Tally: better 200, same 48, worse 15.
+Old 678 cues, new 1,008 cues in 564 sentences. Mishearings: "loopy boys" → Looped Transformer (wrong: that is the host's joke name, though the Korean did not use it), "Star Elastics" → Star Elastic, "4B model" → 4B. I read 263 places: every old filler or repeat place (239), every misheard-term place (12, marks F/T), and 16 spread evenly. Tally: better 204, same 44, worse 15.
 
 | At [mark] | Verdict | Why |
 |---|---|---|
@@ -513,11 +582,11 @@ Old 678 cues, new 1,008 cues in 564 sentences. Mishearings: "loopy boys" → Loo
 | 32:50 FM | same | "last loop" became "마지막 Looped Transformer" in both versions. |
 | 32:54 FM, 32:55 FM, 32:57 FM, 33:03 FM, 33:06 FM, 33:11 FM, 33:15 FM, 33:19 FMT | better | Fillers, false starts or repeats are dropped from the Korean with the meaning kept, and each cue is one sentence or a part of one. |
 | 33:23 MT | better | "get clawed" → "Get Claude": the old version dropped it. |
-| 33:24 MT | same | Same meaning. |
+| 33:24 MT | same | The new transcript puts "It's a 4B model." alone; "이것은 4B 모델입니다" says it. The rest of the old cue (try it yourself, rent an instance) is the sentences around it. |
 | 33:25 FMT, 33:29 FM, 33:30 FM, 33:34 FM, 34:08 FM, 34:12 FM | better | Fillers, false starts or repeats are dropped from the Korean with the meaning kept, and each cue is one sentence or a part of one. |
 | 34:25 FM | same | The source is garbled; both Korean versions are hard to read. |
-| 34:45 MT | same | Same meaning. |
-| 35:01 MT | same | Same meaning. |
+| 34:45 MT | same | The same content (start at 0.5B or 1B, or go up to 4B as a proof of concept) and the tic "그렇죠?" is gone, but the new leaves "어느 정도," as a part of its own. One gain, one loss. |
+| 35:01 MT | same | The same sentence (a quantized 4B model runs on a phone, a laptop and more), in two parts instead of two cues. |
 | 35:31 FM | same | The name differs by hearing ("Rohan Nuri" / "Rahane Nouri"). |
 | 35:35 FM, 35:38 FM, 35:43 FM | better | Fillers, false starts or repeats are dropped from the Korean with the meaning kept, and each cue is one sentence or a part of one. |
 | 35:47 FM | same | The false start "is it better or" is folded in as "아니면 더 나은 방법이 있는지"; this is close. |
@@ -542,54 +611,61 @@ Old 678 cues, new 1,008 cues in 564 sentences. Mishearings: "loopy boys" → Loo
 | 46:14 FM | same | "Okay." → "자," |
 | 46:14 FM, 46:15 FM, 47:19 FM, 47:25 FM | better | Fillers, false starts or repeats are dropped from the Korean with the meaning kept, and each cue is one sentence or a part of one. |
 | 47:32 FM | better | "shot to do the same" → "Shantanu, same question" (name fixed). |
-| 47:56 MT | same | Same meaning (Dorie → Dory). |
+| 47:56 MT | same | The same example (a regular 4B model such as Dory), with "Dorie" written as Dory in both Korean versions. The old third cue ("마치") belongs to the next sentence. |
 | 48:54 FM, 48:55 FM, 48:56 FM, 48:57 FM, 49:00 FM, 49:03 FM, 49:07 FM, 49:10 FM, 49:14 FM, 49:18 FM | better | Fillers, false starts or repeats are dropped from the Korean with the meaning kept, and each cue is one sentence or a part of one. |
 | 49:23 FM | same | The run-on limit cut "next / week" across two sentences, so the Korean says "won't see you" in both. |
 | 49:34 FM | better | Fillers, false starts or repeats are dropped from the Korean with the meaning kept, and each cue is one sentence or a part of one. |
-| 49:44 FM | same | Same farewell. |
-| 1:01 M | same | Same greeting. |
-| 4:28 M | same | Same. |
+| 49:44 FM | same | The same farewell; the new leaves out the Thanksgiving break the old included, which the new transcript has as the sentence before. |
+| 1:01 M | same | The new transcript ends a sentence after "Hi everyone"; the welcome to the Nemotron live stream follows as its own. |
+| 4:28 M | better | The old cut "each / layer" across two cues. The new has the clause whole: each layer sees this token only once. |
 | 6:41 M | same | A stray "directions." cue, as in the old version ("방향들을요"). |
-| 9:50 M | same | Same. |
-| 11:52 M | same | Same. |
-| 13:53 M | same | Same. |
-| 16:05 M | same | Same. |
-| 19:20 M | same | Same. |
-| 23:25 M | same | Same. |
-| 26:19 M | same | Same. |
+| 9:50 M | better | The old cut "for example / at the question level" across two cues. The new is one sentence in two parts: per question or even per token. |
+| 11:52 M | same | The same sentence (not always a test, just a leftover of how we talk), one sentence in two parts instead of two cues. |
+| 13:53 M | same | The same statement that the final response's chain of thought stays visible. The old ended on the question "is that right?", which the new transcript has as the next sentence. |
+| 16:05 M | same | The same sentence about the fourth loop refining on top. The old cue also held the sentence before it about the third loop. |
+| 19:20 M | same | "Here we go." in both ("여기 있습니다" → "됐습니다"). The old cue also held the start of the next sentence. |
+| 23:25 M | better | The old spread this sentence over three cues that each began or ended mid-clause ("우리는 아마도 / 개선이"). The new is one sentence in four parts, with the reason last. |
+| 26:19 M | better | The old cut the condition ("if you want absolute maximum performance") from its consequence with a period between cues. The new joins them: if you want it, you start from scratch and ignore the training cost. |
 | 31:45 M | better | The false start was dropped; one sentence. |
-| 35:21  | same | Same. |
-| 38:44 M | same | Same. |
+| 35:21  | same | "You have to start somewhere." in both. The old cue also held the next sentence. |
+| 38:44 M | same | The same sentence about two extreme experiments. The old cue also held the first experiment, which the new has as the next sentence. |
 | 40:46  | same | The transcript differs here ("Is it available? In build.nvidia.com"); I can't verify which is right. |
-| 44:02 M | same | Same. |
-| 46:25  | same | Same. |
+| 44:02 M | same | The same answer: Dory is a looped transformer based on dense. The old put the question and "familiar dense patterns" in the same cues; the new has them as the sentences around it. |
+| 46:25  | same | Identical Korean. |
 
 ### vSCYL8ySh9g — NVIDIA's looped 4B model (talk, single speaker; re-made twice)
 
-The first re-make was replaced by a second one on the run-on fix, as approved. This reading is of the second. Old 202 cues, new 314 cues in 132 sentences. Mishearings: DOI → Dory, vFloat16 → bfloat16. I read 28 places:
+The first re-make was replaced by a second one on the run-on fix, as approved. This reading is of the second. Old 202 cues, new 314 cues in 132 sentences. Mishearings: DOI → Dory, vFloat16 → bfloat16. I read 29 places:
 
 - every old filler place (5);
 - every place marked as a misheard term (7). One is real (DOI at 6:14); in the other six my term check matched "DOI" inside "doing";
 - the old cues that started or ended mid-sentence, spread evenly (16).
 
-Tally: better 13, same 10, worse 5.
+Tally: better 13, same 11, worse 5.
 
 | At | Old → new (Korean) | Verdict | Why |
 |---|---|---|---|
 | 4:20 | "…서로 다른 가중치 세트가 아니라 / 각 블록마다 매번, 기본적으로 동일한 파라미터 세트가 그저 / 여기서 강화됩니다." → "…그 수정 사항이 ‖ 매번 각 블록마다 서로 다른 가중치 집합을 사용하는 대신, ‖ 기본적으로 동일한 가중치 집합이 ‖ 여기서 강화된다는 것입니다." | better | One sentence; the verb is in the last part. |
 | 6:14 | DOI → Dory | same | The old Korean already said Dory. |
-| 9:44 | "네, 그래서 이 부분이 저에게는, / 가장 궁금했던 부분입니다." → "그래서 이 부분이 ‖ 제가 가장 궁금했던 점인데, ‖ …" | same | — |
+| 9:44 | "Okay." → "자," | same | The new transcript puts "Okay." alone; "자," says it as the old "네," did. |
+| 9:44 | "네, 그래서 이 부분이 저에게는, / 가장 궁금했던 부분입니다." → "그래서 이 부분이 ‖ 제가 가장 궁금했던 점인데, ‖ …" | same | Same meaning: the part he was most curious about, what the model does on each loop. The old took four cues, the new one sentence in four parts. |
 | 12:04, 12:07 | → "이 방식은 전혀 효과가 없으며…" / "아마도 그 이유는 ‖ 모델의 가중치가 충분하지 않기 때문일 것입니다." / "26B 버전과 비교하면 말이죠." | same | "Compared to the 26B version" is now its own short sentence; nothing lost. |
 | 12:37 | "따라서 이들의 연산량은 대략 비슷합니다." → "이 모델들도 마찬가지인데," | worse | Lost content: the new transcript has "So the same for these", without "the compute is roughly sort of". The first re-make, without the run-on fix, lost it too. It came from the title hint: the hint-off transcript of the same audio keeps it. |
-| 13:17, 13:25 | — | same | — |
+| 13:17 | GPT-6 rumour, 1 → 3 parts | same | Same content: rumours that GPT-6 uses one, two or three loops by size. The new has it in three parts, with "아마도" for "supposedly". |
+| 13:25 | two-loop default, 1 → 3 parts | same | Same content: deploy with two loops by default, as NVIDIA recommends. Three parts in the new, one cue in the old. |
 | 14:03 | "…저는 이런 종류의 연구용 버전이 / 사람들이 프로덕션에서…" → one sentence in 3 parts | better | The old cut the sentence after its subject. |
 | 14:09 | → "하지만 이런 종류의 모델을 미세 조정하는 방법을 살펴볼 때 ‖ 다양한 루프 횟수 등에 맞춰 조정하는 것은 중요하다고 생각합니다." | worse | Content added. The run-on limit ended the sentence at "etc.," before "you could imagine…". Gemini completed the cut clause with "중요하다고" ("it is important"), which the speaker did not say. |
 | 14:29 | → "어쨌든 모델 카드에 대한 링크를 ‖ 설명란에 모두 적어 두었습니다." | same | "And all the details" is folded into "모두" ("all"). |
 | 14:33 | "루프 트랜스포머" → "잠재 순환 트랜스포머" | worse | Wrong term: "loop transformers" became "latent recurrent transformers" (glossary term). |
 | 0:00, 0:56, 2:24, 3:17, 4:11, 5:13 | old cues cut mid-sentence ("…서로 다른 양의 루핑이 일어나고 있는 것입니다. / 모델입니다.", "open mdw 라이선스로 공개했습니다. / 라이선스이므로…") → one sentence or one part per cue | better | The old repeated or orphaned words at each cut. At 2:24 OpenMDW is now one name. |
-| 1:44, 6:02, 12:59 | — | same | — |
+| 1:44 | same sentence | same | Same sentence ("나온" → "개발한"). |
+| 6:02 | same sentence | same | Same sentence. The new says "112층" ("112 layers"), which the talk is counting. |
+| 12:59 | same sentence | same | Same sentence. The old cue held "…and then being able to compete with", the start of the next sentence; the new ends where the transcript's sentence ends. |
 | 6:52 | "…마지막 루프는 변하지 않습니다 / 전혀 변하지 않습니다." → one sentence | better | The old said "does not change" twice. |
-| 7:47, 9:25, 10:07, 10:55 | old fragments, a duplicated clause at 9:25 → one sentence each | better | — |
+| 7:47 | old fragments → one sentence | better | The old spread the point over three cues ("이것이 바로 / 현재로서는 이 부분이 /"). The new is one sentence in four parts: you must set the loop count when starting vLLM. |
+| 9:25 | old duplicated clause → one sentence | better | The old said "if I run the same with a for loop" twice in two cues. The new says it once, with its result. |
+| 10:07 | old fragments → one sentence | better | The old split the purpose ("match vLLM's log probs / and to see how the outputs change") across cues. The new is one sentence in two parts. |
+| 10:55 | old fragments → one sentence | better | The old cue ran "at each point" into the next sentence. The new is one sentence: run a separate vLLM instance at each point. |
 | 8:35 | → "하지만 항상 그런 것은 아니며, ‖ 이것이 ‖ 단순히 ‖ 추론 능력을 높이는 것과 ‖ 같다고 말할 수는 없습니다." | worse | A 140-character sentence was cut at five pauses. Two parts show one word for 0.8 s and 2 s ("이것이", "단순히"). The meaning is kept, but it is hard to read. |
 | 11:40 | "따라서 지시 이행과 긴 컨텍스트… / 이 모델이 성능을 잃는 경향이 있는 부분은…" → "지시 이행과 긴 문맥, ‖ SWE Bench 검증 같은 작업에서는, ‖ 이 모델이 뒤처지는 부분은 ‖ …지식이 필요한 작업들입니다." | worse | Changed meaning. The new transcript wrote a comma where the speaker ended a sentence, so two sentences became one. The Korean now says the model falls behind within instruction following, where the speaker said it wins there. |
 
@@ -616,27 +692,37 @@ Tally: better 26, same 29, worse 5.
 | 10:56, 11:06, 11:11 | Atom → Adam, "TAN-H" → tanh | same | The old Korean already had Adam and TanH. The new parts are in Korean order. |
 | 18:49, 18:53 | realu → ReLU | same | The old Korean already had ReLU. |
 | 19:58, 20:03 | unpunctuated run-on cues ("…필터당 하나씩 생성된 후 풀링을 통해 크기가 줄어듭니다. / 그것들을 처리하고…") → "합성곱과 ReLU를 거치면 ‖ 필터당 하나씩, 특징 맵의 스택으로 변환됩니다." / "그다음 풀링 계층이 이를 축소하고 이 과정이 반복됩니다." | better | The old cut "them" off from "shrinks" and translated it as "그것들을 처리하고" ("process them"). |
-| 40:04, 40:06 | "여기 첫 번째 답변이 있습니다." / "9번입니다." | same | — |
+| 40:04 | "여기 첫 번째 답변이 있습니다." | same | The same sentence. The old cue also held "Number 9…", now its own sentence. |
+| 40:06 | "9번입니다." | same | The transcript ends a sentence after "Number 9."; "9번입니다." says it. Seq2Seq follows as its own sentence, as the old had it in one cue. |
 | 40:07 | "시퀀스 투 시퀀스(Sequence to sequence) 또는 Seq2Seq" → "Sequence to Sequence ‖ 또는 2014년에 나온 Sequence to Sequence 모델입니다." | worse | Wrong term correction: the glossary maps "Seek to Seek" to "Sequence to Sequence", so the speaker's two names (sequence to sequence, seq2seq) became the same name twice. The old version had it right. The sentence that follows ends in an unpunctuated stretch on "그러면 이 벡터는", carried on in the next cue. |
 | 42:47, 42:53 | Bahtenau → Bahdanau | same | The old Korean already had Bahdanau. |
 | 43:59, 44:01 | "그것의 한 단계를 아래에서 천천히 그려보겠습니다. 아래쪽에는…" (run-on) → "그중 한 단계를 천천히 그려 보겠습니다." / "하단에는 Sequence to Sequence의 RNN인 인코더가 있고, ‖ …" | better | The old joined two sentences and attached "at the bottom" to the wrong one. Here "seek to seek" alone is expanded correctly. |
 | 44:09 | "…end 토큰까지" → "…N 토큰 뒤의 H8까지 이어집니다." | worse | The new transcript heard "end token" as "N token"; the Korean says "N 토큰". The old had "end 토큰". The segmentation is better, but a term is lost. |
 | 44:18 | "plain Seq2Seq는 오직 / 마지막 하나지만 이제 상단에 8개를 모두 유지하는 것은 디코더이며…" → "기존의 Sequence to Sequence는 마지막 하나만 유지했지만, 이제는 여덟 개를 모두 유지합니다." | better | The old cut merged two sentences into a wrong one. |
 | 46:19, 46:46, 56:22 | "Marion" → "Marian" | better | Term fixed by the mishearings list. |
-| 56:20 | "그 첫 번째 작업은 번역이었습니다." | same | — |
+| 56:20 | "그 첫 번째 작업은 번역이었습니다." | same | Same sentence. The old cue also held the next sentence about the 2017 Transformer. |
 | 58:44 | "BERT의 Both Ways 게임은…" → "BERT의 양방향 방식은 ‖ 11가지 언어 작업에서 새로운 기록을 세웠습니다." | better | The old kept the mishearing "Both Ways game" as a name; the new reads it as "both ways", meaning bidirectional. |
 | 60:08, 60:22, 60:25, 60:28, 60:37 | three-line run-on cues ("…cls는 실제 단어가 아니지만, BERT는 모든 문장 앞에 이 토큰을 넣습니다. / 입력값으로 들어가고…") → one sentence or one part per cue | better | The old cut "every / input" across cues. |
 | 60:39, 60:40 | "여기 실제 BERT가 있습니다. 그런 방식으로 미세 조정을 하면 / 영화 리뷰에서…" → "여기 진짜 BERT가 있습니다." / "영화 리뷰를 읽으면서 그런 방식으로 미세 조정을 하세요, ‖ 우리 고양이에 관한 두 문장을요." | same | Both misread "fine-tuned that way on movie reviews": the old as a condition ("if you fine-tune"), the new as a command ("do the fine-tuning"). |
 | 62:34 | "Burt" → BERT | same | The old Korean already had BERT; the new sentence is in 4 parts. |
 | 67:52, 67:59, 68:01 | "the the router" in a cue cut mid-clause ("각 단어는 오직 / 두 명의 전문가에 대해 첫 번째 단어가 들어오면…") → three sentences; "첫 번째 단어인 'the'를 따라가 보세요." | better | The repeat is resolved: the second "the" is the word being followed. |
 | 69:54, 70:06, 70:08 | Mixtrel → Mixtral | same | The old Korean already had Mixtral. |
-| 0:00 | title sentence | same | — |
+| 0:00 | title sentence | same | Both render the title line. The new keeps "forever" (영원히), which the old dropped, but says "투자하세요" ("invest") for "give me". One gain and one loss, so same. |
 | 4:11 | "0보다 크므로 네, 이것이 퍼셉트론 아키텍처의 전부이며 모든 다이어그램은 이 키를 따릅니다." → "이것이 퍼셉트론의 전체 구조입니다." | better | The old cue held three sentences and mistranslated "follows the key along". |
-| 22:51, 42:12, 60:53 | old cues starting or ending mid-sentence → one sentence each | better | — |
+| 22:51 | old cue ending mid-sentence → one sentence | better | The old cue ran into "the 56-layer network can copy the 20-layer one and". The new holds this sentence alone: each layer passes data only to the one above. |
+| 42:12 | old cue ending mid-sentence → one sentence | better | The old cut "everything the decoder knows about English / must pass through that one vector" across cues. The new is one sentence in two parts. |
+| 60:53 | old cues starting and ending mid-sentence → one sentence | better | The old cut "to answer a question, the small layer scores / every word of the passage twice" across cues. The new is one sentence in two parts. |
 | 27:53 | "king 마이너스 / man 더하기 woman" across two cues → "숫자로 표현하면 킹 마이너스 맨 플러스 우먼입니다." | better | The expression is no longer cut in two. |
 | 32:15 | "메모리가 u와 TanH를 거쳐 되돌아가기 때문에" → "메모리가 다시 여러분을 거쳐 tanh를 통과하므로" | worse | The new transcript heard the weight "U" as "you", and the Korean says "through you": changed meaning. The sentence is also in an unpunctuated stretch and its last part ends on "단어가 많아지면" ("as the words pile up"). |
 | 65:38 | "…프랑스어로 번역하는 것입니다. / 텍스트와 2020년의 GPT-3는…" → "프랑스어로 번역한 다음, 영어 텍스트와 프랑스어 텍스트를 나열하세요." | better | The old cut "the French / text" across cues and joined it to the next sentence. |
-| 8:25, 13:10, 17:58, 36:57, 46:48, 51:03, 55:23, 70:19 | sampled; same sentences | same | Same meaning. |
+| 8:25 | sampled | same | The same sentence ("let's add more neurons"). The old cue also held the next sentence naming the multilayer perceptron. |
+| 13:10 | sampled | same | The same sentence ("one perceptron learns only a linear boundary"), without the old "the key idea" opener the new transcript lacks. The hidden-layer sentence the old cue held is its own. |
+| 17:58 | sampled | same | The same sentence ("shift the cat 8 pixels right"). The old cue also held the next sentence. |
+| 36:57 | sampled | same | The new transcript ends a sentence after "the short-term memory, H." and has "what the output gate reads out of it" as its own (36:59). Together they say what the old cue said. |
+| 46:48 | sampled | same | The same sentence ("the grid on the right is one layer of attention"). The old cue also held the next sentence. |
+| 51:03 | sampled | same | Identical Korean. |
+| 55:23 | sampled | same | The same sentence in two parts (feed-forward boxes are small MLPs; add and norm is a skip connection and normalization). |
+| 70:19 | sampled | same | Identical Korean, in two parts. |
 
 ### zjkBMFhNj_g — [1hr Talk] Intro to Large Language Models (talk, single speaker)
 
@@ -654,7 +740,7 @@ Tally: better 25, same 28, worse 4.
 | 0:25, 0:29 | one cue holding two sentences, "…그렇죠?" → one sentence each; "right?" dropped | better | Tic dropped; one sentence per cue. |
 | 0:32, 1:24, 1:31, 4:37 | llama 270b / Lama 270b / LAMA270B → "Llama 2 70B" in both | same | The old Korean was already right. |
 | 2:23, 2:26 | "그리고, 어," → dropped | better | Filler dropped. |
-| 5:08 | 2 sentences in a cue → one sentence in 3 parts | better | — |
+| 5:08 | 2 sentences in a cue → one sentence in 3 parts | better | The old cue held this sentence and the next (6,000 GPUs for 12 days). The new shows this one alone: these are special computers for heavy workloads like training neural networks. |
 | 5:14 | "to get a Lama to 70B" → new transcript "Lama to 7 dB" → Korean "Llama 2 7B" | worse | Wrong term correction: the number became 7B; the old cue said 70B correctly. |
 | 6:04, 6:11, 6:22 | rookie numbers; Chat-APT/CLAWD/BARD → ChatGPT/Claude/Bard | same | The old Korean already had the terms right. |
 | 12:23 | "음" cue → dropped | better | A filler cue is gone. |
@@ -662,12 +748,20 @@ Tally: better 25, same 28, worse 4.
 | 16:28 | "저희는, 어, 이 과정을…" → "…이 과정을 파인 튜닝이라고 합니다." | better | Filler and false start dropped. |
 | 17:32, 17:41 | "사전 학습 단계는, 음, 학습하는 것입니다," / "그것은, 어, 그러니까, 주는 것에 관한, 음, …" → clean sentences | better | The old Korean carried the fillers word for word. |
 | 26:58 | "administer a lot of different tests to these large language models" → "예를 들어, 여러분은 다양한" | worse | Lost content: the title hint dropped "tests to these large language models", and the Korean cue breaks off. |
-| 33:43, 33:55, 34:29, 34:38, 54:03, 54:29, 56:07 | same sentences, Korean already right | same | — |
+| 33:43 | same sentence | same | Same content in four parts: Greg Brockman showed ChatGPT a pencil sketch of a website. The old cue also held the next sentence. |
+| 33:55 | same sentence | same | Same sentence: ChatGPT writes working code for the website from the image. |
+| 34:29 | same sentence | same | Same content: not only seeing and making images but audio too. The "multimodality" clause the old cue began with is the sentence before. |
+| 34:38 | same sentence | same | Same content: speech-to-speech communication. The old cue also held the next sentence about the iOS app. |
+| 54:03 | same sentence | same | Same sentence in two parts: asking Bard to help with the shared Google Doc ("Google Doc" → "Google 문서"). |
+| 54:29 | same sentence | same | Same sentence: one way to exfiltrate the data is the following. The old cue also held the next sentence. |
+| 56:07 | same sentence | same | Same content: a shared document, a request to summarise, and the data ends up with the attacker. The new is one sentence in three parts, the old four cues. |
 | 34:18 | "trashabt" → "챗봇" / new "ChashDBT" → "ChatGPT" | better | Term fixed by the mishearings list. |
-| 34:33, 34:41 | "그래서, 어," → dropped | better | — |
+| 34:33 | "그래서, 어," → dropped | better | The old Korean kept the filler ("그래서, 어,"). The new drops it: "ChatGPT can now hear and speak". |
+| 34:41 | old cue holding two sentences → one sentence | better | The old cue ran into the next sentence about the voice interface. The new is one sentence in three parts: in the iOS app you can talk to ChatGPT as in the film Her. |
 | 36:52 | "chong chong …" → "chunk, chunk, …" → "덩어리, 덩어리, 덩어리, 덩어리, 덩어리, 덩어리, 덩어리" | worse | The speaker's sound effect is now the noun "lump" seven times; the old "총총총…" read as a sound. |
-| 36:57, 36:59 | one cue holding two sentences → one each | better | — |
-| 42:39 | "그리고 음" → "그리고," | same | — |
+| 36:57 | one cue holding two sentences → one each | better | The old cue held two sentences and the loop "총총총…". The new has this sentence alone, "that is how the model samples words in the sequence", without the loop. |
+| 36:59 | one cue holding two sentences → one each | better | The second sentence of the old cue on its own: each chunk takes about the same time. |
+| 42:39 | "그리고 음" → "그리고," | same | Only a trailing "And um" in both. The new drops "음", but the cue still says nothing on its own. |
 | 45:03 | "클래스 시리즈나 Google의 바 시리즈" → "Claude 시리즈나 Google의 Bard 시리즈" | better | Terms fixed. |
 | 45:11 | duplicated "빠르게 등장하고 성숙해지는" → one sentence in 4 parts | better | The old Korean repeated a clause. |
 | 54:11, 54:15, 54:34 | "BART is hijacked", "marked down" → Bard, 마크다운 형식 | better | Terms fixed; one sentence per cue. |
@@ -675,7 +769,9 @@ Tally: better 25, same 28, worse 4.
 | 58:40 | "셸 브릭 공격", "백도어" → "탈옥 공격", "백도어 공격" | better | jailbreak was recovered from "shellbreak". |
 | 0:00, 3:42, 7:34, 11:11, 14:47, 22:09, 32:39, 36:36, 39:58, 43:40, 50:26 | sampled; the same sentence is split into parts | same | Same meaning; the new parts are in Korean order. |
 | 18:55 | "than your higher people" "상위 인력보다…" → "Then you hire people." "그런 다음 사람들을 고용합니다." | better | The new transcript heard the words right. |
-| 24:52, 29:08, 54:20 | 2–4 old fragments → one sentence | better | — |
+| 24:52 | old fragments → one sentence | better | The old split "based on the Mistral series / from another French startup" across cues, running into the next sentence. The new is one sentence. |
+| 29:08 | old fragments → one sentence | better | The old gave the answer in four short cues. The new is one sentence in two parts: it collected the information into a table with series A to E. |
+| 54:20 | old fragments → one sentence | better | The old split "takes all personal data / and tries to exfiltrate it" across cues with the next sentence. The new is one sentence in three parts. |
 | 47:12 | "하지만 이것은 실제로 / 일어날 일입니다." → "하지만 실제로 이런 일은 일어나지 않을 것입니다." | better | The old cut inverted the meaning. |
 
 ## Regressions
@@ -693,8 +789,16 @@ Fixed during the task, before the final re-makes:
 - Stray one-word cues from windows written before the run-on fix
   (`WJpeW9lCSUM` 1:43, 2:09, 2:58): the video was re-made after the fix.
 
-Remaining, as read above. None was fixed after the final re-makes; a fix
-would need another paid run of the video.
+Fixed in the pipeline after review, for new jobs and for a version whose
+grouping is rebuilt. The saved cues keep them until the video is made again:
+
+- A sentence with a comma ended at the run-on limit, which changed or cut its
+  meaning: `_MEqhFwnp8o` 24:23, `QWNxQIq0hMo` 2:16, `WjhDDeZ7DvM` 32:26–32:38.
+- A period before a lower-case word read as carrying on, so separate
+  sentences ran together: `QWNxQIq0hMo` 7:44 ("R1. which").
+
+Remaining, as read above. None was fixed in the saved cues after the final
+re-makes; that would need another paid run of the video.
 
 - Lost content:
   - `vSCYL8ySh9g` 12:37 and `zjkBMFhNj_g` 26:58: clauses the title hint dropped;
@@ -745,7 +849,8 @@ they read the person's library):
 
 - `metrics.py` counts the cue shape;
 - `pairs.py`, `sel.py` and `compact.py` line up old and new for reading;
-- `measure.test.svelte.ts` renders the line counts;
+- `ko.json` is the measurement's input; the measurement itself is committed
+  in `docs/evidence/sentence-cues/measure/`;
 - `shots.test.svelte.ts` takes the before/after screenshots;
 - `hintdiff.py` compares the transcripts with and without the hint.
 

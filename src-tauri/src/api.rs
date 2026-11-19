@@ -446,12 +446,28 @@ pub fn get_subtitles(core: &Core, video_key: &str) -> ApiResult {
 }
 
 fn get_subtitles_in(library: &crate::library_scope::Library<'_>, video_key: &str) -> ApiResult {
-    library.run(|store| {
+    library.run(|store| subtitles(store, video_key))
+}
+
+/// `GET /videos/{video_key}/subtitles` on `store`.
+pub(crate) fn subtitles(store: &crate::store::Store, video_key: &str) -> ApiResult {
     if let Some((token, complete)) = store.deleted(video_key)? { return Err(deleted_error(token, complete)); }
     let video = store.video(video_key)?.ok_or_else(|| err(404, "no_video", "이 영상의 자막이 없습니다."))?;
     let ready = store.ready_job(video_key)?.is_some();
     if !ready {
         return Err(err(409, "not_ready", "자막을 만드는 중입니다. 다 되면 알림으로 알려 드립니다."));
+    }
+    // A re-make's draft in the cue table is not the selected version: that one is served as saved.
+    if let Some(saved) = store.covered_by_remake(video_key)? {
+        let cues: Vec<Value> = saved.cues.iter().enumerate()
+            .map(|(seq, c)| json!({"seq": seq, "start_ms": c.start_ms, "end_ms": c.end_ms, "text_ko": c.text_ko}))
+            .collect();
+        return Ok(json!({
+            "video_key": video.video_key,
+            "duration_ms": saved.duration_ms,
+            "source_language": saved.source_language.unwrap_or_else(|| "und".into()),
+            "cues": cues,
+        }));
     }
     let cues: Vec<Value> = store
         .cues(video_key)?
@@ -464,7 +480,6 @@ fn get_subtitles_in(library: &crate::library_scope::Library<'_>, video_key: &str
         "source_language": video.source_language.unwrap_or_else(|| "und".into()),
         "cues": cues,
     }))
-    })
 }
 
 fn playback_in(library: &crate::library_scope::Library<'_>, args: &Value) -> ApiResult {

@@ -28,8 +28,10 @@ const PART_GAP_MS: i64 = 1_500;
 const SENTENCE_GAP_MS: i64 = 3_000;
 /// An unpunctuated stretch past the cap ends at a pause this long.
 const STRETCH_GAP_MS: i64 = 1_000;
-/// A sentence ends here at the latest whatever its pauses: at its last comma
-/// if it has one, so a run-on is not cut mid-clause.
+/// An unpunctuated stretch ends here at the latest whatever its pauses. A
+/// sentence with a comma in it is never ended early: it goes whole, all its
+/// parts in one request, to its sentence end (or a pause of
+/// [`SENTENCE_GAP_MS`]), however long.
 const STRETCH_MAX: usize = 3 * CAP;
 
 /// One cue: its time on the source clock, its text, and whether it opens a
@@ -52,34 +54,36 @@ pub fn push(tail: &mut Tail, pieces: Vec<Piece>, last: bool, prev_end: &mut i64)
     tail.extend(pieces.into_iter().flat_map(words_of));
     let mut cues = Vec::new();
     let mut from = 0;
-    let mut i = 0;
-    while i < tail.len() {
-        let next = tail.get(i + 1);
-        let end = match next {
-            None if !last => break, // whether it ends depends on the word after it
-            None => true,
-            Some(n) => {
-                let gap = n.start_ms - tail[i].end_ms;
-                let chars = len(&tail[from..=i]);
-                ends_sentence(&tail[i], n) || gap >= SENTENCE_GAP_MS || (chars >= CAP && gap >= STRETCH_GAP_MS && !punctuated(&tail[from..=i]))
-            }
-        };
-        let stop = if end {
-            Some(i)
-        } else if len(&tail[from..=i]) >= STRETCH_MAX {
-            // A run-on past the limit ends at its last comma, not mid-clause.
-            Some((from..i).rev().find(|&k| tail[k].text.trim_end().ends_with([',', ';', ':']) && len(&tail[from..=k]) >= CAP).unwrap_or(i))
-        } else {
-            None
-        };
-        if let Some(k) = stop {
-            cues.extend(sentence_cues(&tail[from..=k], prev_end));
-            from = k + 1;
-        }
-        i += 1;
+    for k in ends(tail, last) {
+        cues.extend(sentence_cues(&tail[from..=k], prev_end));
+        from = k + 1;
     }
     tail.drain(..from);
     cues
+}
+
+/// The last word of every sentence `ws` completes, in order. `last`: no more
+/// words will come, so the open sentence ends too.
+fn ends(ws: &[Word], last: bool) -> Vec<usize> {
+    let mut out = Vec::new();
+    let mut from = 0;
+    for i in 0..ws.len() {
+        let end = match ws.get(i + 1) {
+            None if !last => break, // whether it ends depends on the word after it
+            None => true,
+            Some(n) => {
+                let gap = n.start_ms - ws[i].end_ms;
+                let chars = len(&ws[from..=i]);
+                let bare = !punctuated(&ws[from..=i]);
+                ends_sentence(&ws[i], n) || gap >= SENTENCE_GAP_MS || (bare && chars >= CAP && gap >= STRETCH_GAP_MS) || (bare && chars >= STRETCH_MAX)
+            }
+        };
+        if end {
+            out.push(i);
+            from = i + 1;
+        }
+    }
+    out
 }
 
 /// A piece's words, the first starting with the piece and the last ending
@@ -127,18 +131,24 @@ fn punctuated(ws: &[Word]) -> bool {
     ws.iter().any(|w| w.text.trim_end().ends_with([',', ';', ':']))
 }
 
-// Never followed by a new sentence. "etc." is not here: before a capital it
-// ends one ("GGUFs etc. So the model…"), before lower case it carries on anyway.
+// Never followed by a new sentence.
 const ABBREVIATIONS: [&str; 13] = ["mr.", "mrs.", "ms.", "dr.", "prof.", "jr.", "sr.", "vs.", "e.g.", "i.e.", "fig.", "eq.", "approx."];
 
-/// Whether `w` ends a sentence, given the word `next` after it. A question or
-/// exclamation mark always does. A period or an ellipsis does unless it ends
-/// an abbreviation or the next word carries on in lower case ("U.S.
-/// government", "e.g. this", "so... and").
+/// Whether `w` ends a sentence, given the word `next` after it.
+///
+/// - A question or exclamation mark does, unless it closes a quotation the
+///   sentence carries on after in lower case (`He asked "why?" and left.`).
+/// - A period does, even before lower case, unless it ends an abbreviation
+///   (`Dr.`, `e.g.`).
+/// - An ellipsis, `etc.` and an initialism (`U.S.`, `a.m.`) do only before a
+///   word that does not carry on in lower case (`so... and`, `U.S. data`).
 fn ends_sentence(w: &Word, next: &Word) -> bool {
-    let t = w.text.trim().trim_end_matches(['"', '\'', ')', ']', '”', '’']);
+    let raw = w.text.trim();
+    let t = raw.trim_end_matches(['"', '\'', ')', ']', '”', '’']);
+    let quoted = t.len() < raw.len();
+    let lower = next.text.trim_start().trim_start_matches(|c: char| !c.is_alphanumeric()).starts_with(char::is_lowercase);
     if t.ends_with(['?', '!', '？', '！']) {
-        return true;
+        return !(quoted && lower);
     }
     if !t.ends_with(['.', '…', '。']) {
         return false;
@@ -147,7 +157,9 @@ fn ends_sentence(w: &Word, next: &Word) -> bool {
     if ABBREVIATIONS.contains(&word.as_str()) {
         return false;
     }
-    !next.text.trim_start().trim_start_matches(|c: char| !c.is_alphanumeric()).starts_with(char::is_lowercase)
+    let body = word.trim_end_matches(['.', '…', '。']);
+    let trails = word.ends_with("..") || word.ends_with('…') || body == "etc" || body.contains('.');
+    !(trails && lower)
 }
 
 const CONJUNCTIONS: [&str; 19] = [
@@ -254,32 +266,33 @@ fn sentence_cues(ws: &[Word], prev_end: &mut i64) -> Vec<Cue> {
 }
 
 /// Which of the saved `cues` (in seq order) continue the sentence of the cue
-/// before: the grouping [`push`] made, rebuilt from their text and times where
-/// it was not kept (a saved version projected or received from another
-/// device, a re-translation of one). A cue opens a sentence after a sentence
-/// end, a pause of [`SENTENCE_GAP_MS`], an unpunctuated stretch past the cap
-/// at a pause of [`STRETCH_GAP_MS`], or once the sentence has reached
-/// [`STRETCH_MAX`]; these are the ends `push` makes, except that `push` may end
-/// a run-on earlier, at its last comma.
+/// before: the grouping [`push`] made, rebuilt where it was not kept (a saved
+/// version projected or received from another device, a re-translation of
+/// one). The cues' words go through the same sentence ends as when they were
+/// written, each word at its cue's time: every end `push` makes falls on a cue
+/// boundary and depends only on the text and the pause there. A sentence never
+/// runs across a gap in seq or a cue without words.
 pub fn rebuilt_parts(cues: &[crate::store::Cue]) -> std::collections::HashSet<i64> {
     let mut out = std::collections::HashSet::new();
-    let mut sentence: Vec<Word> = Vec::new();
-    for (i, c) in cues.iter().enumerate() {
-        let words: Vec<Word> = c.source_text.split_whitespace().map(|t| Word { start_ms: c.start_ms, end_ms: c.end_ms, text: format!(" {t}") }).collect();
-        let Some(first) = words.first() else {
-            sentence.clear();
-            continue;
-        };
-        let continues = i > 0 && cues[i - 1].seq + 1 == c.seq && sentence.last().is_some_and(|last| {
-            let (gap, chars) = (c.start_ms - cues[i - 1].end_ms, len(&sentence));
-            !ends_sentence(last, first) && gap < SENTENCE_GAP_MS && !(chars >= CAP && gap >= STRETCH_GAP_MS && !punctuated(&sentence)) && chars < STRETCH_MAX
-        });
-        if continues {
-            out.insert(c.seq);
-        } else {
-            sentence.clear();
+    let mut i = 0;
+    while i < cues.len() {
+        let mut j = i;
+        while j < cues.len() && !cues[j].source_text.trim().is_empty() && (j == i || cues[j - 1].seq + 1 == cues[j].seq) {
+            j += 1;
         }
-        sentence.extend(words);
+        let run = &cues[i..j.max(i + 1)];
+        let (mut words, mut firsts) = (Vec::new(), Vec::new());
+        for c in run {
+            firsts.push(words.len());
+            words.extend(c.source_text.split_whitespace().map(|t| Word { start_ms: c.start_ms, end_ms: c.end_ms, text: format!(" {t}") }));
+        }
+        let opens: std::collections::HashSet<usize> = ends(&words, true).into_iter().map(|k| k + 1).collect();
+        for (c, first) in run.iter().zip(&firsts).skip(1) {
+            if !opens.contains(first) {
+                out.insert(c.seq);
+            }
+        }
+        i = j.max(i + 1);
     }
     out
 }

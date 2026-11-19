@@ -121,46 +121,68 @@ fn a_stretch_without_punctuation_is_cut_at_pauses_and_the_cap() {
     ordered(&cues);
 }
 
-#[test]
-fn a_run_on_sentence_past_the_limit_ends_at_its_last_comma() {
-    // Clauses joined by commas, no sentence end, no pause: over three caps long.
-    let clause = "the weights for that repeated block stay the same each time";
-    let text = format!("{}, {}, {}, {}, and we get a lot more depth going on there.", clause, clause, clause, clause);
-    let cues = all(vec![owned(&spoken(0, 200, 50, &text))]);
-    let joined: Vec<&str> = cues.iter().flat_map(|c| c.text.split(' ')).collect();
-    assert_eq!(joined, text.split(' ').collect::<Vec<_>>(), "every word once, in order");
-    // Where a sentence was forced to end, it ends after a comma, never mid-clause.
-    for w in cues.windows(2).filter(|w| w[1].opens) {
-        assert!(w[0].text.ends_with(','), "a sentence cut mid-clause: {:?}", texts(&cues));
+/// The sentences of `cues`: the texts of each sentence's parts joined by " ".
+fn sentences_of(cues: &[Cue]) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for c in cues {
+        match out.last_mut() {
+            Some(s) if !c.opens => *s = format!("{s} {}", c.text),
+            _ => out.push(c.text.clone()),
+        }
     }
-    assert!(cues.iter().skip(1).any(|c| c.opens), "the run-on was not ended at the limit: {:?}", texts(&cues));
-    assert!(!cues.iter().any(|c| c.text == "on there."), "{:?}", texts(&cues));
-    ordered(&cues);
+    out
+}
+
+/// The cues as saved, and the grouping [`rebuilt_parts`] finds in them, which
+/// must be the one they were made with.
+fn rebuilt_as_made(name: &str, made: &[Cue]) {
+    let saved: Vec<crate::store::Cue> = made.iter().enumerate().map(|(i, c)| crate::store::Cue { seq: i as i64, start_ms: c.start_ms, end_ms: c.end_ms, source_text: c.text.clone(), text_ko: None }).collect();
+    let parts: std::collections::HashSet<i64> = made.iter().enumerate().filter(|(_, c)| !c.opens).map(|(i, _)| i as i64).collect();
+    assert_eq!(rebuilt_parts(&saved), parts, "{name}: {:?}", texts(made));
 }
 
 #[test]
-fn abbreviations_and_lower_case_continuations_do_not_end_a_sentence() {
-    let cues = all(vec![owned(&spoken(0, 200, 50, "We compare e.g. ResNet with Dr. Smith's model on the U.S. dataset. Fine."))]);
-    assert_eq!(texts(&cues), ["We compare e.g. ResNet with Dr. Smith's model on the U.S. dataset.", "Fine."]);
-    // "etc." ends a sentence before a capital and carries on before lower case.
-    let cues = all(vec![owned(&spoken(0, 200, 50, "They ship GGUFs etc. So it runs locally, etc. and it is fast."))]);
-    assert_eq!(texts(&cues), ["They ship GGUFs etc.", "So it runs locally, etc. and it is fast."]);
+fn a_sentence_with_commas_goes_whole_however_long_and_only_a_bare_stretch_ends_at_the_limit() {
+    let clause = "the weights for that repeated block stay the same each time";
+    let chained = format!("{clause}, {clause}, {clause}, {clause}, and we get a lot more depth going on there.");
+    let long = "When we move from four layers to eight layers and then all the way up to a hundred layers in this looped model, we are honestly not yet sure whether there is going to be any real benefit at all or even a small cost.";
+    let bare: Vec<String> = (0..60).map(|i| format!("word{i}")).collect();
+    let bare = bare.join(" ");
+    assert!(chained.len() > STRETCH_MAX && long.len() > STRETCH_MAX && bare.len() > STRETCH_MAX);
+    // (form, the text, how many sentences it is)
+    for (name, said, count) in [("comma-chained run-on", chained.as_str(), 1), ("one long sentence, one comma", long, 1), ("no punctuation, no pause", bare.as_str(), 2)] {
+        let cues = all(vec![owned(&spoken(0, 200, 50, said))]);
+        let joined: Vec<&str> = cues.iter().flat_map(|c| c.text.split(' ')).collect();
+        assert_eq!(joined, said.split(' ').collect::<Vec<_>>(), "{name}: every word once, in order");
+        assert_eq!(sentences_of(&cues).len(), count, "{name}: {:?}", texts(&cues));
+        assert!(cues.len() > count, "{name}: not cut into parts: {:?}", texts(&cues));
+        for c in &cues {
+            assert!(c.text.chars().count() <= STRETCH_MAX, "{name}: {c:?}");
+        }
+        rebuilt_as_made(name, &cues);
+        ordered(&cues);
+    }
 }
 
 #[test]
-fn a_question_or_exclamation_mark_ends_a_sentence_whatever_follows() {
-    for (said, sentences) in [
-        ("Any questions? we're done.", &["Any questions?", "we're done."][..]),
-        ("Stop! now we start.", &["Stop!", "now we start."]),
-        ("Is it fast? Yes it is.", &["Is it fast?", "Yes it is."]),
-        ("He asked \"why?\" and left.", &["He asked \"why?\"", "and left."]),
-        // A period before lower case still carries on.
-        ("Train on the U.S. data now.", &["Train on the U.S. data now."]),
-        ("so... and then it stops.", &["so... and then it stops."]),
+fn a_sentence_ends_where_its_punctuation_ends_it() {
+    // (form, said, its sentences)
+    for (name, said, sentences) in [
+        ("question before lower case", "Any questions? we're done.", &["Any questions?", "we're done."][..]),
+        ("exclamation before lower case", "Stop! now we start.", &["Stop!", "now we start."]),
+        ("question before upper case", "Is it fast? Yes it is.", &["Is it fast?", "Yes it is."]),
+        ("period before lower case", "The test passed. we're done.", &["The test passed.", "we're done."]),
+        ("quoted question carried on", "He asked \"why?\" and left.", &["He asked \"why?\" and left."]),
+        ("quoted exclamation ending", "She said \"stop!\" Then it ended.", &["She said \"stop!\"", "Then it ended."]),
+        ("abbreviations", "We compare e.g. ResNet with Dr. Smith's model. Fine.", &["We compare e.g. ResNet with Dr. Smith's model.", "Fine."]),
+        ("initialism before lower case", "Train on the U.S. data at 9 a.m. and stop.", &["Train on the U.S. data at 9 a.m. and stop."]),
+        ("initialism before upper case", "It was made in the U.S. Then it shipped.", &["It was made in the U.S.", "Then it shipped."]),
+        ("ellipsis before lower case", "so... and then it stops.", &["so... and then it stops."]),
+        ("etc. before upper and lower case", "They ship GGUFs etc. So it runs locally, etc. and it is fast.", &["They ship GGUFs etc.", "So it runs locally, etc. and it is fast."]),
     ] {
         let cues = all(vec![owned(&spoken(0, 200, 50, said))]);
-        assert_eq!(texts(&cues), sentences, "{said}");
-        assert!(cues.iter().all(|c| c.opens), "{said}: each is its own sentence");
+        assert_eq!(sentences_of(&cues), sentences, "{name}");
+        rebuilt_as_made(name, &cues);
         ordered(&cues);
     }
 }
@@ -207,10 +229,7 @@ fn the_grouping_rebuilt_from_saved_cues_is_the_one_the_cues_were_made_with() {
         ("silence", silence),
         ("pause", paused),
     ] {
-        let made = all(vec![owned(&words)]);
-        let saved: Vec<crate::store::Cue> = made.iter().enumerate().map(|(i, c)| crate::store::Cue { seq: i as i64, start_ms: c.start_ms, end_ms: c.end_ms, source_text: c.text.clone(), text_ko: None }).collect();
-        let parts: std::collections::HashSet<i64> = made.iter().enumerate().filter(|(_, c)| !c.opens).map(|(i, _)| i as i64).collect();
-        assert_eq!(rebuilt_parts(&saved), parts, "{name}: {:?}", texts(&made));
+        rebuilt_as_made(name, &all(vec![owned(&words)]));
     }
 }
 

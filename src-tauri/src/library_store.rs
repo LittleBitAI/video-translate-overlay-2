@@ -107,20 +107,34 @@ impl Store {
 
     /// Sends a failed re-make back to translating: what it wrote and
     /// translated stays, so only the cues without Korean are asked again.
-    /// Only while the cue table still holds its draft: every write of that
-    /// table (a projection, a restore, another job) makes a newer job, so a
-    /// re-make that is no longer the video's newest job has lost its draft and
-    /// is refused rather than translating the cues that replaced it.
+    /// Only a re-make that failed while translating, so its transcript is
+    /// whole: `translate_failed` and `key_rejected` are stored only for a stop
+    /// there ([`crate::pipeline::failure_reason`]). And only while the cue table
+    /// still holds its draft: every write of that table (a projection, a
+    /// restore, another job) makes a newer job, so a re-make that is no longer
+    /// the video's newest job has lost its draft and is refused rather than
+    /// translating the cues that replaced it.
     pub fn continue_remake(&self, id: &str) -> R<()> {
         self.library_write(|db| {
             let n = db.execute(
                 "UPDATE job SET stage='translating', failure_reason=NULL, created_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')
-                 WHERE id=? AND id LIKE 'remake-%' AND stage='failed'
+                 WHERE id=? AND id LIKE 'remake-%' AND stage='failed' AND failure_reason IN ('translate_failed','key_rejected')
                    AND NOT EXISTS (SELECT 1 FROM job o WHERE o.video_key=job.video_key AND o.id<>job.id AND o.created_at>=job.created_at)",
                 p![id],
             )?;
-            if n == 0 { Err("no failed re-make with this id whose draft is still in place".into()) } else { Ok(()) }
+            if n == 0 { Err("no re-make with this id that failed translating with its draft still in place".into()) } else { Ok(()) }
         })
+    }
+
+    /// The selected saved version, while a re-make's draft fills the cue
+    /// table instead of it: the re-make is the video's newest job and not
+    /// ready. Playback reads this rather than the draft.
+    pub fn covered_by_remake(&self, key: &str) -> R<Option<crate::sync::Translation>> {
+        let newest = self.db.query_one("SELECT id, stage FROM job WHERE video_key=? ORDER BY created_at DESC, rowid DESC LIMIT 1", p![key])?;
+        if !newest.is_some_and(|r| r[0].text().starts_with("remake-") && r[1].text() != "ready") {
+            return Ok(None);
+        }
+        local::selected_translation(&self.db, key).map(Some)
     }
 
     /// Projects `identity` again after a failed re-make overwrote the cue

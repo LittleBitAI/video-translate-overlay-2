@@ -16,12 +16,13 @@
 //! re-make whose process was stopped, from what its job last wrote.
 //!
 //! A re-make that does not end ready keeps its draft (what it wrote and
-//! translated) in the cue table, and the previous version stays selected.
-//! Then one of:
+//! translated) in the cue table, and the previous version stays selected and
+//! is what playback is given. Then one of:
 //!
 //! `remake_saved continue <account-db> <video-key> <job-id> <work-dir>` sends
-//! the failed re-make back to translating; only cues without Korean are asked.
-//! If it fails again its draft stays for another `continue`.
+//! a re-make that failed translating back to translating; only cues without
+//! Korean are asked. If it fails again its draft stays for another `continue`.
+//! One that failed writing has an unfinished transcript and is refused.
 //!
 //! `remake_saved restore <account-db> <video-key> <work-dir>` gives the failed
 //! re-make up and projects the previous version again. After that the draft
@@ -119,7 +120,7 @@ fn finish(core: &Core, store: &Store, id: &str, previous: &str) -> Result<(), St
     let job = store.job(id)?.ok_or("job vanished")?;
     println!("job {id} {}: cost {:.4} KRW (input {} output {} tokens), failure {:?}", job.stage, job.cost_krw, job.input_amount, job.output_amount, job.failure_reason);
     if job.stage != "ready" {
-        return Err(format!("the re-make failed; its draft stays for `continue` {id}, or `restore` projects {previous} again"));
+        return Err(format!("the re-make failed; if it failed translating, `continue` {id} carries on from its draft; `restore` projects {previous} again"));
     }
     Ok(())
 }
