@@ -1,9 +1,9 @@
 # Sentence cues: execution receipts
 
 What ran, on what, and what it printed, for the code at
-`5c766960f4cf50826f57e2be7fa4f3a57087f050` (the last code commit of this
-branch; later commits change only documents). Recorded on 2026-11-19, with
-a clean working tree apart from the wiki's own files.
+`ee4359c1c57007f74cbb83fd33546eb8fae72dac` (the last code commit of this
+branch, review round 3; later commits change only documents). Recorded on
+2026-11-19, with a clean working tree apart from the wiki's own files.
 
 ## Environment
 
@@ -16,7 +16,8 @@ a clean working tree apart from the wiki's own files.
 ## Focused offline checks (Rust unit tests)
 
 `cargo test --lib -- sentences:: stitch:: pipeline:: sync::library library store:: gemini:: api::`
-(from `src-tauri`), every test line as printed:
+(from `src-tauri`): every test line it printed, in a fixed order (parallel runs
+print them in a different order each time), and its result line:
 
 ```
 test api::key_tests::the_mask_keeps_four_characters_and_never_splits_one ... ok
@@ -38,7 +39,7 @@ test gemini::key_tests::a_400_that_names_the_key_is_a_refused_key ... ok
 test pipeline::audio_tests::a_failed_delete_keeps_the_path_for_the_next_try ... ok
 test pipeline::audio_tests::audio_left_after_writing_is_deleted_on_the_next_round ... ok
 test account::tests::production_library_requests_select_the_account_and_copy_legacy_data_only_with_current_consent ... ok
-test pipeline::boundary_tests::a_remake_that_failed_writing_cannot_continue_and_playback_keeps_the_selected_version ... ok
+test pipeline::boundary_tests::a_remake_that_failed_writing_cannot_continue_or_be_retranslated_and_playback_keeps_the_selected_version ... ok
 test api::duration_tests::resumed_youtube_source_refreshes_unavailable_hints_but_preserves_refusals ... ok
 test pipeline::download_tests::the_first_attempt_uses_the_probed_source_and_reports_the_model_fetch ... ok
 test pipeline::glossary_tests::a_job_with_no_glossary_fails_before_any_batch ... ok
@@ -52,6 +53,7 @@ test pipeline::translate_tests::a_selected_version_is_translated_with_its_own_te
 test pipeline::translate_tests::a_continued_remake_publishes_its_draft_and_a_restored_one_cannot_continue ... ok
 test pipeline::boundary_tests::the_model_is_released_when_writing_ends_either_way ... ok
 test pipeline::translate_tests::only_a_remake_that_failed_translating_continues ... ok
+test pipeline::translate_tests::a_refused_remake_leaves_the_audio_of_an_interrupted_one_as_it_was ... ok
 test pipeline::worker_tests::a_bug_fails_the_job_instead_of_leaving_it_running ... ok
 test pipeline::worker_tests::every_ten_percent_step_passed_is_reported_once ... ok
 test pipeline::translate_tests::an_older_builds_selection_never_pairs_a_transcript_with_another_ones_mishearings ... ok
@@ -79,6 +81,7 @@ test pipeline::worker_tests::a_job_resumed_before_its_notice_went_out_notifies_o
 test pipeline::translate_tests::cues_are_translated_one_per_request_with_requests_overlapping ... ok
 test pipeline::worker_tests::retranslation_resumes_partial_work_and_publishes_only_a_complete_set ... ok
 test pipeline::boundary_tests::a_write_killed_with_a_sentence_open_loses_no_word_when_the_released_build_resumes_it ... ok
+test pipeline::boundary_tests::a_write_the_released_build_advanced_resumes_without_its_stale_open_sentence ... ok
 test store::tests::a_late_sign_in_does_not_replace_the_newer_opened_url ... ok
 test store::tests::a_job_from_a_file_without_plans_keeps_plan_one_and_new_jobs_get_the_current_plan ... ok
 test store::library_tests::legacy_completed_rows_keep_timing_and_deletion_removes_all_owned_rows ... ok
@@ -106,21 +109,29 @@ test sync::library::tests::received_ready_library_is_usable_without_processing_a
 test sync_channel::tests::different_signed_google_subjects_with_the_same_email_cannot_transfer_any_library_data ... ok
 test sync::library::tests::silent_cue_repair_is_atomic_retains_versions_cost_and_sync_selection ... ok
 test pipeline::worker_tests::failed_retranslation_preserves_completed_subtitles_for_every_stop ... ok
-test result: ok. 87 passed; 0 failed; 0 ignored; 0 measured; 173 filtered out; finished in 177.48s
+test result: ok. 89 passed; 0 failed; 0 ignored; 0 measured; 173 filtered out; finished in 181.36s
 ```
 
-The whole library suite (`cargo test -q --lib`) at the same commit printed
-`258 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 174.52s`.
+The whole library suite (`cargo test -q --lib`) at the same commit was run
+twice. The first run printed `258 passed; 2 failed; 2 ignored`. The two
+failures were `media::hls_aes_tests::encrypted_byte_ranges_and_a_key_that_ends_decrypt_piece_by_piece`
+and `media::hls_aes_tests::ts_segments_decrypt_with_their_media_sequence_numbers`,
+both with `open media: unsupported feature: core (probe): no suitable format
+reader found` on audio their own local server served. No commit of this
+branch touches `media` (`git log main..HEAD -- src-tauri/src/media*` is
+empty). Run alone right after, `cargo test -q --lib -- hls_aes` printed
+`5 passed; 0 failed`, and the second whole run printed
+`260 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 174.05s`.
 
 ## Isolated API checks (contract tests)
 
 The contract host is this commit's `vto-contract-host`, built with
 `cargo build -q -p video-translate-overlay --bin vto-contract-host` at
-`5c76696` with a clean tree and passed as
+`ee4359c` with a clean tree and passed as
 `VTO_CONTRACT_HOST=C:/Users/dasdk/PycharmProjects/video-translate-overlay-2/target/debug/vto-contract-host.exe`:
 
-- 25,945,600 bytes, written 2026-11-19 15:50:08 +0900;
-- SHA-256 `eeb924ef4ccb9538de5545d06d912eb9f818c893191256785c2e3fc4570fce6c`.
+- 25,953,792 bytes, written 2026-11-19 19:01:35 +0900;
+- SHA-256 `c7ffb6da8792afb6ff2ef16f49f4df350069ea8ef093152d1e17b0f74e661250`.
 
 The harness (`contract-tests/src/lib.rs`) gives each test its own folder,
 `%TEMP%\vto-contract-<pid>-<nanos>-<n>`, for the host's data, keystore and
@@ -129,18 +140,8 @@ the system picks (`127.0.0.1:0`). The host's config points it there, so
 nothing reaches the network or the account library. `a_split_sentence_goes_to_gemini_as_one_request_of_its_parts`
 also checks that `GET /videos/{key}/subtitles` returns cues of exactly
 `end_ms, seq, start_ms, text_ko`. Command:
-`cargo test -p vto-contract-tests --test <file>`. The results:
-
-```
-sentences: test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 17.53s
-translation: test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 25.47s
-write_and_timing: test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.80s
-library: test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.17s
-jobs: test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 18.63s
-```
-
-A second run of the first three files, with the same host, printed each
-test's name:
+`cargo test -p vto-contract-tests --test <file>`, for the five files, with
+that host:
 
 ```
 == --test sentences
@@ -149,18 +150,38 @@ test a_split_sentence_goes_to_gemini_as_one_request_of_its_parts ... ok
 test a_retranslation_asks_for_each_sentence_as_the_first_translation_did ... ok
 test mishearings_found_with_the_glossary_are_stored_and_carried_in_every_request ... ok
 test a_reply_with_a_missing_extra_or_duplicate_part_is_not_saved ... ok
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.94s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.09s
 == --test translation
 test retranslation_keeps_saved_source_times_and_the_cost_already_spent ... ok
 test test_translation_makes_korean_cues ... ok
 test test_cost_never_stops_translation ... ok
 test test_terms_stay_consistent_across_batches ... ok
 test test_one_hour_lecture_costs_under_budget ... ok
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 27.81s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.39s
 == --test write_and_timing
 test test_silent_span_has_no_cue ... ok
 test test_cue_times_match_source_after_silence_trim ... ok
-test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.49s
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.30s
+== --test library
+test moves_span_several_places_in_one_request_and_clamp_at_the_ends ... ok
+test playlist_crud_order_and_untranslated_links_persist_without_paid_calls ... ok
+test moves_at_the_integer_limits_clamp_instead_of_overflowing ... ok
+test deletion_rejects_active_processing ... ok
+test saved_library_reopens_after_restart_without_transcription_translation_or_cost ... ok
+test deletion_clears_only_matching_open_video_urls ... ok
+test deletion_confirmation_retry_and_multiple_memberships_preserve_unrelated_data ... ok
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.64s
+== --test jobs
+test test_job_without_key_asks_for_key ... ok
+test test_detect_button_starts_downloading_job ... ok
+test test_undownloadable_video_shows_reason ... ok
+test test_subtitles_refused_until_ready ... ok
+test test_repeat_detect_reuses_saved_subtitles ... ok
+test test_other_site_media_follows_same_stages ... ok
+test test_write_finishes_offline_on_device ... ok
+test test_write_percent_and_ongoing_notice ... ok
+test test_job_advances_in_background_and_resumes ... ok
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 18.89s
 ```
 
 ## Chromium checks and the line measurement
@@ -178,49 +199,72 @@ equal [measure/expected.json](measure/expected.json) for every surface, size,
 version and video. It also asserts that the new versions have no cue over two
 lines except 12 in the Watch screen on a phone.
 
+The run was made at `ee4359c1c57007f74cbb83fd33546eb8fae72dac`. Right before
+it, `git status --porcelain` for the harness and everything it imports
+printed nothing, so each ran as committed, with these git blob ids
+(`git ls-files -s`):
+
+| File | Blob |
+| --- | --- |
+| `docs/evidence/sentence-cues/measure/measure.test.svelte.ts` | `6602737074e7a5e2116e3d98fe582154677458d4` |
+| `docs/evidence/sentence-cues/measure/measure.config.ts` | `ceb802aba2b4cb8b6f1880ba49f5724ec51b3040` |
+| `docs/evidence/sentence-cues/measure/expected.json` | `43b3dc7b8c6a6104ebb917006f12721aa7c1a809` |
+| `docs/evidence/sentence-cues/measure/check_readme.py` | `c7f29f93622ee4f4519825390a0a270caf9a5bad` |
+| `vitest.ui.config.ts` | `ddab02f7244ff248ddda23770a8be57df2d8d1cb` |
+| `tests/subtitle-lines.ts` (`lineWidths`) | `d234f9fb599271c5fad6124736d9fd120b5fb23a` |
+| `tests/ui/fake.ts` | `605b0396e7c94ebab01bf2ce0981ea72c7bc816f` |
+| `src/ui/Overlay.svelte` (the Watch screen) | `493a936eab936e4a392a6bf2b5e4e61ba781aca6` |
+| `src/overlay/index.ts` (the page overlay) | `c6bd0a623baffbe0b490ecca55ff349d9a1c552e` |
+| `src/ui/app.css` | `3b12cec4934898776e3c8e18f1906e94a1adb477` |
+
+None of them changed between `5c76696`, where the harness was committed, and
+`ee4359c` (`git diff --stat 5c76696 ee4359c -- docs/evidence/sentence-cues/measure src tests vitest.ui.config.ts`
+prints nothing).
+
 ```
 == npx vitest run -c vitest.ui.config.ts tests/ui/subtitles.test.svelte.ts --reporter=verbose
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > local subtitles scale with their player and wrap inside a letterboxed image 246ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > a long Korean cue renders on two balanced lines at phone, windowed and fullscreen sizes 70ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deleting another video preserves cues through a failed refresh: native ready 1007ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deleting another video preserves cues through a failed refresh: native failed 1062ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deleting another video preserves cues through a failed refresh: broadcast ready 1011ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deleting another video preserves cues through a failed refresh: broadcast failed 1015ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > a late subtitle response after deletion cannot restore cached cues: native ready 186ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > a late subtitle response after deletion cannot restore cached cues: native failed 187ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > a late subtitle response after deletion cannot restore cached cues: broadcast ready 188ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > a late subtitle response after deletion cannot restore cached cues: broadcast failed 172ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deletion before the first job response cannot revive that video: native 1183ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deletion before the first job response cannot revive that video: broadcast 1184ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > confirmed recreation replaces earlier deletion markers: native known identity 189ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > confirmed recreation replaces earlier deletion markers: native unknown identity 251ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > confirmed recreation replaces earlier deletion markers: broadcast known identity 186ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > confirmed recreation replaces earlier deletion markers: broadcast unknown identity 251ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deletion after consent still rejects a late creation response: native 187ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deletion after consent still rejects a late creation response: broadcast 188ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > the cue under the playback time, hidden while an ad plays 64ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > failed jobs recover saved subtitles and keep the failure reason: initial, saved=true 62ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > failed jobs recover saved subtitles and keep the failure reason: initial, saved=false 62ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > failed jobs recover saved subtitles and keep the failure reason: poll, saved=true 1059ms
- ✓ |chromium| tests/ui/subtitles.test.svelte.ts > failed jobs recover saved subtitles and keep the failure reason: poll, saved=false 1062ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > local subtitles scale with their player and wrap inside a letterboxed image 247ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > a long Korean cue renders on two balanced lines at phone, windowed and fullscreen sizes 69ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deleting another video preserves cues through a failed refresh: native ready 1054ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deleting another video preserves cues through a failed refresh: native failed 1060ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deleting another video preserves cues through a failed refresh: broadcast ready 1018ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deleting another video preserves cues through a failed refresh: broadcast failed 1059ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > a late subtitle response after deletion cannot restore cached cues: native ready 155ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > a late subtitle response after deletion cannot restore cached cues: native failed 188ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > a late subtitle response after deletion cannot restore cached cues: broadcast ready 170ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > a late subtitle response after deletion cannot restore cached cues: broadcast failed 173ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deletion before the first job response cannot revive that video: native 1163ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deletion before the first job response cannot revive that video: broadcast 1170ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > confirmed recreation replaces earlier deletion markers: native known identity 173ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > confirmed recreation replaces earlier deletion markers: native unknown identity 219ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > confirmed recreation replaces earlier deletion markers: broadcast known identity 166ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > confirmed recreation replaces earlier deletion markers: broadcast unknown identity 209ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deletion after consent still rejects a late creation response: native 166ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > deletion after consent still rejects a late creation response: broadcast 154ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > the cue under the playback time, hidden while an ad plays 54ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > failed jobs recover saved subtitles and keep the failure reason: initial, saved=true 66ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > failed jobs recover saved subtitles and keep the failure reason: initial, saved=false 52ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > failed jobs recover saved subtitles and keep the failure reason: poll, saved=true 1052ms
+ ✓ |chromium| tests/ui/subtitles.test.svelte.ts > failed jobs recover saved subtitles and keep the failure reason: poll, saved=false 1051ms
  Test Files  1 passed (1)
       Tests  23 passed (23)
 == npx vitest run tests/overlay/placement.test.ts --reporter=verbose
- ✓ |chromium| tests/overlay/placement.test.ts > test_overlay_lies_over_the_video_and_follows_it_into_full_screen 73ms
- ✓ |chromium| tests/overlay/placement.test.ts > a long Korean cue renders on two balanced lines at phone, windowed and fullscreen sizes 26ms
- ✓ |chromium| tests/overlay/placement.test.ts > test_a_video_too_small_to_hold_it_puts_the_overlay_at_the_bottom 6ms
- ✓ |chromium| tests/overlay/placement.test.ts > ready subtitles stay inside a landscape fullscreen player and survive returning to portrait 16ms
+ ✓ |chromium| tests/overlay/placement.test.ts > test_overlay_lies_over_the_video_and_follows_it_into_full_screen 83ms
+ ✓ |chromium| tests/overlay/placement.test.ts > a long Korean cue renders on two balanced lines at phone, windowed and fullscreen sizes 20ms
+ ✓ |chromium| tests/overlay/placement.test.ts > test_a_video_too_small_to_hold_it_puts_the_overlay_at_the_bottom 8ms
+ ✓ |chromium| tests/overlay/placement.test.ts > ready subtitles stay inside a landscape fullscreen player and survive returning to portrait 21ms
  ✓ |chromium| tests/overlay/placement.test.ts > the fullscreen button requests the player with its saved subtitles, then exits 2ms
  Test Files  1 passed (1)
       Tests  5 passed (5)
 == npx vitest run -c docs/evidence/sentence-cues/measure/measure.config.ts --reporter=verbose
- ✓ |chromium| docs/evidence/sentence-cues/measure/measure.test.svelte.ts > page overlay 5299ms
- ✓ |chromium| docs/evidence/sentence-cues/measure/measure.test.svelte.ts > watch screen 4269ms
+ ✓ |chromium| docs/evidence/sentence-cues/measure/measure.test.svelte.ts > page overlay 5963ms
+ ✓ |chromium| docs/evidence/sentence-cues/measure/measure.test.svelte.ts > watch screen 4399ms
  Test Files  1 passed (1)
       Tests  2 passed (2)
 ```
 
-The files the run wrote and read, by SHA-256:
+The files the run wrote and read, by SHA-256. The two outputs are byte for
+byte those of the round-2 run at `5c76696`:
 
 | File | SHA-256 |
 | --- | --- |
@@ -251,19 +295,21 @@ not committed, because they are the person's library. Their file
 (`artifacts/sentence-cues/ko.json`, 7,116 new and 4,293 old cues) had SHA-256
 `f6ad086f05c8522d8f9ae89689cd427014da8fd59eac290ec43a0be4f0ae16d0`. The UI
 code that renders them (`src/`, `tests/`) is the same at `3f8c8ed`,
-`57f7173` and `5c76696` (`git diff --stat 57f7173 5c76696 -- src/ tests/`
+`57f7173`, `5c76696` and `ee4359c` (`git diff --stat 57f7173 ee4359c -- src/ tests/`
 prints nothing).
 
 ## The installed Windows app
 
-This run is reused from the code at `57f7173`, by this task. `5c76696`
-changes nothing the released app runs: the app is the installed 0.1.9 build,
-and the library it opened is unchanged since. Re-checked on 2026-11-19
-after `5c76696`: the exe's SHA-256 is still `7ff268da…ce0c`; the library file
-is still 4,378,624 bytes, last written 12:10:18 +0900, SHA-256 `d4c1aded…7756`.
-Its write-ahead log (238,992 bytes, last written 13:20:09 +0900) holds that
-app session's writes. The app is not running. The unchanged subtitle shape
-at `5c76696` is shown by the contract test above.
+This run is reused from the code at `57f7173`, by this task. Neither
+`5c76696` nor `ee4359c` changes what the released app runs: the app is the
+installed 0.1.9 build, and the library it opened is unchanged since.
+Re-checked on 2026-11-19 after `ee4359c`: the exe's SHA-256 is still
+`7ff268da…ce0c`; the library file is still 4,378,624 bytes, last written
+12:10:18 +0900, SHA-256 `d4c1aded…7756`. Its write-ahead log (238,992 bytes,
+last written 13:20:09 +0900) holds that app session's writes. The app is not
+running. The unchanged subtitle shape at `ee4359c` is shown by the contract
+test above. The regroup count in the README was made on a copy of this
+library in the temporary folder, not on the file itself.
 
 The installed app is version 0.1.9:
 
