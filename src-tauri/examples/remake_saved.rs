@@ -12,6 +12,10 @@
 //! is selected when ready. Without `--apply` it only prints what was spent. The
 //! installed app must be closed: its worker would take the job too.
 //!
+//! `run`, `resume` and `continue` run only the job they name, and only one of
+//! them at a time per library: each holds `<account-db>.runner` locked while
+//! it runs, and a second is refused before it changes anything.
+//!
 //! `remake_saved resume <account-db> <video-key> <work-dir>` carries on a
 //! re-make whose process was stopped, from what its job last wrote.
 //!
@@ -77,6 +81,7 @@ fn run(db: &Path, key: &str, audio: &Path, work: &Path, apply: bool) -> Result<(
         println!("preview only; nothing changed");
         return Ok(());
     }
+    let _runner = vto::pipeline::claim_runner(db)?;
     let core = start(work)?;
     let id = format!("remake-{key}-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
     let previous = store.stage_remake(&id, key, audio, &work.join("audio"), gemini::MODEL)?;
@@ -89,6 +94,7 @@ fn run(db: &Path, key: &str, audio: &Path, work: &Path, apply: bool) -> Result<(
 
 /// Carries on a re-make whose process was stopped: the job resumes from what it wrote.
 fn resume(db: &Path, key: &str, work: &Path) -> Result<(), String> {
+    let _runner = vto::pipeline::claim_runner(db)?;
     let store = Store::open(db)?;
     let job = store.active_job()?.filter(|j| j.video_key == key && j.id.starts_with("remake-")).ok_or("no re-make of this video is running")?;
     let previous = store.selected_version(key)?;
@@ -99,6 +105,7 @@ fn resume(db: &Path, key: &str, work: &Path) -> Result<(), String> {
 
 /// Translates what a failed re-make left without Korean.
 fn carry_on(db: &Path, key: &str, id: &str, work: &Path) -> Result<(), String> {
+    let _runner = vto::pipeline::claim_runner(db)?;
     let store = Store::open(db)?;
     let previous = store.selected_version(key)?;
     store.continue_remake(key, id)?;
@@ -117,7 +124,7 @@ fn restore(db: &Path, key: &str) -> Result<(), String> {
 }
 
 fn finish(core: &Core, store: &Store, id: &str, previous: &str) -> Result<(), String> {
-    vto::pipeline::run_pending(core, store)?;
+    vto::pipeline::run_named(core, store, id)?;
     let job = store.job(id)?.ok_or("job vanished")?;
     println!("job {id} {}: cost {:.4} KRW (input {} output {} tokens), failure {:?}", job.stage, job.cost_krw, job.input_amount, job.output_amount, job.failure_reason);
     if job.stage != "ready" {

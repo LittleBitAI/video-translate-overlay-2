@@ -58,13 +58,30 @@ pub fn run_worker(core: Arc<Core>) {
     }
 }
 
-/// Runs the jobs in progress in `store` to their end, here and now: the
-/// worker's steps for one library a tool names (`examples/remake_saved.rs`).
-pub fn run_pending(core: &Core, store: &Store) -> Result<(), String> {
-    while let Some(job) = store.active_job()? {
+/// Runs the job `id` to its end, here and now, and no other: the worker's
+/// steps for the one job a tool names (`examples/remake_saved.rs`). Each
+/// lookup is of `id`, so once it ends another video's job, which may become
+/// active at that moment, is left to its own runner.
+pub fn run_named(core: &Core, store: &Store, id: &str) -> Result<(), String> {
+    while let Some(job) = store.job(id)?.filter(|j| matches!(j.stage.as_str(), "downloading" | "writing" | "translating")) {
         run_job(core, store, job);
     }
     Ok(())
+}
+
+/// Holds the right to run re-makes of the library at `db` for as long as the
+/// returned file is kept: a second tool process is refused, so two runners
+/// never take the same job and send its requests twice. The operating system
+/// drops the lock when the process ends, however it ends, so a stopped
+/// re-make can always be resumed.
+pub fn claim_runner(db: &std::path::Path) -> Result<std::fs::File, String> {
+    let path = std::path::PathBuf::from(format!("{}.runner", db.display()));
+    let file = std::fs::OpenOptions::new().create(true).truncate(false).write(true).open(&path).map_err(|e| e.to_string())?;
+    match file.try_lock() {
+        Ok(()) => Ok(file),
+        Err(std::fs::TryLockError::WouldBlock) => Err(format!("another re-make of this library is running ({})", path.display())),
+        Err(std::fs::TryLockError::Error(e)) => Err(e.to_string()),
+    }
 }
 
 struct Ctx<'a> {

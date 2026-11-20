@@ -515,3 +515,48 @@ fn a_remake_continues_only_under_its_own_video() {
         }
     }
 }
+
+#[test]
+fn a_named_run_sends_requests_only_for_its_own_job() {
+    let (orders, most) = (Arc::new(Mutex::new(Vec::new())), Arc::new(AtomicUsize::new(0)));
+    let core = super::worker_tests::idle_core(&dir("named-run"), &gemini(flat(0, 1), orders.clone(), most));
+    let s = &core.store;
+    let ready_to_translate = |id: &str, key: &str| {
+        s.create_job(id, key, &format!("https://a.example/{key}"), "other", "Lecture", 60_000, None, "m").unwrap();
+        s.save_region(id, key, 0, &[(0, 900, format!("Said in {key}."))], None).unwrap();
+        s.end_writing(id).unwrap();
+    };
+    let asked = || orders.lock().unwrap().iter().filter(|o| o["task"] == "translate").map(|o| o["segments"][0]["text"].as_str().unwrap().to_string()).collect::<Vec<_>>();
+
+    // Its own job: run to its end, asking only for its own text.
+    ready_to_translate("own", "first");
+    run_named(&core, s, "own").unwrap();
+    assert_eq!(s.job("own").unwrap().unwrap().stage, "ready");
+    assert_eq!(asked(), ["Said in first."]);
+    ready_to_translate("stopped", "third");
+    s.fail("stopped", "translate_failed").unwrap();
+
+    // Another video's job is running when the named one has ended, as it is at the
+    // lookup after the named job's last commit: it is left alone.
+    ready_to_translate("other", "second");
+    for named in ["own", "stopped", "unknown-job"] {
+        run_named(&core, s, named).unwrap();
+        assert_eq!(asked(), ["Said in first."], "the run named {named} asked for another video");
+        assert_eq!(s.job("other").unwrap().unwrap().stage, "translating", "the run named {named} took another video's job");
+    }
+    // Its own runner still takes it.
+    run_named(&core, s, "other").unwrap();
+    assert_eq!(s.job("other").unwrap().unwrap().stage, "ready");
+    assert_eq!(asked(), ["Said in first.", "Said in second."]);
+}
+
+#[test]
+fn a_second_runner_of_a_library_is_refused_until_the_first_ends() {
+    let db = dir("runner-claim").join("library.sqlite3");
+    let first = claim_runner(&db).unwrap();
+    assert!(claim_runner(&db).is_err(), "a second runner of the same library was let in");
+    let other = claim_runner(&db.with_file_name("other.sqlite3"));
+    assert!(other.is_ok(), "another library's runner was refused");
+    drop(first);
+    assert!(claim_runner(&db).is_ok(), "the claim outlived its runner");
+}
