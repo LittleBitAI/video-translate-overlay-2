@@ -1,11 +1,19 @@
 # Sentence cues: execution receipts
 
-What ran, on what, and what it printed, for the code at
-`f25ed3d` (the last code commit of this branch, review round 5; later
-commits change only documents). The Rust checks ran on the working tree that
-was then committed as `f25ed3d`; between the runs and the commit only the
-research pages (`docs/research/`) changed. Recorded on 2026-11-20, with a
-clean working tree apart from the wiki's own files.
+What ran, on what, and what it printed. In review round 7 every check in
+[Round 7: the checks at `066064e`](#round-7-the-checks-at-066064e) ran on commit
+`066064e` (the F9 fix). The commit that carries this file follows it and
+changes only this file and the F9 research page:
+`git diff --name-only 066064e HEAD` prints
+`docs/evidence/sentence-cues/receipts.md` and
+`docs/research/review-sentence-cues-and-speech-cleanup-f9-1.md`, and neither
+is read by any build, test or check. The sections after it are the round-5
+receipts for `f25ed3d`, the last commit that changed application code, tests
+or fixtures. `git diff --name-only f25ed3d 066064e` lists only the wiki
+indexes (`.wiki/corpus.json`, `.wiki/graph.json`), the research pages, and
+`docs/evidence/sentence-cues/` `README.md`, `places.md`, `receipts.md` and
+`measure/check_readme.py`. Recorded on 2026-11-20, with a clean working tree
+apart from the wiki's own untracked files.
 
 ## Environment
 
@@ -14,6 +22,23 @@ clean working tree apart from the wiki's own files.
 - Node v24.18.0, Playwright 1.61.0 with its Chromium (headless)
 - Rust builds with `VULKAN_SDK=C:/VulkanSDK/1.4.363.1` and the `whisper`
   feature only where noted.
+
+## Round 7: the checks at `066064e`
+
+Each row ran at `066064e811e4c9fc369f7f70f169c063b15290be` on 2026-11-20
+(+0900), in the environment above, unless it says it is reused.
+
+| Check | Command | Expected | Observed |
+| --- | --- | --- | --- |
+| Rust library suite (done items 2–7, 12–13) | `cargo test -q -p video-translate-overlay --lib` (11:59–12:03) | all pass; the 98 focused tests listed below still exist | `test result: ok. 269 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 197.71s`. `cargo test -q -p video-translate-overlay --lib -- --list` lists 271 tests, and every one of the 98 names below is among them |
+| Contract host build | `cargo build -q -p video-translate-overlay --bin vto-contract-host` | builds | `target/debug/vto-contract-host.exe`, 25,928,192 bytes, written 12:03:44, SHA-256 `c96d5703fd87dfcc1a5364b7038f102d51163bdf628f08ca10805c460b2a2ad5`. The size matches the round-5 host; the hash differs because the binary was rebuilt |
+| Contract tests (done items 3, 5–7, 13, 16) | `cargo test -p vto-contract-tests --test <file>` with that host as `VTO_CONTRACT_HOST` | 5, 5, 2, 7, 9 pass, with the 28 names below | sentences `ok. 5 passed` (16.21s); translation `ok. 5 passed` (46.57s); write_and_timing `ok. 2 passed` (3.44s); library `ok. 7 passed` (7.22s); jobs `ok. 9 passed` (20.26s). The 28 `ok` names are, sorted, the same as the 28 below (`diff` printed nothing) |
+| Watch screen in Chromium (done item 9) | `npx vitest run -c vitest.ui.config.ts tests/ui/subtitles.test.svelte.ts` | all pass, including the long-cue test | `Tests 23 passed (23)`, including `a long Korean cue renders on two balanced lines at phone, windowed and fullscreen sizes` |
+| Page overlay | `npx vitest run tests/overlay/placement.test.ts` | all pass | `Tests 5 passed (5)` |
+| Line measurement (done item 10) | `npx vitest run -c docs/evidence/sentence-cues/measure/measure.config.ts` | `page overlay` and `watch screen` pass; the outputs equal `expected.json` | `Tests 2 passed (2)`. SHA-256 of the outputs: `measured-overlay.json` `d7374ad1…5dce9`, `measured-watch.json` `c3adb167…f1949`, byte for byte those of rounds 2 and 3 (table below); input `ko.json` `f6ad086f…16d0` |
+| README against places.md (done items 14–15) | `python -I -X utf8 docs/evidence/sentence-cues/measure/check_readme.py` | `differences 0`; each negative control reported | `differences 0`. On the README before the round-7 fix: `differences 14`. Controls on scratch copies of places.md: a filler row set to other → differences 1; a row duplicated → differences 6; a term row set to "filler, term" → differences 2 (see [the F9 page](../../research/review-sentence-cues-and-speech-cleanup-f9-1.md)) |
+| Wiki indexes (done item 17) | parse the committed `.wiki/corpus.json` and `.wiki/graph.json` (`git show 066064e:<path>`) and check their paths against `git ls-tree -r 066064e` | both parse; every indexed path exists; the graph is built from the corpus | Both parse (blob SHA-256 `707c0a23…c695` and `8df65902…5135`, last committed in `cb2d047`). 32 documents, all unique and tracked. `graph.nodes_from` is `.wiki/corpus.json`, `counts.docs` is 32. Every edge end outside the corpus is a tracked wiki page (`.wiki/<name>.md`, 7 pages including `subtitles-must-not-drift`), and every orphan is in the corpus. One tracked document is not indexed yet: the F9 research page, committed after the indexes were last built. The wiki has since rebuilt its working copies to 33 documents with that page included. The server commits those files, so this branch does not |
+| Installed app (done item 16), reused | the run at `57f7173` below | the exe and the library it opened are the bytes that run used | Re-hashed at 12:05: the exe is still 75,448,832 bytes, written 2026-11-18 12:16:30 +0900, SHA-256 `7ff268da…ce0c`. The library is still 4,378,624 bytes, written 2026-11-19 12:10:18 +0900, SHA-256 `d4c1aded…7565`. Its log is still 238,992 bytes (13:20:09) and its index 32,768 bytes (21:31:39). `git diff --name-only 57f7173 066064e -- src tests` prints nothing. The app is not running |
 
 ## Focused offline checks (Rust unit tests)
 
