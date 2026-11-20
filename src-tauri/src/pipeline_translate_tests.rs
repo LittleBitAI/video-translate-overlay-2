@@ -162,12 +162,12 @@ fn a_continued_remake_publishes_its_draft_and_a_restored_one_cannot_continue() {
     // Continued: only the untranslated draft cue is asked, and the draft is published.
     draft("remake-a", "Draft one.", "Draft two.");
     assert_eq!(played(&store), was, "playback was given the failed re-make's draft, not the selected version");
-    store.continue_remake("remake-a").unwrap();
+    store.continue_remake(&key, "remake-a").unwrap();
     assert_eq!(played(&store), was, "playback was given the draft while it is translated");
     assert_eq!(store.latest_job(&key).unwrap().unwrap().id, "remake-a", "the overlay shows the newest job's cost");
     run_job(&core, &store, store.job("remake-a").unwrap().unwrap());
     assert_eq!(store.job("remake-a").unwrap().unwrap().stage, "ready");
-    assert!(store.continue_remake("remake-a").is_err(), "only a failed re-make continues");
+    assert!(store.continue_remake(&key, "remake-a").is_err(), "only a failed re-make continues");
     let asked: Vec<Value> = orders.lock().unwrap().iter().filter(|o| o["task"] == "translate").cloned().collect();
     assert_eq!(asked.iter().map(|o| o["segments"].clone()).collect::<Vec<_>>(), [json!([{"id": 1, "text": "Draft two."}])]);
     let made = selected(&store);
@@ -182,7 +182,7 @@ fn a_continued_remake_publishes_its_draft_and_a_restored_one_cannot_continue() {
     draft("remake-b", "Another one.", "Another two.");
     store.restore_translation(&key, &made).unwrap();
     assert_eq!(selected(&store), made);
-    assert!(store.continue_remake("remake-b").is_err(), "a re-make whose draft was replaced continued");
+    assert!(store.continue_remake(&key, "remake-b").is_err(), "a re-make whose draft was replaced continued");
     assert_eq!(store.job("remake-b").unwrap().unwrap().stage, "failed");
     assert_eq!(store.cues(&key).unwrap().iter().map(|c| c.source_text.as_str()).collect::<Vec<_>>(), ["Draft one.", "Draft two."]);
     assert_eq!(orders.lock().unwrap().iter().filter(|o| o["task"] == "translate").count(), 1, "nothing more was asked");
@@ -301,7 +301,7 @@ fn only_a_remake_that_failed_translating_continues() {
         let id = format!("remake-{n}");
         store.begin_remake(&id, &key, "a.m4a", "m").unwrap();
         store.fail(&id, reason).unwrap();
-        assert_eq!(store.continue_remake(&id).is_ok(), whole, "{reason}");
+        assert_eq!(store.continue_remake(&key, &id).is_ok(), whole, "{reason}");
         assert_eq!(store.job(&id).unwrap().unwrap().stage, if whole { "translating" } else { "failed" }, "{reason}");
         store.fail(&id, reason).unwrap();
     }
@@ -467,4 +467,51 @@ fn an_older_builds_selection_never_pairs_a_transcript_with_another_ones_misheari
     assert_eq!(asked[1]["glossary"], json!([{"source": "encoder", "target": "encoder 번역"}]));
     assert_eq!(asked[1]["segments"], json!([{"id": 0, "text": "The encoder reads it."}]));
     assert!(store.current_mishearings(&key).unwrap().is_some(), "A's mishearings are kept for A's transcript");
+}
+
+#[test]
+fn a_remake_continues_only_under_its_own_video() {
+    use crate::sync::{Change, Cue as Saved, Deletions, Journal, Translation, Video};
+    let d = dir("continue-own-video");
+    let journal = Journal::open(&d.join("account"), &crate::google_auth::VerifiedIdentity::fixture("continue-own-account")).unwrap();
+    let keys: Vec<String> = ["https://lectures.example.org/first", "https://lectures.example.org/second", "https://lectures.example.org/third"].iter().map(|page| {
+        let key = crate::api::video_key(&url::Url::parse(page).unwrap());
+        let video = Video { key: key.clone(), page_url: (*page).into(), title: "Lecture".into() };
+        let cues = vec![Saved { start_ms: 0, end_ms: 900, source_text: "Said.".into(), text_ko: "번역".into() }];
+        journal.write(Change::Translation { translation: Translation { video, duration_ms: 5000, source_language: Some("en".into()), terms: vec![], model: "m".into(), cost_krw: 1.0, cues } }, Deletions::new()).unwrap();
+        key
+    }).collect();
+    let store = journal.library().unwrap();
+    let (a, b, c) = (keys[0].as_str(), keys[1].as_str(), keys[2].as_str());
+    for (id, key) in [("remake-first", a), ("remake-second", b)] {
+        std::thread::sleep(Duration::from_millis(5));
+        store.begin_remake(id, key, "a.m4a", "m").unwrap();
+        store.fail(id, "translate_failed").unwrap();
+    }
+    let stages = || ["remake-first", "remake-second"].map(|j| store.job(j).unwrap().unwrap().stage);
+    // (video key given, job id given, whether another video's job is running, whether it continues):
+    // a job moves only with its own video's key and while no other job runs.
+    let forms = [
+        (b, "remake-first", false, false),
+        (a, "remake-second", false, false),
+        ("unknown-video", "remake-first", false, false),
+        (a, "remake-first", true, false),
+        (a, "remake-first", false, true),
+        (b, "remake-second", false, true),
+    ];
+    for (key, id, running, own) in forms {
+        if running {
+            store.begin_remake("remake-third", c, "a.m4a", "m").unwrap();
+        }
+        assert_eq!(store.continue_remake(key, id).is_ok(), own, "{key} {id} running {running}");
+        if own {
+            assert_eq!(store.job(id).unwrap().unwrap().stage, "translating", "{key} {id}");
+            store.fail(id, "translate_failed").unwrap();
+        } else {
+            assert_eq!(stages(), ["failed", "failed"], "{key} {id} running {running}: a job moved");
+        }
+        if running {
+            store.fail("remake-third", "translate_failed").unwrap();
+        }
+    }
 }

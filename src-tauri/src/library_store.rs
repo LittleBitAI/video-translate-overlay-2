@@ -145,16 +145,19 @@ impl Store {
     /// still holds its draft: every write of that table (a projection, a
     /// restore, another job) makes a newer job, so a re-make that is no longer
     /// the video's newest job has lost its draft and is refused rather than
-    /// translating the cues that replaced it.
-    pub fn continue_remake(&self, id: &str) -> R<()> {
+    /// translating the cues that replaced it. And only under its own video:
+    /// `key` is matched in the same update, so a job id given with another
+    /// video's key moves nothing. While another job runs, the database's
+    /// `one_running_job` index refuses the update.
+    pub fn continue_remake(&self, key: &str, id: &str) -> R<()> {
         self.library_write(|db| {
             let n = db.execute(
                 "UPDATE job SET stage='translating', failure_reason=NULL, created_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')
-                 WHERE id=? AND id LIKE 'remake-%' AND stage='failed' AND failure_reason IN ('translate_failed','key_rejected')
+                 WHERE id=? AND video_key=? AND id LIKE 'remake-%' AND stage='failed' AND failure_reason IN ('translate_failed','key_rejected')
                    AND NOT EXISTS (SELECT 1 FROM job o WHERE o.video_key=job.video_key AND o.id<>job.id AND o.created_at>=job.created_at)",
-                p![id],
+                p![id, key],
             )?;
-            if n == 0 { Err("no re-make with this id that failed translating with its draft still in place".into()) } else { Ok(()) }
+            if n == 0 { Err("no re-make of this video with this id that failed translating with its draft still in place".into()) } else { Ok(()) }
         })
     }
 

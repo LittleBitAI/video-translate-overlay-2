@@ -21,7 +21,9 @@
 //!
 //! `remake_saved continue <account-db> <video-key> <job-id> <work-dir>` sends
 //! a re-make that failed translating back to translating; only cues without
-//! Korean are asked. If it fails again its draft stays for another `continue`.
+//! Korean are asked. The job must be a re-make of `video-key`: a job of
+//! another video is refused, nothing is asked and nothing is charged. If it
+//! fails again its draft stays for another `continue`.
 //! One that failed writing has an unfinished transcript and is refused.
 //!
 //! `remake_saved restore <account-db> <video-key>` gives the failed
@@ -99,7 +101,7 @@ fn resume(db: &Path, key: &str, work: &Path) -> Result<(), String> {
 fn carry_on(db: &Path, key: &str, id: &str, work: &Path) -> Result<(), String> {
     let store = Store::open(db)?;
     let previous = store.selected_version(key)?;
-    store.continue_remake(id)?;
+    store.continue_remake(key, id)?;
     println!("job {id} continued at translating; previous version {previous}");
     let core = start(work)?;
     finish(&core, &store, id, &previous)

@@ -420,7 +420,7 @@ fn a_remake_that_failed_writing_cannot_continue_or_be_retranslated_and_playback_
     assert_eq!((job.stage.as_str(), job.written_regions), ("failed", 1));
     assert!(!store.cues(&key).unwrap().is_empty(), "the first window's cues were committed");
 
-    assert!(store.continue_remake("remake-w").is_err(), "a re-make with an unfinished transcript continued");
+    assert!(store.continue_remake(&key, "remake-w").is_err(), "a re-make with an unfinished transcript continued");
     // Neither an ordinary re-translation nor the store under it takes the draft as its source.
     let asked = crate::api::retranslate_job(&core, page).unwrap_err();
     assert_eq!((asked.status, asked.error.as_str()), (409, "not_ready"));
