@@ -1,11 +1,13 @@
 # Sentence cues: execution receipts
 
-What ran, on what, and what it printed. In review round 8 the checks in
-[Round 8: the checks at `a40882e`](#round-8-the-checks-at-a40882e) ran on commit
-`a40882e` (the F15 fix). The commit that carries this file follows it and
-changes only this file: `git diff --name-only a40882e HEAD` prints
+What ran, on what, and what it printed. In review round 9 the checks in
+[Round 9: the checks at `240d327`](#round-9-the-checks-at-240d327) ran on commit
+`240d327` (the second F15 fix). The commit that carries this file follows it
+and changes only this file: `git diff --name-only 240d327 HEAD` prints
 `docs/evidence/sentence-cues/receipts.md`, which no build, test or check
-reads. Round 8 reuses the round-7 Chromium, measurement and wiki results, as
+reads. In review round 8 the checks in
+[Round 8: the checks at `a40882e`](#round-8-the-checks-at-a40882e) ran on commit
+`a40882e`. Round 8 reuses the round-7 Chromium, measurement and wiki results, as
 mapped in its table. In review round 7 every check in
 [Round 7: the checks at `066064e`](#round-7-the-checks-at-066064e) ran on commit
 `066064e` (the F9 fix); the commit after it changed only this file and the F9
@@ -24,6 +26,34 @@ apart from the wiki's own untracked files.
 - Node v24.18.0, Playwright 1.61.0 with its Chromium (headless)
 - Rust builds with `VULKAN_SDK=C:/VulkanSDK/1.4.363.1` and the `whisper`
   feature only where noted.
+
+## Round 9: the checks at `240d327`
+
+`240d327` (`240d32771c56e0c092aa43f2d10ecd2a8a4ff1f2`) changes, against
+`a40882e`:
+- `src-tauri/src/pipeline.rs`: `run_pending`, which looked up the library's
+  active job again after each job ended, is replaced by `run_named`, which
+  looks up only the job it was given. `claim_runner` is new: it holds an OS
+  lock on `<account-db>.runner` while the tool runs.
+- `src-tauri/examples/remake_saved.rs`: `run`, `resume` and `continue` claim
+  the runner before changing anything, and `finish` calls `run_named` with the
+  confirmed job id.
+- `src-tauri/src/pipeline_translate_tests.rs`: two new tests.
+
+The commit between them, `f85c52e`, changed only this file.
+`git diff --name-only a40882e 240d327 -- src tests contract-tests docs/evidence/sentence-cues/README.md docs/evidence/sentence-cues/places.md package.json package-lock.json`
+prints nothing. All times are 2026-11-20 +0900.
+
+| Check | Command | Expected | Observed |
+| --- | --- | --- | --- |
+| A named run takes only its own job (F15, done item 13) | `cargo test -p video-translate-overlay --lib -- remake a_named_run a_second_runner` | `a_named_run_sends_requests_only_for_its_own_job` passes. Its own job runs to ready and the fake Gemini receives only that job's text. Then another video's job is translating, which is the state at the lookup after the named job's last commit. A run naming the ended job, a failed job or an unknown id returns without a request, and the other job stays translating. The other job's own run then translates it | `test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 265 filtered out`. The 9 are the two new tests and the 7 re-make tests of round 8 |
+| One runner per library | the same run | `a_second_runner_of_a_library_is_refused_until_the_first_ends` passes: a second claim on the same library is refused, another library's claim is not, and the claim ends with its holder | passed, in the 9 above |
+| The tests without the fix | on the working tree, then restored: (1) `run_named`'s lookup replaced by the old `store.active_job()` loop; (2) `try_lock` replaced by `Ok(())` | each new test fails | (1) `panicked at src-tauri\src\pipeline_translate_tests.rs:544:9`, "the run named own asked for another video", `FAILED. 0 passed; 1 failed`. (2) `panicked at src-tauri\src\pipeline_translate_tests.rs:557:5`, `FAILED. 0 passed; 1 failed`. After the restore both pass |
+| Rust library suite | `cargo test -q -p video-translate-overlay --lib`, run four times at `240d327` | all pass | Twice `test result: ok. 272 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out` (one of them in 167.58s; the other printed no failure line, and its time was not kept). Twice `FAILED. 271 passed; 1 failed`, both times `media::hls_aes_tests::ts_segments_decrypt_with_their_media_sequence_numbers`: "section 2 of the playlist: open media: unsupported feature: core (probe): no suitable format reader found". That test and the media code it runs are unchanged on this branch (`git diff --stat main -- src-tauri/src/media.rs src-tauri/src/media_hls_aes_tests.rs` prints nothing). The round-3 receipt shows the same panic. Run alone 10 times it printed `test result: ok. 1 passed; 0 failed` 10 times. It fails only under the full parallel suite, and this task does not fix it |
+| Contract host build | `cargo build -q -p video-translate-overlay --bin vto-contract-host` | builds | 25,928,192 bytes, written 12:47:45, SHA-256 `9b322057685de9942cce67486a665eed77fc704d47630be0ad13dfc29e075483` |
+| Contract tests | `cargo test -p vto-contract-tests --test <file>` with that host | 5, 5, 2, 7, 9 pass | sentences `ok. 5 passed` (3.46s); translation `ok. 5 passed` (27.07s); write_and_timing `ok. 2 passed` (3.02s); library `ok. 7 passed` (4.31s); jobs `ok. 9 passed` (18.00s); no `FAILED` or `panicked` line |
+| The re-make tool builds | `cargo build --release -p video-translate-overlay --features whisper --example remake_saved`, environment as in round 8 | builds | exit 0; 61,153,792 bytes, written 12:44:35, SHA-256 `90e41100014e63f70fe28b4508158d8672c0771b459e4e70933d380712c66757` |
+| Chromium, page overlay, measurement, README check, wiki indexes, installed app | reused from rounds 7 and 8 | inputs unchanged (diff above) | as in rounds 7 and 8 |
 
 ## Round 8: the checks at `a40882e`
 
