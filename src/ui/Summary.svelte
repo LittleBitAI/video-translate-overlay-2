@@ -36,6 +36,8 @@
   let lastAgain = false;
   let generation = 0;
   let gone = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const PENDING_MS = 1000;
   const path = $derived(`/videos/${encodeURIComponent(videoKey)}/summary`);
   const shown = $derived(blocks(markdown));
 
@@ -47,6 +49,10 @@
       markdown = r.body.markdown;
       cost = r.body.cost_krw;
       look = 'shown';
+    } else if (r.status === 200 && r.body?.pending) {
+      // A call for this video is out (pressed on a screen since left): wait for it here.
+      look = 'loading';
+      timer = setTimeout(read, PENDING_MS);
     } else {
       // Not made yet, or not readable now: 요약 asks, and answers a stored one without a Gemini call.
       look = 'none';
@@ -86,6 +92,7 @@
   onDestroy(() => {
     gone = true;
     generation++;
+    clearTimeout(timer);
   });
 
   const quiet = 'min-h-11 shrink-0 rounded-lg border border-ink/40 px-4 py-2 text-base';

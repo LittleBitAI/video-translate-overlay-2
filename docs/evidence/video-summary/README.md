@@ -113,6 +113,11 @@ captured again at the head below, and the run asserts each one in
 
 ## Execution record at `70f30c8` (review round 1)
 
+This section and [`report.json`](report.json) are round 1's record, made at
+`70f30c8`. A record cannot sit inside the commit it describes. So each later
+review round gets its exact-head record, made with the same script and
+commands, in that round's reply on the pull request.
+
 Environment: Windows 11 Home 10.0.26200, Node v24.18.0, Playwright 1.61.0
 (headless Chromium), rustc 1.98.1. Taken 2026-11-20 23:43 +0900.
 

@@ -248,26 +248,37 @@ impl Store {
             .map(|r| Summary { body: r[0].opt_text(), input: r[1].int(), output: r[2].int(), cost_krw: r[3].real() }))
     }
 
-    /// Adds one summary call's usage and cost, and stores `body` when it
-    /// passed the checks (a failed reply keeps the earlier summary). `job` is
-    /// the ready job the summary was read from: nothing is written, `false`,
-    /// when it is gone (the video was deleted, and maybe added again, during
-    /// the call) or the video is being deleted.
-    pub(crate) fn record_summary(&self, key: &str, job: &str, input: i64, output: i64, cost: f64, body: Option<&str>) -> R<bool> {
+    /// Puts `call`, the token of a summary call about to go out, on the
+    /// video's summary row (made with no usage when there is none yet).
+    pub(crate) fn open_summary_call(&self, key: &str, call: &str) -> R<()> {
+        self.library_write(|db| {
+            db.execute(
+                &format!("INSERT INTO summary (video_key,updated_at,call) VALUES (?,{NOW},?) ON CONFLICT(video_key) DO UPDATE SET call=excluded.call"),
+                p![key, call],
+            )?;
+            Ok(())
+        })
+    }
+
+    /// Adds call `call`'s usage and cost, and stores `body` when it passed
+    /// the checks (a failed reply keeps the earlier summary). Nothing is
+    /// written, `false`, unless the row still holds `call` and the video is
+    /// not being deleted: deleting the video during the call dropped the row
+    /// and its token, and an entry made again under the same ids (a restore
+    /// projects the same job id) has no such token.
+    pub(crate) fn record_summary(&self, key: &str, call: &str, input: i64, output: i64, cost: f64, body: Option<&str>) -> R<bool> {
         if !cost.is_finite() || cost < 0.0 { return Err("invalid usage cost".into()); }
         self.library_write(|db| {
             let live = db.query_one(
-                "SELECT 1 FROM video v JOIN job j ON j.video_key=v.video_key AND j.id=? WHERE v.video_key=?
-                 AND NOT EXISTS(SELECT 1 FROM deleted_video WHERE video_key=v.video_key AND complete=0)",
-                p![job, key],
+                "SELECT 1 FROM summary s JOIN video v ON v.video_key=s.video_key WHERE s.video_key=? AND s.call=?
+                 AND NOT EXISTS(SELECT 1 FROM deleted_video WHERE video_key=s.video_key AND complete=0)",
+                p![key, call],
             )?;
             if live.is_none() { return Ok(false); }
             db.execute(
-                &format!("INSERT INTO summary (video_key,body,input_amount,output_amount,cost_krw,updated_at) VALUES (?,?,?,?,?,{NOW})
-                 ON CONFLICT(video_key) DO UPDATE SET body=COALESCE(excluded.body,summary.body),
-                 input_amount=summary.input_amount+excluded.input_amount, output_amount=summary.output_amount+excluded.output_amount,
-                 cost_krw=summary.cost_krw+excluded.cost_krw, updated_at=excluded.updated_at"),
-                p![key, body, input, output, cost],
+                &format!("UPDATE summary SET body=COALESCE(?,body), input_amount=input_amount+?, output_amount=output_amount+?,
+                 cost_krw=cost_krw+?, updated_at={NOW}, call=NULL WHERE video_key=?"),
+                p![body, input, output, cost, key],
             )?;
             Ok(true)
         })

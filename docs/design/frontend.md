@@ -68,7 +68,7 @@ the player fills the window height, so the section is reached by scrolling.
 
 | State | What shows |
 | --- | --- |
-| Opening | P19 `GET` for a stored summary, no Gemini call; the section is `aria-busy` |
+| Opening | P19 `GET` for a stored summary, no Gemini call; the section is `aria-busy`. When the answer is `pending` (요약 was pressed on a screen since left), the section shows the loading state and asks again every second until the summary is stored |
 | None stored | 요약 (primary, 44 px) and a note that Gemini summarizes the title and source subtitles for a few won, added to the video's cost |
 | Loading | 요약하는 중 (disabled) and a status line: leaving the screen does not lose the summary; it shows when the video is opened again |
 | Summary | The Markdown from P19 drawn as text: `##` lines as headings, `-` lines as list items, other lines as paragraphs, never as HTML. Then 요약 비용 and 다시 요약 (outlined), which asks with `again` |

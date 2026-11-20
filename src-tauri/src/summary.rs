@@ -19,7 +19,7 @@ viewer deciding what it covers and what to study next. The work order is JSON: {
 is the talk's glossary (each term's correct source spelling and its Korean rendering): use it for the correct spelling and \
 the Korean of every term. Write gist, every key point and every prerequisite in natural Korean (a prerequisite is a Korean phrase such as 선형대수 기초 or 파이썬 문법, never a bare name), using the glossary's Korean for its \
 terms and keeping product, model and code names (such as GPT-4o, PyTorch, ReLU) as spelled. Write topics and next_topics \
-in the talk's own language, the language of the transcript (no Korean in them for a talk not in Korean), as short phrases a person would search for to find a lecture \
+in the talk's own language, the language of the transcript (never Korean or any other language for a talk not in it; Latin-letter names are fine), as short phrases a person would search for to find a lecture \
 on them. gist is one sentence on what the talk is about. key_points are its main points in the order it makes them. topics \
 are the subjects it covers. level is the background it expects. prerequisites are what a viewer should know first, empty \
 when it expects nothing. next_topics are subjects to study after it. Say only what the talk says. Reply with JSON only, \
@@ -55,17 +55,55 @@ fn hangul(s: &str) -> bool {
     s.chars().any(|c| ('\u{AC00}'..='\u{D7A3}').contains(&c))
 }
 
+#[derive(Clone, Copy, PartialEq, Debug)]
+enum Script { Latin, Hangul, Kana, Han, Cyrillic, Greek, Other }
+
+fn script(c: char) -> Script {
+    match c {
+        '\u{AC00}'..='\u{D7A3}' | '\u{1100}'..='\u{11FF}' | '\u{3130}'..='\u{318F}' => Script::Hangul,
+        '\u{3040}'..='\u{30FF}' | '\u{31F0}'..='\u{31FF}' | '\u{FF66}'..='\u{FF9F}' => Script::Kana,
+        '\u{3400}'..='\u{4DBF}' | '\u{4E00}'..='\u{9FFF}' | '\u{F900}'..='\u{FAFF}' | '\u{20000}'..='\u{2FFFF}' => Script::Han,
+        '\u{0400}'..='\u{052F}' => Script::Cyrillic,
+        '\u{0370}'..='\u{03FF}' => Script::Greek,
+        'A'..='Z' | 'a'..='z' | '\u{00C0}'..='\u{024F}' | '\u{1E00}'..='\u{1EFF}' => Script::Latin,
+        _ => Script::Other,
+    }
+}
+
+/// The scripts a talk in `language` (a speech-recognition language code)
+/// writes its own terms in, besides Latin, which technical names use in any
+/// language. `None` for a language this table does not know.
+fn scripts(language: &str) -> Option<&'static [Script]> {
+    const LATIN: [&str; 33] = ["en", "fr", "de", "es", "it", "pt", "nl", "sv", "da", "no", "nb", "nn", "fi", "pl", "cs", "sk", "sl",
+        "hr", "ro", "hu", "tr", "id", "ms", "vi", "ca", "et", "lv", "lt", "af", "sw", "tl", "eu", "gl"];
+    Some(match language.to_ascii_lowercase().as_str() {
+        "ko" => &[Script::Hangul, Script::Han],
+        "ja" => &[Script::Kana, Script::Han],
+        "zh" | "yue" => &[Script::Han],
+        "ru" | "uk" | "be" | "bg" | "sr" | "mk" | "kk" => &[Script::Cyrillic],
+        "el" => &[Script::Greek],
+        l if LATIN.contains(&l) => &[],
+        _ => return None,
+    })
+}
+
+/// Whether `text` is written in `language`: every letter is Latin or in one
+/// of the language's own scripts. Digits, signs and spaces are not letters.
+fn in_language(text: &str, language: &str) -> bool {
+    let Some(own) = scripts(language) else { return true };
+    text.chars().filter(|c| c.is_alphabetic()).all(|c| { let s = script(c); s == Script::Latin || own.contains(&s) })
+}
+
 /// The reply's values as stored, or why they break a value rule. Every
-/// prose item (gist, each key point, each prerequisite) holds Korean; for a
-/// talk whose recognized `language` is known and not Korean, no topic or
-/// next topic does (they stay in the talk's language). gist, key_points and
-/// topics may not be empty; level is one of [`LEVELS`]. Text is put on one
-/// line; blank and repeated list items are dropped.
+/// prose item (gist, each key point, each prerequisite) holds Korean. For a
+/// talk whose recognized `language` is known, every topic and next topic is
+/// written in it ([`in_language`]). gist, key_points and topics may not be
+/// empty; level is one of [`LEVELS`]. Text is put on one line; blank and
+/// repeated list items are dropped.
 pub fn check(reply: &Value, language: Option<&str>) -> Result<Value, String> {
     let gist = one_line(reply["gist"].as_str().unwrap_or(""));
     if gist.is_empty() { return Err("empty gist".into()); }
     if !hangul(&gist) { return Err("gist is not Korean".into()); }
-    let foreign = language.is_some_and(|l| !l.is_empty() && !l.eq_ignore_ascii_case("ko"));
     let list = |field: &str, min: usize| -> Result<Vec<String>, String> {
         let items = reply[field].as_array().ok_or(format!("{field} is not a list"))?;
         let mut kept: Vec<String> = Vec::new();
@@ -76,7 +114,9 @@ pub fn check(reply: &Value, language: Option<&str>) -> Result<Value, String> {
         if kept.len() < min { return Err(format!("{field} is empty")); }
         let korean = matches!(field, "key_points" | "prerequisites");
         if korean && !kept.iter().all(|t| hangul(t)) { return Err(format!("{field} is not Korean")); }
-        if !korean && foreign && kept.iter().any(|t| hangul(t)) { return Err(format!("{field} is not in the talk's language")); }
+        if !korean && language.is_some_and(|l| !kept.iter().all(|t| in_language(t, l))) {
+            return Err(format!("{field} is not in the talk's language"));
+        }
         Ok(kept)
     };
     let key_points = list("key_points", 1)?;
@@ -126,6 +166,31 @@ pub fn markdown(summary: &Value) -> String {
 // ponytail: one summary call at a time in this process; per-video locks if several are ever wanted at once.
 static CALLING: Mutex<()> = Mutex::new(());
 
+/// The library file and video whose summary call is out, so a screen opened
+/// meanwhile can say a summary is coming and look again.
+static PENDING: Mutex<Option<(std::path::PathBuf, String)>> = Mutex::new(None);
+
+struct Pending;
+
+impl Pending {
+    fn start(library: &crate::library_scope::Library<'_>, key: &str) -> Result<Pending, ApiError> {
+        let path = library.run_original(|store| Ok(store.path().to_path_buf()))?;
+        *PENDING.lock().unwrap_or_else(|p| p.into_inner()) = Some((path, key.to_string()));
+        Ok(Pending)
+    }
+
+    fn is(library: &crate::library_scope::Library<'_>, key: &str) -> Result<bool, ApiError> {
+        let path = library.run_original(|store| Ok(store.path().to_path_buf()))?;
+        Ok(PENDING.lock().unwrap_or_else(|p| p.into_inner()).as_ref().is_some_and(|(p, k)| *p == path && k == key))
+    }
+}
+
+impl Drop for Pending {
+    fn drop(&mut self) {
+        *PENDING.lock().unwrap_or_else(|p| p.into_inner()) = None;
+    }
+}
+
 fn reply(key: &str, stored: &crate::store::Summary, reused: bool) -> ApiResult {
     let body: Value = serde_json::from_str(stored.body.as_deref().unwrap_or("null")).map_err(|e| ApiError::from(format!("stored summary: {e}")))?;
     Ok(json!({"video_key": key, "summary": body, "markdown": markdown(&body), "cost_krw": stored.cost_krw, "reused": reused}))
@@ -141,7 +206,12 @@ pub(crate) fn summary_in(library: &crate::library_scope::Library<'_>, key: &str,
         Ok(store.summary(key)?.filter(|s| s.body.is_some()))
     });
     match action {
-        "get" => return stored(library)?.map_or_else(|| Err(err(404, "no_summary", "이 영상의 요약이 아직 없습니다.")), |s| reply(key, &s, true)),
+        "get" => return match stored(library)? {
+            Some(s) => reply(key, &s, true),
+            // A call is out for it: the screen shows the loading state and asks again.
+            None if Pending::is(library, key)? => Ok(json!({"video_key": key, "pending": true})),
+            None => Err(err(404, "no_summary", "이 영상의 요약이 아직 없습니다.")),
+        },
         "make" | "again" => {}
         _ => return Err(err(400, "bad_summary", "지원하지 않는 요약 요청입니다.")),
     }
@@ -149,11 +219,20 @@ pub(crate) fn summary_in(library: &crate::library_scope::Library<'_>, key: &str,
     if action == "make" {
         if let Some(s) = stored(library)? { return reply(key, &s, true); }
     }
-    let (title, language, job, terms, transcript) = library.run(|store| {
+    // This call's token on the video's summary row. Deleting the video drops
+    // the row, so a reply that returns after a deletion finds no token and is
+    // not written, whatever entry is there again under the same ids.
+    let mut random = [0u8; 16];
+    getrandom::fill(&mut random).map_err(|e| ApiError::from(e.to_string()))?;
+    let call: String = random.iter().map(|b| format!("{b:02x}")).collect();
+    let (title, language, terms, transcript) = library.run(|store| {
+        // A video marked for deletion is not summarized: checked before any paid call.
+        if let Some((token, complete)) = store.deleted(key)? { return Err(deleted_error(token, complete)); }
         let video = store.video(key)?.ok_or_else(|| err(404, "no_video", "이 영상이 보관함에 없습니다."))?;
         let processing = store.latest_job(key)?.is_some_and(|j| crate::store::ACTIVE.contains(&j.stage.as_str()));
-        let ready = store.ready_job(key)?.filter(|_| !processing)
-            .ok_or_else(|| err(409, "not_ready", "자막이 다 만들어진 영상만 요약할 수 있습니다."))?;
+        if processing || store.ready_job(key)?.is_none() {
+            return Err(err(409, "not_ready", "자막이 다 만들어진 영상만 요약할 수 있습니다."));
+        }
         let (terms, transcript) = match store.covered_by_remake(key)? {
             Some(saved) => (json!(saved.terms), saved.cues.into_iter().map(|c| c.source_text).collect::<Vec<_>>()),
             None => {
@@ -161,8 +240,10 @@ pub(crate) fn summary_in(library: &crate::library_scope::Library<'_>, key: &str,
                 (terms, store.cues(key)?.into_iter().map(|c| c.source_text).collect())
             }
         };
-        Ok((video.title, video.source_language, ready.id, terms, transcript))
+        store.open_summary_call(key, &call)?;
+        Ok((video.title, video.source_language, terms, transcript))
     })?;
+    let _pending = Pending::start(library, key)?;
     if transcript.iter().all(|t| t.trim().is_empty()) {
         return Err(err(409, "no_transcript", "요약할 원문이 없습니다."));
     }
@@ -187,7 +268,7 @@ pub(crate) fn summary_in(library: &crate::library_scope::Library<'_>, key: &str,
     // Into the library the request started in, even if the account changed
     // during the call: the account that paid keeps the result and its usage.
     // The retired screen is then refused by the account check below.
-    let kept = library.run_original(|store| Ok(store.record_summary(key, &job, usage.input, usage.output, cost, body.as_deref())?))?;
+    let kept = library.run_original(|store| Ok(store.record_summary(key, &call, usage.input, usage.output, cost, body.as_deref())?))?;
     library.run(|_| Ok(()))?;
     if !kept {
         return Err(err(410, "video_deleted", "요약하는 동안 영상이 삭제되거나 다시 만들어져 저장하지 않았습니다."));
@@ -234,33 +315,50 @@ mod tests {
     /// for a talk known not to be Korean, no topic or next topic does.
     #[test]
     fn each_field_is_held_to_its_language() {
-        let prose = ["key_points", "prerequisites"];
-        for (language, field, item) in [
-            ("en", "key_points", "Attention is a weighted sum."),
-            ("en", "key_points", "어텐션은 가중합입니다."),
-            ("en", "prerequisites", "linear algebra"),
-            ("en", "prerequisites", "PyTorch"),
-            ("en", "prerequisites", "선형대수 기초"),
-            ("en", "prerequisites", "PyTorch 기초"),
-            ("en", "topics", "선형대수"),
-            ("en", "topics", "self-attention"),
-            ("en", "topics", "attention 메커니즘"),
-            ("en", "next_topics", "확률론"),
-            ("en", "next_topics", "probability theory"),
-            ("ja", "topics", "확률론"),
-            ("ko", "topics", "선형대수"),
-            ("ko", "next_topics", "확률론"),
-            ("", "topics", "선형대수"),
+        // (talk language, field, item, kept?): written out, not computed by the rule under test.
+        // None is a talk whose language was not recognized; "xx" a code the table does not know.
+        let latin = "Bayesian inference 2.0";
+        let accented = "réseaux de neurones";
+        let hangul = "선형대수 기초";
+        let mixed = "PyTorch 기초";
+        let kana_han = "確率論の基礎";
+        let kana = "ベイズ推定";
+        let han = "概率论";
+        let cyrillic = "теория вероятностей";
+        for (language, field, item, kept) in [
+            (Some("en"), "key_points", latin, false),
+            (Some("en"), "key_points", hangul, true),
+            (Some("en"), "prerequisites", latin, false),
+            (Some("en"), "prerequisites", hangul, true),
+            (Some("en"), "prerequisites", mixed, true),
+            (Some("en"), "topics", latin, true),
+            (Some("en"), "topics", hangul, false),
+            (Some("en"), "topics", mixed, false),
+            (Some("en"), "topics", kana_han, false),
+            (Some("en"), "next_topics", kana, false),
+            (Some("en"), "topics", han, false),
+            (Some("en"), "next_topics", cyrillic, false),
+            (Some("fr"), "topics", accented, true),
+            (Some("fr"), "next_topics", kana, false),
+            (Some("ja"), "topics", kana_han, true),
+            (Some("ja"), "next_topics", kana, true),
+            (Some("ja"), "topics", latin, true),
+            (Some("ja"), "topics", hangul, false),
+            (Some("zh"), "topics", han, true),
+            (Some("zh"), "topics", kana, false),
+            (Some("ko"), "topics", hangul, true),
+            (Some("ko"), "next_topics", mixed, true),
+            (Some("ko"), "topics", kana, false),
+            (Some("ru"), "topics", cyrillic, true),
+            (Some("ru"), "topics", han, false),
+            (Some("xx"), "topics", kana_han, true),
+            (None, "topics", hangul, true),
+            (None, "next_topics", kana, true),
         ] {
             let mut reply = good();
             reply[field] = json!([item]);
-            let passes = if prose.contains(&field) { hangul(item) } else { language == "ko" || language.is_empty() || !hangul(item) };
-            assert_eq!(check(&reply, Some(language).filter(|l| !l.is_empty())).is_ok(), passes, "{language} {field} {item:?}");
+            assert_eq!(check(&reply, language).is_ok(), kept, "{language:?} {field} {item:?}");
         }
-        // Unknown language: topics are not held to one.
-        let mut reply = good();
-        reply["topics"] = json!(["선형대수"]);
-        assert!(check(&reply, None).is_ok());
     }
 
     #[test]

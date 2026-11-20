@@ -191,8 +191,11 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   syntax only; Gemini's documentation says length and uniqueness keywords are
   not enforced. So `summary::check` validates values in code: a non-empty gist,
   and a gist, key points and prerequisites that each contain Hangul; for a
-  video whose recognized source language is known and not Korean, topics and
-  next topics with no Hangul; at least one topic and one key point; a known
+  video whose recognized source language is in the code's table, topics and
+  next topics written in it, every letter Latin (names) or in that language's
+  own script (Hangul and Han for `ko`, kana and Han for `ja`, Han for `zh`,
+  Cyrillic for `ru` and its neighbours, Greek for `el`, Latin only for the
+  Latin-script languages); at least one topic and one key point; a known
   level. Text is put on one line and blank or repeated list items are
   dropped. A reply that fails is not stored, the earlier summary (if any)
   stays, and the API answers `502 summary_invalid`.
@@ -202,11 +205,16 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   Markdown and no model is called. A second model call to polish the JSON into
   Markdown was rejected.
 - **Storage.** Table `summary (video_key PRIMARY KEY, body, input_amount,
-  output_amount, cost_krw, updated_at)` in the account library. `body` is the
-  checked JSON, NULL until one reply passed. Usage and cost accumulate over
-  every call. The result is written only while the ready job it was read
-  from still exists: a call whose video was deleted (and maybe translated
-  again) or is being deleted records nothing and answers `410`. It is written
+  output_amount, cost_krw, updated_at, call)` in the account library. `body`
+  is the checked JSON, NULL until one reply passed. Usage and cost accumulate
+  over every call. A video marked for deletion is refused with `410` before
+  any Gemini call. Before the call, its random token is put in `call`. The
+  result is written only if the row still holds that token and the video is
+  not being deleted. Deleting the video drops the row and the token with it,
+  so a call whose video was deleted records nothing and answers `410`, even
+  if the entry came back under the same ids meanwhile (a synced restore
+  projects the same `sync-<hash>` job id). While a call is out, P19 `GET`
+  answers `{pending: true}` for that library and video. It is written
   into the library the request started in, even if the account changed
   during the call, so the account that paid keeps the summary and its usage;
   the retired screen then gets `409 account_changed`. Confirmed video deletion

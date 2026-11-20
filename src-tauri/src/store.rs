@@ -82,7 +82,9 @@ CREATE TABLE IF NOT EXISTS summary (
   input_amount INTEGER NOT NULL DEFAULT 0,
   output_amount INTEGER NOT NULL DEFAULT 0,
   cost_krw REAL NOT NULL DEFAULT 0,
-  updated_at TEXT NOT NULL
+  updated_at TEXT NOT NULL,
+  -- The token of the summary call that is out. Deleting the video drops the row and with it the token.
+  call TEXT
 )
 ";
 

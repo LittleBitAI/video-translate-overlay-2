@@ -547,14 +547,14 @@
         "operationId": "P19-get",
         "summary": "The stored summary of a video, with no Gemini call. Local app screens only; site capabilities stay P6-P8.",
         "responses": {
-          "200": {"description": "The summary reply described under POST, with reused=true."},
+          "200": {"description": "The summary reply described under POST, with reused=true. Or, while a summary call for this video is out and none is stored yet, {video_key, pending: true}: the screen shows its loading state and asks again."},
           "404": {"description": "no_video, or no_summary when none is stored yet"},
           "410": {"description": "video_deleted"}
         }
       },
       "post": {
         "operationId": "P19-post",
-        "summary": "Summarize a video whose subtitles are ready. Without again, a stored summary is answered with no Gemini call. Otherwise one gemini-3.1-flash-lite generateContent call under the summary system prompt, with the order {task: summary, title, terms: the job's glossary, transcript: every cue's source text in cue order} (no Korean cue text, no times) and a response JSON schema of the six fields below. The reply's values are checked in code: a non-empty Korean gist, Korean key points and prerequisites, topics and next_topics with no Korean for a lecture whose recognized language is known and not Korean, at least one topic and key point, a known level; blank and repeated items are dropped. A reply that fails is not stored and an earlier summary stays. Every call's reported usage is metered into the video's cost (P7 summary_cost_krw), valid reply or not. Local app screens only: it spends the key.",
+        "summary": "Summarize a video whose subtitles are ready. Without again, a stored summary is answered with no Gemini call. Otherwise one gemini-3.1-flash-lite generateContent call under the summary system prompt, with the order {task: summary, title, terms: the job's glossary, transcript: every cue's source text in cue order} (no Korean cue text, no times) and a response JSON schema of the six fields below. The reply's values are checked in code: a non-empty Korean gist, Korean key points and prerequisites, for a lecture whose recognized language is known, topics and next_topics written in it (every letter Latin or in that language's own script), at least one topic and key point, a known level; blank and repeated items are dropped. A reply that fails is not stored and an earlier summary stays. Every call's reported usage is metered into the video's cost (P7 summary_cost_krw), valid reply or not. Local app screens only: it spends the key.",
         "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": {"again": {"type": "boolean", "default": false, "description": "Summarize again even when a summary is stored"}}}}}},
         "responses": {
           "200": {
@@ -578,7 +578,7 @@
           "401": {"description": "key_rejected"},
           "404": {"description": "no_video"},
           "409": {"description": "not_ready: no ready subtitles, or a job for the video is running; no_transcript; account_changed when the account changed during the call (the summary and its usage are kept in the library the request started in)"},
-          "410": {"description": "video_deleted, also when the video was deleted, or deleted and translated again, while the call ran (its usage is then not recorded)"},
+          "410": {"description": "video_deleted: a video marked for deletion is refused before any Gemini call, with or without again. Also when the video was deleted while the call ran, even if it came back under the same ids (a call's token on the summary row is dropped with the video); its usage is then not recorded"},
           "428": {"description": "no_key"},
           "502": {"description": "summary_invalid: the reply broke a value rule or was not a JSON object; not stored, its usage metered"},
           "503": {"description": "gemini_unreachable"}

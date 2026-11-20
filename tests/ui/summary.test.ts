@@ -134,6 +134,28 @@ test('a reply that arrives after the screen was left is dropped there and shown 
   expect(summaryCalls().filter((c) => c.method === 'POST')).toHaveLength(1);
 });
 
+test('a video reopened while its summary is still being made waits for it and shows it', async () => {
+  let answer: ((a: Answer) => void) | undefined;
+  let stored = false;
+  serve((c) => {
+    if (c.method === 'GET') return stored ? [200, { ...MADE, reused: true }] : answer ? [200, { video_key: 'vk', pending: true }] : [404, { error: 'no_summary' }];
+    return new Promise((r) => (answer = (a) => { stored = true; r(a); }));
+  });
+  const s1 = open('/');
+  await vi.waitFor(() => expect(button(s1, '요약')).toBeTruthy());
+  button(s1, '요약').click();
+  await vi.waitFor(() => expect(answer).toBeTruthy());
+  go('/library');
+  flushSync();
+  go('/');
+  flushSync();
+  // Reopened before the reply: the loading state, not 요약.
+  await vi.waitFor(() => expect(button(s1, '요약하는 중').disabled).toBe(true));
+  answer!([200, MADE]);
+  await vi.waitFor(() => expect(text(section(s1))).toContain('어텐션을 설명합니다.'), { timeout: 4000 });
+  expect(summaryCalls().filter((c) => c.method === 'POST')).toHaveLength(1);
+});
+
 test('without a key, the error says to add one in the settings', async () => {
   serve((c) => (c.method === 'GET' ? [404, {}] : [428, { error: 'no_key' }]));
   const s1 = open('/');

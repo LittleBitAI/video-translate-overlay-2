@@ -71,14 +71,19 @@ fn summarize(core: &Core, called: &mpsc::Receiver<()>, go: &mpsc::Sender<()>, du
     })
 }
 
+/// The property: a reply is written only into the entry it was read from.
+/// Whatever replaces that entry during the call, even one under the same
+/// job id (a synced restore projects `sync-<hash>` from the same content),
+/// gets neither the summary nor its usage.
 #[test]
 fn a_summary_is_stored_only_into_the_entry_it_was_read_from() {
     fn delete(s: &Store) { s.begin_delete(&key(), "token-a").unwrap(); s.finish_delete(&key(), None).unwrap(); }
-    let steps: [(&str, fn(&Store), Result<(), &str>); 4] = [
+    let steps: [(&str, fn(&Store), Result<(), &str>); 5] = [
         ("nothing happened", |_| {}, Ok(())),
         ("the video was deleted", delete, Err("video_deleted")),
         ("the video is being deleted", |s| s.begin_delete(&key(), "token-a").unwrap(), Err("video_deleted")),
         ("the video was deleted and translated again", |s| { delete(s); ready(s, "second", Some("token-a")); }, Err("video_deleted")),
+        ("the video was deleted and came back under the same job id", |s| { delete(s); ready(s, "first", Some("token-a")); }, Err("video_deleted")),
     ];
     for (name, step, outcome) in steps {
         let dir = temp();
@@ -88,10 +93,41 @@ fn a_summary_is_stored_only_into_the_entry_it_was_read_from() {
         assert_eq!(got.as_ref().map(|_| ()).map_err(String::as_str), outcome, "{name}");
         let row = in_library(&core, |s| s.summary(&key()).unwrap());
         assert_eq!(row.as_ref().is_some_and(|r| r.body.is_some()), outcome.is_ok(), "{name}: a summary is stored");
-        assert_eq!(row.is_some(), outcome.is_ok(), "{name}: a usage row is written");
+        assert_eq!(row.as_ref().map_or(0, |r| r.input), if outcome.is_ok() { 1000 } else { 0 }, "{name}: usage recorded");
         drop(core);
         let _ = std::fs::remove_dir_all(&dir);
     }
+}
+
+/// The guard: no form of 요약 reaches Gemini for a video marked for deletion.
+#[test]
+fn a_video_marked_for_deletion_is_never_sent_to_gemini() {
+    for action in ["make", "again"] {
+        let dir = temp();
+        let (core, called, _go) = core(&dir);
+        in_library(&core, |s| { ready(s, "first", None); s.begin_delete(&key(), "token-a").unwrap(); });
+        let got = library_request(&core, Some(generation(&core)), "video_summary", &json!({"video_key": key(), "summary_action": action}));
+        assert_eq!(got.unwrap_err().error, "video_deleted", "{action}");
+        assert!(called.try_recv().is_err(), "{action}: Gemini was called");
+        drop(core);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}
+
+/// A screen opened while the call is out is told a summary is coming, then reads it.
+#[test]
+fn a_read_during_the_call_says_a_summary_is_pending() {
+    let dir = temp();
+    let (core, called, go) = core(&dir);
+    in_library(&core, |s| ready(s, "first", None));
+    let read = |core: &Core| library_request(core, Some(generation(core)), "video_summary", &json!({"video_key": key(), "summary_action": "get"}));
+    assert_eq!(read(&core).unwrap_err().error, "no_summary");
+    let mut during = None;
+    summarize(&core, &called, &go, |core| during = Some(read(core).unwrap())).unwrap();
+    assert_eq!(during.unwrap()["pending"], true);
+    assert_eq!(read(&core).unwrap()["summary"]["gist"], "어텐션을 설명합니다.");
+    drop(core);
+    let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]
