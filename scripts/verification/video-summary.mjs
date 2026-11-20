@@ -76,9 +76,12 @@ for (const [w, h] of [[1280, 720], [384, 854]]) {
   };
   let page = await routed(() => {});
   const section = page.locator('[data-feature="video-summary"]');
-  const player = await page.locator('[data-feature="job-progress"]').first().boundingBox();
+  // The player frame and every visible status chip end above the section.
+  const above = [await page.locator('.video-stage').boundingBox(),
+    ...await Promise.all((await page.locator('[data-feature="job-progress"]:visible').all()).map((l) => l.boundingBox()))];
   const box = await section.boundingBox();
-  check(size, 'button: 요약 is offered below the player', true, !!player && !!box && box.y >= player.y + player.height - 1, !!player && !!box && box.y >= player.y + player.height - 1);
+  const below = above.length > 1 && above.every((b) => b && box && box.y >= b.y + b.height - 1);
+  check(size, 'button: 요약 is offered below the player and its status', true, below, below);
   await shot(page, 'button');
   await page.getByRole('button', { name: '요약', exact: true }).click();
   await page.getByRole('button', { name: '요약하는 중' }).waitFor();
