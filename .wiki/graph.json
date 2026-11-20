@@ -155,6 +155,11 @@
   },
   {
    "a": "docs/evidence/sentence-cues/receipts.md",
+   "b": "docs/research/review-sentence-cues-and-speech-cleanup-f9-1.md",
+   "kind": "link"
+  },
+  {
+   "a": "docs/evidence/sentence-cues/receipts.md",
    "b": "docs/evidence/sentence-cues/README.md",
    "kind": "link"
   },
@@ -290,8 +295,8 @@
   "docs/research/review-sentence-cues-and-speech-cleanup-f8-1.md"
  ],
  "counts": {
-  "docs": 32,
-  "linked": 21,
+  "docs": 33,
+  "linked": 22,
   "read": 3,
   "orphans": 8,
   "pages": 7,
