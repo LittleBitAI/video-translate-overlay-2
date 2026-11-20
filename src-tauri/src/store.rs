@@ -87,9 +87,9 @@ CREATE TABLE IF NOT EXISTS summary (
   call TEXT,
   -- Why the last call stored nothing, until a later call starts or stores a summary.
   failure TEXT,
-  -- The created_at of the video row the summary was made for. A build without summaries deletes the video
-  -- but not this row, and the same key can come back as a new video row: the row counts only while this matches.
-  video_created_at TEXT
+  -- The entry of the video row the summary was made for (video.entry). A build without summaries deletes the
+  -- video but not this row, and the same key can come back as a new video row: the row counts only while this matches.
+  video_entry TEXT
 )
 ";
 
@@ -190,8 +190,11 @@ pub(crate) fn add_columns(db: &Db) -> R<()> {
         ("job", "tail", "tail TEXT"),
         ("video", "mishearings", "mishearings TEXT"),
         ("video", "mishearings_of", "mishearings_of TEXT"),
+        // A random id a video row gets when a summary is first pressed for it. A row an older build makes
+        // (again) under the same key has none, so it is a new entry whatever its key and created_at.
+        ("video", "entry", "entry TEXT"),
         // Files that already had summaries from an earlier build of this branch; their rows (NULL) count for no video.
-        ("summary", "video_created_at", "video_created_at TEXT"),
+        ("summary", "video_entry", "video_entry TEXT"),
     ] {
         let have = db.query_one(&format!("SELECT 1 FROM pragma_table_info('{table}') WHERE name=?"), p![name])?.is_some();
         if !have {

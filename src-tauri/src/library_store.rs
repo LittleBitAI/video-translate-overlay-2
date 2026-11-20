@@ -243,32 +243,46 @@ impl Store {
     }
 
     /// The video's summary row: the stored JSON (if one reply passed) and all summary calls' usage and cost.
-    /// Only a row made for this video row counts (see `summary.video_created_at`).
+    /// Only a row made for this video row counts (see `summary.video_entry`).
     pub(crate) fn summary(&self, key: &str) -> R<Option<Summary>> {
         Ok(self.db.query_one(
             "SELECT s.body,s.input_amount,s.output_amount,s.cost_krw,s.failure FROM summary s
-             JOIN video v ON v.video_key=s.video_key AND v.created_at=s.video_created_at WHERE s.video_key=?",
+             JOIN video v ON v.video_key=s.video_key AND v.entry=s.video_entry WHERE s.video_key=?",
             p![key],
         )?
             .map(|r| Summary { body: r[0].opt_text(), input: r[1].int(), output: r[2].int(), cost_krw: r[3].real(), failure: r[4].opt_text() }))
     }
 
+    /// The video row's entry id, given a random one if it has none yet;
+    /// `None` without a video. A row made again under the same key, by this
+    /// build or an older one, starts without one and so is another entry.
+    pub(crate) fn summary_entry(&self, key: &str) -> R<Option<String>> {
+        let mut random = [0u8; 16];
+        getrandom::fill(&mut random).map_err(|e| e.to_string())?;
+        let fresh: String = random.iter().map(|b| format!("{b:02x}")).collect();
+        self.library_write(|db| {
+            db.execute("UPDATE video SET entry=? WHERE video_key=? AND entry IS NULL", p![fresh, key])?;
+            Ok(db.query_one("SELECT entry FROM video WHERE video_key=?", p![key])?.and_then(|r| r[0].opt_text()))
+        })
+    }
+
     /// Puts `call`, the token of a summary call about to go out, on the
-    /// video's summary row (made with no usage when there is none yet). A
-    /// row left from an earlier video row under the same key is dropped first,
-    /// so its summary and cost never join the new video's.
-    pub(crate) fn open_summary_call(&self, key: &str, call: &str) -> R<()> {
+    /// video's summary row (made with no usage when there is none yet), if
+    /// the video is still the entry `entry` the press was made on; `false`,
+    /// and nothing written, if it is not. A row left from an earlier video
+    /// row under the same key is dropped first, so its summary and cost
+    /// never join the new video's.
+    pub(crate) fn open_summary_call(&self, key: &str, call: &str, entry: &str) -> R<bool> {
         self.library_write(|db| {
             db.execute(
-                "DELETE FROM summary WHERE video_key=? AND video_created_at IS NOT (SELECT created_at FROM video WHERE video_key=?)",
+                "DELETE FROM summary WHERE video_key=? AND video_entry IS NOT (SELECT entry FROM video WHERE video_key=?)",
                 p![key, key],
             )?;
-            db.execute(
-                &format!("INSERT INTO summary (video_key,updated_at,call,video_created_at) SELECT ?,{NOW},?,created_at FROM video WHERE video_key=?
+            Ok(db.execute(
+                &format!("INSERT INTO summary (video_key,updated_at,call,video_entry) SELECT ?,{NOW},?,entry FROM video WHERE video_key=? AND entry=?
                           ON CONFLICT(video_key) DO UPDATE SET call=excluded.call, failure=NULL"),
-                p![key, call, key],
-            )?;
-            Ok(())
+                p![key, call, key, entry],
+            )? > 0)
         })
     }
 
@@ -284,7 +298,7 @@ impl Store {
         if !cost.is_finite() || cost < 0.0 { return Err("invalid usage cost".into()); }
         self.library_write(|db| {
             let live = db.query_one(
-                "SELECT 1 FROM summary s JOIN video v ON v.video_key=s.video_key AND v.created_at=s.video_created_at WHERE s.video_key=? AND s.call=?
+                "SELECT 1 FROM summary s JOIN video v ON v.video_key=s.video_key AND v.entry=s.video_entry WHERE s.video_key=? AND s.call=?
                  AND NOT EXISTS(SELECT 1 FROM deleted_video WHERE video_key=s.video_key AND complete=0)",
                 p![key, call],
             )?;

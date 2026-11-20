@@ -76,10 +76,11 @@ fn script(c: char) -> Script {
 /// The scripts a talk writes its own terms in, besides Latin (technical names
 /// in any language) and Greek (notation): those of its recognized `language`
 /// that its transcript may not show (Han for Korean), and every script that
-/// makes up a tenth or more of the letters of `source`, its title, glossary
-/// and transcript, which are in the talk's language whatever code speech
-/// recognition gave it (or none).
-fn own_scripts(language: Option<&str>, source: &str) -> Vec<Script> {
+/// makes up a tenth or more of the letters of its `transcript`, which is in
+/// the talk's language whatever code speech recognition gave it (or none).
+/// The title and the glossary's Korean targets are not: they can be in
+/// another language than the talk.
+fn own_scripts(language: Option<&str>, transcript: &str) -> Vec<Script> {
     let mut own: Vec<Script> = match language.map(str::to_ascii_lowercase).as_deref() {
         Some("ko") => vec![Script::Hangul, Script::Han],
         Some("ja") => vec![Script::Kana, Script::Han],
@@ -88,7 +89,7 @@ fn own_scripts(language: Option<&str>, source: &str) -> Vec<Script> {
         _ => vec![],
     };
     let mut tally: Vec<(Script, usize)> = Vec::new();
-    for s in source.chars().filter(|c| c.is_alphabetic()).map(script) {
+    for s in transcript.chars().filter(|c| c.is_alphabetic()).map(script) {
         match tally.iter_mut().find(|(t, _)| *t == s) { Some((_, n)) => *n += 1, None => tally.push((s, 1)) }
     }
     let letters: usize = tally.iter().map(|(_, n)| n).sum();
@@ -136,10 +137,11 @@ fn in_talk(topic: &str, own: &[Script], source: &std::collections::HashSet<Strin
 /// talk's own words ([`in_talk`]); next topics come after the talk and need
 /// not be said in it. gist, key_points and topics may not be empty; level is
 /// one of [`LEVELS`]. Text is put on one line; blank and repeated list items
-/// are dropped. `source` is the talk's title, glossary and transcript.
-pub fn check(reply: &Value, language: Option<&str>, source: &str) -> Result<Value, String> {
-    let own = own_scripts(language, source);
-    let source = words(source);
+/// are dropped. `transcript` is what the talk said; `names` its title and
+/// the glossary's source terms, whose words count as the talk's too.
+pub fn check(reply: &Value, language: Option<&str>, transcript: &str, names: &str) -> Result<Value, String> {
+    let own = own_scripts(language, transcript);
+    let source = words(&format!("{names}\n{transcript}"));
     let gist = one_line(reply["gist"].as_str().unwrap_or(""));
     if gist.is_empty() { return Err("empty gist".into()); }
     if !hangul(&gist) { return Err("gist is not Korean".into()); }
@@ -171,6 +173,17 @@ pub fn check(reply: &Value, language: Option<&str>, source: &str) -> Result<Valu
         "prerequisites": list("prerequisites", 0)?,
         "next_topics": list("next_topics", 0)?,
     }))
+}
+
+/// [`check`] of a reply for the video as the call read it: its transcript
+/// is what the talk said, its title and the glossary's source terms are
+/// names; the glossary's targets are Korean translations, neither the talk's
+/// words nor its scripts.
+fn judge(reply: &Value, language: Option<&str>, title: &str, terms: &Value, transcript: &[String]) -> Result<Value, String> {
+    let names = std::iter::once(title)
+        .chain(terms.as_array().into_iter().flatten().filter_map(|t| t["source"].as_str()))
+        .collect::<Vec<_>>().join("\n");
+    check(reply, language, &transcript.join("\n"), &names)
 }
 
 /// Markdown-escapes one line of model text, so it stays the text of the line it is put on.
@@ -277,6 +290,9 @@ pub(crate) fn summary_in(library: &crate::library_scope::Library<'_>, key: &str,
     // Pending from before the press waits its turn, through opening the token,
     // until after the result is written (dropped on return).
     let _pending = Pending::start(library, key)?;
+    // The entry the press was made on, read before it waits its turn: a call
+    // opens its token only on that entry, never on one that replaced it meanwhile.
+    let entry = library.run(|store| Ok(store.summary_entry(key)?))?;
     #[cfg(test)]
     flow_tests::pause("queued", library);
     let _calling = CALLING.lock().unwrap_or_else(|p| p.into_inner());
@@ -304,7 +320,8 @@ pub(crate) fn summary_in(library: &crate::library_scope::Library<'_>, key: &str,
                 (terms, store.cues(key)?.into_iter().map(|c| c.source_text).collect())
             }
         };
-        store.open_summary_call(key, &call)?;
+        let replaced = || err(410, "video_replaced", "요약을 누른 뒤 영상이 삭제되거나 다시 만들어져 요약하지 않았습니다. 다시 눌러 주세요.");
+        if !store.open_summary_call(key, &call, entry.as_deref().ok_or_else(replaced)?)? { return Err(replaced()); }
         Ok((video.title, video.source_language, terms, transcript))
     })?;
     #[cfg(test)]
@@ -314,13 +331,12 @@ pub(crate) fn summary_in(library: &crate::library_scope::Library<'_>, key: &str,
     }
     let api_key = core.svc.keystore.get()?.ok_or_else(|| err(428, "no_key", "설정에서 Gemini API 키를 먼저 넣어 주세요."))?;
     let client = Client { base_url: core.cfg.gemini_base_url.clone(), key: api_key, model: MODEL.into() };
-    let source = format!("{title}\n{terms}\n{}", transcript.join("\n"));
     // A call that stores nothing leaves its message on the row, for a screen opened while it was out.
     let failed = |e: ApiError| -> ApiError {
         match library.run_original(|store| Ok(store.fail_summary(key, &call, &e.message)?)) { Ok(()) => e, Err(write) => write }
     };
     let (checked, usage) = match client.order_with(SYSTEM, &order(&title, &terms, &transcript), Some(&schema())) {
-        Ok((answer, usage)) => (check(&answer, language.as_deref(), &source), usage),
+        Ok((answer, usage)) => (judge(&answer, language.as_deref(), &title, &terms, &transcript), usage),
         Err(gemini::Error::Reply(e, usage)) => (Err(e), usage),
         Err(gemini::Error::Key(e)) => {
             log(format!("summary key refused: {e}"));
@@ -368,7 +384,7 @@ mod tests {
 
     #[test]
     fn values_that_break_a_rule_are_refused() {
-        assert!(check(&good(), Some("en"), source(Some("en"))).is_ok());
+        assert!(check(&good(), Some("en"), source(Some("en")), "").is_ok());
         for (field, value, why) in [
             ("topics", json!([]), "topics is empty"),
             ("topics", json!(["  "]), "topics is empty"),
@@ -379,11 +395,11 @@ mod tests {
         ] {
             let mut reply = good();
             reply[field] = value;
-            assert_eq!(check(&reply, Some("en"), source(Some("en"))).unwrap_err(), why, "{field}");
+            assert_eq!(check(&reply, Some("en"), source(Some("en")), "").unwrap_err(), why, "{field}");
         }
     }
 
-    /// What each table row's talk said: its title, glossary and transcript.
+    /// What each table row's talk said: its transcript.
     fn source(language: Option<&str>) -> &'static str {
         match language {
             Some("fr") => "Les réseaux de neurones apprennent des poids.",
@@ -479,24 +495,55 @@ mod tests {
             // The rest of the reply passes for this talk (its topic is the talk's first word), so only `item` decides.
             let mut reply = good();
             reply["topics"] = json!([source(language).split_whitespace().next().unwrap()]);
-            assert!(check(&reply, language, source(language)).is_ok(), "{language:?}: the base reply");
+            assert!(check(&reply, language, source(language), "").is_ok(), "{language:?}: the base reply");
             reply[field] = json!([item]);
-            assert_eq!(check(&reply, language, source(language)).is_ok(), kept, "{language:?} {field} {item:?}");
+            assert_eq!(check(&reply, language, source(language), "").is_ok(), kept, "{language:?} {field} {item:?}");
         }
     }
 
     #[test]
     fn checked_values_drop_blanks_and_repeats() {
-        let c = check(&good(), Some("en"), source(Some("en"))).unwrap();
+        let c = check(&good(), Some("en"), source(Some("en")), "").unwrap();
         assert_eq!(c["key_points"], json!(["어텐션은 가중합입니다."]));
         assert_eq!(c["topics"], json!(["attention", "transformer"]));
+    }
+
+    /// The property: only what the talk said decides its scripts. A title or
+    /// a glossary target in another script lends the talk neither that script
+    /// nor its words; the title's words and the glossary's source terms count
+    /// as the talk's words. Run through `judge`, which the call uses.
+    #[test]
+    fn only_the_transcript_decides_the_talk_s_scripts() {
+        let said = vec!["Attention uses weights.".to_string()];
+        let plain_title = "Attention";
+        let other_title = "어텐션 가중합 계산 방식 강의";
+        let translated = json!([{"source": "attention", "target": "어텐션 가중합 계산 방식"}]);
+        let unsaid_term = json!([{"source": "softmax", "target": "소프트맥스"}]);
+        let none = json!([]);
+        let korean = "확률론";
+        for (name, title, terms, field, item, kept) in [
+            ("a translated glossary, a Korean next topic", plain_title, &translated, "next_topics", korean, false),
+            ("a translated glossary, its target as a topic", plain_title, &translated, "topics", "어텐션", false),
+            ("a title in another script, a Korean next topic", other_title, &none, "next_topics", korean, false),
+            ("a title in another script, a Korean topic from it", other_title, &none, "topics", "어텐션", false),
+            ("no glossary, a Korean next topic", plain_title, &none, "next_topics", korean, false),
+            ("a glossary source term the transcript lacks, as a topic", plain_title, &unsaid_term, "topics", "softmax", true),
+            ("a glossary target's word as a topic", plain_title, &unsaid_term, "topics", "소프트맥스", false),
+            ("the title's word as a topic", "Attention lecture", &none, "topics", "lecture", true),
+        ] {
+            let mut reply = good();
+            reply["topics"] = json!(["attention"]);
+            assert!(judge(&reply, Some("en"), title, terms, &said).is_ok(), "{name}: the base reply");
+            reply[field] = json!([item]);
+            assert_eq!(judge(&reply, Some("en"), title, terms, &said).is_ok(), kept, "{name}");
+        }
     }
 
     #[test]
     fn the_same_json_always_renders_the_same_markdown() {
         // `markdown` takes only the stored JSON: there is no client to call a model with.
         let stored = check(&json!({"gist": "C#과 *포인터*를 다룹니다.", "key_points": ["- 첫째", "1. 둘째"], "topics": ["__init__", "C++"],
-                                   "level": "advanced", "prerequisites": ["파이썬"], "next_topics": []}), Some("en"), "__init__ C++").unwrap();
+                                   "level": "advanced", "prerequisites": ["파이썬"], "next_topics": []}), Some("en"), "__init__ C++", "").unwrap();
         let once = markdown(&stored);
         assert_eq!(once, markdown(&serde_json::from_str(&stored.to_string()).unwrap()));
         assert_eq!(

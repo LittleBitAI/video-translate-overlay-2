@@ -302,6 +302,55 @@ fn a_press_queued_behind_another_call_says_pending() {
     }
 }
 
+/// The property: a press spends only on the entry it was made on. While it
+/// waits behind another video's call, whatever replaces that entry, even
+/// ready again under the same key and job id, is not sent to Gemini and
+/// gets neither a summary nor a charge.
+#[test]
+fn a_queued_press_spends_only_on_the_entry_it_was_made_on() {
+    const OTHER: &str = "https://lectures.example.org/summary-flow-other";
+    let other = || video_key(&url::Url::parse(OTHER).unwrap());
+    fn delete(s: &Store) {
+        let key = video_key(&url::Url::parse(OTHER).unwrap());
+        s.begin_delete(&key, "token-b").unwrap();
+        s.finish_delete(&key, None).unwrap();
+    }
+    let steps: [(&str, fn(&Store), Result<(), &str>); 5] = [
+        ("nothing happened", |_| {}, Ok(())),
+        ("the video was deleted", delete, Err("video_deleted")),
+        ("the video is being deleted", |s| s.begin_delete(&video_key(&url::Url::parse(OTHER).unwrap()), "token-b").unwrap(), Err("video_deleted")),
+        ("the video was deleted and translated again", |s| { delete(s); ready_page(s, "other-again", OTHER, Some("token-b")); }, Err("video_replaced")),
+        ("the video was deleted and came back under the same job id", |s| { delete(s); ready_page(s, "other", OTHER, Some("token-b")); }, Err("video_replaced")),
+    ];
+    for (name, step, outcome) in steps {
+        let dir = temp();
+        let (core, called, go) = core(&dir);
+        in_library(&core, |s| { ready(s, "first", None); ready_page(s, "other", OTHER, None); });
+        let request = |core: &Core, key: String, action: &str| library_request(core, Some(generation(core)), "video_summary",
+            &json!({"video_key": key, "summary_action": action}));
+        let result = std::thread::scope(|scope| {
+            let core = &core;
+            let running = scope.spawn(move || request(core, key(), "make"));
+            called.recv().unwrap();
+            let (reached, waiting) = mpsc::channel();
+            at("queued", core, move || reached.send(()).unwrap());
+            let behind = scope.spawn(move || request(core, other(), "make"));
+            waiting.recv().unwrap();
+            in_library(core, step);
+            go.send(()).unwrap();
+            running.join().unwrap().unwrap();
+            if outcome.is_ok() { called.recv().unwrap(); go.send(()).unwrap(); }
+            behind.join().unwrap()
+        });
+        assert_eq!(result.as_ref().map(|_| ()).map_err(|e| e.error.as_str()), outcome, "{name}");
+        assert!(called.try_recv().is_err(), "{name}: no other Gemini call");
+        let row = in_library(&core, |s| s.summary(&other()).unwrap());
+        assert_eq!(row.map(|r| (r.body.is_some(), r.cost_krw > 0.0)), outcome.is_ok().then_some((true, true)), "{name}: the entry there now");
+        drop(core);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}
+
 #[test]
 fn signing_out_during_the_call_keeps_the_reply_and_its_usage_in_the_account_that_paid() {
     let dir = temp();

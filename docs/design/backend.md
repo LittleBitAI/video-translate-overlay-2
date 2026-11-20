@@ -193,15 +193,18 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   and a gist, key points and prerequisites that each contain Hangul; topics
   and next topics written in the talk's scripts: every letter Latin (names),
   Greek (notation such as β) or in one of the talk's own scripts. Those are
-  every script that makes up a tenth or more of the letters of the title,
-  glossary and transcript, whatever language code speech recognition gave
-  (or none, or one no table names, such as `ar`), plus Han for `ko`, kana and
+  every script that makes up a tenth or more of the letters of the
+  transcript, whatever language code speech recognition gave (or none, or
+  one no table names, such as `ar`); the title and the glossary's Korean
+  targets do not count, as they can be in another language than the talk.
+  Also Han for `ko`, kana and
   Han for `ja`, Han for `zh` and Cyrillic for `ru` and its neighbours.
   Scripts without a name in `summary::script` are told apart by 128-code-point
   block. For a talk written with spaces between words (every one but those
   whose own scripts are Han without Hangul, kana, Thai, Lao, Myanmar or
-  Khmer), every topic must also share a word with the title, glossary or
-  transcript: a word of three or more letters, or a Korean word of two or
+  Khmer), every topic must also share a word with the title, the glossary's
+  source terms or the transcript (not the glossary's Korean targets): a word
+  of three or more letters, or a Korean word of two or
   more syllables that begins a word there (`신경망` in `신경망을`). So a
   same-script translation (French words for an English talk) and a Korean
   topic the Korean talk never says are refused. Next topics, which come
@@ -220,13 +223,20 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   Markdown and no model is called. A second model call to polish the JSON into
   Markdown was rejected.
 - **Storage.** Table `summary (video_key PRIMARY KEY, body, input_amount,
-  output_amount, cost_krw, updated_at, call, failure, video_created_at)` in
-  the account library. `video_created_at` is the `created_at` of the video
-  row the summary was made for, and the row counts (P19, P7's cost, a new
-  call) only while it matches. A build without summaries deletes a video but
-  not its summary row, and the same key can come back as a new video row, so
-  an old summary and its cost are never served for it. A new call drops such
-  a row first instead of reviving its body. `body`
+  output_amount, cost_krw, updated_at, call, failure, video_entry)` in
+  the account library. `video_entry` is the `entry` of the video row the
+  summary was made for: a random id the row gets the first time a summary is
+  pressed for it, kept by in-place updates. A row made again under the same
+  key, by this build or by an older one that knows no `entry`, starts without
+  one, so it is another entry whatever its key, job id or creation time. The
+  summary row counts (P19, P7's cost, a new call) only while the entries
+  match. A build without summaries deletes a video but not its summary row,
+  so an old summary and its cost are never served for the video made again,
+  and a new call drops such a row first instead of reviving its body. A
+  press reads the entry before it waits behind another video's call, and
+  its token opens only on that entry: if the video was deleted and made
+  again meanwhile, nothing is sent to Gemini and P19 answers
+  `410 video_replaced`. `body`
   is the checked JSON, NULL until one reply passed. Usage and cost accumulate
   over every call. A video marked for deletion is refused with `410` before
   any Gemini call. Before the call, its random token is put in `call`. The
