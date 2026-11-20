@@ -108,3 +108,7 @@ required-features = ["whisper"]
 [[example]]
 name = "repair_saved_music"
 required-features = ["whisper"]
+
+[[example]]
+name = "remake_saved"
+required-features = ["whisper"]

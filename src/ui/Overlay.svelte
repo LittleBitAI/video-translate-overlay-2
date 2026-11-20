@@ -219,8 +219,8 @@
   const box = 'rounded-lg bg-surface/90 p-2 text-sm';
   const label = 'text-sm text-ink/60';
   const value = 'font-semibold text-ink';
-  /** The subtitle line: a dark band and a shadow, so it reads over a bright scene too. */
-  const line = 'mx-auto mb-[max(48px,calc(var(--h)*0.1))] max-w-full rounded-md bg-black/60 px-3 py-1 text-center whitespace-pre-wrap wrap-anywhere [text-shadow:0_0_4px_rgb(0_0_0/0.9),0_1px_2px_#000]';
+  /** The subtitle line: a dark band and a shadow, so it reads over a bright scene too; a cue of two lines gets two of about the same length. */
+  const line = 'mx-auto mb-[max(48px,calc(var(--h)*0.1))] max-w-full rounded-md bg-black/60 px-3 py-1 text-center text-balance whitespace-pre-wrap wrap-anywhere [text-shadow:0_0_4px_rgb(0_0_0/0.9),0_1px_2px_#000]';
   /** A button in a notice: 44 px high, so a thumb finds it. */
   const action = 'pointer-events-auto mt-2 inline-flex min-h-11 items-center rounded-lg px-4';
   onDestroy(() => {

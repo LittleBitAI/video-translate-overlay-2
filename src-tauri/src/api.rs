@@ -394,6 +394,10 @@ fn retranslate_job_in(library: &crate::library_scope::Library<'_>, page_url: &st
     }
     let (previous, video) = library.run(|store| {
         let ready = store.ready_job(&key)?.is_some();
+        // The cue table holds an unfinished re-make's draft (Store::retranslate refuses it too).
+        if store.covered_by_remake(&key)?.is_some() {
+            return Err(err(409, "not_ready", "다시 만드는 중인 자막은 다시 번역할 수 없습니다."));
+        }
         let mut previous = store.latest_job(&key)?.filter(|_| ready)
             .ok_or_else(|| err(409, "not_ready", "완료된 자막만 다시 번역할 수 있습니다."))?;
         previous.cost_krw = store.retranslation_cost(&key)?;
@@ -402,9 +406,6 @@ fn retranslate_job_in(library: &crate::library_scope::Library<'_>, page_url: &st
     })?;
     if core.svc.keystore.get()?.is_none() {
         return Err(err(428, "no_key", "설정에서 Gemini API 키를 먼저 넣어 주세요."));
-    }
-    if previous.cost_krw >= gemini::limit_krw(video.duration_ms) {
-        return Err(err(409, "cost_limit", "이 영상의 번역 비용 한도에 도달했습니다."));
     }
     let id = new_job_id();
     core.svc.notifier.hold(&id, &video.title).map_err(|_| err(409, "background_refused", "앱 화면에서 다시 눌러 주세요."))?;
@@ -449,12 +450,28 @@ pub fn get_subtitles(core: &Core, video_key: &str) -> ApiResult {
 }
 
 fn get_subtitles_in(library: &crate::library_scope::Library<'_>, video_key: &str) -> ApiResult {
-    library.run(|store| {
+    library.run(|store| subtitles(store, video_key))
+}
+
+/// `GET /videos/{video_key}/subtitles` on `store`.
+pub(crate) fn subtitles(store: &crate::store::Store, video_key: &str) -> ApiResult {
     if let Some((token, complete)) = store.deleted(video_key)? { return Err(deleted_error(token, complete)); }
     let video = store.video(video_key)?.ok_or_else(|| err(404, "no_video", "이 영상의 자막이 없습니다."))?;
     let ready = store.ready_job(video_key)?.is_some();
     if !ready {
         return Err(err(409, "not_ready", "자막을 만드는 중입니다. 다 되면 알림으로 알려 드립니다."));
+    }
+    // A re-make's draft in the cue table is not the selected version: that one is served as saved.
+    if let Some(saved) = store.covered_by_remake(video_key)? {
+        let cues: Vec<Value> = saved.cues.iter().enumerate()
+            .map(|(seq, c)| json!({"seq": seq, "start_ms": c.start_ms, "end_ms": c.end_ms, "text_ko": c.text_ko}))
+            .collect();
+        return Ok(json!({
+            "video_key": video.video_key,
+            "duration_ms": saved.duration_ms,
+            "source_language": saved.source_language.unwrap_or_else(|| "und".into()),
+            "cues": cues,
+        }));
     }
     let cues: Vec<Value> = store
         .cues(video_key)?
@@ -467,7 +484,6 @@ fn get_subtitles_in(library: &crate::library_scope::Library<'_>, video_key: &str
         "source_language": video.source_language.unwrap_or_else(|| "und".into()),
         "cues": cues,
     }))
-    })
 }
 
 fn playback_in(library: &crate::library_scope::Library<'_>, args: &Value) -> ApiResult {

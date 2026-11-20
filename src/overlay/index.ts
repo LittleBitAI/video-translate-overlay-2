@@ -58,7 +58,7 @@ const CSS = `
 .sub { pointer-events: none; align-self: center; max-width: 100%; box-sizing: border-box; padding: 4px 10px; border-radius: 4px;
   margin-bottom: max(48px, calc(var(--h, 0px) * 0.1));
   background: rgba(0, 0, 0, 0.78); color: #fff; font-size: ${SUBTITLE_SIZE}; line-height: 1.4;
-  text-align: center; overflow-wrap: anywhere; word-break: keep-all; white-space: pre-wrap; }
+  text-align: center; overflow-wrap: anywhere; word-break: keep-all; white-space: pre-wrap; text-wrap: balance; }
 .loose .sub { order: -1; margin-bottom: 0; }
 .bar { pointer-events: auto; align-self: flex-start; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; max-width: 100%; }
 .loose .bar { align-self: center; }

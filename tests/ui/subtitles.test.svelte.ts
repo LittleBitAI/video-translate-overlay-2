@@ -7,6 +7,7 @@ import Overlay from '../../src/ui/Overlay.svelte';
 import '../../src/ui/app.css';
 import { page } from 'vitest/browser';
 import { api, calls, text } from './fake';
+import { LONG_CUE, lineWidths } from '../subtitle-lines';
 
 let shown: ReturnType<typeof mount> | null = null;
 
@@ -36,6 +37,27 @@ test('local subtitles scale with their player and wrap inside a letterboxed imag
       expect(r.bottom).toBeLessThanOrEqual(height - Math.max(48, height * 0.1));
       expect(sub.scrollWidth).toBeLessThanOrEqual(sub.clientWidth + 1);
       expect(sub.scrollHeight).toBeLessThanOrEqual(sub.clientHeight + 1);
+    });
+  }
+});
+
+test('a long Korean cue renders on two balanced lines at phone, windowed and fullscreen sizes', async () => {
+  api(() => [200, {duration_ms: 600000, cues: [{seq: 0, start_ms: 1000, end_ms: 4000, text_ko: LONG_CUE}]}]);
+  const target = document.body.appendChild(document.createElement('div'));
+  const video = target.appendChild(document.createElement('video'));
+  video.style.cssText = 'width:100%;height:100%';
+  shown = mount(Overlay, {target, props: {pageUrl: 'https://talks.example.org/7', video, timeMs: 1500, durationMs: 600000,
+    initial: {stage: 'ready', percent: 100, cost_krw: 3, failure_reason: null, video_key: 'vk'}}});
+  // The watch screen's player: the phone's page width less its 16 px margins, a 1280 px window, a 1920 px full screen.
+  for (const [w, h, width, height] of [[384, 854, 352, 198], [1280, 800, 1248, 702], [1920, 1080, 1920, 1080]]) {
+    await page.viewport(w, h);
+    target.style.cssText = `position:fixed;inset:0 auto auto 0;width:${width}px;height:${height}px`;
+    await vi.waitFor(() => {
+      const sub = target.querySelector<HTMLElement>('[data-feature="watch-subtitles"]')!;
+      expect(sub.textContent?.trim()).toBe(LONG_CUE);
+      const widths = lineWidths(sub);
+      expect(widths.length, `${w}x${h}: ${widths}`).toBe(2);
+      expect(Math.min(...widths) / Math.max(...widths), `${w}x${h}: lines of ${widths}`).toBeGreaterThan(0.75);
     });
   }
 });

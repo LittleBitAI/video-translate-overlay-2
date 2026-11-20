@@ -205,6 +205,15 @@ pub(crate) fn select_translation(db: &Db, key: &str, identity: &str) -> Result<(
     Ok(())
 }
 
+/// The selected saved version of `key`, as recorded.
+pub(crate) fn selected_translation(db: &Db, key: &str) -> Result<Translation> {
+    let identity = db.query_one("SELECT identity FROM sync_selected_translation WHERE video_key=?", p![key])?.ok_or("no saved version is selected")?[0].text();
+    let body = db.query_one("SELECT body FROM sync_record WHERE video_key=? AND identity=? AND identity LIKE 't/%'", p![key, identity])?
+        .ok_or("saved version unavailable")?[0].text();
+    let Change::Translation { translation } = super::library::decode(&body)?.change else { return Err("invalid saved version".into()) };
+    Ok(translation)
+}
+
 pub(crate) fn repair_silent_cue(db: &Db, key: &str, identity: &str, inspected: &crate::store::Cue) -> Result<String> {
     if !owned(db)? { return Err("repair requires a retained saved version".into()); }
     if db.query_one("SELECT id FROM job WHERE video_key=? AND stage IN ('downloading','writing','translating')", p![key])?.is_some()

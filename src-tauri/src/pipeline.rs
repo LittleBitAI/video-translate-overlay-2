@@ -7,7 +7,7 @@ use crate::{api, audio, log, media, stitch, Core};
 use serde_json::Value;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 /// Why a job stopped for good; becomes `failure_reason`.
@@ -55,6 +55,32 @@ pub fn run_worker(core: Arc<Core>) {
                 std::thread::sleep(Duration::from_secs(1));
             }
         }
+    }
+}
+
+/// Runs the job `id` to its end, here and now, and no other: the worker's
+/// steps for the one job a tool names (`examples/remake_saved.rs`). Each
+/// lookup is of `id`, so once it ends another video's job, which may become
+/// active at that moment, is left to its own runner.
+pub fn run_named(core: &Core, store: &Store, id: &str) -> Result<(), String> {
+    while let Some(job) = store.job(id)?.filter(|j| matches!(j.stage.as_str(), "downloading" | "writing" | "translating")) {
+        run_job(core, store, job);
+    }
+    Ok(())
+}
+
+/// Holds the right to run re-makes of the library at `db` for as long as the
+/// returned file is kept: a second tool process is refused, so two runners
+/// never take the same job and send its requests twice. The operating system
+/// drops the lock when the process ends, however it ends, so a stopped
+/// re-make can always be resumed.
+pub fn claim_runner(db: &std::path::Path) -> Result<std::fs::File, String> {
+    let path = std::path::PathBuf::from(format!("{}.runner", db.display()));
+    let file = std::fs::OpenOptions::new().create(true).truncate(false).write(true).open(&path).map_err(|e| e.to_string())?;
+    match file.try_lock() {
+        Ok(()) => Ok(file),
+        Err(std::fs::TryLockError::WouldBlock) => Err(format!("another re-make of this library is running ({})", path.display())),
+        Err(std::fs::TryLockError::Error(e)) => Err(e.to_string()),
     }
 }
 
@@ -155,11 +181,11 @@ fn give_up(core: &Core, store: &Store, job_id: &str, title: &str, detail: &str) 
 /// precision); also that job's `failure_reason`.
 pub const UNSUPPORTED_CPU: &str = "unsupported_cpu";
 
-/// The `failure_reason` stored for a stop: one of the six values E2 allows.
+/// The `failure_reason` stored for a stop: one of the values E2 allows
+/// (`cost_limit` is only on jobs from before translation stopped at a cost).
 /// `detail` is the internal cause (logged); `stage` is where the job stopped.
 pub fn failure_reason(detail: &str, stage: &str) -> &'static str {
     match detail {
-        "cost_limit" => "cost_limit",
         UNSUPPORTED_CPU => UNSUPPORTED_CPU,
         "key_rejected" | "no_key" => "key_rejected",
         "no_speech" => "no_speech",
@@ -265,6 +291,23 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
         Some(h) => serde_json::from_str(h).map_err(|e| format!("held cues: {e}"))?,
         None => Vec::new(),
     };
+    let mut tail: crate::sentences::Tail = match job.tail.as_deref() {
+        Some(t) => serde_json::from_str(t).map_err(|e| format!("open sentence: {e}"))?,
+        None => Vec::new(),
+    };
+    // This build stores the open sentence as the first held piece too (see
+    // below); here it is the tail only. Where it is not the first held piece, a
+    // build that ignores `tail` (0.1.9) wrote `held` since and committed those
+    // words from it: the tail is stale, and resuming it would write them twice.
+    if !tail.is_empty() {
+        if held.first().is_some_and(|p| p.words == tail) {
+            held.remove(0);
+        } else {
+            tail.clear();
+        }
+    }
+    // The title helps the PC's model spell the talk's terms (A4); the phone ignores it.
+    cx.core.svc.transcriber.set_hint(Some(&cx.title));
     for (i, r) in regions.iter().enumerate().skip(job.written_regions as usize) {
         let len = r.end - r.start;
         let samples: Vec<f32> = pcm[r.start..r.end].iter().map(|&s| s as f32 / 32768.0).collect();
@@ -280,9 +323,18 @@ fn write(cx: &Ctx, job: &Job) -> Result<(), Stop> {
         log(format!("timing job {} region i={i} start_ms={} audio_ms={} ms={ms} segs={}", job.id, r.start_ms(), r.end_ms() - r.start_ms(), segs.len()));
         let prev = i.checked_sub(1).map(|p| &regions[p]);
         let cues;
-        (cues, held) = stitch::window_cues(r, segs, std::mem::take(&mut held), prev, regions.get(i + 1), &mut prev_end);
-        let kept = (!held.is_empty()).then(|| serde_json::to_string(&held).unwrap());
-        cx.store.save_region(&job.id, &job.video_key, i as i64, &cues, kept.as_deref()).map_err(|e| e.to_string())?;
+        (cues, held) = stitch::window_cues(r, segs, std::mem::take(&mut held), prev, regions.get(i + 1), &mut tail, &mut prev_end);
+        // A build from before sentence cues resumes from `held` and ignores
+        // `tail`, so the open sentence's words, already past the resume point,
+        // also go first in `held`: such a build commits them as a cue of their
+        // own instead of losing them.
+        let mut keep = held.clone();
+        if let (Some(a), Some(b)) = (tail.first(), tail.last()) {
+            keep.insert(0, stitch::Piece { start_ms: a.start_ms, end_ms: b.end_ms, words: tail.clone() });
+        }
+        let kept = (!keep.is_empty()).then(|| serde_json::to_string(&keep).unwrap());
+        let open = (!tail.is_empty()).then(|| serde_json::to_string(&tail).unwrap());
+        cx.store.save_window(&job.id, &job.video_key, i as i64, &cues, kept.as_deref(), open.as_deref()).map_err(|e| e.to_string())?;
         done += len;
         cx.percent(&job.id, (done * 100 / total) as i64, &mut last);
     }
@@ -323,17 +375,28 @@ fn sweep_audio(store: &Store) {
 /// How often the glossary is asked for before the job fails without one.
 const GLOSSARY_TRIES: usize = 3;
 
-/// Translation requests waiting for replies at once. Each is still one cue
-/// with only what came before it (A6), so running them side by side changes
-/// no request and no reply; only the waiting overlaps.
+/// Translation requests waiting for replies at once. Each is still one
+/// sentence with only what came before it (A6), so running them side by side
+/// changes no request and no reply; only the waiting overlaps.
 const IN_FLIGHT: usize = 8;
 
-/// The calls under way, what they may cost at most together, and the dearest
-/// call so far, in KRW.
-struct Ledger {
-    in_flight: usize,
-    reserved: f64,
-    dearest: f64,
+/// How many passes in a row may save nothing before the job stops. A sentence
+/// is only ever asked for whole, so one whose replies keep merging or dropping
+/// parts stops the job (`translate_failed`) rather than being saved part by
+/// part; a re-translation asks again for what is left.
+const STALLED_PASSES: u32 = 3;
+
+/// The cues of `cues` grouped by sentence, in order: a cue whose seq `parts`
+/// holds continues the group before it. Each group is `(seq, source)` pairs.
+fn sentences(cues: &[crate::store::Cue], parts: &std::collections::HashSet<i64>) -> Vec<Vec<(i64, String)>> {
+    let mut out: Vec<Vec<(i64, String)>> = Vec::new();
+    for c in cues {
+        match out.last_mut() {
+            Some(g) if parts.contains(&c.seq) && g.last().is_some_and(|(s, _)| *s == c.seq - 1) => g.push((c.seq, c.source_text.clone())),
+            _ => out.push(vec![(c.seq, c.source_text.clone())]),
+        }
+    }
+    out
 }
 
 fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
@@ -347,48 +410,17 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
     let key = cx.core.svc.keystore.get()?.ok_or_else(|| "no_key".to_string())?;
     let model = store.job(job_id)?.map(|j| j.translation_model).unwrap_or_else(|| gemini::MODEL.into());
     let client = Client { base_url: cx.core.cfg.gemini_base_url.clone(), key, model };
-    let limit = gemini::limit_krw(store.video(&video_key)?.map(|v| v.duration_ms).unwrap_or(0));
 
     // The worker's connection holds one transaction at a time, so every store
-    // access of the calls below (the limit, usage, translations, progress) is
-    // made holding `ledger`; only the requests themselves run side by side.
-    let ledger = Mutex::new(Ledger { in_flight: 0, reserved: 0.0, dearest: 0.0 });
-    let settled = Condvar::new();
+    // access of the calls below (usage, translations, progress) is made
+    // holding `ledger`; only the requests themselves run side by side.
+    let ledger = Mutex::new(());
 
-    // Every call is billed, so usage is added and the limit checked after each
-    // one, and before each one too: a job resumed after a kill may already be
-    // over the limit with its failure not yet recorded (A6: no call past it).
-    // A call alone starts while anything is left, as one at a time did. Beside
-    // others it starts only while what is spent, with every call in flight
-    // costed at the most it can bill (its prompt's bytes and the output cap,
-    // or the dearest call so far if that is more), stays under the limit. So
-    // only a call that started alone can cross the limit, by its own cost.
+    // Every call is billed, so its usage is added to the job's cost after it (A6).
     let call = |order: &Value| -> Result<Option<Value>, Stop> {
         let mut attempts = 0u32;
         loop {
-            let mut l = ledger.lock().unwrap();
-            let reserve = gemini::max_cost_krw(order).max(l.dearest);
-            loop {
-                let spent = store.job(job_id)?.ok_or("job vanished")?.cost_krw;
-                if spent >= limit {
-                    log(format!("job {job_id}: cost {spent:.2} KRW already at the limit {limit:.2}"));
-                    return Err("cost_limit".into());
-                }
-                if l.in_flight == 0 || spent + l.reserved + reserve.max(l.dearest) < limit {
-                    break;
-                }
-                l = settled.wait(l).unwrap();
-            }
-            let reserve = reserve.max(l.dearest);
-            l.in_flight += 1;
-            l.reserved += reserve;
-            drop(l);
-            let got = client.order(order);
-            let mut l = ledger.lock().unwrap();
-            l.in_flight -= 1;
-            l.reserved = if l.in_flight == 0 { 0.0 } else { l.reserved - reserve };
-            settled.notify_all();
-            let (reply, usage) = match got {
+            let (reply, usage) = match client.order(order) {
                 Ok((v, u)) => (Some(v), u),
                 Err(gemini::Error::Reply(e, u)) => {
                     log(format!("job {job_id}: unusable reply: {e}"));
@@ -406,71 +438,100 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
                     }
                     let wait = (1u64 << attempts.min(5)).min(30);
                     log(format!("job {job_id}: Gemini failed ({e}), retry in {wait}s"));
-                    drop(l);
                     std::thread::sleep(Duration::from_secs(wait));
                     continue;
                 }
             };
-            let j = store.add_usage(job_id, usage.input, usage.output, gemini::cost_krw)?;
-            l.dearest = l.dearest.max(gemini::cost_krw(usage.input, usage.output));
-            if j.cost_krw > limit {
-                log(format!("job {job_id}: cost {:.2} KRW passed the limit {limit:.2}", j.cost_krw));
-                return Err("cost_limit".into());
-            }
+            let _held = ledger.lock().unwrap();
+            store.add_usage(job_id, usage.input, usage.output, gemini::cost_krw)?;
             return Ok(reply);
         }
     };
 
     let video = store.video(&video_key)?.ok_or("internal")?;
-    let glossary: Vec<Value> = match video.terms.as_deref().and_then(|t| serde_json::from_str::<Vec<Value>>(t).ok()) {
-        Some(g) => g,
-        None => {
+    let terms = video.terms.as_deref().and_then(|t| serde_json::from_str::<Vec<Value>>(t).ok());
+    let found = store.current_mishearings(video_key)?.and_then(|m| serde_json::from_str::<Vec<Value>>(&m).ok());
+    let left = cues.iter().any(|c| c.text_ko.is_none());
+    let (glossary, mishearings): (Vec<Value>, Vec<Value>) = match (terms, found) {
+        (Some(g), Some(m)) => (g, m),
+        (Some(g), None) if !left => (g, Vec::new()),
+        // No glossary yet, or a saved version's glossary without mishearings
+        // found in its own transcript (none kept, or another transcript's left
+        // by a build that does not know them): the glossary request finds them;
+        // the version's own terms stay.
+        (terms, _) => {
             let transcript: Vec<String> = cues.iter().map(|c| c.source_text.clone()).collect();
             let glossary_started = std::time::Instant::now();
             let order = gemini::glossary_order(&video.title, &transcript);
-            // Every batch carries the glossary (A6, R9): a reply that is not one is
+            // Every request carries the glossary (A6, R9): a reply that is not one is
             // asked for again, and a job that gets none fails instead of translating
             // without it. A list with no terms in it is a glossary (a talk may have none).
             let mut g = None;
             for _ in 0..GLOSSARY_TRIES {
                 if let Some(r) = call(&order)?.filter(|r| r["terms"].is_array()) {
-                    g = Some(gemini::parse_terms(&r));
+                    g = Some((gemini::parse_terms(&r), gemini::parse_mishearings(&r)));
                     break;
                 }
                 log(format!("job {job_id}: the glossary reply has no term list"));
             }
             log(format!("timing job {job_id} glossary ms={} cues={}", glossary_started.elapsed().as_millis(), transcript.len()));
-            let g = g.ok_or_else(|| "glossary_failed".to_string())?;
-            store.set_terms(&video_key, &Value::from(g.clone()).to_string())?;
-            g
+            let (g, m) = g.ok_or_else(|| "glossary_failed".to_string())?;
+            let g = terms.unwrap_or(g);
+            store.set_glossary(&video_key, &Value::from(g.clone()).to_string(), &Value::from(m.clone()).to_string())?;
+            (g, m)
         }
     };
 
+    // The sentences are a function of the saved cues alone, so the first
+    // translation, a re-translation and a version selected again or received
+    // from another device all ask the same groups.
+    let groups = sentences(&cues, &crate::sentences::rebuilt_parts(&cues));
     let total = cues.len() as i64;
     let last = Mutex::new(Stage::new(Stage::TRANSLATING));
     let mut stalls = 0;
     let (translating, calls) = (std::time::Instant::now(), AtomicUsize::new(0));
     loop {
-        let todo: Vec<(i64, String)> = store.translation_cues(&job)?.into_iter().filter(|c| c.text_ko.is_none()).map(|c| (c.seq, c.source_text)).collect();
-        cx.percent(job_id, (total - todo.len() as i64) * 100 / total, &mut last.lock().unwrap());
+        let done: std::collections::HashSet<i64> = store.translation_cues(&job)?.into_iter().filter(|c| c.text_ko.is_some()).map(|c| c.seq).collect();
+        cx.percent(job_id, done.len() as i64 * 100 / total, &mut last.lock().unwrap());
+        // Every sentence with a part left goes whole, all its parts in one request.
+        let todo: Vec<(usize, Vec<(i64, String)>)> = groups
+            .iter()
+            .enumerate()
+            .filter(|(_, group)| group.iter().any(|(s, _)| !done.contains(s)))
+            .map(|(g, group)| (g, group.clone()))
+            .collect();
         if todo.is_empty() {
-            log(format!("timing job {job_id} translate ms={} cues={total} calls={} in_flight={IN_FLIGHT}", translating.elapsed().as_millis(), calls.load(Ordering::Relaxed)));
+            log(format!(
+                "timing job {job_id} translate ms={} cues={total} sentences={} calls={} in_flight={IN_FLIGHT}",
+                translating.elapsed().as_millis(),
+                groups.len(),
+                calls.load(Ordering::Relaxed)
+            ));
             return Ok(());
         }
-        let (batches, progressed, stop) = (Mutex::new(todo.chunks(gemini::BATCH)), AtomicBool::new(false), Mutex::new(None::<Stop>));
-        // One request per batch, as before; IN_FLIGHT of them waiting for replies at once.
-        let one = |batch: &[(i64, String)]| -> Result<(), Stop> {
-            let mut order = gemini::translate_order(&glossary, batch);
-            if let Some(previous) = cues.iter().rev().find(|c| c.seq < batch[0].0) {
-                order["context_before"] = Value::String(previous.source_text.clone());
+        let (units, progressed, stop) = (Mutex::new(todo.iter()), AtomicBool::new(false), Mutex::new(None::<Stop>));
+        // One request per sentence (or part); IN_FLIGHT of them waiting for replies at once.
+        let one = |(g, asked): &(usize, Vec<(i64, String)>)| -> Result<(), Stop> {
+            let mut order = gemini::translate_order(&glossary, &mishearings, asked);
+            // The sentence before, read-only; never anything said later (A6).
+            if let Some(previous) = g.checked_sub(1).map(|p| &groups[p]) {
+                order["context_before"] = Value::String(previous.iter().map(|(_, t)| t.as_str()).collect::<Vec<_>>().join(" "));
             }
             calls.fetch_add(1, Ordering::Relaxed);
-            let Some(reply) = call(&order)? else { return Ok(()) };
-            let ko = gemini::parse_translations(&reply, batch);
+            let reply = call(&order)?;
+            let ko = reply.as_ref().map(|r| gemini::parse_translations(r, asked)).unwrap_or_default();
             let _held = ledger.lock().unwrap();
-            if !ko.is_empty() {
-                progressed.store(true, Ordering::Relaxed);
+            if ko.is_empty() {
+                if let Some(r) = &reply {
+                    // What came back, without its text: the ids and which `ko` were empty.
+                    let got: Vec<String> = r["segments"].as_array().into_iter().flatten()
+                        .map(|s| format!("{}{}", s["id"], if s["ko"].as_str().is_some_and(|k| !k.trim().is_empty()) { "" } else { ":empty" }))
+                        .collect();
+                    log(format!("job {job_id}: the reply for sentence {} did not answer its {} parts; it held [{}]", groups[*g][0].0, asked.len(), got.join(",")));
+                }
+                return Ok(());
             }
+            progressed.store(true, Ordering::Relaxed);
             store.set_translations(job_id, &ko)?;
             let left = store.translation_cues(&job)?.iter().filter(|c| c.text_ko.is_none()).count() as i64;
             cx.percent(job_id, (total - left) * 100 / total, &mut last.lock().unwrap());
@@ -479,9 +540,9 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
         std::thread::scope(|s| {
             for _ in 0..IN_FLIGHT {
                 s.spawn(|| loop {
-                    let next = if stop.lock().unwrap().is_some() { None } else { batches.lock().unwrap().next() };
-                    let Some(batch) = next else { return };
-                    if let Err(e) = one(batch) {
+                    let next = if stop.lock().unwrap().is_some() { None } else { units.lock().unwrap().next() };
+                    let Some(unit) = next else { return };
+                    if let Err(e) = one(unit) {
                         stop.lock().unwrap().get_or_insert(e);
                     }
                 });
@@ -491,7 +552,7 @@ fn translate(cx: &Ctx, job_id: &str) -> Result<(), Stop> {
             return Err(e);
         }
         stalls = if progressed.into_inner() { 0 } else { stalls + 1 };
-        if stalls >= 2 {
+        if stalls >= STALLED_PASSES {
             return Err("translation_incomplete".into());
         }
     }
@@ -518,10 +579,6 @@ mod translate_tests;
 mod download_tests;
 
 #[cfg(test)]
-#[path = "pipeline_cost_tests.rs"]
-mod cost_tests;
-
-#[cfg(test)]
 #[path = "pipeline_glossary_tests.rs"]
 mod glossary_tests;
 
@@ -530,9 +587,8 @@ mod tests {
     use super::failure_reason;
 
     #[test]
-    fn every_stop_maps_to_one_of_the_six_reasons() {
+    fn every_stop_maps_to_one_of_the_e2_reasons() {
         let cases = [
-            ("cost_limit", "translating", "cost_limit"),
             ("no_key", "translating", "key_rejected"),
             ("key_rejected", "translating", "key_rejected"),
             ("no_speech", "writing", "no_speech"),

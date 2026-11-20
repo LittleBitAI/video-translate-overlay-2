@@ -71,8 +71,117 @@ impl Store {
         Ok(json!({"videos":videos,"playlists":playlists}))
     }
 
-    pub(crate) fn select_translation(&self, key: &str, identity: &str) -> R<()> {
+    pub fn select_translation(&self, key: &str, identity: &str) -> R<()> {
         self.library_write(|db| local::select_translation(db, key, identity))
+    }
+
+    /// Starts making a saved video again from its audio (`audio`, already on
+    /// this device), as a new job at writing in this account library. The
+    /// selected saved version stays and is returned, to select again if the
+    /// job fails; the new version is selected when it is ready. The job starts
+    /// with everything the video has spent, so its cost adds to that record.
+    pub fn begin_remake(&self, id: &str, key: &str, audio: &str, model: &str) -> R<String> {
+        self.library_write(|db| {
+            if !local::owned(db)? {
+                return Err("a re-make needs an account library with saved versions".into());
+            }
+            if db.query_one("SELECT id FROM job WHERE stage IN ('downloading','writing','translating')", &[])?.is_some()
+                || db.query_one("SELECT video_key FROM deleted_video WHERE video_key=?", p![key])?.is_some()
+                || !local::deletions_cleaned(db, key)?
+            {
+                return Err("another job is running, or the video is being deleted".into());
+            }
+            let selected = db.query_one("SELECT identity FROM sync_selected_translation WHERE video_key=?", p![key])?.ok_or("no saved version is selected")?[0].text();
+            let spent = self.retranslation_cost(key)?;
+            db.execute(
+                "INSERT INTO job (id, video_key, stage, audio_path, plan, translation_model, cost_krw, created_at, updated_at)
+                 VALUES (?,?,'writing',?,?,?,?,strftime('%Y-%m-%dT%H:%M:%fZ','now'),strftime('%Y-%m-%dT%H:%M:%fZ','now'))",
+                p![id, key, audio, crate::audio::PLAN, model, spent],
+            )?;
+            db.execute("DELETE FROM cue WHERE video_key=?", p![key])?;
+            db.execute("UPDATE video SET terms=NULL, mishearings=NULL, source_language=NULL WHERE video_key=?", p![key])?;
+            local::capture_job(db, id, key)?;
+            Ok(selected)
+        })
+    }
+
+    /// The saved version selected for `key`. Until a re-make is ready this is
+    /// the version it started from ([`Self::begin_remake`] leaves the
+    /// selection alone), so a stopped re-make needs nothing kept outside the
+    /// database to resume, continue or restore.
+    pub fn selected_version(&self, key: &str) -> R<String> {
+        Ok(self.db.query_one("SELECT identity FROM sync_selected_translation WHERE video_key=?", p![key])?.ok_or("no saved version is selected")?[0].text())
+    }
+
+    /// [`Self::begin_remake`] on a copy of `audio` in `dir`, as the writing
+    /// stage deletes its audio when done. The copy is named by the job and
+    /// claimed atomically (created only if no file has that name), so a re-make
+    /// refused here (another job running, as an interrupted re-make is, or a
+    /// start with the same id at the same moment) never replaces or deletes
+    /// the audio another job resumes from; it deletes only the copy it made.
+    pub fn stage_remake(&self, id: &str, key: &str, audio: &std::path::Path, dir: &std::path::Path, model: &str) -> R<String> {
+        let ext = audio.extension().and_then(|e| e.to_str()).unwrap_or("m4a");
+        let copy = dir.join(format!("{id}.{ext}"));
+        std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+        let mut out = match std::fs::OpenOptions::new().write(true).create_new(true).open(&copy) {
+            Ok(f) => f,
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => return Err(format!("{} is another job's audio", copy.display()).into()),
+            Err(e) => return Err(e.to_string().into()),
+        };
+        let copied = std::fs::File::open(audio).and_then(|mut f| std::io::copy(&mut f, &mut out)).and_then(|_| out.sync_all());
+        drop(out);
+        let begun = copied.map_err(|e| e.to_string().into()).and_then(|_| self.begin_remake(id, key, &copy.to_string_lossy(), model));
+        if begun.is_err() {
+            let _ = std::fs::remove_file(&copy);
+        }
+        begun
+    }
+
+    /// Sends a failed re-make back to translating: what it wrote and
+    /// translated stays, so only the cues without Korean are asked again.
+    /// Only a re-make that failed while translating, so its transcript is
+    /// whole: `translate_failed` and `key_rejected` are stored only for a stop
+    /// there ([`crate::pipeline::failure_reason`]). And only while the cue table
+    /// still holds its draft: every write of that table (a projection, a
+    /// restore, another job) makes a newer job, so a re-make that is no longer
+    /// the video's newest job has lost its draft and is refused rather than
+    /// translating the cues that replaced it. And only under its own video:
+    /// `key` is matched in the same update, so a job id given with another
+    /// video's key moves nothing. While another job runs, the database's
+    /// `one_running_job` index refuses the update.
+    pub fn continue_remake(&self, key: &str, id: &str) -> R<()> {
+        self.library_write(|db| {
+            let n = db.execute(
+                "UPDATE job SET stage='translating', failure_reason=NULL, created_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')
+                 WHERE id=? AND video_key=? AND id LIKE 'remake-%' AND stage='failed' AND failure_reason IN ('translate_failed','key_rejected')
+                   AND NOT EXISTS (SELECT 1 FROM job o WHERE o.video_key=job.video_key AND o.id<>job.id AND o.created_at>=job.created_at)",
+                p![id, key],
+            )?;
+            if n == 0 { Err("no re-make of this video with this id that failed translating with its draft still in place".into()) } else { Ok(()) }
+        })
+    }
+
+    /// The selected saved version, while a re-make's draft fills the cue
+    /// table instead of it: the re-make is the video's newest job and not
+    /// ready. Playback reads this rather than the draft.
+    pub fn covered_by_remake(&self, key: &str) -> R<Option<crate::sync::Translation>> {
+        let newest = self.db.query_one("SELECT id, stage FROM job WHERE video_key=? ORDER BY created_at DESC, rowid DESC LIMIT 1", p![key])?;
+        if !newest.is_some_and(|r| r[0].text().starts_with("remake-") && r[1].text() != "ready") {
+            return Ok(None);
+        }
+        local::selected_translation(&self.db, key).map(Some)
+    }
+
+    /// Projects `identity` again after a failed re-make overwrote the cue
+    /// table, giving the re-make up: its draft is replaced, and the projection
+    /// is a newer job, so [`Self::continue_remake`] refuses it from then on.
+    /// [`Self::select_translation`] keeps the table when the identity is
+    /// already selected, so the selection is dropped first.
+    pub fn restore_translation(&self, key: &str, identity: &str) -> R<()> {
+        self.library_write(|db| {
+            db.execute("DELETE FROM sync_selected_translation WHERE video_key=?", p![key])?;
+            local::select_translation(db, key, identity)
+        })
     }
 
     /// Capture the requested selection and projected cue in one SQLite snapshot before audio inspection.

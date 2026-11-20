@@ -8,7 +8,7 @@ use serde_json::json;
 use std::io::{BufRead, BufReader, Read, Write};
 
 #[derive(Default, Clone)]
-struct Shade {
+pub(super) struct Shade {
     updates: Arc<Mutex<Vec<i64>>>,
     ready: Arc<Mutex<Vec<String>>>,
 }
@@ -23,8 +23,8 @@ impl Notifier for Shade {
     }
 }
 /// A stored key, or a key store with a bug in it.
-struct Keys {
-    broken: bool,
+pub(super) struct Keys {
+    pub(super) broken: bool,
 }
 impl KeyStore for Keys {
     fn get(&self) -> Result<Option<String>, String> {
@@ -38,7 +38,7 @@ impl KeyStore for Keys {
         Ok(())
     }
 }
-struct Nothing;
+pub(super) struct Nothing;
 impl Browser for Nothing {
     fn navigate(&self, _: &str, _: bool) -> Result<(), String> {
         Ok(())
@@ -232,8 +232,8 @@ fn saved_subtitles(core: &Core) -> Value {
     let key = api::video_key(&url::Url::parse(SAVED_PAGE).unwrap());
     let s = &core.store;
     s.create_job("original", &key, SAVED_PAGE, "other", "Saved speech", 3_600_000, None, "m").unwrap();
-    s.save_region("original", &key, 0, &[(0, 900, "first".into()), (1000, 1900, "second".into())], None).unwrap();
-    s.set_terms(&key, "[]").unwrap();
+    s.save_region("original", &key, 0, &[(0, 900, "First.".into()), (1000, 1900, "Second.".into())], None).unwrap();
+    s.set_glossary(&key, "[]", "[]").unwrap();
     s.set_translations("original", &[(0, "original first".into()), (1, "original second".into())]).unwrap();
     s.add_usage("original", 10, 10, gemini::cost_krw).unwrap();
     s.finish("original").unwrap();
@@ -247,7 +247,6 @@ fn failed_retranslation_preserves_completed_subtitles_for_every_stop() {
         ("transient", 503, json!({}), 1, "translate_failed"),
         ("unusable", 200, json!({}), 1, "translate_failed"),
         ("key", 403, json!({}), 1, "key_rejected"),
-        ("cost", 200, json!({"segments":[{"id":1,"ko":"replacement second"}]}), 40_000_000, "cost_limit"),
     ] {
         let endpoint = local_gemini(move |_| (status, text.clone(), input));
         let dir = temp_dir(&format!("retranslation-{case}"));
@@ -270,14 +269,9 @@ fn failed_retranslation_preserves_completed_subtitles_for_every_stop() {
         let reused = api::create_job(&core, SAVED_PAGE, None, "Saved", 3_600_000).unwrap();
         assert_eq!(reused["job_id"], "original", "{case}: detecting again discarded the saved set");
         assert_eq!(reused["reused"], true);
-        let next = api::retranslate_job(&core, SAVED_PAGE);
-        if case == "cost" {
-            assert_eq!(next.unwrap_err().error, "cost_limit");
-        } else {
-            let next = next.unwrap();
-            let next = core.store.job(next["job_id"].as_str().unwrap()).unwrap().unwrap();
-            assert_eq!(next.cost_krw, failed.cost_krw, "a retry forgot earlier usage");
-        }
+        let next = api::retranslate_job(&core, SAVED_PAGE).unwrap();
+        let next = core.store.job(next["job_id"].as_str().unwrap()).unwrap().unwrap();
+        assert_eq!(next.cost_krw, failed.cost_krw, "{case}: a retry forgot earlier usage");
     }
 }
 
@@ -336,7 +330,7 @@ fn transient_retries_are_independent_for_glossary_and_each_cue() {
     let core = idle_core(&dir, &endpoint);
     let s = &core.store;
     s.create_job("j", "v", SAVED_PAGE, "other", "Lecture", 3_600_000, None, "m").unwrap();
-    let cues: Vec<_> = (0..9).map(|i| (i * 1000, i * 1000 + 900, format!("cue {i}"))).collect();
+    let cues: Vec<_> = (0..9).map(|i| (i * 1000, i * 1000 + 900, format!("Cue {i}."))).collect();
     s.save_region("j", "v", 0, &cues, None).unwrap();
     s.end_writing("j").unwrap();
     run_job(&core, s, s.job("j").unwrap().unwrap());
