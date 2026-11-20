@@ -1,11 +1,13 @@
 # Sentence cues: execution receipts
 
-What ran, on what, and what it printed. In review round 9 the checks in
-[Round 9: the checks at `240d327`](#round-9-the-checks-at-240d327) ran on commit
-`240d327` (the second F15 fix). The commit that carries this file follows it
-and changes only this file: `git diff --name-only 240d327 HEAD` prints
+What ran, on what, and what it printed. In review round 10 the checks in
+[Round 10: the checks at `ae79651` and `5d995f1`](#round-10-the-checks-at-ae79651-and-5d995f1)
+ran on those two commits. The commit that carries this file follows them and
+changes only this file: `git diff --name-only 5d995f1 HEAD` prints
 `docs/evidence/sentence-cues/receipts.md`, which no build, test or check
-reads. In review round 8 the checks in
+reads. In review round 9 the checks in
+[Round 9: the checks at `240d327`](#round-9-the-checks-at-240d327) ran on commit
+`240d327`. In review round 8 the checks in
 [Round 8: the checks at `a40882e`](#round-8-the-checks-at-a40882e) ran on commit
 `a40882e`. Round 8 reuses the round-7 Chromium, measurement and wiki results, as
 mapped in its table. In review round 7 every check in
@@ -26,6 +28,34 @@ apart from the wiki's own untracked files.
 - Node v24.18.0, Playwright 1.61.0 with its Chromium (headless)
 - Rust builds with `VULKAN_SDK=C:/VulkanSDK/1.4.363.1` and the `whisper`
   feature only where noted.
+
+## Round 10: the checks at `ae79651` and `5d995f1`
+
+`ae79651` (`ae796515beae83cbdc1fd1816ae108e001c9691c`) changes, against
+`240d327`:
+- `src-tauri/src/lib.rs`: `Core::open` builds the core with no worker, and
+  `Core::start` is `open` plus the worker.
+- `src-tauri/examples/remake_saved.rs`: builds its core with `Core::open`, so
+  no worker runs the active jobs of the work folder's `app.sqlite3` or of the
+  account libraries below its `sync` folder.
+- `src-tauri/src/pipeline_translate_tests.rs`: one new test.
+- `src-tauri/src/pipeline_worker_tests.rs`: the test services `Keys`,
+  `Nothing` and `Shade` are made visible to it.
+
+`5d995f1` changes only `src-tauri/src/media_hls_aes_tests.rs`, a test that is
+not built into the contract host. The commit between `240d327` and
+`ae79651`, `f8d15a6`, changed only this file. `git diff --name-only 240d327 5d995f1 -- src tests contract-tests docs/evidence/sentence-cues/README.md docs/evidence/sentence-cues/places.md package.json package-lock.json`
+prints nothing. All times are 2026-11-20 +0900.
+
+| Check | Command | Expected | Observed |
+| --- | --- | --- | --- |
+| The tool's core runs no job but the one it names (F15, done item 13) | `cargo test -p video-translate-overlay --lib -- remake a_named_run a_second_runner a_tool_core` at `ae79651` | `a_tool_core_runs_no_job_but_the_one_it_names` passes for both forms of where the named job's library is: outside the work folder, or at `work/sync/<64 hex>/sync.sqlite3`, where a worker would also look. Each form starts with an interrupted translating job of another video in `work/app.sqlite3`. The core is built with `Core::open`, as the tool builds it, and `run_named` runs the named job. After 500 ms the fake Gemini has received the named job's text exactly once and nothing else, the named job is ready, and the other job is still translating | `test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 265 filtered out`: the new test and the 9 of round 9 |
+| The test with the old core | the test's `Core::open` replaced by `Core::start`, which is what the tool called before, then restored | fails | "assertion `left == right` failed: outside: requests other than the named job's, or the named job's twice / left: ["Said in own.", "Said in elsewhere."] / right: ["Said in own."]". Run on the `below` form alone: the same, with `below:`. After the restore: `ok` |
+| Rust library suite | `cargo test -q -p video-translate-overlay --lib` | all pass | At `ae79651`: once `ok. 273 passed; 0 failed; 2 ignored` (173.03s), once `FAILED. 271 passed; 2 failed`. The 2 failures were `media::hls_aes_tests::ts_segments_decrypt_with_their_media_sequence_numbers` and `media::hls_aes_tests::encrypted_byte_ranges_and_a_key_that_ends_decrypt_piece_by_piece`, both at `media_hls_aes_tests.rs:56:92`, the same pair as the round-3 receipt. Cause: both call `plain("hls_disc")`, which downloaded both to the same temporary file, so one removed or overwrote it while the other decoded it. `5d995f1` puts the thread id in that file's name. The module alone (`cargo test -q -p video-translate-overlay --lib -- media::hls_aes_tests`) failed in 3 of 10 runs before the fix (7 ok, 2 with one failure, 1 with two) and passed in 20 of 20 after it. Every other `download_and_decode` caller already uses a name of its own. At `5d995f1` the whole suite ran three times: `ok. 273 passed; 0 failed; 2 ignored` (169.48s, 182.02s, 188.91s) |
+| Contract host build | `cargo build -q -p video-translate-overlay --bin vto-contract-host` at `ae79651` | builds | 25,929,216 bytes, written 13:16:42, SHA-256 `1b1e55cc7130296544876fa65dff51580fbf6fdef98fffada6ff1ddedb912353`. `5d995f1` changes no file the host is built from |
+| Contract tests | `cargo test -p vto-contract-tests --test <file>` with that host | 5, 5, 2, 7, 9 pass | sentences `ok. 5 passed` (9.11s); translation `ok. 5 passed` (28.75s); write_and_timing `ok. 2 passed` (2.58s); library `ok. 7 passed` (3.68s); jobs `ok. 9 passed` (26.28s); no `FAILED` or `panicked` line |
+| The re-make tool builds | `cargo build --release -p video-translate-overlay --features whisper --example remake_saved` at `ae79651`, environment as in round 8 | builds | exit 0; 61,115,904 bytes, written 13:11:04, SHA-256 `4e3160d6d8fa4f91f2a7707388275d6a3b181f9f6a82314dbb3a96db78b55a70`. Not run: with the real key store it could send paid requests |
+| Chromium, page overlay, measurement, README check, wiki indexes, installed app | reused from rounds 7 and 8 | inputs unchanged (diff above) | as in rounds 7 and 8 |
 
 ## Round 9: the checks at `240d327`
 
