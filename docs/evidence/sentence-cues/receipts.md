@@ -1,13 +1,15 @@
 # Sentence cues: execution receipts
 
-What ran, on what, and what it printed. In review round 7 every check in
+What ran, on what, and what it printed. In review round 8 the checks in
+[Round 8: the checks at `a40882e`](#round-8-the-checks-at-a40882e) ran on commit
+`a40882e` (the F15 fix). The commit that carries this file follows it and
+changes only this file: `git diff --name-only a40882e HEAD` prints
+`docs/evidence/sentence-cues/receipts.md`, which no build, test or check
+reads. Round 8 reuses the round-7 Chromium, measurement and wiki results, as
+mapped in its table. In review round 7 every check in
 [Round 7: the checks at `066064e`](#round-7-the-checks-at-066064e) ran on commit
-`066064e` (the F9 fix). The commit that carries this file follows it and
-changes only this file and the F9 research page:
-`git diff --name-only 066064e HEAD` prints
-`docs/evidence/sentence-cues/receipts.md` and
-`docs/research/review-sentence-cues-and-speech-cleanup-f9-1.md`, and neither
-is read by any build, test or check. The sections after it are the round-5
+`066064e` (the F9 fix); the commit after it changed only this file and the F9
+research page. The sections after that are the round-5
 receipts for `f25ed3d`, the last commit that changed application code, tests
 or fixtures. `git diff --name-only f25ed3d 066064e` lists only the wiki
 indexes (`.wiki/corpus.json`, `.wiki/graph.json`), the research pages, and
@@ -22,6 +24,31 @@ apart from the wiki's own untracked files.
 - Node v24.18.0, Playwright 1.61.0 with its Chromium (headless)
 - Rust builds with `VULKAN_SDK=C:/VulkanSDK/1.4.363.1` and the `whisper`
   feature only where noted.
+
+## Round 8: the checks at `a40882e`
+
+`a40882e` (`a40882e98b479e9df2b460e41fce95baa97b8f25`) changes, against
+`066064e`, only `src-tauri/src/library_store.rs` (`continue_remake` takes the
+video key and matches it in its update), `src-tauri/examples/remake_saved.rs`
+(passes the key; usage text), and the two test files that call it. The commit
+between them, `8ffcde2`, changed only this file and the F9 research page. `git diff --name-only
+066064e a40882e -- src tests contract-tests docs/evidence/sentence-cues/README.md
+docs/evidence/sentence-cues/places.md package.json package-lock.json` prints nothing.
+So the UI, the page overlay, the measured text and the README are the same
+bytes the round-7 rows ran on.
+
+| Check | Command | Expected | Observed |
+| --- | --- | --- | --- |
+| The F15 property (done item 13) | `cargo test -p video-translate-overlay --lib -- remake` | `a_remake_continues_only_under_its_own_video` passes: a job id given with another video's key, or an unknown key, is refused and no job moves; with another video's job running it is refused; each job continues under its own key | `test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 265 filtered out`. The 7 are the new test, `only_a_remake_that_failed_translating_continues`, `a_continued_remake_publishes_its_draft_and_a_restored_one_cannot_continue`, `a_remake_that_failed_writing_cannot_continue_or_be_retranslated_and_playback_keeps_the_selected_version`, `a_refused_remake_leaves_the_audio_of_an_interrupted_one_as_it_was`, `a_stopped_remake_finds_the_version_it_started_from_in_the_database_alone` and `of_remakes_staged_at_once_under_one_job_id_one_wins_and_keeps_its_own_audio` |
+| The same test without the fix | the update's key condition replaced by `(video_key=? OR 1)` on the working tree, then restored | fails on a cross-video form | `panicked at src-tauri\src\pipeline_translate_tests.rs:506:9`, "assertion `left == right` failed: <second video's key> remake-first running false", `test result: FAILED. 0 passed; 1 failed`. After the restore: `ok. 7 passed` |
+| Rust library suite | `cargo test -q -p video-translate-overlay --lib` (12:28–12:31) | all pass, one test more than round 7 | `test result: ok. 270 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 167.29s` |
+| Contract host build | `cargo build -q -p video-translate-overlay --bin vto-contract-host` | builds | 25,928,192 bytes, written 12:32:14, SHA-256 `d7747eb7ac6ee20c7ca264f7513fada83e31503fc43d81e6f04da3f73bc97555` |
+| Contract tests | `cargo test -p vto-contract-tests --test <file>` with that host | 5, 5, 2, 7, 9 pass | sentences `ok. 5 passed` (3.97s); translation `ok. 5 passed` (25.43s); write_and_timing `ok. 2 passed` (3.30s); library `ok. 7 passed` (7.12s); jobs `ok. 9 passed` (19.49s); no `FAILED` or `panicked` line |
+| The re-make tool builds | `cargo build --release -p video-translate-overlay --features whisper --example remake_saved` with `CARGO_TARGET_DIR=C:/vtt` (short paths), `VULKAN_SDK=C:/VulkanSDK/1.4.363.1` and `LIBCLANG_PATH` set to a local libclang | builds | exit 0; `remake_saved.exe` 61,150,208 bytes, written 12:27:38, SHA-256 `83559dc0f86c1dbe807788c3b7ad24c3fa8262a17e5d3aa5396049f06a5e000a` |
+| The tool's past `continue` runs | the re-make logs | each continued job belonged to the video named | the two runs printed `job remake-wbc-oxFFV9c-1795054292 continued at translating; previous version t/wbc-oxFFV9c/a224c82c…`: wbc's job under wbc's key, so nothing was charged to another video |
+| README against places.md | `python -I -X utf8 docs/evidence/sentence-cues/measure/check_readme.py` | `differences 0` | `differences 0` |
+| Installed app and library | re-hashed at 12:33 | unchanged | exe `7ff268da…ce0c`, library `d4c1aded…7565` |
+| Chromium, page overlay, measurement, wiki indexes | reused: the round-7 rows below, at `066064e` | the inputs are unchanged (diff above) | as in round 7 |
 
 ## Round 7: the checks at `066064e`
 
