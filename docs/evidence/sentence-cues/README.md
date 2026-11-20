@@ -400,6 +400,18 @@ places.md has held 76 since it was first written. The extra place is 10:45,
 an untagged sentence inside the 10:26–10:45 term range. `_MEqhFwnp8o` 30:18,
 judged worse, was missing from Regressions.
 
+Each place's Picked column in places.md says why it was read: an old filler
+or repeat, a misheard term, both, or another reason. The check also counts
+these against each video's breakdown below: the filler and term counts, the
+places picked for both, and the parts, less that overlap, adding up to the
+places read. Before review round 7 two breakdowns did not add up.
+`vSCYL8ySh9g` gave 5 + 7 + 16 = 28 of 29 places: the second sentence at 9:44
+was not named. `_MEqhFwnp8o` gave 239 + 12 + 16 = 267 of 263: 4 places are
+both filler and term places. Writing the column also showed that its 34:08
+row held the wrong one of the two sentences starting in that second. The
+sentence with the filler, which the verdict and reason are about, is now
+shown.
+
 | Video | Places read | Better | Same | Worse |
 | --- | ---: | ---: | ---: | ---: |
 | `QDX-1M5Nj7s` | 38 | 17 | 16 | 5 |
@@ -416,7 +428,7 @@ judged worse, was missing from Regressions.
 
 Old 754 cues, new 1,316 cues in 513 sentences. Mishearings: FitS191 → 6.S191 and realu → ReLU. In the new transcript, whisper left long stretches without punctuation, spread across the whole hour. 86 sentences open in lower case. They are sentences the run-on limit ended at the cap where there was no comma, which is the designed fallback for an unpunctuated stretch.
 
-I read 38 places: every old filler place (20), the two misheard-term places, and 16 spread evenly. Tally: better 17, same 16, worse 5.
+I read 38 places: every old filler place (20), every misheard-term place (2), and places spread evenly (16). Tally: better 17, same 16, worse 5.
 
 | At | Old → new (Korean) | Verdict | Why |
 |---|---|---|---|
@@ -478,7 +490,7 @@ Tally: better 11, same 8, worse 4.
 
 Old 309 cues, new 496 cues in 235 sentences. Mishearings: GDUF → GGUF and unslothed → Unsloth. This video was re-made a second time, after the run-on fix, because 34 of its windows in the first re-make predated that fix. The reading below is of the second re-make.
 
-I read 33 places: both old filler places, all 5 term places, 20 spread evenly, and the 6 places where the first re-make was worse. Tally: better 15, same 11, worse 7.
+I read 33 places: every old filler place (2), every misheard-term place (5), places spread evenly (20), and the places where the first re-make was worse (6). Tally: better 15, same 11, worse 7.
 
 | At | Old → new (Korean) | Verdict | Why |
 |---|---|---|---|
@@ -518,7 +530,7 @@ I read 33 places: both old filler places, all 5 term places, 20 spread evenly, a
 
 ### WjhDDeZ7DvM — Build DeepSeek from Scratch: Series Introduction (lecture)
 
-Old 408 cues, new 770 cues in 344 sentences. I read every old filler/repeat place (9 F), every misheard-term place (52 T/MT), and 15 sampled places, 5 of them at old mid-sentence cuts (10:45 came in with the 10:26–10:45 term range): 76 in all. Tally: better 45, same 22, worse 9.
+Old 408 cues, new 770 cues in 344 sentences. I read every old filler or repeat place (9), every misheard-term place (52), and sampled places (15), 5 of them at old mid-sentence cuts (10:45 came in with the 10:26–10:45 term range): 76 in all. Tally: better 45, same 22, worse 9.
 
 | At | Old → new (Korean) | Verdict | Why |
 |---|---|---|---|
@@ -576,7 +588,7 @@ Old 408 cues, new 770 cues in 344 sentences. I read every old filler/repeat plac
 
 ### _MEqhFwnp8o — Ask the Experts: Dory Looped Transformer Model (live stream, four speakers)
 
-Old 678 cues, new 1,008 cues in 564 sentences. Mishearings: "loopy boys" → Looped Transformer (wrong: that is the host's joke name, though the Korean did not use it), "Star Elastics" → Star Elastic, "4B model" → 4B. I read 263 places: every old filler or repeat place (239), every misheard-term place (12, marks F/T), and 16 spread evenly. Tally: better 204, same 44, worse 15.
+Old 678 cues, new 1,008 cues in 564 sentences. Mishearings: "loopy boys" → Looped Transformer (wrong: that is the host's joke name, though the Korean did not use it), "Star Elastics" → Star Elastic, "4B model" → 4B. I read 263 places: every old filler or repeat place (239), every misheard-term place (12, 4 of them also filler places: 1:38, 1:47, 33:19, 33:25), and places spread evenly (16). Tally: better 204, same 44, worse 15.
 
 | At [mark] | Verdict | Why |
 |---|---|---|
@@ -695,7 +707,8 @@ Old 678 cues, new 1,008 cues in 564 sentences. Mishearings: "loopy boys" → Loo
 The first re-make was replaced by a second one on the run-on fix, as approved. This reading is of the second. Old 202 cues, new 314 cues in 132 sentences. Mishearings: DOI → Dory, vFloat16 → bfloat16. I read 29 places:
 
 - every old filler place (5);
-- every place marked as a misheard term (7). One is real (DOI at 6:14); in the other six my term check matched "DOI" inside "doing";
+- every misheard-term place (7). One is real (DOI at 6:14); in the other six my term check matched "DOI" inside "doing";
+- the other sentence starting at 9:44, which the misheard-term place there also covered until its row was split in two (1);
 - the old cues that started or ended mid-sentence, spread evenly (16).
 
 Tally: better 13, same 11, worse 5.
@@ -736,7 +749,7 @@ I read 60 places:
 
 - every old filler or repeat place (10);
 - every misheard-term place (34);
-- 16 spread evenly.
+- places spread evenly (16).
 
 Tally: better 26, same 29, worse 5.
 
@@ -787,8 +800,8 @@ Old 892 cues, new 1,409 cues in 669 sentences. The glossary's mishearings includ
 
 - every old filler place (18);
 - every misheard-term place (19);
-- 16 spread evenly;
-- the 4 places the title-hint comparison flagged (26:58, 34:18, 56:27, 58:40).
+- places spread evenly (16);
+- the places the title-hint comparison flagged (4: 26:58, 34:18, 56:27, 58:40).
 
 Tally: better 25, same 28, worse 4.
 
