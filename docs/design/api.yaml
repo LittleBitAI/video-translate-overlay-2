@@ -468,13 +468,16 @@
                       "description": "string | null"
                     },
                     "input_amount": {
-                      "description": "integer"
+                      "description": "integer: input tokens of the job plus those of every summary call for the video (P19)"
                     },
                     "output_amount": {
-                      "description": "integer"
+                      "description": "integer: output tokens (thinking included) of the job plus those of every summary call for the video (P19)"
                     },
                     "cost_krw": {
-                      "description": "number"
+                      "description": "number: the video's shown cost, the job's translation cost plus summary_cost_krw"
+                    },
+                    "summary_cost_krw": {
+                      "description": "number: what every summary call for the video cost, valid reply or not: reported usage times the translation's unit prices and exchange rate"
                     },
                     "notified": {
                       "description": "boolean"
@@ -534,6 +537,49 @@
           "410": {
             "description": "video_deleted: clear displayed cues and ignore earlier subtitle responses. Never start translation from a subtitle read."
           }
+        }
+      }
+    },
+    "/videos/{video_key}/summary": {
+      "get": {
+        "operationId": "P19",
+        "summary": "The stored summary of a video, with no Gemini call. Local app screens only; site capabilities stay P6-P8.",
+        "responses": {
+          "200": {"description": "The summary reply described under POST, with reused=true."},
+          "404": {"description": "no_video, or no_summary when none is stored yet"},
+          "410": {"description": "video_deleted"}
+        }
+      },
+      "post": {
+        "operationId": "P19",
+        "summary": "Summarize a video whose subtitles are ready. Without again, a stored summary is answered with no Gemini call. Otherwise one gemini-3.1-flash-lite generateContent call under the summary system prompt, with the order {task: summary, title, terms: the job's glossary, transcript: every cue's source text in cue order} (no Korean cue text, no times) and a response JSON schema of the six fields below. The reply's values are checked in code: a non-empty Korean gist and key points, at least one topic, a known level; blank and repeated items are dropped. A reply that fails is not stored and an earlier summary stays. Every call's reported usage is metered into the video's cost (P7 summary_cost_krw), valid reply or not. Local app screens only: it spends the key.",
+        "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": {"again": {"type": "boolean", "default": false, "description": "Summarize again even when a summary is stored"}}}}}},
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "video_key": {"description": "string"},
+                    "summary": {"description": "object: gist (one Korean sentence), key_points (Korean strings, at least one), topics (strings in the lecture's language, at least one), level (beginner | intermediate | advanced), prerequisites (Korean strings, may be empty), next_topics (strings in the lecture's language, may be empty)"},
+                    "markdown": {"description": "string: the summary rendered by the app's fixed template (## headings, - lists, model text escaped); the same JSON always gives the same Markdown"},
+                    "cost_krw": {"description": "number: what every summary call for this video has cost so far"},
+                    "reused": {"description": "boolean: true when the stored summary was answered without a Gemini call"},
+                    "account_generation": {"description": "integer"}
+                  }
+                }
+              }
+            }
+          },
+          "401": {"description": "key_rejected"},
+          "404": {"description": "no_video"},
+          "409": {"description": "not_ready: no ready subtitles, or a job for the video is running; no_transcript"},
+          "410": {"description": "video_deleted, also when the video was deleted while the call ran (its usage is then not recorded)"},
+          "428": {"description": "no_key"},
+          "502": {"description": "summary_invalid: the reply broke a value rule or was not a JSON object; not stored, its usage metered"},
+          "503": {"description": "gemini_unreachable"}
         }
       }
     }

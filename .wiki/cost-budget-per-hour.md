@@ -24,7 +24,10 @@ appears only on jobs from before then. Two designed checks pin this:
 
 Both are in `contract-tests/tests/translation.rs` and run inside
 [[repository-gate]]. Adding a paid service the meter does not count, or
-bringing a stop back, is the user's decision.
+bringing a stop back, is the user's decision. The 요약 button's summary call
+(P19) is metered with the same price and rate into the `summary` table, valid
+reply or not, and P7 adds it to the video's shown `cost_krw`; the job's own
+`cost_krw`, which T9, T10 and a re-translation read, stays translation only.
 
 Why. The original request (quoted in `docs/design/backend.md`) asks for
 about 1,000 KRW per hour. The eight re-made lectures cost 290–410 KRW per

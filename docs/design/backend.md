@@ -168,6 +168,59 @@ erDiagram
 | P7 | GET | `/jobs` | 주소로 찾은 영상의 가장 최근 작업이 어디까지 왔는지 진행 상태를 준다. 어느 단계인지, 그 단계가 몇 퍼센트 됐는지, 실패했다면 그 까닭, 번역 모듈에 쓴 양으로 셈한 비용이 들어 있다. 앱을 껐다 켠 뒤에도 같은 주소로 물으면 이어진 작업이 나온다. |
 | P8 | GET | `/videos/{video_key}/subtitles` | 작업이 끝난 영상의 자막을 통째로 준다. 조각마다 본편 처음부터 잰 시작 시각과 끝 시각이 붙어 있어 오버레이가 재생 위치에 맞는 조각을 고른다. 광고를 가려낼 때 쓸 본편 길이도 함께 준다. 작업이 끝나기 전에는 자막을 주지 않는다. |
 | P9 | GET | `/browser` | P1이 마지막으로 연 주소와 해당 영상의 작업. Google 로그인에서 원래 영상으로 돌아오면 영상 주소로 갱신한다. 늦은 로그인 결과는 새로 연 주소를 덮지 않는다. 작업이 없으면 null. |
+| P19 | GET, POST | `/videos/{video_key}/summary` | The 요약 button: the stored summary (GET), or a summary of a video whose subtitles are ready (POST; `again` asks Gemini even when one is stored). Local app screens only. See [Video summary](#video-summary-p19). |
+
+### Video summary (P19)
+
+A ready video can be summarized on request; nothing summarizes on its own when
+a translation finishes. The call is `src-tauri/src/summary.rs`.
+
+- **Input.** One `gemini-3.1-flash-lite` `generateContent` request under its own
+  system prompt (`summary::SYSTEM`; the translation prompts are unchanged). The
+  work order is `{"task":"summary","title","terms","transcript"}`: the video's
+  title, the job's glossary (`video.terms`, or the selected saved version's
+  terms while a re-make's draft fills the cue table), and every cue's source
+  text in cue order. No Korean cue text, no times, no audio. The glossary is an
+  addition to title and transcript: the transcript comes from speech
+  recognition and misspells names, and the list already exists.
+- **Output form.** `generationConfig.responseJsonSchema` fixes six fields:
+  `gist` (one Korean sentence), `key_points` (Korean), `topics` (the lecture's
+  language), `level` (`beginner` / `intermediate` / `advanced`),
+  `prerequisites` (Korean) and `next_topics` (the lecture's language, as search
+  phrases for the later recommendation step). Structured output guarantees the
+  syntax only; Gemini's documentation says length and uniqueness keywords are
+  not enforced. So `summary::check` validates values in code: a non-empty gist
+  and key points that contain Hangul, at least one topic and one key point, a
+  known level. Text is put on one line and blank or repeated list items are
+  dropped. A reply that fails is not stored, the earlier summary (if any)
+  stays, and the API answers `502 summary_invalid`.
+- **Rendering.** `summary::markdown` renders the stored JSON by a fixed
+  template (six `##` sections, `-` lists, `없음` for an empty list, model text
+  Markdown-escaped). It takes only the JSON: the same JSON always gives the same
+  Markdown and no model is called. A second model call to polish the JSON into
+  Markdown was rejected.
+- **Storage.** Table `summary (video_key PRIMARY KEY, body, input_amount,
+  output_amount, cost_krw, updated_at)` in the account library. `body` is the
+  checked JSON, NULL until one reply passed. Usage and cost accumulate over
+  every call. A call whose video was deleted, or is being deleted, records
+  nothing and answers `410`. Confirmed video deletion removes the row.
+  Summaries are not synchronized between devices yet (a separate change).
+- **Cost.** Reported usage (`promptTokenCount`; candidates plus thoughts)
+  times the translation's unit prices and exchange rate in `gemini.rs`, for a
+  valid reply or not, since both are billed. P7 adds the summary's usage and
+  cost to the video's `input_amount`, `output_amount` and `cost_krw`, so the
+  overlay's 든 비용 includes it, and reports `summary_cost_krw` separately. The
+  job's own `cost_krw` (T9, T10, retranslation's starting cost) is unchanged.
+  One summary of the hour-long reference lecture cost 6.7 KRW (16,201 input and
+  380 output tokens; [evidence](../evidence/video-summary/README.md)).
+- **When.** `make` answers a stored summary without a call; `again` always
+  calls. Only a video with a ready job and no running job may be summarized
+  (`409 not_ready` otherwise). One summary call runs at a time per process.
+  The request runs to the end in the backend whether or not the screen that
+  asked is still open, so a reply after the screen was left is stored.
+- **Who.** `video_summary` is granted to the app's own screen
+  (`capabilities/main.json`) only. Site pages keep P6-P8, so a page cannot spend
+  the key.
 
 ## 시나리오와 확인할 테스트
 
@@ -195,6 +248,7 @@ erDiagram
 - R23 유튜브 로그인은 구글의 로그인 화면에서 하고, 앱은 비밀번호를 받거나 저장하지 않는다. → `test_clearing_site_data_ends_youtube_login`
 - R24 긴 영상을 처리하는 동안 진행 상태에 작업이 얼마나 나아갔는지 보이고, 자체 모델은 빠르기보다 정확도를 먼저 보고 고른다. → `test_write_percent_and_ongoing_notice`
 - R25 이미 자막을 만든 영상에서 영상감지 버튼을 누르면 다시 처리하지 않고 저장해 둔 자막이 바로 뜬다. → `test_repeat_detect_reuses_saved_subtitles`
+- R26 A video whose subtitles are ready can be summarized with 요약: a schema-constrained JSON summary from its title, source transcript and glossary, stored, shown as Markdown rendered by code, its cost added to the video's. → `test_summary_request_carries_title_source_transcript_terms_and_schema`, `test_a_reply_that_breaks_a_value_rule_is_not_stored_but_is_metered`, `test_only_a_ready_video_on_the_app_screen_can_be_summarized`
 - R14 라이브 방송을 번역하는 기능은 이번에 만들지 않는다. (지켜야 할 조건, 시나리오 아님)
 
 <details><summary>흐름, 요청·응답, 용어집</summary>
