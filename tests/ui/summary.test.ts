@@ -119,7 +119,7 @@ test('a reply that arrives after the screen was left is dropped there and shown 
   expect(summaryCalls().filter((c) => c.method === 'POST')).toHaveLength(1);
 });
 
-test('without a key, the error sends the person to the settings wording', async () => {
+test('without a key, the error says to add one in the settings', async () => {
   serve((c) => (c.method === 'GET' ? [404, {}] : [428, { error: 'no_key' }]));
   const s1 = open('/');
   await vi.waitFor(() => expect(button(s1, '요약')).toBeTruthy());
