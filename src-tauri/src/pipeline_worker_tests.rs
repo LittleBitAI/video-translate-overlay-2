@@ -8,7 +8,7 @@ use serde_json::json;
 use std::io::{BufRead, BufReader, Read, Write};
 
 #[derive(Default, Clone)]
-struct Shade {
+pub(super) struct Shade {
     updates: Arc<Mutex<Vec<i64>>>,
     ready: Arc<Mutex<Vec<String>>>,
 }
@@ -23,8 +23,8 @@ impl Notifier for Shade {
     }
 }
 /// A stored key, or a key store with a bug in it.
-struct Keys {
-    broken: bool,
+pub(super) struct Keys {
+    pub(super) broken: bool,
 }
 impl KeyStore for Keys {
     fn get(&self) -> Result<Option<String>, String> {
@@ -38,7 +38,7 @@ impl KeyStore for Keys {
         Ok(())
     }
 }
-struct Nothing;
+pub(super) struct Nothing;
 impl Browser for Nothing {
     fn navigate(&self, _: &str, _: bool) -> Result<(), String> {
         Ok(())

@@ -551,6 +551,44 @@ fn a_named_run_sends_requests_only_for_its_own_job() {
 }
 
 #[test]
+fn a_tool_core_runs_no_job_but_the_one_it_names() {
+    use super::worker_tests::{Keys, Nothing, Shade};
+    // Where the named job's library is: outside the data folder, or below it
+    // where the data folder's own account libraries are kept.
+    for (form, below) in [("outside", false), ("below", true)] {
+        let (orders, most) = (Arc::new(Mutex::new(Vec::new())), Arc::new(AtomicUsize::new(0)));
+        let d = dir(&format!("tool-core-{form}"));
+        let work = d.join("work");
+        let named_db = if below { work.join("sync").join("a".repeat(64)).join("sync.sqlite3") } else { d.join("library").join("sync.sqlite3") };
+        std::fs::create_dir_all(named_db.parent().unwrap()).unwrap();
+        let ready_to_translate = |s: &Store, id: &str, key: &str| {
+            s.create_job(id, key, &format!("https://a.example/{key}"), "other", "Lecture", 60_000, None, "m").unwrap();
+            s.save_region(id, key, 0, &[(0, 900, format!("Said in {key}."))], None).unwrap();
+            s.end_writing(id).unwrap();
+        };
+        // An interrupted job of another video in the data folder's own database.
+        std::fs::create_dir_all(&work).unwrap();
+        let unrelated = Store::open(&work.join("app.sqlite3")).unwrap();
+        ready_to_translate(&unrelated, "unrelated", "elsewhere");
+        let named = Store::open(&named_db).unwrap();
+        ready_to_translate(&named, "named", "own");
+
+        let core = Core::open(
+            crate::Config { data_dir: work.clone(), gemini_base_url: gemini(flat(0, 1), orders.clone(), most), allow_loopback_media: false },
+            crate::Services { keystore: Box::new(Keys { broken: false }), browser: Box::new(Nothing), notifier: Box::new(Shade::default()), transcriber: Box::new(Nothing), extractor: Box::new(Nothing) },
+        )
+        .unwrap();
+        run_named(&core, &named, "named").unwrap();
+        // A worker started with the core would have taken its first job at once.
+        std::thread::sleep(Duration::from_millis(500));
+        let asked: Vec<String> = orders.lock().unwrap().iter().filter(|o| o["task"] == "translate").map(|o| o["segments"][0]["text"].as_str().unwrap().to_string()).collect();
+        assert_eq!(asked, ["Said in own."], "{form}: requests other than the named job's, or the named job's twice");
+        assert_eq!(named.job("named").unwrap().unwrap().stage, "ready", "{form}");
+        assert_eq!(unrelated.job("unrelated").unwrap().unwrap().stage, "translating", "{form}: another video's job was run");
+    }
+}
+
+#[test]
 fn a_second_runner_of_a_library_is_refused_until_the_first_ends() {
     let db = dir("runner-claim").join("library.sqlite3");
     let first = claim_runner(&db).unwrap();

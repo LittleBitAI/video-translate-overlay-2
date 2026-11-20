@@ -178,12 +178,20 @@ pub(crate) struct Running {
 }
 
 impl Core {
-    /// Opens the data folder and starts the worker, which first resumes unfinished jobs.
-    pub fn start(cfg: Config, svc: Services) -> Result<Arc<Core>, String> {
+    /// Opens the data folder with no worker: nothing runs a job until the
+    /// caller does. A tool that runs one named job itself
+    /// (`examples/remake_saved.rs`) opens this, so no job it did not name,
+    /// in the data folder or an account library below it, is run or paid for.
+    pub fn open(cfg: Config, svc: Services) -> Result<Arc<Core>, String> {
         std::fs::create_dir_all(cfg.data_dir.join("audio")).map_err(|e| format!("data folder: {e}"))?;
         let store = store::Store::open(&cfg.data_dir.join("app.sqlite3"))?;
         let account = account::Manager::new(cfg.data_dir.clone());
-        let core = Arc::new(Core { cfg, store, svc, account, sync: Default::default(), updates: updates::Checker::default(), wake: (Mutex::new(false), Condvar::new()), create_lock: Mutex::new(()), running: Running::default() });
+        Ok(Arc::new(Core { cfg, store, svc, account, sync: Default::default(), updates: updates::Checker::default(), wake: (Mutex::new(false), Condvar::new()), create_lock: Mutex::new(()), running: Running::default() }))
+    }
+
+    /// Opens the data folder and starts the worker, which first resumes unfinished jobs.
+    pub fn start(cfg: Config, svc: Services) -> Result<Arc<Core>, String> {
+        let core = Self::open(cfg, svc)?;
         let worker = core.clone();
         std::thread::Builder::new().name("jobs".into()).spawn(move || pipeline::run_worker(worker)).map_err(|e| e.to_string())?;
         Ok(core)

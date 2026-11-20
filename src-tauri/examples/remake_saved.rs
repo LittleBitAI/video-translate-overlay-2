@@ -135,7 +135,8 @@ fn finish(core: &Core, store: &Store, id: &str, previous: &str) -> Result<(), St
 
 fn start(work: &Path) -> Result<Arc<Core>, String> {
     let models = std::env::var_os("VTO_WHISPER_MODEL").map(Into::into);
-    Core::start(
+    // No worker: it would run any active job of `work`'s own databases, outside the one named.
+    Core::open(
         Config { data_dir: work.to_path_buf(), gemini_base_url: vto::GEMINI_BASE_URL.into(), allow_loopback_media: false },
         Services {
             keystore: Box::new(vto::platform::CredentialStore::default()),
