@@ -53,7 +53,9 @@ fn downloaded(src: &Source, name: &str) -> Vec<u8> {
 
 fn plain(dir: &str) -> Vec<i16> {
     let base = serve_dir(dir, vec![]);
-    download_and_decode(&probe_at(&base, "/index.m3u8").unwrap(), &format!("{dir}-plain")).unwrap()
+    // Tests running at once may want the same fixture: each downloads to its own file.
+    let own = format!("{dir}-plain-{:?}", std::thread::current().id()).replace(|c: char| !c.is_ascii_alphanumeric() && c != '-', "");
+    download_and_decode(&probe_at(&base, "/index.m3u8").unwrap(), &own).unwrap()
 }
 
 #[test]
