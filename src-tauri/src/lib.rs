@@ -23,6 +23,7 @@ pub mod http;
 pub mod media;
 pub mod pipeline;
 pub mod sentences;
+pub mod summary;
 pub mod platform;
 pub mod screens;
 pub mod stitch;

@@ -43,8 +43,10 @@
     remote?: boolean;
     /** The page's job as P9 gave it (`null`: none yet); left out, P7 is asked. */
     initial?: Job | null;
+    /** Told the job this overlay shows each time it changes (`null`: none). */
+    onjob?: (job: Job | null) => void;
   };
-  let { pageUrl, title = '', mediaUrl = null, timeMs = 0, durationMs = 0, video, prepare, remote = false, initial }: Props = $props();
+  let { pageUrl, title = '', mediaUrl = null, timeMs = 0, durationMs = 0, video, prepare, remote = false, initial, onjob }: Props = $props();
 
   let overlay = $state<HTMLDivElement>();
   $effect(() => {
@@ -98,6 +100,7 @@
   const deletedKeys = new Set<string>();
   let deletionToken = $state<string | null>(null);
 
+  $effect(() => onjob?.(job));
   const active = $derived(!!job && job.stage in STAGE);
   const ready = $derived((job?.stage === 'ready' || job?.stage === 'failed') && cues.length > 0);
   const ad = $derived(mainMs > 0 && durationMs > 0 && Math.abs(durationMs - mainMs) > AD_TOLERANCE_MS);

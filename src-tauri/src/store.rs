@@ -74,6 +74,15 @@ CREATE TABLE IF NOT EXISTS browser (
 );
 CREATE TABLE IF NOT EXISTS playback (
   video_key TEXT PRIMARY KEY, position_ms INTEGER NOT NULL
+);
+-- The 요약 button's checked JSON (NULL until one reply passed), and every summary call's usage and cost.
+CREATE TABLE IF NOT EXISTS summary (
+  video_key TEXT PRIMARY KEY,
+  body TEXT,
+  input_amount INTEGER NOT NULL DEFAULT 0,
+  output_amount INTEGER NOT NULL DEFAULT 0,
+  cost_krw REAL NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL
 )
 ";
 
@@ -141,6 +150,15 @@ pub struct Video {
     pub terms: Option<String>,
     /// Transcript spellings the glossary request found to be mishearings of a term (JSON), kept with the glossary.
     pub mishearings: Option<String>,
+}
+
+/// A video's row in `summary`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Summary {
+    pub body: Option<String>,
+    pub input: i64,
+    pub output: i64,
+    pub cost_krw: f64,
 }
 
 #[derive(Debug, Clone, PartialEq)]

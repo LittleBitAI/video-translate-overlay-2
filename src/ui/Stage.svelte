@@ -26,7 +26,7 @@
   import { inApp } from './api';
   import Overlay, { type Job } from './Overlay.svelte';
 
-  let { url, job }: { url: string; job?: Job | null } = $props();
+  let { url, job, onjob }: { url: string; job?: Job | null; onjob?: (job: Job | null) => void } = $props();
 
   const shown = $derived(stageKind(url));
   let timeMs = $state(0);
@@ -135,5 +135,5 @@
     {/if}
   </div>
 
-  <Overlay pageUrl={url} {title} mediaUrl={shown.kind === 'video' ? url : null} {timeMs} {durationMs} {video} {prepare} remote={inApp()} initial={job} />
+  <Overlay pageUrl={url} {title} mediaUrl={shown.kind === 'video' ? url : null} {timeMs} {durationMs} {video} {prepare} remote={inApp()} initial={job} {onjob} />
 </div>

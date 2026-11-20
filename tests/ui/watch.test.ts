@@ -181,7 +181,7 @@ test('a running job shows its stage, percent and cost each second, then its subt
   // On a ready video 영상감지 is on again: it shows the saved subtitles without making them again (R25).
   expect(button(s1, '영상감지').disabled).toBe(false);
   expect(calls.filter((c) => c.path === '/jobs').every((c) => c.query.page_url === FILE)).toBe(true);
-  expect(calls.at(-1)!.path).toBe('/videos/vk/subtitles');
+  expect(calls.filter((c) => !c.path.endsWith('/summary')).at(-1)!.path).toBe('/videos/vk/subtitles');
 });
 
 test('the downloading stage names the speech model while it is fetched, then the audio download', async () => {

@@ -428,6 +428,8 @@ fn get_job_in(library: &crate::library_scope::Library<'_>, page_url: &str) -> Ap
     if let Some((token, complete)) = store.deleted(&key)? { return Err(deleted_error(token, complete)); }
     let job = store.latest_job(&key)?.ok_or_else(|| err(404, "no_job", "이 영상의 작업이 없습니다."))?;
     let title = store.video(&key)?.map(|v| v.title).unwrap_or_default();
+    // The video's cost shown with the job: its translation and every 요약 call.
+    let summary = store.summary(&key)?.unwrap_or(crate::store::Summary { body: None, input: 0, output: 0, cost_krw: 0.0 });
     Ok(json!({
         "job_id": job.id,
         "video_key": key,
@@ -437,9 +439,10 @@ fn get_job_in(library: &crate::library_scope::Library<'_>, page_url: &str) -> Ap
         // The download stage's first part, fetching the speech model on first use (A4).
         "preparing_model": library.core.running.preparing_model.lock().unwrap_or_else(|p| p.into_inner()).as_deref() == Some(job.id.as_str()),
         "failure_reason": job.failure_reason,
-        "input_amount": job.input_amount,
-        "output_amount": job.output_amount,
-        "cost_krw": job.cost_krw,
+        "input_amount": job.input_amount + summary.input,
+        "output_amount": job.output_amount + summary.output,
+        "cost_krw": job.cost_krw + summary.cost_krw,
+        "summary_cost_krw": summary.cost_krw,
         "notified": job.notified,
     }))
     })
@@ -534,6 +537,7 @@ pub fn library_request(core: &Core, generation: Option<u64>, command: &str, args
         "get_job" if !args["playback_action"].is_null() => playback_in(&library, args),
         "get_job" => get_job_in(&library, s("page_url")),
         "get_subtitles" => get_subtitles_in(&library, s("video_key")),
+        "video_summary" => crate::summary::summary_in(&library, s("video_key"), s("summary_action")),
         _ => Err(err(404, "no_route", "지원하지 않는 보관함 요청입니다.")),
     }?;
     library.run(|_| Ok(()))?;
@@ -541,7 +545,7 @@ pub fn library_request(core: &Core, generation: Option<u64>, command: &str, args
     Ok(result)
 }
 
-fn deleted_error(token: String, complete: bool) -> ApiError {
+pub(crate) fn deleted_error(token: String, complete: bool) -> ApiError {
     let mut e = err(410, "video_deleted", if complete { "저장된 영상을 삭제했습니다. 다시 번역하면 API 비용이 발생합니다." } else { "삭제를 마치지 못했습니다. 보관함에서 삭제를 다시 시도해 주세요." });
     if complete { e.deletion_token = Some(token); }
     e

@@ -1,4 +1,4 @@
-//! The Tauri side: commands P1-P11 and the capabilities that decide who may call them.
+//! The Tauri side: commands P1-P11 and P19 and the capabilities that decide who may call them.
 //!
 //! The app's own screen (local origin) may call every command. Site pages in
 //! the in-app browser, where the overlay runs, may call only P6-P8, so a site
@@ -13,9 +13,9 @@ use tauri::ipc::RuntimeAuthority;
 use tauri::utils::acl::{capability::Capability, manifest::Manifest, resolved::Resolved, APP_ACL_KEY};
 use tauri::{Runtime, State};
 
-/// Every registered command, P1 to P11.
-pub const COMMANDS: [&str; 18] =
-    ["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles", "get_browser", "get_library", "library_action", "check_updates", "dismiss_update", "open_update", "get_google_account", "google_sign_in", "google_sign_out", "open_privacy_policy"];
+/// Every registered command, P1 to P19.
+pub const COMMANDS: [&str; 19] =
+    ["browser_open", "clear_site_data", "get_settings", "put_api_key", "delete_api_key", "create_job", "get_job", "get_subtitles", "get_browser", "get_library", "library_action", "check_updates", "dismiss_update", "open_update", "get_google_account", "google_sign_in", "google_sign_out", "open_privacy_policy", "video_summary"];
 
 /// The commands a site page (the overlay) may call.
 pub const OVERLAY_COMMANDS: [&str; 3] = ["create_job", "get_job", "get_subtitles"];
@@ -199,6 +199,13 @@ pub async fn get_subtitles(core: Shared<'_>, video_key: String, account_generati
     blocking(move || api::library_request(&core, account_generation, "get_subtitles", &json!({"video_key":video_key}))).await
 }
 
+/// P19: a ready video's summary (`summary_action`: `get`, `make` or `again`). Local screens only: it spends the key.
+#[tauri::command(async, rename_all = "snake_case")]
+pub async fn video_summary(core: Shared<'_>, video_key: String, summary_action: String, account_generation: Option<u64>) -> ApiResult {
+    let core = core.inner().clone();
+    blocking(move || api::library_request(&core, account_generation, "video_summary", &json!({"video_key":video_key,"summary_action":summary_action}))).await
+}
+
 /// Registers the commands and their state on a builder.
 pub fn register<R: Runtime>(builder: tauri::Builder<R>, core: Arc<Core>) -> tauri::Builder<R> {
     handlers(builder.manage(core))
@@ -230,7 +237,8 @@ pub fn handlers<R: Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
         library_action,
         check_updates,
         dismiss_update,
-        open_update
+        open_update,
+        video_summary
     ])
 }
 
@@ -257,13 +265,18 @@ pub fn route(method: &str, path: &str, body: &Value) -> Option<(&'static str, Va
         ("GET", "/jobs") => "get_job",
         ("GET", "/playback") => { args["playback_action"] = json!("get"); "get_job" },
         ("PUT", "/playback") => { args["playback_action"] = json!("set"); "get_job" },
-        ("GET", p) => {
-            let key = p.strip_prefix("/videos/")?.strip_suffix("/subtitles")?;
-            if key.is_empty() || key.contains('/') {
+        (m @ ("GET" | "POST"), p) => {
+            let (key, tail) = p.strip_prefix("/videos/")?.split_once('/')?;
+            if key.is_empty() {
                 return None;
             }
             args["video_key"] = json!(key);
-            "get_subtitles"
+            match (m, tail) {
+                ("GET", "subtitles") => "get_subtitles",
+                ("GET", "summary") => { args["summary_action"] = json!("get"); "video_summary" }
+                ("POST", "summary") => { args["summary_action"] = json!(if args["again"] == true { "again" } else { "make" }); "video_summary" }
+                _ => return None,
+            }
         }
         _ => return None,
     };
@@ -308,6 +321,7 @@ mod tests {
             ("POST", "/jobs"),
             ("GET", "/jobs"),
             ("GET", "/videos/yt-abc/subtitles"),
+            ("GET", "/videos/yt-abc/summary"),
             ("GET", "/browser"),
             ("GET", "/library/data"),
             ("POST", "/library/data"),
@@ -320,6 +334,11 @@ mod tests {
         all.sort();
         assert_eq!(seen, all);
         assert!(route("GET", "/videos/a/b/subtitles", &Value::Null).is_none());
+        assert!(route("POST", "/videos/a/subtitles", &Value::Null).is_none());
+        for (method, body, action) in [("GET", json!({}), "get"), ("POST", json!({}), "make"), ("POST", json!({"again":true}), "again")] {
+            let (command, args) = route(method, "/videos/yt-abc/summary", &body).unwrap();
+            assert_eq!((command, args["video_key"].as_str(), args["summary_action"].as_str()), ("video_summary", Some("yt-abc"), Some(action)));
+        }
         for (method, action) in [("GET", "get"), ("PUT", "set")] {
             let (command, args) = route(method, "/playback", &json!({"position_ms":123})).unwrap();
             assert_eq!(command, "get_job");

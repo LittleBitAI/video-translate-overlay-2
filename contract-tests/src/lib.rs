@@ -91,7 +91,10 @@
 //! * `{"task":"glossary", …the whole transcript…}` → the reply text is
 //!   `{"terms":[{"source":"…","target":"…"}]}`;
 //! * `{"task":"translate","glossary":[{"source","target"}],
-//!   "segments":[{"id":1,"text":"…"}]}` → `{"segments":[{"id":1,"ko":"…"}]}`.
+//!   "segments":[{"id":1,"text":"…"}]}` → `{"segments":[{"id":1,"ko":"…"}]}`;
+//! * `{"task":"summary","title":"…","terms":[…],"transcript":["…"]}` → a
+//!   summary object with every field of the request's response schema, its
+//!   topics the glossary terms named in the transcript.
 //!
 //! Replies carry `usageMetadata` with `promptTokenCount`,
 //! `candidatesTokenCount` and `thoughtsTokenCount`; thoughts bill as output.
@@ -448,6 +451,10 @@ pub struct GeminiCall {
     pub order: Option<Value>,
     /// The request's system instruction.
     pub system: String,
+    /// The request's `generationConfig` (its response schema, if any).
+    pub generation_config: Value,
+    /// The request body as sent.
+    pub body: String,
     pub prompt_tokens: u64,
     /// Candidates plus thoughts: everything billed at the output rate.
     pub output_tokens: u64,
@@ -462,6 +469,9 @@ pub struct GeminiOptions {
     /// drops the last part, `extra` adds an id, `duplicate` answers the first id
     /// twice. Each Korean text of such a reply starts with `BROKEN`.
     pub parts_fault: Option<&'static str>,
+    /// Every summary reply is valid JSON that breaks one value rule:
+    /// `empty_topics`, `bad_level` or `empty_gist`.
+    pub summary_fault: Option<&'static str>,
 }
 
 /// Mishearings the fake's glossary reports when the transcript holds them.
@@ -551,6 +561,8 @@ fn gemini_reply(req: &HttpRequest, opts: GeminiOptions, log: &Mutex<Vec<GeminiCa
         task: None,
         order: None,
         system: String::new(),
+        generation_config: Value::Null,
+        body: String::from_utf8_lossy(&req.body).into_owned(),
         prompt_tokens: 0,
         output_tokens: 0,
     };
@@ -634,6 +646,26 @@ fn gemini_reply(req: &HttpRequest, opts: GeminiOptions, log: &Mutex<Vec<GeminiCa
             };
             json!({ "segments": segs }).to_string()
         }
+        (Some("summary"), Some(o)) => {
+            let all = o["transcript"].to_string();
+            let topics: Vec<&str> = TERMS.iter().filter(|(src, _, _)| find_ci(&all, src).is_some()).map(|(src, _, _)| *src).collect();
+            let mut s = json!({
+                "gist": format!("{} 강의를 요약합니다.", o["title"].as_str().unwrap_or("")),
+                "key_points": ["첫 번째 핵심입니다.", "두 번째 핵심입니다."],
+                "topics": topics,
+                "level": "intermediate",
+                "prerequisites": ["선형대수"],
+                "next_topics": ["multi-head attention"],
+            });
+            match opts.summary_fault {
+                Some("empty_topics") => s["topics"] = json!([]),
+                Some("bad_level") => s["level"] = json!("expert"),
+                Some("empty_gist") => s["gist"] = json!(""),
+                Some(other) => panic!("unknown summary fault {other}"),
+                None => {}
+            }
+            s.to_string()
+        }
         _ => "OK".to_string(),
     };
     let (prompt, candidates, thoughts) = if opts.huge_usage {
@@ -645,6 +677,7 @@ fn gemini_reply(req: &HttpRequest, opts: GeminiOptions, log: &Mutex<Vec<GeminiCa
     };
     call.task = task;
     call.order = order;
+    call.generation_config = body["generationConfig"].clone();
     call.system = system.join("\n");
     call.prompt_tokens = prompt;
     call.output_tokens = candidates + thoughts;

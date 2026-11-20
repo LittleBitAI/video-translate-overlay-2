@@ -231,6 +231,7 @@ impl Store {
             db.execute("DELETE FROM playlist_entry WHERE video_key=?", p![key])?;
             db.execute("DELETE FROM cue WHERE video_key=?", p![key])?;
             db.execute("DELETE FROM playback WHERE video_key=?", p![key])?;
+            db.execute("DELETE FROM summary WHERE video_key=?", p![key])?;
             db.execute("DELETE FROM job WHERE video_key=?", p![key])?;
             db.execute("DELETE FROM video WHERE video_key=?", p![key])?;
             if let Some(url) = inspected_url {
@@ -238,6 +239,31 @@ impl Store {
             }
             db.execute("UPDATE deleted_video SET complete=1 WHERE video_key=?", p![key])?;
             Ok(())
+        })
+    }
+
+    /// The video's summary row: the stored JSON (if one reply passed) and all summary calls' usage and cost.
+    pub(crate) fn summary(&self, key: &str) -> R<Option<Summary>> {
+        Ok(self.db.query_one("SELECT body,input_amount,output_amount,cost_krw FROM summary WHERE video_key=?", p![key])?
+            .map(|r| Summary { body: r[0].opt_text(), input: r[1].int(), output: r[2].int(), cost_krw: r[3].real() }))
+    }
+
+    /// Adds one summary call's usage and cost, and stores `body` when it
+    /// passed the checks (a failed reply keeps the earlier summary). Nothing
+    /// is written for a video deleted, or being deleted, meanwhile: `false`.
+    pub(crate) fn record_summary(&self, key: &str, input: i64, output: i64, cost: f64, body: Option<&str>) -> R<bool> {
+        if !cost.is_finite() || cost < 0.0 { return Err("invalid usage cost".into()); }
+        self.library_write(|db| {
+            let live = db.query_one("SELECT 1 FROM video WHERE video_key=? AND NOT EXISTS(SELECT 1 FROM deleted_video WHERE video_key=? AND complete=0)", p![key, key])?;
+            if live.is_none() { return Ok(false); }
+            db.execute(
+                &format!("INSERT INTO summary (video_key,body,input_amount,output_amount,cost_krw,updated_at) VALUES (?,?,?,?,?,{NOW})
+                 ON CONFLICT(video_key) DO UPDATE SET body=COALESCE(excluded.body,summary.body),
+                 input_amount=summary.input_amount+excluded.input_amount, output_amount=summary.output_amount+excluded.output_amount,
+                 cost_krw=summary.cost_krw+excluded.cost_krw, updated_at=excluded.updated_at"),
+                p![key, body, input, output, cost],
+            )?;
+            Ok(true)
         })
     }
 
