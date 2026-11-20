@@ -85,7 +85,7 @@
 
 <section data-feature="video-summary" aria-labelledby="summary-heading" aria-busy={look === 'loading' || look === 'checking'} class="mt-4 max-w-3xl">
   <div class="flex flex-wrap items-center justify-between gap-2">
-    <h2 id="summary-heading" class="text-xl font-semibold">강의 요약</h2>
+    <h2 id="summary-heading" class="text-lg font-semibold">강의 요약</h2>
     {#if look === 'none' || look === 'loading'}
       <button
         type="button"

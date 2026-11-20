@@ -203,12 +203,21 @@ mod stand_in {
         s.flush()
     }
 
-    /// Gemini's answer to a glossary or translation order.
+    /// Gemini's answer to a glossary, translation or summary order.
     pub(super) fn reply(body: &[u8]) -> Value {
         let req: Value = serde_json::from_slice(body).unwrap_or_default();
         let order: Value = serde_json::from_str(req["contents"][0]["parts"][0]["text"].as_str().unwrap_or("")).unwrap_or_default();
         let answer = if order["task"] == "glossary" {
             json!({"terms": [{"source": "attention", "target": "어텐션"}, {"source": "token", "target": "토큰"}, {"source": "transformer", "target": "트랜스포머"}]})
+        } else if order["task"] == "summary" {
+            json!({
+                "gist": "어텐션이 문장 속 토큰들을 서로 어떻게 이어 주는지 설명하는 짧은 강의입니다.",
+                "key_points": ["각 토큰은 쿼리, 키, 값을 만듭니다.", "쿼리와 키의 유사도로 다른 토큰에 줄 가중치를 정합니다.", "가중치로 값을 더해 새 표현을 얻습니다."],
+                "topics": ["attention", "transformer", "token"],
+                "level": "beginner",
+                "prerequisites": ["행렬 곱셈", "신경망의 기초"],
+                "next_topics": ["multi-head attention", "positional encoding"],
+            })
         } else {
             let segs: Vec<Value> = order["segments"]
                 .as_array()
