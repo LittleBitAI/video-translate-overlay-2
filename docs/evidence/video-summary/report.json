@@ -1,0 +1,292 @@
+{
+  "build": {
+    "head": "70f30c897b87e3e8ce16be42e4577ab9ea93290a",
+    "pid": 35636
+  },
+  "environment": {
+    "node": "v24.18.0",
+    "platform": "win32 x64",
+    "playwright": "1.61.0"
+  },
+  "taken_at": "2026-11-20T14:43:51.461Z",
+  "video_key": "kCc8FmEb1nY",
+  "checks": [
+    {
+      "where": "api",
+      "what": "GET before any summary",
+      "expected": [
+        404,
+        "no_summary"
+      ],
+      "observed": [
+        404,
+        "no_summary"
+      ],
+      "pass": true
+    },
+    {
+      "where": "api",
+      "what": "GET for an unknown video",
+      "expected": [
+        404,
+        "no_video"
+      ],
+      "observed": [
+        404,
+        "no_video"
+      ],
+      "pass": true
+    },
+    {
+      "where": "api",
+      "what": "POST from a site origin is refused",
+      "expected": 403,
+      "observed": 403,
+      "pass": true
+    },
+    {
+      "where": "api",
+      "what": "POST make: summarized by one call",
+      "expected": [
+        200,
+        false,
+        true
+      ],
+      "observed": [
+        200,
+        false,
+        true
+      ],
+      "pass": true
+    },
+    {
+      "where": "api",
+      "what": "POST make: six template sections",
+      "expected": [
+        "한 줄 요약",
+        "핵심 내용",
+        "다루는 주제",
+        "난이도",
+        "먼저 알면 좋은 것",
+        "다음에 볼 주제"
+      ],
+      "observed": [
+        "한 줄 요약",
+        "핵심 내용",
+        "다루는 주제",
+        "난이도",
+        "먼저 알면 좋은 것",
+        "다음에 볼 주제"
+      ],
+      "pass": true
+    },
+    {
+      "where": "api",
+      "what": "POST make: a cost was metered",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "where": "api",
+      "what": "P7 adds the summary cost to the video cost",
+      "expected": [
+        1.1987875,
+        0.5423
+      ],
+      "observed": [
+        1.1987875,
+        0.5423
+      ],
+      "pass": true
+    },
+    {
+      "where": "api",
+      "what": "POST make again: the stored summary, no call",
+      "expected": [
+        200,
+        true,
+        "## 한 줄 요약\n\n어텐션이 문장 속 토큰들을 서로 어떻게 이어 주는지 설명하는 짧은 강의입니다.\n\n## 핵심 내용\n\n- 각 토큰은 쿼리, 키, 값을 만듭니다.\n- 쿼리와 키의 유사도로 다른 토큰에 줄 가중치를 정합니다.\n- 가중치로 값을 더해 새 표현을 얻습니다.\n\n## 다루는 주제\n\n- attention\n- transformer\n- token\n\n## 난이도\n\n입문\n\n## 먼저 알면 좋은 것\n\n- 행렬 곱셈\n- 신경망의 기초\n\n## 다음에 볼 주제\n\n- multi-head attention\n- positional encoding\n",
+        0.5423
+      ],
+      "observed": [
+        200,
+        true,
+        "## 한 줄 요약\n\n어텐션이 문장 속 토큰들을 서로 어떻게 이어 주는지 설명하는 짧은 강의입니다.\n\n## 핵심 내용\n\n- 각 토큰은 쿼리, 키, 값을 만듭니다.\n- 쿼리와 키의 유사도로 다른 토큰에 줄 가중치를 정합니다.\n- 가중치로 값을 더해 새 표현을 얻습니다.\n\n## 다루는 주제\n\n- attention\n- transformer\n- token\n\n## 난이도\n\n입문\n\n## 먼저 알면 좋은 것\n\n- 행렬 곱셈\n- 신경망의 기초\n\n## 다음에 볼 주제\n\n- multi-head attention\n- positional encoding\n",
+        0.5423
+      ],
+      "pass": true
+    },
+    {
+      "where": "api",
+      "what": "GET after: the stored summary",
+      "expected": [
+        200,
+        true,
+        "## 한 줄 요약\n\n어텐션이 문장 속 토큰들을 서로 어떻게 이어 주는지 설명하는 짧은 강의입니다.\n\n## 핵심 내용\n\n- 각 토큰은 쿼리, 키, 값을 만듭니다.\n- 쿼리와 키의 유사도로 다른 토큰에 줄 가중치를 정합니다.\n- 가중치로 값을 더해 새 표현을 얻습니다.\n\n## 다루는 주제\n\n- attention\n- transformer\n- token\n\n## 난이도\n\n입문\n\n## 먼저 알면 좋은 것\n\n- 행렬 곱셈\n- 신경망의 기초\n\n## 다음에 볼 주제\n\n- multi-head attention\n- positional encoding\n"
+      ],
+      "observed": [
+        200,
+        true,
+        "## 한 줄 요약\n\n어텐션이 문장 속 토큰들을 서로 어떻게 이어 주는지 설명하는 짧은 강의입니다.\n\n## 핵심 내용\n\n- 각 토큰은 쿼리, 키, 값을 만듭니다.\n- 쿼리와 키의 유사도로 다른 토큰에 줄 가중치를 정합니다.\n- 가중치로 값을 더해 새 표현을 얻습니다.\n\n## 다루는 주제\n\n- attention\n- transformer\n- token\n\n## 난이도\n\n입문\n\n## 먼저 알면 좋은 것\n\n- 행렬 곱셈\n- 신경망의 기초\n\n## 다음에 볼 주제\n\n- multi-head attention\n- positional encoding\n"
+      ],
+      "pass": true
+    },
+    {
+      "where": "api",
+      "what": "POST again: a second call, its cost added",
+      "expected": [
+        200,
+        false,
+        1.0846
+      ],
+      "observed": [
+        200,
+        false,
+        1.0846
+      ],
+      "pass": true
+    },
+    {
+      "where": "api",
+      "what": "P7 after again",
+      "expected": 1.7410875,
+      "observed": 1.7410875,
+      "pass": true
+    },
+    {
+      "where": "1280x720",
+      "what": "button: 요약 is offered below the player and its status",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "where": "1280x720",
+      "what": "loading: the button is disabled and the section busy",
+      "expected": [
+        true,
+        "true"
+      ],
+      "observed": [
+        true,
+        "true"
+      ],
+      "pass": true
+    },
+    {
+      "where": "1280x720",
+      "what": "error: the message and 다시 시도",
+      "expected": [
+        true,
+        true
+      ],
+      "observed": [
+        true,
+        true
+      ],
+      "pass": true
+    },
+    {
+      "where": "1280x720",
+      "what": "summary: the stored summary as six headings, no POST",
+      "expected": [
+        [
+          "한 줄 요약",
+          "핵심 내용",
+          "다루는 주제",
+          "난이도",
+          "먼저 알면 좋은 것",
+          "다음에 볼 주제"
+        ],
+        0
+      ],
+      "observed": [
+        [
+          "한 줄 요약",
+          "핵심 내용",
+          "다루는 주제",
+          "난이도",
+          "먼저 알면 좋은 것",
+          "다음에 볼 주제"
+        ],
+        0
+      ],
+      "pass": true
+    },
+    {
+      "where": "1280x720",
+      "what": "summary: its cost line",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "where": "384x854",
+      "what": "button: 요약 is offered below the player and its status",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "where": "384x854",
+      "what": "loading: the button is disabled and the section busy",
+      "expected": [
+        true,
+        "true"
+      ],
+      "observed": [
+        true,
+        "true"
+      ],
+      "pass": true
+    },
+    {
+      "where": "384x854",
+      "what": "error: the message and 다시 시도",
+      "expected": [
+        true,
+        true
+      ],
+      "observed": [
+        true,
+        true
+      ],
+      "pass": true
+    },
+    {
+      "where": "384x854",
+      "what": "summary: the stored summary as six headings, no POST",
+      "expected": [
+        [
+          "한 줄 요약",
+          "핵심 내용",
+          "다루는 주제",
+          "난이도",
+          "먼저 알면 좋은 것",
+          "다음에 볼 주제"
+        ],
+        0
+      ],
+      "observed": [
+        [
+          "한 줄 요약",
+          "핵심 내용",
+          "다루는 주제",
+          "난이도",
+          "먼저 알면 좋은 것",
+          "다음에 볼 주제"
+        ],
+        0
+      ],
+      "pass": true
+    },
+    {
+      "where": "384x854",
+      "what": "summary: its cost line",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    }
+  ]
+}
