@@ -19,6 +19,27 @@ fn reply() -> Value {
 
 fn key() -> String { video_key(&url::Url::parse(PAGE).unwrap()) }
 
+type Step = Box<dyn FnOnce() + Send>;
+
+/// Steps a test runs when a request in its own library file reaches a named
+/// point of `summary_in`: `read` (a read between its pending check and its
+/// row) or `opened` (a call that has just opened its token).
+static PAUSES: Mutex<Vec<(&'static str, std::path::PathBuf, Step)>> = Mutex::new(Vec::new());
+
+pub(super) fn pause(point: &'static str, library: &crate::library_scope::Library<'_>) {
+    let path = library.run_original(|s| Ok(s.path().to_path_buf())).unwrap();
+    let step = {
+        let mut pauses = PAUSES.lock().unwrap();
+        pauses.iter().position(|(at, file, _)| *at == point && *file == path).map(|i| pauses.remove(i).2)
+    };
+    if let Some(step) = step { step() }
+}
+
+fn at(point: &'static str, core: &Core, step: impl FnOnce() + Send + 'static) {
+    let path = in_library(core, |s| s.path().to_path_buf());
+    PAUSES.lock().unwrap().push((point, path, Box::new(step)));
+}
+
 fn temp() -> std::path::PathBuf {
     let mut random = [0u8; 8];
     getrandom::fill(&mut random).unwrap();
@@ -156,6 +177,70 @@ fn a_read_during_and_after_a_call_tells_what_the_call_did() {
         assert_eq!(after["failure"].as_str().is_some_and(|f| f.contains("규칙에 맞지 않아")), failed, "{name}: failure");
         drop(core);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+}
+
+/// The property at both edges of a call: a read never looks final while the
+/// call is out. A read that overlaps the call's end (the call writes its
+/// result and stops being pending between the read's two looks) and a read
+/// at the moment the call opens its token both say pending, and the read
+/// after the call shows what it did.
+#[test]
+fn a_read_at_either_edge_of_a_call_says_pending() {
+    let read = |core: &Core| library_request(core, Some(generation(core)), "video_summary", &json!({"video_key": key(), "summary_action": "get"}));
+    let broken = { let mut r = reply(); r["topics"] = json!([]); r };
+    let newer = { let mut r = reply(); r["gist"] = json!("어텐션을 다시 설명합니다."); r };
+    let (old, new) = (Some("어텐션을 설명합니다."), Some("어텐션을 다시 설명합니다."));
+    for edge in ["end", "start"] {
+        for (name, stored_before, action, answer, after_gist, failed) in [
+            ("a first summary", false, "make", reply(), old, false),
+            ("a first summary whose reply breaks a rule", false, "make", broken.clone(), None, true),
+            ("a re-summary", true, "again", newer.clone(), new, false),
+            ("a re-summary whose reply breaks a rule", true, "again", broken.clone(), old, true),
+        ] {
+            let dir = temp();
+            let answer_now = Arc::new(Mutex::new(reply()));
+            let (core, called, go) = core_answering(&dir, answer_now.clone());
+            in_library(&core, |s| ready(s, "first", None));
+            if stored_before { summarize(&core, &called, &go, |_| {}).unwrap(); }
+            *answer_now.lock().unwrap() = answer;
+            let at_edge = std::thread::scope(|scope| {
+                let (done, finished) = mpsc::channel();
+                let (reached, opened) = mpsc::channel();
+                let (resume, held) = mpsc::channel::<()>();
+                if edge == "start" { at("opened", &core, move || { reached.send(()).unwrap(); held.recv().unwrap(); }); }
+                let core_ref = &core;
+                let post = scope.spawn(move || {
+                    let core = core_ref;
+                    let r = library_request(core, Some(generation(core)), "video_summary", &json!({"video_key": key(), "summary_action": action}));
+                    done.send(()).unwrap();
+                    r
+                });
+                let seen = if edge == "start" {
+                    opened.recv().unwrap();
+                    let seen = read(&core).unwrap();
+                    resume.send(()).unwrap();
+                    called.recv().unwrap();
+                    go.send(()).unwrap();
+                    seen
+                } else {
+                    called.recv().unwrap();
+                    // Between the read's pending check and its row, the call ends: it writes and stops being pending.
+                    let go = go.clone();
+                    at("read", &core, move || { go.send(()).unwrap(); finished.recv().unwrap(); });
+                    read(&core).unwrap()
+                };
+                let _ = post.join().unwrap();
+                seen
+            });
+            assert_eq!(at_edge["pending"], true, "{edge} of {name}: {at_edge}");
+            let after = read(&core).unwrap();
+            assert!(after.get("pending").is_none(), "{edge} of {name}: after");
+            assert_eq!(after["summary"]["gist"].as_str(), after_gist, "{edge} of {name}: after");
+            assert_eq!(after["failure"].as_str().is_some_and(|f| f.contains("규칙에 맞지 않아")), failed, "{edge} of {name}: failure");
+            drop(core);
+            let _ = std::fs::remove_dir_all(&dir);
+        }
     }
 }
 

@@ -233,9 +233,14 @@ pub(crate) fn summary_in(library: &crate::library_scope::Library<'_>, key: &str,
     });
     match action {
         "get" => {
-            let row = row(library)?;
             // A call is out for it: the screen shows the loading state and asks again.
+            // Looked at before the row: a call marks itself pending before it opens
+            // its token and stops being pending only after its result is written, so
+            // "not pending" here means the row read next holds every finished call.
             let pending = Pending::is(library, key)?;
+            #[cfg(test)]
+            flow_tests::pause("read", library);
+            let row = row(library)?;
             let failure = row.as_ref().and_then(|r| r.failure.clone());
             let mut answer = match row.as_ref().filter(|r| r.body.is_some()) {
                 Some(s) => reply(key, s, true)?,
@@ -257,6 +262,8 @@ pub(crate) fn summary_in(library: &crate::library_scope::Library<'_>, key: &str,
     // This call's token on the video's summary row. Deleting the video drops
     // the row, so a reply that returns after a deletion finds no token and is
     // not written, whatever entry is there again under the same ids.
+    // Pending from before the token is opened until after the result is written (dropped on return).
+    let _pending = Pending::start(library, key)?;
     let mut random = [0u8; 16];
     getrandom::fill(&mut random).map_err(|e| ApiError::from(e.to_string()))?;
     let call: String = random.iter().map(|b| format!("{b:02x}")).collect();
@@ -278,7 +285,8 @@ pub(crate) fn summary_in(library: &crate::library_scope::Library<'_>, key: &str,
         store.open_summary_call(key, &call)?;
         Ok((video.title, video.source_language, terms, transcript))
     })?;
-    let _pending = Pending::start(library, key)?;
+    #[cfg(test)]
+    flow_tests::pause("opened", library);
     if transcript.iter().all(|t| t.trim().is_empty()) {
         return Err(err(409, "no_transcript", "요약할 원문이 없습니다."));
     }
