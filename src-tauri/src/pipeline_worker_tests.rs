@@ -193,7 +193,7 @@ pub(crate) fn idle_core(dir: &Path, endpoint: &str) -> Core {
     }
 }
 
-fn local_gemini(mut answer: impl FnMut(Value) -> (u16, Value, i64) + Send + 'static) -> String {
+pub(crate) fn local_gemini(mut answer: impl FnMut(Value) -> (u16, Value, i64) + Send + 'static) -> String {
     let server = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let at = server.local_addr().unwrap();
     std::thread::spawn(move || {

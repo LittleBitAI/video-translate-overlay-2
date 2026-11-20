@@ -97,6 +97,21 @@ test('a reply that breaks a rule shows the error with 다시 시도, which asks 
   expect(summaryCalls().filter((c) => c.method === 'POST')).toHaveLength(2);
 });
 
+test('a refused 다시 요약 keeps the summary and shows its cost with the billed reply added', async () => {
+  let cost = 3.2;
+  serve((c) => {
+    if (c.method === 'GET') return [200, { ...MADE, cost_krw: cost, reused: true }];
+    cost = 4.1;
+    return [502, { error: 'summary_invalid', message: '요약 답이 규칙에 맞지 않아 저장하지 않았습니다. 다시 시도해 주세요.' }];
+  });
+  const s1 = open('/');
+  await vi.waitFor(() => expect(text(section(s1))).toContain('요약 비용 3.2원'));
+  button(s1, '다시 요약').click();
+  await vi.waitFor(() => expect(text(section(s1))).toContain('요약 비용 4.1원'));
+  expect(text($(section(s1), '[role="alert"]')!)).toContain('저장하지 않았습니다');
+  expect(text(section(s1))).toContain('어텐션을 설명합니다.');
+});
+
 test('a reply that arrives after the screen was left is dropped there and shown when the video is opened again', async () => {
   let answer: ((a: Answer) => void) | undefined;
   let stored = false;

@@ -249,12 +249,18 @@ impl Store {
     }
 
     /// Adds one summary call's usage and cost, and stores `body` when it
-    /// passed the checks (a failed reply keeps the earlier summary). Nothing
-    /// is written for a video deleted, or being deleted, meanwhile: `false`.
-    pub(crate) fn record_summary(&self, key: &str, input: i64, output: i64, cost: f64, body: Option<&str>) -> R<bool> {
+    /// passed the checks (a failed reply keeps the earlier summary). `job` is
+    /// the ready job the summary was read from: nothing is written, `false`,
+    /// when it is gone (the video was deleted, and maybe added again, during
+    /// the call) or the video is being deleted.
+    pub(crate) fn record_summary(&self, key: &str, job: &str, input: i64, output: i64, cost: f64, body: Option<&str>) -> R<bool> {
         if !cost.is_finite() || cost < 0.0 { return Err("invalid usage cost".into()); }
         self.library_write(|db| {
-            let live = db.query_one("SELECT 1 FROM video WHERE video_key=? AND NOT EXISTS(SELECT 1 FROM deleted_video WHERE video_key=? AND complete=0)", p![key, key])?;
+            let live = db.query_one(
+                "SELECT 1 FROM video v JOIN job j ON j.video_key=v.video_key AND j.id=? WHERE v.video_key=?
+                 AND NOT EXISTS(SELECT 1 FROM deleted_video WHERE video_key=v.video_key AND complete=0)",
+                p![job, key],
+            )?;
             if live.is_none() { return Ok(false); }
             db.execute(
                 &format!("INSERT INTO summary (video_key,body,input_amount,output_amount,cost_krw,updated_at) VALUES (?,?,?,?,?,{NOW})

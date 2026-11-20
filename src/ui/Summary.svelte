@@ -72,6 +72,14 @@
       r.status === 428
         ? '개인키가 없어 요약하지 않았습니다. 설정에서 Gemini 개인키를 넣어 주세요.'
         : (r.body?.message ?? `요약하지 못했습니다 (${r.status}).`);
+    // A refused reply was still billed: show the stored summary with what it has cost now.
+    const stored = await request('GET', path);
+    if (gone || mine !== generation) return;
+    if (stored.status === 200 && typeof stored.body?.markdown === 'string') {
+      markdown = stored.body.markdown;
+      cost = stored.body.cost_krw;
+      look = 'shown';
+    }
   }
 
   onMount(read);

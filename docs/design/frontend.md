@@ -72,7 +72,7 @@ the player fills the window height, so the section is reached by scrolling.
 | None stored | 요약 (primary, 44 px) and a note that Gemini summarizes the title and source subtitles for a few won, added to the video's cost |
 | Loading | 요약하는 중 (disabled) and a status line: leaving the screen does not lose the summary; it shows when the video is opened again |
 | Summary | The Markdown from P19 drawn as text: `##` lines as headings, `-` lines as list items, other lines as paragraphs, never as HTML. Then 요약 비용 and 다시 요약 (outlined), which asks with `again` |
-| Error | A yellow-bordered alert with the API's message (or the settings wording without a key) and 다시 시도, which repeats the failed request. An earlier summary stays shown |
+| Error | A yellow-bordered alert with the API's message (or the settings wording without a key) and 다시 시도, which repeats the failed request. The section then reads P19 `GET` again, so an earlier summary stays shown with its 요약 비용 including the refused, still billed reply |
 
 The section keeps a request generation: a reply for a section that was left
 or that has asked again is dropped without touching its state. The backend

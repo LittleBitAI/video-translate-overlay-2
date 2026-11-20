@@ -500,6 +500,7 @@
       }
     },
     "/videos/{video_key}/subtitles": {
+      "parameters": [{"name": "video_key", "in": "path", "required": true, "schema": {"type": "string"}, "description": "The video's key, as P7 returns it"}],
       "get": {
         "operationId": "P8",
         "summary": "작업이 끝난 영상의 자막을 통째로 준다. 조각마다 본편 처음부터 잰 시작 시각과 끝 시각이 붙어 있어 오버레이가 재생 위치에 맞는 조각을 고른다. 광고를 가려낼 때 쓸 본편 길이도 함께 준다. 작업이 끝나기 전에는 자막을 주지 않는다.",
@@ -541,8 +542,9 @@
       }
     },
     "/videos/{video_key}/summary": {
+      "parameters": [{"name": "video_key", "in": "path", "required": true, "schema": {"type": "string"}, "description": "The video's key, as P7 returns it"}],
       "get": {
-        "operationId": "P19",
+        "operationId": "P19-get",
         "summary": "The stored summary of a video, with no Gemini call. Local app screens only; site capabilities stay P6-P8.",
         "responses": {
           "200": {"description": "The summary reply described under POST, with reused=true."},
@@ -551,8 +553,8 @@
         }
       },
       "post": {
-        "operationId": "P19",
-        "summary": "Summarize a video whose subtitles are ready. Without again, a stored summary is answered with no Gemini call. Otherwise one gemini-3.1-flash-lite generateContent call under the summary system prompt, with the order {task: summary, title, terms: the job's glossary, transcript: every cue's source text in cue order} (no Korean cue text, no times) and a response JSON schema of the six fields below. The reply's values are checked in code: a non-empty Korean gist and key points, at least one topic, a known level; blank and repeated items are dropped. A reply that fails is not stored and an earlier summary stays. Every call's reported usage is metered into the video's cost (P7 summary_cost_krw), valid reply or not. Local app screens only: it spends the key.",
+        "operationId": "P19-post",
+        "summary": "Summarize a video whose subtitles are ready. Without again, a stored summary is answered with no Gemini call. Otherwise one gemini-3.1-flash-lite generateContent call under the summary system prompt, with the order {task: summary, title, terms: the job's glossary, transcript: every cue's source text in cue order} (no Korean cue text, no times) and a response JSON schema of the six fields below. The reply's values are checked in code: a non-empty Korean gist, Korean key points and prerequisites, topics and next_topics with no Korean for a lecture whose recognized language is known and not Korean, at least one topic and key point, a known level; blank and repeated items are dropped. A reply that fails is not stored and an earlier summary stays. Every call's reported usage is metered into the video's cost (P7 summary_cost_krw), valid reply or not. Local app screens only: it spends the key.",
         "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": {"again": {"type": "boolean", "default": false, "description": "Summarize again even when a summary is stored"}}}}}},
         "responses": {
           "200": {
@@ -575,8 +577,8 @@
           },
           "401": {"description": "key_rejected"},
           "404": {"description": "no_video"},
-          "409": {"description": "not_ready: no ready subtitles, or a job for the video is running; no_transcript"},
-          "410": {"description": "video_deleted, also when the video was deleted while the call ran (its usage is then not recorded)"},
+          "409": {"description": "not_ready: no ready subtitles, or a job for the video is running; no_transcript; account_changed when the account changed during the call (the summary and its usage are kept in the library the request started in)"},
+          "410": {"description": "video_deleted, also when the video was deleted, or deleted and translated again, while the call ran (its usage is then not recorded)"},
           "428": {"description": "no_key"},
           "502": {"description": "summary_invalid: the reply broke a value rule or was not a JSON object; not stored, its usage metered"},
           "503": {"description": "gemini_unreachable"}

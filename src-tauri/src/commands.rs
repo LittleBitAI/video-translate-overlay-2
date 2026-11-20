@@ -303,6 +303,32 @@ mod tests {
         let _ = authority(); // both files resolve
     }
 
+    /// The property, over every operation of the design document: its
+    /// operationId is unique, and every `{name}` in its path is a declared
+    /// required path parameter.
+    #[test]
+    fn the_api_document_names_each_operation_once_and_declares_its_path_parameters() {
+        let doc: serde_json::Value = serde_json::from_str(include_str!("../../docs/design/api.yaml")).unwrap();
+        let mut ids = Vec::new();
+        for (path, item) in doc["paths"].as_object().unwrap() {
+            let template: Vec<&str> = path.split('{').skip(1).map(|s| s.split('}').next().unwrap()).collect();
+            for (method, op) in item.as_object().unwrap().iter().filter(|(m, _)| *m != "parameters") {
+                ids.push(op["operationId"].as_str().unwrap_or_else(|| panic!("{method} {path} has no operationId")).to_string());
+                let declared: Vec<&str> = [&item["parameters"], &op["parameters"]].iter()
+                    .flat_map(|p| p.as_array().into_iter().flatten())
+                    .filter(|p| p["in"] == "path" && p["required"] == true)
+                    .filter_map(|p| p["name"].as_str()).collect();
+                for name in &template {
+                    assert!(declared.contains(name), "{method} {path} does not declare its path parameter {name}");
+                }
+            }
+        }
+        let mut unique = ids.clone();
+        unique.sort();
+        unique.dedup();
+        assert_eq!(unique.len(), ids.len(), "repeated operationId in {ids:?}");
+    }
+
     #[test]
     fn routes_cover_every_command() {
         let mut seen: Vec<&str> = [

@@ -189,9 +189,11 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   `prerequisites` (Korean) and `next_topics` (the lecture's language, as search
   phrases for the later recommendation step). Structured output guarantees the
   syntax only; Gemini's documentation says length and uniqueness keywords are
-  not enforced. So `summary::check` validates values in code: a non-empty gist
-  and key points that contain Hangul, at least one topic and one key point, a
-  known level. Text is put on one line and blank or repeated list items are
+  not enforced. So `summary::check` validates values in code: a non-empty gist,
+  and a gist, key points and prerequisites that each contain Hangul; for a
+  video whose recognized source language is known and not Korean, topics and
+  next topics with no Hangul; at least one topic and one key point; a known
+  level. Text is put on one line and blank or repeated list items are
   dropped. A reply that fails is not stored, the earlier summary (if any)
   stays, and the API answers `502 summary_invalid`.
 - **Rendering.** `summary::markdown` renders the stored JSON by a fixed
@@ -202,8 +204,13 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
 - **Storage.** Table `summary (video_key PRIMARY KEY, body, input_amount,
   output_amount, cost_krw, updated_at)` in the account library. `body` is the
   checked JSON, NULL until one reply passed. Usage and cost accumulate over
-  every call. A call whose video was deleted, or is being deleted, records
-  nothing and answers `410`. Confirmed video deletion removes the row.
+  every call. The result is written only while the ready job it was read
+  from still exists: a call whose video was deleted (and maybe translated
+  again) or is being deleted records nothing and answers `410`. It is written
+  into the library the request started in, even if the account changed
+  during the call, so the account that paid keeps the summary and its usage;
+  the retired screen then gets `409 account_changed`. Confirmed video deletion
+  removes the row.
   Summaries are not synchronized between devices yet (a separate change).
 - **Cost.** Reported usage (`promptTokenCount`; candidates plus thoughts)
   times the translation's unit prices and exchange rate in `gemini.rs`, for a
