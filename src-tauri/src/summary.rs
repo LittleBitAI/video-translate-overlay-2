@@ -384,6 +384,7 @@ mod tests {
         let unsaid = "quantum chromodynamics";
         let no_word = "C++";
         let accented = "réseaux de neurones";
+        let unaccented = "descente de gradient";
         let hangul = "선형대수 기초";
         let mixed = "PyTorch 기초";
         let kana_han = "確率論の基礎";
@@ -409,9 +410,11 @@ mod tests {
             (Some("en"), "next_topics", kana, false),
             (Some("en"), "next_topics", cyrillic, false),
             (Some("en"), "next_topics", notation, true),
-            // Next topics come after the talk, so they are not held to its words: a same-script one passes.
+            // Next topics are held to the talk's scripts only (the person's choice): a
+            // translation in the same alphabet is not caught, with or without accents.
             (Some("en"), "next_topics", unsaid, true),
             (Some("en"), "next_topics", accented, true),
+            (Some("en"), "next_topics", unaccented, true),
             (Some("fr"), "topics", accented, true),
             (Some("fr"), "topics", latin, false),
             (Some("fr"), "next_topics", kana, false),

@@ -121,7 +121,7 @@ Build a fixture of next_topics phrases. Should pass: the five English recommenda
 
 ## Result
 
-pending — the fix records what it observed here, with the tests and the commit.
+Observed 2026-11-21, draft, not verified. The experiment is the same as `docs/research/review-video-summary-f3-1.md`. lingua with 7 languages refused 0 of 45 correct phrases at margin 0.4 and caught 28 of 36 same-alphabet translations (0.5: 0 refused, 26 caught). At 0.3 it still caught 32, but the closest correct phrase sat at +0.282. The binary grew to about 33 MB. whatlang refused 26 correct phrases. The person chose not to add a detector. The contradiction this page found, backend.md calling next_topics "the lecture's language" while the code checks only scripts, is resolved by wording. The spec's done item 3 and backend.md now say next_topics are asked in the talk's language and guaranteed only in its scripts. The test rows in `summary::tests::each_field_is_held_to_its_language` say the same. For the missing receipt, the round reply carries report.json and the focused outputs inline, generated at the pushed head named there. Committed on top of 608a4af in the commit that adds this text.
 
 ## Unresolved limits
 

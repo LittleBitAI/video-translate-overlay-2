@@ -565,7 +565,7 @@
                   "type": "object",
                   "properties": {
                     "video_key": {"description": "string"},
-                    "summary": {"description": "object: gist (one Korean sentence), key_points (Korean strings, at least one), topics (strings in the lecture's language, at least one), level (beginner | intermediate | advanced), prerequisites (Korean strings, may be empty), next_topics (strings in the lecture's language, may be empty)"},
+                    "summary": {"description": "object: gist (one Korean sentence), key_points (Korean strings, at least one), topics (strings in the lecture's language, at least one), level (beginner | intermediate | advanced), prerequisites (Korean strings, may be empty), next_topics (strings asked in the lecture's language and checked only for its scripts, so a same-alphabet translation is not refused; may be empty)"},
                     "markdown": {"description": "string: the summary rendered by the app's fixed template (## headings, - lists, model text escaped); the same JSON always gives the same Markdown"},
                     "cost_krw": {"description": "number: what every summary call for this video has cost so far"},
                     "reused": {"description": "boolean: true when the stored summary was answered without a Gemini call"},

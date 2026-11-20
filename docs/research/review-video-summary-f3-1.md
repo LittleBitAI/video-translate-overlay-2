@@ -109,7 +109,7 @@ Build a fixture of next_topics phrases. Should pass: the paid run's five English
 
 ## Result
 
-pending — the fix records what it observed here, with the tests and the commit.
+Observed 2026-11-21, draft, not verified. A scratch crate outside the repository ran lingua 1.x (features en, fr, de, es, it, pt, nl) and whatlang 0.16 over 81 phrases: 45 that should pass (30 English terms for an English talk, 9 for French, 6 for German) and 36 same-alphabet translations that should be refused. Rule: refuse when the best language outside {talk, English} beats the best allowed one by more than a margin. lingua, correct refused / translations caught: margin 0.0 10/36, 0.1 5/34, 0.2 3/32, 0.3 0/32, 0.4 0/28, 0.5 0/26, 0.6 0/23, 0.7 0/20, 0.8 0/13, 0.9 0/10. Largest gaps among correct phrases: attention +0.282, backpropagation +0.281, RLHF +0.228, so a zero-refusal margin has under 0.12 of headroom. Missed at 0.3: theorie des probabilites +0.138, descente de gradient +0.176, reti neurali +0.045. whatlang refuse-when-detected refused 26 correct and caught 35; refuse-when-reliable refused 0 and caught 0. The scratch binary was 34,503,168 bytes, with each language model crate 3.8 to 5.8 MB, and only 7 languages covered. Asked 2026-11-21, the person chose the script rule only, documented. next_topics stay held to the talk's scripts; a same-alphabet translation is accepted. The rows in `summary::tests::each_field_is_held_to_its_language` now state that (`accented` and `unaccented` French next topics pass for an English talk), and backend.md says the code guarantees only the scripts. The spec's done item 3 was revised to match. Committed on top of 608a4af in the commit that adds this text.
 
 ## Unresolved limits
 

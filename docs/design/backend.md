@@ -200,8 +200,12 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   Greek ones), every topic must also share a word of three or more letters
   with the title, glossary or transcript, so a same-script translation
   (French words for an English talk) is refused. Next topics, which come
-  after the talk, are held only to the scripts: requiring the talk's words
-  would refuse correct replies the person pays for. At least one topic and
+  after the talk, are held only to the scripts, so a same-alphabet
+  translation (`descente de gradient` for an English talk) is accepted; the
+  prompt and schema ask for the talk's language, and the code guarantees
+  only its scripts. Requiring the talk's words would refuse real follow-on
+  subjects the talk never names. A language detector was measured and not
+  adopted: `docs/research/review-video-summary-f3-1.md`. At least one topic and
   one key point; a known level. Text is put on one line and blank or repeated list items are
   dropped. A reply that fails is not stored, the earlier summary (if any)
   stays, and the API answers `502 summary_invalid`.
