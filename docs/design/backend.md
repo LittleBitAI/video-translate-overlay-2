@@ -192,11 +192,17 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   not enforced. So `summary::check` validates values in code: a non-empty gist,
   and a gist, key points and prerequisites that each contain Hangul; for a
   video whose recognized source language is in the code's table, topics and
-  next topics written in it, every letter Latin (names) or in that language's
-  own script (Hangul and Han for `ko`, kana and Han for `ja`, Han for `zh`,
-  Cyrillic for `ru` and its neighbours, Greek for `el`, Latin only for the
-  Latin-script languages); at least one topic and one key point; a known
-  level. Text is put on one line and blank or repeated list items are
+  next topics written in its scripts: every letter Latin (names), Greek
+  (notation such as β) or in that language's own script (Hangul and Han for
+  `ko`, kana and Han for `ja`, Han for `zh`, Cyrillic for `ru` and its
+  neighbours, Greek for `el`, none besides for the Latin-script languages).
+  For a language written with spaces between words (the Latin, Cyrillic and
+  Greek ones), every topic must also share a word of three or more letters
+  with the title, glossary or transcript, so a same-script translation
+  (French words for an English talk) is refused. Next topics, which come
+  after the talk, are held only to the scripts: requiring the talk's words
+  would refuse correct replies the person pays for. At least one topic and
+  one key point; a known level. Text is put on one line and blank or repeated list items are
   dropped. A reply that fails is not stored, the earlier summary (if any)
   stays, and the API answers `502 summary_invalid`.
 - **Rendering.** `summary::markdown` renders the stored JSON by a fixed
@@ -205,7 +211,7 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   Markdown and no model is called. A second model call to polish the JSON into
   Markdown was rejected.
 - **Storage.** Table `summary (video_key PRIMARY KEY, body, input_amount,
-  output_amount, cost_krw, updated_at, call)` in the account library. `body`
+  output_amount, cost_krw, updated_at, call, failure)` in the account library. `body`
   is the checked JSON, NULL until one reply passed. Usage and cost accumulate
   over every call. A video marked for deletion is refused with `410` before
   any Gemini call. Before the call, its random token is put in `call`. The
@@ -214,7 +220,12 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   so a call whose video was deleted records nothing and answers `410`, even
   if the entry came back under the same ids meanwhile (a synced restore
   projects the same `sync-<hash>` job id). While a call is out, P19 `GET`
-  answers `{pending: true}` for that library and video. It is written
+  adds `pending: true` for that library and video, also beside a stored
+  summary during 다시 요약. A call that stores nothing (a reply breaking a
+  value rule, a refused key, an unreachable Gemini) leaves its message in
+  `failure` until the next call starts or a summary is stored. `GET` reports it,
+  so a screen opened while the call was out shows the error and 다시 시도.
+  The result is written
   into the library the request started in, even if the account changed
   during the call, so the account that paid keeps the summary and its usage;
   the retired screen then gets `409 account_changed`. Confirmed video deletion

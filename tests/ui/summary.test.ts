@@ -134,25 +134,51 @@ test('a reply that arrives after the screen was left is dropped there and shown 
   expect(summaryCalls().filter((c) => c.method === 'POST')).toHaveLength(1);
 });
 
-test('a video reopened while its summary is still being made waits for it and shows it', async () => {
-  let answer: ((a: Answer) => void) | undefined;
-  let stored = false;
+// The property: a screen reopened while a call is out waits for it, over a stored summary or none,
+// then shows what the call did: the new summary, or the error with 다시 시도 beside what was stored.
+const NEWER = { ...MADE, markdown: MARKDOWN.replace('어텐션을 설명합니다.', '어텐션을 다시 설명합니다.'), cost_krw: 6.4 };
+const INVALID = '요약 답이 규칙에 맞지 않아 저장하지 않았습니다. 다시 시도해 주세요.';
+test.each([
+  { name: 'a first summary', before: null, answer: [200, MADE], shows: '어텐션을 설명합니다.', cost: '3.2원', failed: false },
+  { name: 'a first summary whose reply breaks a rule', before: null, answer: [502, { error: 'summary_invalid', message: INVALID }], shows: null, cost: null, failed: true },
+  { name: 'a re-summary', before: MADE, answer: [200, NEWER], shows: '어텐션을 다시 설명합니다.', cost: '6.4원', failed: false },
+  { name: 'a re-summary whose reply breaks a rule', before: MADE, answer: [502, { error: 'summary_invalid', message: INVALID }], shows: '어텐션을 설명합니다.', cost: '3.2원', failed: true },
+] as const)('reopened during $name: waits, then shows what the call did', async ({ before, answer, shows, cost, failed }) => {
+  // The backend as P19 behaves: a read says pending while the call is out, beside any stored summary.
+  let stored: any = before;
+  let failure: string | null = null;
+  let release: (() => void) | undefined;
   serve((c) => {
-    if (c.method === 'GET') return stored ? [200, { ...MADE, reused: true }] : answer ? [200, { video_key: 'vk', pending: true }] : [404, { error: 'no_summary' }];
-    return new Promise((r) => (answer = (a) => { stored = true; r(a); }));
+    if (c.method === 'GET') {
+      const pending = release ? { pending: true } : failure ? { failure } : {};
+      return stored ? [200, { ...stored, reused: true, ...pending }] : release || failure ? [200, { video_key: 'vk', cost_krw: 0, ...pending }] : [404, { error: 'no_summary' }];
+    }
+    return new Promise((r) => (release = () => {
+      if (answer[0] === 200) stored = answer[1];
+      else failure = INVALID;
+      release = undefined;
+      r(answer as Answer);
+    }));
   });
   const s1 = open('/');
-  await vi.waitFor(() => expect(button(s1, '요약')).toBeTruthy());
-  button(s1, '요약').click();
-  await vi.waitFor(() => expect(answer).toBeTruthy());
+  await vi.waitFor(() => expect(button(s1, before ? '다시 요약' : '요약')).toBeTruthy());
+  button(s1, before ? '다시 요약' : '요약').click();
+  await vi.waitFor(() => expect(release).toBeTruthy());
   go('/library');
   flushSync();
   go('/');
   flushSync();
-  // Reopened before the reply: the loading state, not 요약.
   await vi.waitFor(() => expect(button(s1, '요약하는 중').disabled).toBe(true));
-  answer!([200, MADE]);
-  await vi.waitFor(() => expect(text(section(s1))).toContain('어텐션을 설명합니다.'), { timeout: 4000 });
+  release!();
+  if (failed) {
+    await vi.waitFor(() => expect(text($(section(s1), '[role="alert"]')!)).toContain('저장하지 않았습니다'), { timeout: 4000 });
+    expect(button(s1, '다시 시도')).toBeTruthy();
+  } else {
+    await vi.waitFor(() => expect(text(section(s1))).toContain(shows!), { timeout: 4000 });
+    expect($(section(s1), '[role="alert"]')).toBeNull();
+  }
+  if (shows) expect(text(section(s1))).toContain(shows);
+  if (cost) expect(text(section(s1))).toContain(`요약 비용 ${cost}`);
   expect(summaryCalls().filter((c) => c.method === 'POST')).toHaveLength(1);
 });
 

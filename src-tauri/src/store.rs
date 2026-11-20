@@ -84,7 +84,9 @@ CREATE TABLE IF NOT EXISTS summary (
   cost_krw REAL NOT NULL DEFAULT 0,
   updated_at TEXT NOT NULL,
   -- The token of the summary call that is out. Deleting the video drops the row and with it the token.
-  call TEXT
+  call TEXT,
+  -- Why the last call stored nothing, until a later call starts or stores a summary.
+  failure TEXT
 )
 ";
 
@@ -161,6 +163,7 @@ pub struct Summary {
     pub input: i64,
     pub output: i64,
     pub cost_krw: f64,
+    pub failure: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

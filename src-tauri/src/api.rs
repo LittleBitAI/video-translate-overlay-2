@@ -429,7 +429,7 @@ fn get_job_in(library: &crate::library_scope::Library<'_>, page_url: &str) -> Ap
     let job = store.latest_job(&key)?.ok_or_else(|| err(404, "no_job", "이 영상의 작업이 없습니다."))?;
     let title = store.video(&key)?.map(|v| v.title).unwrap_or_default();
     // The video's cost shown with the job: its translation and every 요약 call.
-    let summary = store.summary(&key)?.unwrap_or(crate::store::Summary { body: None, input: 0, output: 0, cost_krw: 0.0 });
+    let summary = store.summary(&key)?.unwrap_or(crate::store::Summary { body: None, input: 0, output: 0, cost_krw: 0.0, failure: None });
     Ok(json!({
         "job_id": job.id,
         "video_key": key,

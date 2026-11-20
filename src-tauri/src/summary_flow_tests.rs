@@ -8,7 +8,7 @@ use crate::pipeline::worker_tests::{idle_core, local_gemini};
 use crate::store::Store;
 use crate::Core;
 use serde_json::{json, Value};
-use std::sync::mpsc;
+use std::sync::{mpsc, Arc, Mutex};
 
 const PAGE: &str = "https://lectures.example.org/summary-flow";
 
@@ -31,12 +31,17 @@ fn temp() -> std::path::PathBuf {
 /// A core signed in to one account, whose Gemini signals each call on the
 /// returned receiver and answers only once the returned sender says so.
 fn core(dir: &std::path::Path) -> (Core, mpsc::Receiver<()>, mpsc::Sender<()>) {
+    core_answering(dir, Arc::new(Mutex::new(reply())))
+}
+
+/// As [`core`], with Gemini answering whatever `answer` holds at the time.
+fn core_answering(dir: &std::path::Path, answer: Arc<Mutex<Value>>) -> (Core, mpsc::Receiver<()>, mpsc::Sender<()>) {
     let (arrived, called) = mpsc::channel();
     let (go, wait) = mpsc::channel::<()>();
     let gemini = local_gemini(move |_| {
         arrived.send(()).unwrap();
         wait.recv().unwrap();
-        (200, reply(), 1000)
+        (200, answer.lock().unwrap().clone(), 1000)
     });
     let mut core = idle_core(dir, &gemini);
     core.account = signed_in_manager(dir, "summary-one");
@@ -61,9 +66,14 @@ fn in_library<T>(core: &Core, f: impl FnOnce(&Store) -> T) -> T {
 
 /// One 요약 press; `during` acts while Gemini holds its reply.
 fn summarize(core: &Core, called: &mpsc::Receiver<()>, go: &mpsc::Sender<()>, during: impl FnOnce(&Core)) -> Result<Value, String> {
+    press(core, "make", called, go, during)
+}
+
+/// One press of 요약 (`make`) or 다시 요약 (`again`); `during` acts while Gemini holds its reply.
+fn press(core: &Core, action: &str, called: &mpsc::Receiver<()>, go: &mpsc::Sender<()>, during: impl FnOnce(&Core)) -> Result<Value, String> {
     let at = generation(core);
     std::thread::scope(|scope| {
-        let press = scope.spawn(|| library_request(core, Some(at), "video_summary", &json!({"video_key": key(), "summary_action": "make"})));
+        let press = scope.spawn(|| library_request(core, Some(at), "video_summary", &json!({"video_key": key(), "summary_action": action})));
         called.recv().unwrap();
         during(core);
         go.send(()).unwrap();
@@ -114,20 +124,39 @@ fn a_video_marked_for_deletion_is_never_sent_to_gemini() {
     }
 }
 
-/// A screen opened while the call is out is told a summary is coming, then reads it.
+/// The property: a read while a call is out says so, beside any stored
+/// summary, and a read after it shows what the call did: the new summary, or
+/// the stored one (if any) and why the call stored nothing.
 #[test]
-fn a_read_during_the_call_says_a_summary_is_pending() {
-    let dir = temp();
-    let (core, called, go) = core(&dir);
-    in_library(&core, |s| ready(s, "first", None));
+fn a_read_during_and_after_a_call_tells_what_the_call_did() {
     let read = |core: &Core| library_request(core, Some(generation(core)), "video_summary", &json!({"video_key": key(), "summary_action": "get"}));
-    assert_eq!(read(&core).unwrap_err().error, "no_summary");
-    let mut during = None;
-    summarize(&core, &called, &go, |core| during = Some(read(core).unwrap())).unwrap();
-    assert_eq!(during.unwrap()["pending"], true);
-    assert_eq!(read(&core).unwrap()["summary"]["gist"], "어텐션을 설명합니다.");
-    drop(core);
-    let _ = std::fs::remove_dir_all(&dir);
+    let broken = { let mut r = reply(); r["topics"] = json!([]); r };
+    let newer = { let mut r = reply(); r["gist"] = json!("어텐션을 다시 설명합니다."); r };
+    let (old, new) = (Some("어텐션을 설명합니다."), Some("어텐션을 다시 설명합니다."));
+    for (name, stored_before, action, answer, during_gist, after_gist, failed) in [
+        ("a first summary", false, "make", reply(), None, old, false),
+        ("a first summary whose reply breaks a rule", false, "make", broken.clone(), None, None, true),
+        ("a re-summary", true, "again", newer, old, new, false),
+        ("a re-summary whose reply breaks a rule", true, "again", broken, old, old, true),
+    ] {
+        let dir = temp();
+        let answer_now = Arc::new(Mutex::new(reply()));
+        let (core, called, go) = core_answering(&dir, answer_now.clone());
+        in_library(&core, |s| ready(s, "first", None));
+        if stored_before { summarize(&core, &called, &go, |_| {}).unwrap(); }
+        *answer_now.lock().unwrap() = answer;
+        let mut during = None;
+        let _ = press(&core, action, &called, &go, |core| during = Some(read(core).unwrap()));
+        let during = during.unwrap();
+        assert_eq!(during["pending"], true, "{name}: during");
+        assert_eq!(during["summary"]["gist"].as_str(), during_gist, "{name}: during");
+        let after = read(&core).unwrap();
+        assert!(after.get("pending").is_none(), "{name}: after");
+        assert_eq!(after["summary"]["gist"].as_str(), after_gist, "{name}: after");
+        assert_eq!(after["failure"].as_str().is_some_and(|f| f.contains("규칙에 맞지 않아")), failed, "{name}: failure");
+        drop(core);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }
 
 #[test]

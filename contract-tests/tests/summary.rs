@@ -125,7 +125,9 @@ fn test_a_reply_that_breaks_a_value_rule_is_not_stored_but_is_metered() {
         let refused = summarize(&mut app, &key, false);
         assert_eq!((refused.status, refused.body["error"].as_str()), (502, Some("summary_invalid")), "{fault}: {refused:?}");
         let read = app.app_call("GET", &format!("/videos/{key}/summary"), Value::Null);
-        assert_eq!(read.status, 404, "{fault}: a broken summary was stored: {read:?}");
+        // Nothing stored: no summary and no Markdown, only why the call stored nothing.
+        assert_eq!((read.status, &read.body["summary"], &read.body["markdown"]), (200, &Value::Null, &Value::Null), "{fault}: a broken summary was stored: {read:?}");
+        assert!(read.body["failure"].as_str().is_some_and(|f| f.contains("저장하지 않았습니다")), "{fault}: {read:?}");
         let calls = summary_calls(&app);
         assert_eq!(calls.len(), 1, "{fault}");
         let job = app.job(TALK).body;

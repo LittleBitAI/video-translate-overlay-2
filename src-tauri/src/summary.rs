@@ -21,7 +21,7 @@ the Korean of every term. Write gist, every key point and every prerequisite in 
 terms and keeping product, model and code names (such as GPT-4o, PyTorch, ReLU) as spelled. Write topics and next_topics \
 in the talk's own language, the language of the transcript (never Korean or any other language for a talk not in it; Latin-letter names are fine), as short phrases a person would search for to find a lecture \
 on them. gist is one sentence on what the talk is about. key_points are its main points in the order it makes them. topics \
-are the subjects it covers. level is the background it expects. prerequisites are what a viewer should know first, empty \
+are the subjects it covers, each named with words the talk itself uses. level is the background it expects. prerequisites are what a viewer should know first, empty \
 when it expects nothing. next_topics are subjects to study after it. Say only what the talk says. Reply with JSON only, \
 matching the response schema.";
 
@@ -33,7 +33,7 @@ pub fn schema() -> Value {
         "properties": {
             "gist": {"type": "string", "description": "One sentence in Korean: what the talk is about."},
             "key_points": list("The talk's main points in Korean, in the order it makes them; 3 to 7.", 1),
-            "topics": list("The subjects the talk covers, in the talk's own language (not translated); 1 to 8 short phrases.", 1),
+            "topics": list("The subjects the talk covers, in the talk's own language (not translated), named with words the talk uses; 1 to 8 short phrases.", 1),
             "level": {"type": "string", "enum": LEVELS.map(|(l, _)| l), "description": "The background the talk expects."},
             "prerequisites": list("What to know before the talk, each a phrase in Korean (not a bare name); empty when it expects nothing.", 0),
             "next_topics": list("Subjects to study after the talk, in the talk's own language (not translated); 1 to 5 short search phrases.", 0),
@@ -87,20 +87,43 @@ fn scripts(language: &str) -> Option<&'static [Script]> {
     })
 }
 
-/// Whether `text` is written in `language`: every letter is Latin or in one
-/// of the language's own scripts. Digits, signs and spaces are not letters.
-fn in_language(text: &str, language: &str) -> bool {
+/// Whether `text` is written in `language`'s scripts: every letter is Latin
+/// (names), Greek (scientific notation such as β or Δ) or in one of the
+/// language's own scripts. Digits, signs and spaces are not letters.
+fn in_scripts(text: &str, language: &str) -> bool {
     let Some(own) = scripts(language) else { return true };
-    text.chars().filter(|c| c.is_alphabetic()).all(|c| { let s = script(c); s == Script::Latin || own.contains(&s) })
+    text.chars().filter(|c| c.is_alphabetic()).all(|c| { let s = script(c); matches!(s, Script::Latin | Script::Greek) || own.contains(&s) })
+}
+
+/// A text's words of three or more letters, lowercased, a plural `s` dropped.
+fn words(text: &str) -> std::collections::HashSet<String> {
+    text.split(|c: char| !c.is_alphanumeric()).filter(|w| w.chars().count() >= 3)
+        .map(|w| { let w = w.to_lowercase(); match w.strip_suffix('s') { Some(s) if s.chars().count() >= 3 => s.to_string(), _ => w } })
+        .collect()
+}
+
+/// Whether a topic is in the talk's own words, for a language written with
+/// spaces between words (Latin, Cyrillic and Greek scripts): one of its words
+/// is in the title, glossary or transcript (`source`). A same-script
+/// translation (French words for an English talk) shares none. A topic with
+/// no word of three letters (`C++`, `AI`) has nothing to judge.
+fn in_talk(topic: &str, language: &str, source: &std::collections::HashSet<String>) -> bool {
+    if matches!(language.to_ascii_lowercase().as_str(), "ko" | "ja" | "zh" | "yue") || scripts(language).is_none() { return true; }
+    let own = words(topic);
+    own.is_empty() || own.iter().any(|w| source.contains(w))
 }
 
 /// The reply's values as stored, or why they break a value rule. Every
 /// prose item (gist, each key point, each prerequisite) holds Korean. For a
 /// talk whose recognized `language` is known, every topic and next topic is
-/// written in it ([`in_language`]). gist, key_points and topics may not be
-/// empty; level is one of [`LEVELS`]. Text is put on one line; blank and
-/// repeated list items are dropped.
-pub fn check(reply: &Value, language: Option<&str>) -> Result<Value, String> {
+/// written in its scripts ([`in_scripts`]), and every topic, a subject the
+/// talk covers, is in the talk's own words ([`in_talk`]); next topics come
+/// after the talk and need not be said in it. gist, key_points and topics may
+/// not be empty; level is one of [`LEVELS`]. Text is put on one line; blank
+/// and repeated list items are dropped. `source` is the talk's title, glossary
+/// and transcript.
+pub fn check(reply: &Value, language: Option<&str>, source: &str) -> Result<Value, String> {
+    let source = words(source);
     let gist = one_line(reply["gist"].as_str().unwrap_or(""));
     if gist.is_empty() { return Err("empty gist".into()); }
     if !hangul(&gist) { return Err("gist is not Korean".into()); }
@@ -114,8 +137,11 @@ pub fn check(reply: &Value, language: Option<&str>) -> Result<Value, String> {
         if kept.len() < min { return Err(format!("{field} is empty")); }
         let korean = matches!(field, "key_points" | "prerequisites");
         if korean && !kept.iter().all(|t| hangul(t)) { return Err(format!("{field} is not Korean")); }
-        if !korean && language.is_some_and(|l| !kept.iter().all(|t| in_language(t, l))) {
+        if !korean && language.is_some_and(|l| !kept.iter().all(|t| in_scripts(t, l))) {
             return Err(format!("{field} is not in the talk's language"));
+        }
+        if field == "topics" && language.is_some_and(|l| !kept.iter().all(|t| in_talk(t, l, &source))) {
+            return Err("a topic is not in the talk's words".into());
         }
         Ok(kept)
     };
@@ -200,24 +226,33 @@ fn reply(key: &str, stored: &crate::store::Summary, reused: bool) -> ApiResult {
 /// `make` answers a stored summary without calling Gemini; `again` always calls.
 pub(crate) fn summary_in(library: &crate::library_scope::Library<'_>, key: &str, action: &str) -> ApiResult {
     let core = library.core;
-    let stored = |library: &crate::library_scope::Library<'_>| library.run(|store| {
+    let row = |library: &crate::library_scope::Library<'_>| library.run(|store| {
         if let Some((token, complete)) = store.deleted(key)? { return Err(deleted_error(token, complete)); }
         if store.video(key)?.is_none() { return Err(err(404, "no_video", "이 영상이 보관함에 없습니다.")); }
-        Ok(store.summary(key)?.filter(|s| s.body.is_some()))
+        Ok(store.summary(key)?)
     });
     match action {
-        "get" => return match stored(library)? {
-            Some(s) => reply(key, &s, true),
+        "get" => {
+            let row = row(library)?;
             // A call is out for it: the screen shows the loading state and asks again.
-            None if Pending::is(library, key)? => Ok(json!({"video_key": key, "pending": true})),
-            None => Err(err(404, "no_summary", "이 영상의 요약이 아직 없습니다.")),
-        },
+            let pending = Pending::is(library, key)?;
+            let failure = row.as_ref().and_then(|r| r.failure.clone());
+            let mut answer = match row.as_ref().filter(|r| r.body.is_some()) {
+                Some(s) => reply(key, s, true)?,
+                None if pending || failure.is_some() => json!({"video_key": key, "cost_krw": row.as_ref().map_or(0.0, |r| r.cost_krw)}),
+                None => return Err(err(404, "no_summary", "이 영상의 요약이 아직 없습니다.")),
+            };
+            if pending { answer["pending"] = json!(true); }
+            // How the last call ended, when it stored nothing: a screen that was waiting for it shows this.
+            else if let Some(failure) = failure { answer["failure"] = json!(failure); }
+            return Ok(answer);
+        }
         "make" | "again" => {}
         _ => return Err(err(400, "bad_summary", "지원하지 않는 요약 요청입니다.")),
     }
     let _calling = CALLING.lock().unwrap_or_else(|p| p.into_inner());
     if action == "make" {
-        if let Some(s) = stored(library)? { return reply(key, &s, true); }
+        if let Some(s) = row(library)?.filter(|s| s.body.is_some()) { return reply(key, &s, true); }
     }
     // This call's token on the video's summary row. Deleting the video drops
     // the row, so a reply that returns after a deletion finds no token and is
@@ -249,16 +284,21 @@ pub(crate) fn summary_in(library: &crate::library_scope::Library<'_>, key: &str,
     }
     let api_key = core.svc.keystore.get()?.ok_or_else(|| err(428, "no_key", "설정에서 Gemini API 키를 먼저 넣어 주세요."))?;
     let client = Client { base_url: core.cfg.gemini_base_url.clone(), key: api_key, model: MODEL.into() };
+    let source = format!("{title}\n{terms}\n{}", transcript.join("\n"));
+    // A call that stores nothing leaves its message on the row, for a screen opened while it was out.
+    let failed = |e: ApiError| -> ApiError {
+        match library.run_original(|store| Ok(store.fail_summary(key, &call, &e.message)?)) { Ok(()) => e, Err(write) => write }
+    };
     let (checked, usage) = match client.order_with(SYSTEM, &order(&title, &terms, &transcript), Some(&schema())) {
-        Ok((answer, usage)) => (check(&answer, language.as_deref()), usage),
+        Ok((answer, usage)) => (check(&answer, language.as_deref(), &source), usage),
         Err(gemini::Error::Reply(e, usage)) => (Err(e), usage),
         Err(gemini::Error::Key(e)) => {
             log(format!("summary key refused: {e}"));
-            return Err(err(401, "key_rejected", "Gemini가 개인키를 받아 주지 않았습니다. 설정에서 개인키를 확인해 주세요."));
+            return Err(failed(err(401, "key_rejected", "Gemini가 개인키를 받아 주지 않았습니다. 설정에서 개인키를 확인해 주세요.")));
         }
         Err(gemini::Error::Transient(e)) => {
             log(format!("summary call failed: {e}"));
-            return Err(err(503, "gemini_unreachable", "Gemini에 닿지 않아 요약하지 못했습니다. 잠시 뒤에 다시 시도해 주세요."));
+            return Err(failed(err(503, "gemini_unreachable", "Gemini에 닿지 않아 요약하지 못했습니다. 잠시 뒤에 다시 시도해 주세요.")));
         }
     };
     // Metered whether or not the reply passed: it was billed either way.
@@ -268,14 +308,16 @@ pub(crate) fn summary_in(library: &crate::library_scope::Library<'_>, key: &str,
     // Into the library the request started in, even if the account changed
     // during the call: the account that paid keeps the result and its usage.
     // The retired screen is then refused by the account check below.
-    let kept = library.run_original(|store| Ok(store.record_summary(key, &call, usage.input, usage.output, cost, body.as_deref())?))?;
+    let invalid = err(502, "summary_invalid", "요약 답이 규칙에 맞지 않아 저장하지 않았습니다. 다시 시도해 주세요.");
+    let failure = checked.is_err().then_some(invalid.message.as_str());
+    let kept = library.run_original(|store| Ok(store.record_summary(key, &call, usage.input, usage.output, cost, body.as_deref(), failure)?))?;
     library.run(|_| Ok(()))?;
     if !kept {
         return Err(err(410, "video_deleted", "요약하는 동안 영상이 삭제되거나 다시 만들어져 저장하지 않았습니다."));
     }
     if let Err(why) = checked {
         log(format!("summary {key} not stored: {why}"));
-        return Err(err(502, "summary_invalid", "요약 답이 규칙에 맞지 않아 저장하지 않았습니다. 다시 시도해 주세요."));
+        return Err(invalid);
     }
     let s = library.run(|store| Ok(store.summary(key)?))?.ok_or_else(|| ApiError::from("summary row missing".to_string()))?;
     reply(key, &s, false)
@@ -296,7 +338,7 @@ mod tests {
 
     #[test]
     fn values_that_break_a_rule_are_refused() {
-        assert!(check(&good(), Some("en")).is_ok());
+        assert!(check(&good(), Some("en"), source(Some("en"))).is_ok());
         for (field, value, why) in [
             ("topics", json!([]), "topics is empty"),
             ("topics", json!(["  "]), "topics is empty"),
@@ -307,17 +349,32 @@ mod tests {
         ] {
             let mut reply = good();
             reply[field] = value;
-            assert_eq!(check(&reply, Some("en")).unwrap_err(), why, "{field}");
+            assert_eq!(check(&reply, Some("en"), source(Some("en"))).unwrap_err(), why, "{field}");
         }
     }
 
-    /// The property: a reply passes only if every prose item holds Korean and,
-    /// for a talk known not to be Korean, no topic or next topic does.
+    /// What each table row's talk said: its title, glossary and transcript.
+    fn source(language: Option<&str>) -> &'static str {
+        match language {
+            Some("fr") => "Les réseaux de neurones apprennent des poids.",
+            Some("ru") => "Теория вероятностей и статистика.",
+            _ => "Attention is a weighted sum. The transformer uses Bayesian inference; beta decay, or β decay, is physics.",
+        }
+    }
+
+    /// The property: a reply passes only if every prose item holds Korean
+    /// and, for a talk whose language is known, every topic and next topic is
+    /// in that language's scripts (Latin names and Greek notation allowed in
+    /// any), and every topic shares a word with what a talk written with
+    /// spaces said. Expected results are written out, not computed by the rule.
     #[test]
     fn each_field_is_held_to_its_language() {
-        // (talk language, field, item, kept?): written out, not computed by the rule under test.
         // None is a talk whose language was not recognized; "xx" a code the table does not know.
         let latin = "Bayesian inference 2.0";
+        let notation = "β decay";
+        let plural = "Transformers";
+        let unsaid = "quantum chromodynamics";
+        let no_word = "C++";
         let accented = "réseaux de neurones";
         let hangul = "선형대수 기초";
         let mixed = "PyTorch 기초";
@@ -332,13 +389,23 @@ mod tests {
             (Some("en"), "prerequisites", hangul, true),
             (Some("en"), "prerequisites", mixed, true),
             (Some("en"), "topics", latin, true),
+            (Some("en"), "topics", notation, true),
+            (Some("en"), "topics", plural, true),
+            (Some("en"), "topics", no_word, true),
+            (Some("en"), "topics", unsaid, false),
+            (Some("en"), "topics", accented, false),
             (Some("en"), "topics", hangul, false),
             (Some("en"), "topics", mixed, false),
             (Some("en"), "topics", kana_han, false),
-            (Some("en"), "next_topics", kana, false),
             (Some("en"), "topics", han, false),
+            (Some("en"), "next_topics", kana, false),
             (Some("en"), "next_topics", cyrillic, false),
+            (Some("en"), "next_topics", notation, true),
+            // Next topics come after the talk, so they are not held to its words: a same-script one passes.
+            (Some("en"), "next_topics", unsaid, true),
+            (Some("en"), "next_topics", accented, true),
             (Some("fr"), "topics", accented, true),
+            (Some("fr"), "topics", latin, false),
             (Some("fr"), "next_topics", kana, false),
             (Some("ja"), "topics", kana_han, true),
             (Some("ja"), "next_topics", kana, true),
@@ -357,13 +424,13 @@ mod tests {
         ] {
             let mut reply = good();
             reply[field] = json!([item]);
-            assert_eq!(check(&reply, language).is_ok(), kept, "{language:?} {field} {item:?}");
+            assert_eq!(check(&reply, language, source(language)).is_ok(), kept, "{language:?} {field} {item:?}");
         }
     }
 
     #[test]
     fn checked_values_drop_blanks_and_repeats() {
-        let c = check(&good(), Some("en")).unwrap();
+        let c = check(&good(), Some("en"), source(Some("en"))).unwrap();
         assert_eq!(c["key_points"], json!(["어텐션은 가중합입니다."]));
         assert_eq!(c["topics"], json!(["attention", "transformer"]));
     }
@@ -372,7 +439,7 @@ mod tests {
     fn the_same_json_always_renders_the_same_markdown() {
         // `markdown` takes only the stored JSON: there is no client to call a model with.
         let stored = check(&json!({"gist": "C#과 *포인터*를 다룹니다.", "key_points": ["- 첫째", "1. 둘째"], "topics": ["__init__", "C++"],
-                                   "level": "advanced", "prerequisites": ["파이썬"], "next_topics": []}), Some("en")).unwrap();
+                                   "level": "advanced", "prerequisites": ["파이썬"], "next_topics": []}), Some("en"), "__init__ C++").unwrap();
         let once = markdown(&stored);
         assert_eq!(once, markdown(&serde_json::from_str(&stored.to_string()).unwrap()));
         assert_eq!(

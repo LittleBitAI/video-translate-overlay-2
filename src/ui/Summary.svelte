@@ -45,18 +45,24 @@
     const mine = ++generation;
     const r = await request('GET', path);
     if (gone || mine !== generation) return;
-    if (r.status === 200 && typeof r.body?.markdown === 'string') {
-      markdown = r.body.markdown;
-      cost = r.body.cost_krw;
-      look = 'shown';
-    } else if (r.status === 200 && r.body?.pending) {
-      // A call for this video is out (pressed on a screen since left): wait for it here.
-      look = 'loading';
-      timer = setTimeout(read, PENDING_MS);
-    } else {
-      // Not made yet, or not readable now: 요약 asks, and answers a stored one without a Gemini call.
-      look = 'none';
+    // 404: not made yet, or not readable now. 요약 asks, and answers a stored one without a Gemini call.
+    const b = r.status === 200 ? (r.body ?? {}) : {};
+    const stored = typeof b.markdown === 'string';
+    if (stored) {
+      markdown = b.markdown;
+      cost = b.cost_krw;
     }
+    if (b.pending) {
+      // A call for this video is out (pressed on a screen since left), even over a stored summary: wait for it here.
+      look = 'loading';
+      error = '';
+      timer = setTimeout(read, PENDING_MS);
+      return;
+    }
+    look = stored ? 'shown' : 'none';
+    // Why the last call stored nothing, so a screen that waited for it shows the error and 다시 시도.
+    error = b.failure ?? '';
+    lastAgain = stored;
   }
 
   async function summarize(again: boolean) {
