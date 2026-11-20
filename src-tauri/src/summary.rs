@@ -56,7 +56,7 @@ fn hangul(s: &str) -> bool {
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-enum Script { Latin, Hangul, Kana, Han, Cyrillic, Greek, Other }
+enum Script { Latin, Hangul, Kana, Han, Cyrillic, Greek, Arabic, Block(u32) }
 
 fn script(c: char) -> Script {
     match c {
@@ -65,64 +65,80 @@ fn script(c: char) -> Script {
         '\u{3400}'..='\u{4DBF}' | '\u{4E00}'..='\u{9FFF}' | '\u{F900}'..='\u{FAFF}' | '\u{20000}'..='\u{2FFFF}' => Script::Han,
         '\u{0400}'..='\u{052F}' => Script::Cyrillic,
         '\u{0370}'..='\u{03FF}' => Script::Greek,
+        '\u{0600}'..='\u{06FF}' | '\u{0750}'..='\u{077F}' | '\u{08A0}'..='\u{08FF}' | '\u{FB50}'..='\u{FDFF}' | '\u{FE70}'..='\u{FEFF}' => Script::Arabic,
         'A'..='Z' | 'a'..='z' | '\u{00C0}'..='\u{024F}' | '\u{1E00}'..='\u{1EFF}' => Script::Latin,
-        _ => Script::Other,
+        // ponytail: other scripts are told apart by 128-code-point block, which the Indic, Thai, Hebrew and
+        // most others fill one each; a script spread over blocks counts each block its talk uses.
+        c => Script::Block(c as u32 >> 7),
     }
 }
 
-/// The scripts a talk in `language` (a speech-recognition language code)
-/// writes its own terms in, besides Latin, which technical names use in any
-/// language. `None` for a language this table does not know.
-fn scripts(language: &str) -> Option<&'static [Script]> {
-    const LATIN: [&str; 33] = ["en", "fr", "de", "es", "it", "pt", "nl", "sv", "da", "no", "nb", "nn", "fi", "pl", "cs", "sk", "sl",
-        "hr", "ro", "hu", "tr", "id", "ms", "vi", "ca", "et", "lv", "lt", "af", "sw", "tl", "eu", "gl"];
-    Some(match language.to_ascii_lowercase().as_str() {
-        "ko" => &[Script::Hangul, Script::Han],
-        "ja" => &[Script::Kana, Script::Han],
-        "zh" | "yue" => &[Script::Han],
-        "ru" | "uk" | "be" | "bg" | "sr" | "mk" | "kk" => &[Script::Cyrillic],
-        "el" => &[Script::Greek],
-        l if LATIN.contains(&l) => &[],
-        _ => return None,
-    })
+/// The scripts a talk writes its own terms in, besides Latin (technical names
+/// in any language) and Greek (notation): those of its recognized `language`
+/// that its transcript may not show (Han for Korean), and every script that
+/// makes up a tenth or more of the letters of `source`, its title, glossary
+/// and transcript, which are in the talk's language whatever code speech
+/// recognition gave it (or none).
+fn own_scripts(language: Option<&str>, source: &str) -> Vec<Script> {
+    let mut own: Vec<Script> = match language.map(str::to_ascii_lowercase).as_deref() {
+        Some("ko") => vec![Script::Hangul, Script::Han],
+        Some("ja") => vec![Script::Kana, Script::Han],
+        Some("zh" | "yue") => vec![Script::Han],
+        Some("ru" | "uk" | "be" | "bg" | "sr" | "mk" | "kk") => vec![Script::Cyrillic],
+        _ => vec![],
+    };
+    let mut tally: Vec<(Script, usize)> = Vec::new();
+    for s in source.chars().filter(|c| c.is_alphabetic()).map(script) {
+        match tally.iter_mut().find(|(t, _)| *t == s) { Some((_, n)) => *n += 1, None => tally.push((s, 1)) }
+    }
+    let letters: usize = tally.iter().map(|(_, n)| n).sum();
+    for (s, n) in tally {
+        if n * 10 >= letters && !matches!(s, Script::Latin | Script::Greek) && !own.contains(&s) { own.push(s); }
+    }
+    own
 }
 
-/// Whether `text` is written in `language`'s scripts: every letter is Latin
-/// (names), Greek (scientific notation such as β or Δ) or in one of the
-/// language's own scripts. Digits, signs and spaces are not letters.
-fn in_scripts(text: &str, language: &str) -> bool {
-    let Some(own) = scripts(language) else { return true };
+/// Whether `text` is written in the talk's scripts: every letter is Latin
+/// (names), Greek (scientific notation such as β or Δ) or one of `own`.
+/// Digits, signs and spaces are not letters.
+fn in_scripts(text: &str, own: &[Script]) -> bool {
     text.chars().filter(|c| c.is_alphabetic()).all(|c| { let s = script(c); matches!(s, Script::Latin | Script::Greek) || own.contains(&s) })
 }
 
-/// A text's words of three or more letters, lowercased, a plural `s` dropped.
+/// A text's words of three or more letters (two for a Korean word, whose
+/// syllables are letters), lowercased, a plural `s` dropped.
 fn words(text: &str) -> std::collections::HashSet<String> {
-    text.split(|c: char| !c.is_alphanumeric()).filter(|w| w.chars().count() >= 3)
+    text.split(|c: char| !c.is_alphanumeric()).filter(|w| w.chars().count() >= if hangul(w) { 2 } else { 3 })
         .map(|w| { let w = w.to_lowercase(); match w.strip_suffix('s') { Some(s) if s.chars().count() >= 3 => s.to_string(), _ => w } })
         .collect()
 }
 
-/// Whether a topic is in the talk's own words, for a language written with
-/// spaces between words (Latin, Cyrillic and Greek scripts): one of its words
-/// is in the title, glossary or transcript (`source`). A same-script
+/// Whether a topic is in the talk's own words, for a talk written with
+/// spaces between words: one of its words is in the title, glossary or
+/// transcript (`source`), or for a Korean word, begins one there (the
+/// transcript writes `신경망을` for the topic `신경망`). A same-script
 /// translation (French words for an English talk) shares none. A topic with
-/// no word of three letters (`C++`, `AI`) has nothing to judge.
-fn in_talk(topic: &str, language: &str, source: &std::collections::HashSet<String>) -> bool {
-    if matches!(language.to_ascii_lowercase().as_str(), "ko" | "ja" | "zh" | "yue") || scripts(language).is_none() { return true; }
-    let own = words(topic);
-    own.is_empty() || own.iter().any(|w| source.contains(w))
+/// no word to judge (`C++`, `AI`) passes, and so does every topic of a talk
+/// written without spaces (Han without Hangul, kana, Thai, Lao, Myanmar,
+/// Khmer), which has no words to compare.
+fn in_talk(topic: &str, own: &[Script], source: &std::collections::HashSet<String>) -> bool {
+    let spaceless = own.contains(&Script::Kana) || (own.contains(&Script::Han) && !own.contains(&Script::Hangul))
+        || own.iter().any(|s| matches!(s, Script::Block(0x1C | 0x1D | 0x20 | 0x21 | 0x2F)));
+    if spaceless { return true; }
+    let topic = words(topic);
+    topic.is_empty() || topic.iter().any(|w| source.contains(w) || (hangul(w) && source.iter().any(|s| s.starts_with(w.as_str()))))
 }
 
 /// The reply's values as stored, or why they break a value rule. Every
-/// prose item (gist, each key point, each prerequisite) holds Korean. For a
-/// talk whose recognized `language` is known, every topic and next topic is
-/// written in its scripts ([`in_scripts`]), and every topic, a subject the
-/// talk covers, is in the talk's own words ([`in_talk`]); next topics come
-/// after the talk and need not be said in it. gist, key_points and topics may
-/// not be empty; level is one of [`LEVELS`]. Text is put on one line; blank
-/// and repeated list items are dropped. `source` is the talk's title, glossary
-/// and transcript.
+/// prose item (gist, each key point, each prerequisite) holds Korean. Every
+/// topic and next topic is written in the talk's scripts ([`own_scripts`],
+/// [`in_scripts`]), and every topic, a subject the talk covers, is in the
+/// talk's own words ([`in_talk`]); next topics come after the talk and need
+/// not be said in it. gist, key_points and topics may not be empty; level is
+/// one of [`LEVELS`]. Text is put on one line; blank and repeated list items
+/// are dropped. `source` is the talk's title, glossary and transcript.
 pub fn check(reply: &Value, language: Option<&str>, source: &str) -> Result<Value, String> {
+    let own = own_scripts(language, source);
     let source = words(source);
     let gist = one_line(reply["gist"].as_str().unwrap_or(""));
     if gist.is_empty() { return Err("empty gist".into()); }
@@ -137,10 +153,10 @@ pub fn check(reply: &Value, language: Option<&str>, source: &str) -> Result<Valu
         if kept.len() < min { return Err(format!("{field} is empty")); }
         let korean = matches!(field, "key_points" | "prerequisites");
         if korean && !kept.iter().all(|t| hangul(t)) { return Err(format!("{field} is not Korean")); }
-        if !korean && language.is_some_and(|l| !kept.iter().all(|t| in_scripts(t, l))) {
+        if !korean && !kept.iter().all(|t| in_scripts(t, &own)) {
             return Err(format!("{field} is not in the talk's language"));
         }
-        if field == "topics" && language.is_some_and(|l| !kept.iter().all(|t| in_talk(t, l, &source))) {
+        if field == "topics" && !kept.iter().all(|t| in_talk(t, &own, &source)) {
             return Err("a topic is not in the talk's words".into());
         }
         Ok(kept)
@@ -194,26 +210,29 @@ static CALLING: Mutex<()> = Mutex::new(());
 
 /// The library file and video whose summary call is out, so a screen opened
 /// meanwhile can say a summary is coming and look again.
-static PENDING: Mutex<Option<(std::path::PathBuf, String)>> = Mutex::new(None);
+/// One entry per request, from before it waits its turn behind another
+/// video's call: a press queued behind it is pending too.
+static PENDING: Mutex<Vec<(std::path::PathBuf, String)>> = Mutex::new(Vec::new());
 
-struct Pending;
+struct Pending((std::path::PathBuf, String));
 
 impl Pending {
     fn start(library: &crate::library_scope::Library<'_>, key: &str) -> Result<Pending, ApiError> {
-        let path = library.run_original(|store| Ok(store.path().to_path_buf()))?;
-        *PENDING.lock().unwrap_or_else(|p| p.into_inner()) = Some((path, key.to_string()));
-        Ok(Pending)
+        let entry = (library.run_original(|store| Ok(store.path().to_path_buf()))?, key.to_string());
+        PENDING.lock().unwrap_or_else(|p| p.into_inner()).push(entry.clone());
+        Ok(Pending(entry))
     }
 
     fn is(library: &crate::library_scope::Library<'_>, key: &str) -> Result<bool, ApiError> {
         let path = library.run_original(|store| Ok(store.path().to_path_buf()))?;
-        Ok(PENDING.lock().unwrap_or_else(|p| p.into_inner()).as_ref().is_some_and(|(p, k)| *p == path && k == key))
+        Ok(PENDING.lock().unwrap_or_else(|p| p.into_inner()).iter().any(|(p, k)| *p == path && k == key))
     }
 }
 
 impl Drop for Pending {
     fn drop(&mut self) {
-        *PENDING.lock().unwrap_or_else(|p| p.into_inner()) = None;
+        let mut pending = PENDING.lock().unwrap_or_else(|p| p.into_inner());
+        if let Some(i) = pending.iter().position(|e| *e == self.0) { pending.remove(i); }
     }
 }
 
@@ -255,6 +274,11 @@ pub(crate) fn summary_in(library: &crate::library_scope::Library<'_>, key: &str,
         "make" | "again" => {}
         _ => return Err(err(400, "bad_summary", "지원하지 않는 요약 요청입니다.")),
     }
+    // Pending from before the press waits its turn, through opening the token,
+    // until after the result is written (dropped on return).
+    let _pending = Pending::start(library, key)?;
+    #[cfg(test)]
+    flow_tests::pause("queued", library);
     let _calling = CALLING.lock().unwrap_or_else(|p| p.into_inner());
     if action == "make" {
         if let Some(s) = row(library)?.filter(|s| s.body.is_some()) { return reply(key, &s, true); }
@@ -262,8 +286,6 @@ pub(crate) fn summary_in(library: &crate::library_scope::Library<'_>, key: &str,
     // This call's token on the video's summary row. Deleting the video drops
     // the row, so a reply that returns after a deletion finds no token and is
     // not written, whatever entry is there again under the same ids.
-    // Pending from before the token is opened until after the result is written (dropped on return).
-    let _pending = Pending::start(library, key)?;
     let mut random = [0u8; 16];
     getrandom::fill(&mut random).map_err(|e| ApiError::from(e.to_string()))?;
     let call: String = random.iter().map(|b| format!("{b:02x}")).collect();
@@ -366,18 +388,21 @@ mod tests {
         match language {
             Some("fr") => "Les réseaux de neurones apprennent des poids.",
             Some("ru") => "Теория вероятностей и статистика.",
+            Some("ko") => "선형대수 기초를 먼저 배우고 확률론의 기초로 넘어갑니다. PyTorch 기초도 다룹니다.",
+            Some("ar") => "الشبكات العصبية تتعلم الأوزان من البيانات.",
+            Some("hi") => "तंत्रिका नेटवर्क भार सीखते हैं।",
             _ => "Attention is a weighted sum. The transformer uses Bayesian inference; beta decay, or β decay, is physics.",
         }
     }
 
-    /// The property: a reply passes only if every prose item holds Korean
-    /// and, for a talk whose language is known, every topic and next topic is
-    /// in that language's scripts (Latin names and Greek notation allowed in
-    /// any), and every topic shares a word with what a talk written with
-    /// spaces said. Expected results are written out, not computed by the rule.
+    /// The property: a reply passes only if every prose item holds Korean,
+    /// every topic and next topic is in the talk's scripts (Latin names and
+    /// Greek notation allowed in any) whatever code its language was given,
+    /// and every topic shares a word with what a talk written with spaces
+    /// said. Expected results are written out, not computed by the rule.
     #[test]
     fn each_field_is_held_to_its_language() {
-        // None is a talk whose language was not recognized; "xx" a code the table does not know.
+        // None is a talk whose language was not recognized; "xx", "ar" and "hi" are codes no table names.
         let latin = "Bayesian inference 2.0";
         let notation = "β decay";
         let plural = "Transformers";
@@ -391,6 +416,10 @@ mod tests {
         let kana = "ベイズ推定";
         let han = "概率论";
         let cyrillic = "теория вероятностей";
+        let hangul_unsaid = "양자 색역학";
+        let hangul_stem = "확률론";
+        let arabic = "الشبكات العصبية";
+        let devanagari = "तंत्रिका नेटवर्क";
         for (language, field, item, kept) in [
             (Some("en"), "key_points", latin, false),
             (Some("en"), "key_points", hangul, true),
@@ -425,15 +454,32 @@ mod tests {
             (Some("zh"), "topics", han, true),
             (Some("zh"), "topics", kana, false),
             (Some("ko"), "topics", hangul, true),
+            (Some("ko"), "topics", mixed, true),
+            (Some("ko"), "topics", hangul_stem, true),
+            (Some("ko"), "topics", hangul_unsaid, false),
+            (Some("ko"), "next_topics", hangul_unsaid, true),
             (Some("ko"), "next_topics", mixed, true),
             (Some("ko"), "topics", kana, false),
             (Some("ru"), "topics", cyrillic, true),
             (Some("ru"), "topics", han, false),
-            (Some("xx"), "topics", kana_han, true),
-            (None, "topics", hangul, true),
-            (None, "next_topics", kana, true),
+            // A code no table names: the talk's own text says which scripts are its own.
+            (Some("ar"), "topics", arabic, true),
+            (Some("ar"), "topics", kana_han, false),
+            (Some("ar"), "next_topics", kana, false),
+            (Some("ar"), "next_topics", devanagari, false),
+            (Some("ar"), "next_topics", latin, true),
+            (Some("hi"), "topics", devanagari, true),
+            (Some("hi"), "next_topics", arabic, false),
+            (Some("xx"), "topics", kana_han, false),
+            (Some("xx"), "topics", latin, true),
+            (None, "topics", hangul, false),
+            (None, "next_topics", kana, false),
+            (None, "topics", latin, true),
         ] {
+            // The rest of the reply passes for this talk (its topic is the talk's first word), so only `item` decides.
             let mut reply = good();
+            reply["topics"] = json!([source(language).split_whitespace().next().unwrap()]);
+            assert!(check(&reply, language, source(language)).is_ok(), "{language:?}: the base reply");
             reply[field] = json!([item]);
             assert_eq!(check(&reply, language, source(language)).is_ok(), kept, "{language:?} {field} {item:?}");
         }

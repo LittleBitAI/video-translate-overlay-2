@@ -69,9 +69,11 @@ fn core_answering(dir: &std::path::Path, answer: Arc<Mutex<Value>>) -> (Core, mp
     (core, called, go)
 }
 
-fn ready(store: &Store, job: &str, token: Option<&str>) {
-    let key = key();
-    store.create_job_with_consent(job, &key, PAGE, "other", "Attention", 60_000, None, "m", token).unwrap();
+fn ready(store: &Store, job: &str, token: Option<&str>) { ready_page(store, job, PAGE, token) }
+
+fn ready_page(store: &Store, job: &str, page: &str, token: Option<&str>) {
+    let key = video_key(&url::Url::parse(page).unwrap());
+    store.create_job_with_consent(job, &key, page, "other", "Attention", 60_000, None, "m", token).unwrap();
     store.save_region(job, &key, 0, &[(0, 900, "Attention is a weighted sum.".into())], None).unwrap();
     store.set_language(&key, "en").unwrap();
     store.set_terms(&key, "[]").unwrap();
@@ -241,6 +243,62 @@ fn a_read_at_either_edge_of_a_call_says_pending() {
             drop(core);
             let _ = std::fs::remove_dir_all(&dir);
         }
+    }
+}
+
+/// The property: a press is pending from the moment it is made, also while
+/// it waits behind another call. A screen reopened on the queued video says
+/// a summary is coming, and the read after its turn shows what it did.
+#[test]
+fn a_press_queued_behind_another_call_says_pending() {
+    const OTHER: &str = "https://lectures.example.org/summary-flow-other";
+    let request = |core: &Core, page: &str, action: &str| library_request(core, Some(generation(core)), "video_summary",
+        &json!({"video_key": video_key(&url::Url::parse(page).unwrap()), "summary_action": action}));
+    let broken = { let mut r = reply(); r["topics"] = json!([]); r };
+    let newer = { let mut r = reply(); r["gist"] = json!("어텐션을 다시 설명합니다."); r };
+    for (name, page, stored_before, action, answer, after_gist, failed) in [
+        ("a first summary of another video", OTHER, false, "make", reply(), Some("어텐션을 설명합니다."), false),
+        ("a re-summary of another video", OTHER, true, "again", newer, Some("어텐션을 다시 설명합니다."), false),
+        ("a first summary of another video whose reply breaks a rule", OTHER, false, "make", broken, None, true),
+        ("a second press on the same video", PAGE, false, "make", reply(), Some("어텐션을 설명합니다."), false),
+    ] {
+        let dir = temp();
+        let answer_now = Arc::new(Mutex::new(reply()));
+        let (core, called, go) = core_answering(&dir, answer_now.clone());
+        in_library(&core, |s| { ready(s, "first", None); ready_page(s, "other", OTHER, None); });
+        if stored_before {
+            std::thread::scope(|scope| {
+                let first = scope.spawn(|| request(&core, OTHER, "make"));
+                called.recv().unwrap();
+                go.send(()).unwrap();
+                first.join().unwrap().unwrap();
+            });
+        }
+        let (queued, after) = std::thread::scope(|scope| {
+            let core = &core;
+            let running = scope.spawn(move || request(core, PAGE, "make"));
+            called.recv().unwrap();
+            let (reached, waiting) = mpsc::channel();
+            at("queued", core, move || reached.send(()).unwrap());
+            let behind = scope.spawn(move || request(core, page, action));
+            waiting.recv().unwrap();
+            let queued = request(core, page, "get");
+            go.send(()).unwrap();
+            running.join().unwrap().unwrap();
+            if page == OTHER {
+                *answer_now.lock().unwrap() = answer;
+                called.recv().unwrap();
+                go.send(()).unwrap();
+            }
+            let _ = behind.join().unwrap();
+            (queued, request(core, page, "get").unwrap())
+        });
+        assert_eq!(queued.as_ref().map(|q| q["pending"].clone()).map_err(|e| e.error.clone()), Ok(json!(true)), "{name}: queued");
+        assert!(after.get("pending").is_none(), "{name}: after");
+        assert_eq!(after["summary"]["gist"].as_str(), after_gist, "{name}: after");
+        assert_eq!(after["failure"].as_str().is_some_and(|f| f.contains("규칙에 맞지 않아")), failed, "{name}: failure");
+        drop(core);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
 

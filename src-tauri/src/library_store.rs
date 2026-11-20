@@ -243,18 +243,30 @@ impl Store {
     }
 
     /// The video's summary row: the stored JSON (if one reply passed) and all summary calls' usage and cost.
+    /// Only a row made for this video row counts (see `summary.video_created_at`).
     pub(crate) fn summary(&self, key: &str) -> R<Option<Summary>> {
-        Ok(self.db.query_one("SELECT body,input_amount,output_amount,cost_krw,failure FROM summary WHERE video_key=?", p![key])?
+        Ok(self.db.query_one(
+            "SELECT s.body,s.input_amount,s.output_amount,s.cost_krw,s.failure FROM summary s
+             JOIN video v ON v.video_key=s.video_key AND v.created_at=s.video_created_at WHERE s.video_key=?",
+            p![key],
+        )?
             .map(|r| Summary { body: r[0].opt_text(), input: r[1].int(), output: r[2].int(), cost_krw: r[3].real(), failure: r[4].opt_text() }))
     }
 
     /// Puts `call`, the token of a summary call about to go out, on the
-    /// video's summary row (made with no usage when there is none yet).
+    /// video's summary row (made with no usage when there is none yet). A
+    /// row left from an earlier video row under the same key is dropped first,
+    /// so its summary and cost never join the new video's.
     pub(crate) fn open_summary_call(&self, key: &str, call: &str) -> R<()> {
         self.library_write(|db| {
             db.execute(
-                &format!("INSERT INTO summary (video_key,updated_at,call) VALUES (?,{NOW},?) ON CONFLICT(video_key) DO UPDATE SET call=excluded.call, failure=NULL"),
-                p![key, call],
+                "DELETE FROM summary WHERE video_key=? AND video_created_at IS NOT (SELECT created_at FROM video WHERE video_key=?)",
+                p![key, key],
+            )?;
+            db.execute(
+                &format!("INSERT INTO summary (video_key,updated_at,call,video_created_at) SELECT ?,{NOW},?,created_at FROM video WHERE video_key=?
+                          ON CONFLICT(video_key) DO UPDATE SET call=excluded.call, failure=NULL"),
+                p![key, call, key],
             )?;
             Ok(())
         })
@@ -272,7 +284,7 @@ impl Store {
         if !cost.is_finite() || cost < 0.0 { return Err("invalid usage cost".into()); }
         self.library_write(|db| {
             let live = db.query_one(
-                "SELECT 1 FROM summary s JOIN video v ON v.video_key=s.video_key WHERE s.video_key=? AND s.call=?
+                "SELECT 1 FROM summary s JOIN video v ON v.video_key=s.video_key AND v.created_at=s.video_created_at WHERE s.video_key=? AND s.call=?
                  AND NOT EXISTS(SELECT 1 FROM deleted_video WHERE video_key=s.video_key AND complete=0)",
                 p![key, call],
             )?;

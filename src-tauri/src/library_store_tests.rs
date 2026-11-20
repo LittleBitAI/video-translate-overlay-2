@@ -68,3 +68,41 @@ fn legacy_completed_rows_keep_timing_and_deletion_removes_all_owned_rows() {
     drop(s);
     std::fs::remove_dir_all(dir).unwrap();
 }
+
+/// The property: a summary row counts only for the video row it was made
+/// for. A build without summaries deletes a video but leaves its summary
+/// row, and the same key can come back as a new video row; that row's
+/// summary and cost are not served, and a new call starts from nothing
+/// instead of reviving the old body.
+#[test]
+fn a_summary_counts_only_for_the_video_row_it_was_made_for() {
+    // What a build without summaries does to the video's own rows when it deletes it.
+    const OLD_DELETE: &str = "DELETE FROM cue WHERE video_key='v'; DELETE FROM job WHERE video_key='v'; DELETE FROM video WHERE video_key='v';";
+    const BACK: &str = "INSERT INTO video (video_key,page_url,site,title,duration_ms,created_at) VALUES ('v','https://example.org/a','other','Lecture',";
+    let forms = [
+        ("nothing happened", None, true),
+        ("deleted and translated again by an older build", Some(format!("{OLD_DELETE}{BACK}1000,'later')")), false),
+        ("deleted and added to a topic again by an older build", Some(format!("{OLD_DELETE}{BACK}0,'later')")), false),
+        ("the video row put back with its own created_at", Some(format!("{OLD_DELETE}{BACK}1000,'first')")), true),
+        ("a row from an earlier build of this branch", Some("UPDATE summary SET video_created_at=NULL".to_string()), false),
+    ];
+    for (name, step, kept) in forms {
+        let dir = std::env::temp_dir().join(format!("vto-summary-row-{}-{}", std::process::id(),
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let s = Store::open(&dir.join("app.sqlite3")).unwrap();
+        s.db.exec(&format!("{BACK}1000,'first')")).unwrap();
+        s.open_summary_call("v", "c1").unwrap();
+        assert!(s.record_summary("v", "c1", 10, 5, 1.5, Some("{\"gist\":\"old\"}"), None).unwrap());
+        if let Some(step) = step { s.db.exec(&step).unwrap(); }
+        let read = s.summary("v").unwrap();
+        assert_eq!(read.as_ref().map(|r| (r.body.as_deref(), r.cost_krw)), kept.then_some((Some("{\"gist\":\"old\"}"), 1.5)), "{name}: read");
+        // A new call on the video as it is now, whose reply breaks a rule: nothing stored, its usage billed.
+        s.open_summary_call("v", "c2").unwrap();
+        assert!(s.record_summary("v", "c2", 1, 1, 0.25, None, Some("broken")).unwrap(), "{name}");
+        let after = s.summary("v").unwrap().unwrap();
+        assert_eq!((after.body.is_some(), after.cost_krw), (kept, if kept { 1.75 } else { 0.25 }), "{name}: after a new call");
+        drop(s);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}

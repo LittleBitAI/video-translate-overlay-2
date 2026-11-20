@@ -190,16 +190,21 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   phrases for the later recommendation step). Structured output guarantees the
   syntax only; Gemini's documentation says length and uniqueness keywords are
   not enforced. So `summary::check` validates values in code: a non-empty gist,
-  and a gist, key points and prerequisites that each contain Hangul; for a
-  video whose recognized source language is in the code's table, topics and
-  next topics written in its scripts: every letter Latin (names), Greek
-  (notation such as β) or in that language's own script (Hangul and Han for
-  `ko`, kana and Han for `ja`, Han for `zh`, Cyrillic for `ru` and its
-  neighbours, Greek for `el`, none besides for the Latin-script languages).
-  For a language written with spaces between words (the Latin, Cyrillic and
-  Greek ones), every topic must also share a word of three or more letters
-  with the title, glossary or transcript, so a same-script translation
-  (French words for an English talk) is refused. Next topics, which come
+  and a gist, key points and prerequisites that each contain Hangul; topics
+  and next topics written in the talk's scripts: every letter Latin (names),
+  Greek (notation such as β) or in one of the talk's own scripts. Those are
+  every script that makes up a tenth or more of the letters of the title,
+  glossary and transcript, whatever language code speech recognition gave
+  (or none, or one no table names, such as `ar`), plus Han for `ko`, kana and
+  Han for `ja`, Han for `zh` and Cyrillic for `ru` and its neighbours.
+  Scripts without a name in `summary::script` are told apart by 128-code-point
+  block. For a talk written with spaces between words (every one but those
+  whose own scripts are Han without Hangul, kana, Thai, Lao, Myanmar or
+  Khmer), every topic must also share a word with the title, glossary or
+  transcript: a word of three or more letters, or a Korean word of two or
+  more syllables that begins a word there (`신경망` in `신경망을`). So a
+  same-script translation (French words for an English talk) and a Korean
+  topic the Korean talk never says are refused. Next topics, which come
   after the talk, are held only to the scripts, so a same-alphabet
   translation (`descente de gradient` for an English talk) is accepted; the
   prompt and schema ask for the talk's language, and the code guarantees
@@ -215,7 +220,13 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   Markdown and no model is called. A second model call to polish the JSON into
   Markdown was rejected.
 - **Storage.** Table `summary (video_key PRIMARY KEY, body, input_amount,
-  output_amount, cost_krw, updated_at, call, failure)` in the account library. `body`
+  output_amount, cost_krw, updated_at, call, failure, video_created_at)` in
+  the account library. `video_created_at` is the `created_at` of the video
+  row the summary was made for, and the row counts (P19, P7's cost, a new
+  call) only while it matches. A build without summaries deletes a video but
+  not its summary row, and the same key can come back as a new video row, so
+  an old summary and its cost are never served for it. A new call drops such
+  a row first instead of reviving its body. `body`
   is the checked JSON, NULL until one reply passed. Usage and cost accumulate
   over every call. A video marked for deletion is refused with `410` before
   any Gemini call. Before the call, its random token is put in `call`. The
@@ -223,9 +234,10 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   not being deleted. Deleting the video drops the row and the token with it,
   so a call whose video was deleted records nothing and answers `410`, even
   if the entry came back under the same ids meanwhile (a synced restore
-  projects the same `sync-<hash>` job id). While a call is out, P19 `GET`
-  adds `pending: true` for that library and video, also beside a stored
-  summary during 다시 요약. A call that stores nothing (a reply breaking a
+  projects the same `sync-<hash>` job id). While a press is out, from before
+  it waits its turn behind another video's call until its result is written,
+  P19 `GET` adds `pending: true` for that library and video, also beside a
+  stored summary during 다시 요약. A call that stores nothing (a reply breaking a
   value rule, a refused key, an unreachable Gemini) leaves its message in
   `failure` until the next call starts or a summary is stored. `GET` reports it,
   so a screen opened while the call was out shows the error and 다시 시도.
