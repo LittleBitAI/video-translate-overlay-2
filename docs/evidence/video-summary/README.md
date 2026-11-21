@@ -117,10 +117,11 @@ This section and [`report.json`](report.json) are round 1's record, made at
 `70f30c8`. A record cannot sit inside the commit it describes. So a later
 record is made with the same script and commands at a pushed head, then
 committed under `receipts/<head>/` in a commit that changes only evidence
-files: [`receipts/39c775e`](receipts/39c775e/README.md) holds the record of
-`39c775e19a086a3210ac8912484566ec666b0d98` (its `report.json`, the focused
-command output, and the tested head's top-level tree ids, which a later head
-must match outside `docs` to run the code tested there).
+files: [`receipts/ee936b1`](receipts/ee936b1/README.md) holds the record of
+`ee936b1056e24542a85b3b48b698067eb2cb83db` (its `report.json`, the focused
+command output, and the id of every path outside
+`docs/evidence/video-summary/` at the tested head, which a later head must
+match to run, build and test what was tested there).
 
 Environment: Windows 11 Home 10.0.26200, Node v24.18.0, Playwright 1.61.0
 (headless Chromium), rustc 1.98.1. Taken 2026-11-20 23:43 +0900.
