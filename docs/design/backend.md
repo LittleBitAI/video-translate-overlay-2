@@ -248,7 +248,10 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   neighbour is `+` or `#`, which continue a name, or if the term ends or
   begins with a sign and the neighbour is a letter or digit of a script
   written with spaces (`AI` in `AIの`, not in `MAIN` or `AI2`; `x8` not in
-  `x86`; `C` and `C+` not in `C++`; `U.S.` not in `U.S.B.`). In Han,
+  `x86`; `C` and `C+` not in `C++`; `U.S.` not in `U.S.B.`). A neighbouring
+  dot with such a letter or digit beyond it joins a dotted name, so `U.S`
+  and `AI` are not said in `U.S.B.` or `AI.X`; an apostrophe or hyphen
+  does not join, so `AI` is said in `AI's` and `AI-based`. In Han,
   kana, Thai, Lao, Myanmar or Khmer nothing marks a
   word end without a dictionary, so `模型` is said in `语言模型训练`, and a
   short topic inside a longer compound of those scripts is accepted too: an

@@ -227,11 +227,13 @@ fn unspaced(s: Script) -> bool {
 /// longer word: a neighbour continues the word only if both it and the
 /// topic's edge are letters or digits of scripts written with spaces, and
 /// they share a script or one is a digit; a `+` or `#` neighbour continues a
-/// name (`C++`, `C#`); and a sign at the topic's edge goes on into a letter or
-/// digit of a script written with spaces beside it. `AI` is said in `AI uses`
-/// and in `AIの`, not in `MAIN` or `AI2`; `Go` not in `Google`; `x8` not in
-/// `x86`; `C` and `C+` not in `C++`; `U.S.` not in `U.S.B.`; `模型` is said
-/// between other Han characters, which mark no word end.
+/// name (`C++`, `C#`); a sign at the topic's edge goes on into a letter or
+/// digit of a script written with spaces beside it; and a neighbouring dot
+/// with such a letter or digit beyond it joins a dotted name. `AI` is said in
+/// `AI uses`, `AIの`, `AI's` and `AI-based`, not in `MAIN`, `AI2` or `AI.X`;
+/// `Go` not in `Google`; `x8` not in `x86`; `C` and `C+` not in `C++`; `U.S.`
+/// and `U.S` not in `U.S.B.`; `模型` is said between other Han characters,
+/// which mark no word end.
 fn said_whole(topic: &str, text: &str) -> bool {
     let continues = |neighbour: Option<char>, edge: Option<char>| match (neighbour, edge) {
         (Some('+' | '#'), Some(_)) => true,
@@ -243,9 +245,13 @@ fn said_whole(topic: &str, text: &str) -> bool {
         }
         _ => false,
     };
+    // A dot with a letter or digit beyond it joins a dotted name (`U.S.B.`, `Node.js`).
+    let joins = |sign: Option<char>, beyond: Option<char>| sign == Some('.') && beyond.is_some_and(|b| b.is_alphanumeric() && !unspaced(script(b)));
     let (first, last) = (topic.chars().next(), topic.chars().next_back());
     text.match_indices(topic).any(|(i, _)| {
-        !continues(text[..i].chars().next_back(), first) && !continues(text[i + topic.len()..].chars().next(), last)
+        let (mut before, mut after) = (text[..i].chars().rev(), text[i + topic.len()..].chars());
+        let (b1, b2, a1, a2) = (before.next(), before.next(), after.next(), after.next());
+        !continues(b1, first) && !continues(a1, last) && !joins(b1, b2) && !joins(a1, a2)
     })
 }
 
@@ -711,6 +717,11 @@ mod tests {
             ("only inside a longer word", "en", inside, "AI", false),
             ("only at the start of a longer word", "en", inside, "Go", false),
             ("only before a digit of a longer name", "en", "The AI2 model uses attention.", "AI", false),
+            ("only before a dot that joins a longer name", "en", "The AI.X kit uses attention.", "AI", false),
+            ("only after a dot that joins a longer name", "en", "The X.AI kit uses attention.", "AI", false),
+            ("before an apostrophe", "en", "The AI's rules use attention.", "AI", true),
+            ("before a hyphen", "en", "The AI-based kit uses attention.", "AI", true),
+            ("before a closing dot", "en", "Attention drives AI. It works.", "AI", true),
             ("said with its signs", "en", named, "C++", true),
             ("with signs, never said", "en", unsaid, "C++", false),
             ("no letter or digit", "en", named, "++", false),
@@ -787,6 +798,8 @@ mod tests {
             ("a dotted name longer than the one said", "en", talk, "U.S.B. alpha", false),
             ("a dotted name alone, said whole", "en", talk, "U.S.", true),
             ("a dotted name alone, said only as the start of a longer one", "en", longer, "U.S.", false),
+            ("a dotted name without its closing dot alone, said whole", "en", talk, "U.S", true),
+            ("a dotted name without its closing dot alone, said only as the start of a longer one", "en", longer, "U.S", false),
             ("a name ending in signs alone, said only before a digit", "en", "The C++17 rules apply.", "C++", false),
             ("a name ending in signs alone, said before a script written without spaces", "ja", unspaced_after, "C++", true),
             ("a name with signs never said", "en", talk, "F# alpha", false),
