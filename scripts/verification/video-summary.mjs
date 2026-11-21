@@ -167,8 +167,9 @@ for (const [w, h] of [[1280, 720], [384, 854]]) {
   // Six documents: the loading page, the error page, the stored-summary page, and the reopen
   // page's three loads (the video, the preferences screen it leaves for, the video again).
   check(size, 'screens: every document of every page above was built at the server head', Array(6).fill(build?.head), heads);
-  const same = assets.length > 0 && assets.every(([, got, built]) => got === built);
-  check(size, 'screens: every document, script and style those pages were served is dist/ as built', true, same, { same, served: assets.length });
+  const differ = assets.filter(([, got, built]) => got !== built).map(([p]) => p);
+  check(size, 'screens: every document, script and style those pages were served is dist/ as built',
+    { differ: [] }, { served: assets.length, differ }, assets.length >= 6 && differ.length === 0);
 }
 await browser.close();
 
