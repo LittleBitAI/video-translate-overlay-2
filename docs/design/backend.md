@@ -239,7 +239,9 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   digits (`1,000`), then at most one space and a unit with no capital,
   digit or space, such as `2nd`, `100ms`, `0.5 sec` or `5 km/h`, sentence
   punctuation at either end left off), or two or more capitals (`AI`). A measurement counts by no route:
-  not as a shared word however long its unit, a term, a name with signs,
+  not as a shared word however long its unit, its unit one space after
+  its number not as a word either (`sec` in `0.5 sec`, in the topic and
+  in the talk alike; `step` in `2nd step` stays a word), a term, a name with signs,
   or the whole topic (`0.5ms,` included). Said whole in the title,
   glossary or transcript, it makes the topic the talk's alone or beside
   words the talk never says (`x86 assembly` in a talk saying `x86`). A

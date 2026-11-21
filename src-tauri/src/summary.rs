@@ -116,15 +116,23 @@ fn in_scripts(text: &str, own: &[Script]) -> bool {
 /// A text's words of three or more letters (two for a Korean word, whose
 /// syllables are letters), lowercased, a plural `s` dropped; digits count
 /// toward none, so a number alone is no word, nor is a measurement
-/// ([`measure`]: `0.5sec`) however long its unit. A word ends at
+/// ([`measure`]: `0.5sec`) however long its unit, nor a unit one space after
+/// its number (`sec` in `0.5 sec`; `step` in `2nd step` is a word). A word ends at
 /// a character that is not a letter or digit, except a dot inside a dotted
 /// name ([`runs`]: `example.com` is one word), and where a script written
 /// without spaces ([`unspaced`]) meets another: `Transformerの仕組み` holds
 /// the word `transformer`.
 fn words(text: &str) -> std::collections::HashSet<String> {
+    let found = runs_at(text);
+    // The unit of a measurement spaced from its number (`0.5 sec`) is part of that quantity.
+    let unit = |k: usize| k > 0 && {
+        let ((before, number), (at, unit)) = (&found[k - 1], &found[k]);
+        &text[before + number.len()..*at] == " " && number.starts_with(|c: char| c.is_numeric()) && measure(&format!("{number} {unit}"))
+    };
     // Letters, not digits, make a word: `2024` is none, `GPT4` is one, `x86` too short.
     // A measurement (`0.5sec`) is a quantity, not a word, however long its unit.
-    runs(text).into_iter().filter(|w| w.chars().filter(|c| c.is_alphabetic()).count() >= if hangul(w) { 2 } else { 3 } && !measure(w))
+    found.iter().enumerate().filter(|&(k, _)| !unit(k)).map(|(_, (_, w))| w.clone())
+        .filter(|w| w.chars().filter(|c| c.is_alphabetic()).count() >= if hangul(w) { 2 } else { 3 } && !measure(w))
         // A dotted name (`Lib.js`) is an identifier, not a plural: it keeps every letter.
         .map(|w| { let w = w.to_lowercase(); match w.strip_suffix('s') { Some(s) if s.chars().count() >= 3 && !w.contains('.') => s.to_string(), _ => w } })
         .collect()
@@ -135,15 +143,20 @@ fn words(text: &str) -> std::collections::HashSet<String> {
 /// or digits of scripts written with spaces joins them into one dotted name,
 /// so `example.com` is one run, never the word `com`.
 fn runs(text: &str) -> Vec<String> {
-    let spaced = |c: Option<&char>| c.is_some_and(|c| c.is_alphanumeric() && !unspaced(script(*c)));
-    let chars: Vec<char> = text.chars().collect();
-    let mut runs: Vec<String> = Vec::new();
+    runs_at(text).into_iter().map(|(_, run)| run).collect()
+}
+
+/// [`runs`], each with the byte offset where it starts in `text`.
+fn runs_at(text: &str) -> Vec<(usize, String)> {
+    let spaced = |c: Option<&(usize, char)>| c.is_some_and(|&(_, c)| c.is_alphanumeric() && !unspaced(script(c)));
+    let chars: Vec<(usize, char)> = text.char_indices().collect();
+    let mut runs: Vec<(usize, String)> = Vec::new();
     let mut last: Option<bool> = None;
-    for (i, &c) in chars.iter().enumerate() {
+    for (i, &(at, c)) in chars.iter().enumerate() {
         let dot = c == '.' && last == Some(false) && spaced(chars.get(i + 1));
         let kind = if dot { Some(false) } else { c.is_alphanumeric().then(|| unspaced(script(c))) };
-        if kind.is_some() && kind != last { runs.push(String::new()); }
-        if kind.is_some() { runs.last_mut().unwrap().push(c); }
+        if kind.is_some() && kind != last { runs.push((at, String::new())); }
+        if kind.is_some() { runs.last_mut().unwrap().1.push(c); }
         last = kind;
     }
     runs
@@ -816,6 +829,7 @@ mod tests {
         let talk = "In 2024 we studied attention with GPT4 on x86 code, a 3D model for AI on the 2nd day.";
         let measures = "The timer uses a 0.5ms-based delay, a 2.5ms step and a 2.5D view.";
         let formats = "The offset is -0.5ms, then −2ms; the delay is 1,000ms, then 0.5 ms, then ±2 ms, at 5 km/h.";
+        let spaced = "The delay is 0.5 sec, then 100 seconds on the 2nd step.";
         let units = "The delay is 0.5sec and the link runs at 100kbps (0.5ms), measured once; it is 0.5ms, again.";
         for (name, transcript, topic, kept) in [
             ("a number the talk says, alone", talk, "2024", false),
@@ -844,7 +858,12 @@ mod tests {
             ("a number grouped with commas and a lowercase ending, beside an unsaid word", formats, "1,000ms quantum", false),
             ("a decimal number, a space and a lowercase ending, alone", formats, "0.5 ms", false),
             ("a signed number, a space and a lowercase ending, alone", formats, "±2 ms", false),
-            ("a number, a space and a lowercase unit with a slash, alone", formats, "5 km/h", false),            ("a short lowercase word the talk says", talk, "we alpha", false),
+            ("a number, a space and a lowercase unit with a slash, alone", formats, "5 km/h", false),
+            ("a decimal number, a space and a unit of three letters, alone", spaced, "0.5 sec", false),
+            ("a unit said only after a number and a space, beside an unsaid word", spaced, "sec quantum", false),
+            ("a whole number, a space and a long unit, beside an unsaid word", spaced, "100 seconds quantum", false),
+            ("a word said after an ordinal and a space, beside an unsaid word", spaced, "step quantum", true),
+            ("a word said apart from any number, beside an unsaid word", spaced, "delay quantum", true),            ("a short lowercase word the talk says", talk, "we alpha", false),
             ("a capitals term the talk says in another case", talk, "ON alpha", false),
         ] {
             let mut reply = good();
