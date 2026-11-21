@@ -245,8 +245,10 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   and all, and not inside a longer word. A neighbour continues the word
   only if both it and the term's edge are letters or digits of scripts
   written with spaces and they share a script or one is a digit, or if the
-  neighbour is `+` or `#`, which continue a name (`AI` in `AIの`, not in
-  `MAIN` or `AI2`; `x8` not in `x86`; `C` and `C+` not in `C++`). In Han,
+  neighbour is `+` or `#`, which continue a name, or if the term ends or
+  begins with a sign and the neighbour is a letter or digit of a script
+  written with spaces (`AI` in `AIの`, not in `MAIN` or `AI2`; `x8` not in
+  `x86`; `C` and `C+` not in `C++`; `U.S.` not in `U.S.B.`). In Han,
   kana, Thai, Lao, Myanmar or Khmer nothing marks a
   word end without a dictionary, so `模型` is said in `语言模型训练`, and a
   short topic inside a longer compound of those scripts is accepted too: an

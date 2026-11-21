@@ -227,12 +227,16 @@ fn unspaced(s: Script) -> bool {
 /// longer word: a neighbour continues the word only if both it and the
 /// topic's edge are letters or digits of scripts written with spaces, and
 /// they share a script or one is a digit; a `+` or `#` neighbour continues a
-/// name (`C++`, `C#`). `AI` is said in `AI uses` and in `AIの`, not in `MAIN`
-/// or `AI2`; `Go` not in `Google`; `x8` not in `x86`; `C` and `C+` not in
-/// `C++`; `模型` is said between other Han characters, which mark no word end.
+/// name (`C++`, `C#`); and a sign at the topic's edge goes on into a letter or
+/// digit of a script written with spaces beside it. `AI` is said in `AI uses`
+/// and in `AIの`, not in `MAIN` or `AI2`; `Go` not in `Google`; `x8` not in
+/// `x86`; `C` and `C+` not in `C++`; `U.S.` not in `U.S.B.`; `模型` is said
+/// between other Han characters, which mark no word end.
 fn said_whole(topic: &str, text: &str) -> bool {
     let continues = |neighbour: Option<char>, edge: Option<char>| match (neighbour, edge) {
         (Some('+' | '#'), Some(_)) => true,
+        // A sign at the topic's edge joins a letter or digit after it: `U.S.` goes on in `U.S.B.`.
+        (Some(n), Some(e)) if n.is_alphanumeric() && !e.is_alphanumeric() && !e.is_whitespace() => !unspaced(script(n)),
         (Some(n), Some(e)) if n.is_alphanumeric() && e.is_alphanumeric() => {
             let (sn, se) = (script(n), script(e));
             !unspaced(sn) && !unspaced(se) && (sn == se || n.is_numeric() || e.is_numeric())
@@ -781,6 +785,10 @@ mod tests {
             ("a dotted name said whole in a talk holding it", "en", longer, "U.S.B. alpha", true),
             ("a dotted name said only as the start of a longer one", "en", longer, "U.S. alpha", false),
             ("a dotted name longer than the one said", "en", talk, "U.S.B. alpha", false),
+            ("a dotted name alone, said whole", "en", talk, "U.S.", true),
+            ("a dotted name alone, said only as the start of a longer one", "en", longer, "U.S.", false),
+            ("a name ending in signs alone, said only before a digit", "en", "The C++17 rules apply.", "C++", false),
+            ("a name ending in signs alone, said before a script written without spaces", "ja", unspaced_after, "C++", true),
             ("a name with signs never said", "en", talk, "F# alpha", false),
             ("a name said only inside a longer one", "en", talk, "C+ alpha", false),
             ("a letter said only before signs", "en", talk, "C alpha", false),

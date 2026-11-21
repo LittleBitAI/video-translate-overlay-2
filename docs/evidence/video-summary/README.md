@@ -141,8 +141,11 @@ pushed head, with no commit after it, by the steps below:
    gist shown before 다시 요약 was pressed.
 
 The generated `report.json` and the focused commands' raw output go into that
-round's report, in full. The report is the current record; this folder keeps
-only the paid run and the captures the person inspected.
+round's report, in full. A round that reuses an earlier run made at the same
+head carries that run's `report.json` again, in full, never a digest or a
+pointer to an earlier round's report: the reviewer reads only the current
+round's packet. The report is the current record; this folder keeps only the
+paid run and the captures the person inspected.
 
 ## Round 1's record at `70f30c8` (history)
 
