@@ -116,7 +116,8 @@ fn in_scripts(text: &str, own: &[Script]) -> bool {
 /// A text's words of three or more letters (two for a Korean word, whose
 /// syllables are letters), lowercased, a plural `s` dropped; digits count
 /// toward none, so a number alone is no word. A word ends at
-/// a character that is not a letter or digit, and where a script written
+/// a character that is not a letter or digit, except a dot inside a dotted
+/// name ([`runs`]: `example.com` is one word), and where a script written
 /// without spaces ([`unspaced`]) meets another: `Transformerの仕組み` holds
 /// the word `transformer`.
 fn words(text: &str) -> std::collections::HashSet<String> {
@@ -127,12 +128,17 @@ fn words(text: &str) -> std::collections::HashSet<String> {
 }
 
 /// A text's runs of letters and digits, as written, split where a script
-/// written without spaces ([`unspaced`]) meets another.
+/// written without spaces ([`unspaced`]) meets another. A dot between letters
+/// or digits of scripts written with spaces joins them into one dotted name,
+/// so `example.com` is one run, never the word `com`.
 fn runs(text: &str) -> Vec<String> {
+    let spaced = |c: Option<&char>| c.is_some_and(|c| c.is_alphanumeric() && !unspaced(script(*c)));
+    let chars: Vec<char> = text.chars().collect();
     let mut runs: Vec<String> = Vec::new();
     let mut last: Option<bool> = None;
-    for c in text.chars() {
-        let kind = c.is_alphanumeric().then(|| unspaced(script(c)));
+    for (i, &c) in chars.iter().enumerate() {
+        let dot = c == '.' && last == Some(false) && spaced(chars.get(i + 1));
+        let kind = if dot { Some(false) } else { c.is_alphanumeric().then(|| unspaced(script(c))) };
         if kind.is_some() && kind != last { runs.push(String::new()); }
         if kind.is_some() { runs.last_mut().unwrap().push(c); }
         last = kind;
@@ -733,6 +739,34 @@ mod tests {
             ("said in its own script in a talk without spaces", "ja", spaceless, "確率", true),
             ("never said in its own script in a talk without spaces", "ja", spaceless, "統計", false),
             ("said before a Korean word", "ko", korean, "AI", true),
+        ] {
+            // The base reply's topic is the talk's first word, so only `topic` decides.
+            let mut reply = good();
+            reply["topics"] = json!([transcript.split_whitespace().next().unwrap()]);
+            assert!(check(&reply, Some(language), transcript, "").is_ok(), "{name}: the base reply");
+            reply["topics"] = json!([topic]);
+            assert_eq!(check(&reply, Some(language), transcript, "").is_ok(), kept, "{name}");
+        }
+    }
+
+    /// The property: a dotted name (`host.example`, `Lib.js`) is one word of
+    /// the talk, so a word shares the talk's words only if the talk says it
+    /// apart from any dotted name; a dot that ends a sentence joins nothing.
+    #[test]
+    fn a_part_of_a_dotted_name_is_no_word_of_the_talk() {
+        let host = "The example.com site loads.";
+        let lib = "Install Lib.js today.";
+        let sentences = "It loads. Then compiles everything.";
+        let japanese = "モデル.Transformerの仕組みです。";
+        for (name, language, transcript, topic, kept) in [
+            ("a word said only as the end of a dotted name", "en", host, "COM interop", false),
+            ("a word said only as the start of a dotted name", "en", lib, "lib runtime", false),
+            ("the whole dotted name", "en", host, "example.com", true),
+            ("the whole dotted name beside an unsaid word", "en", lib, "Lib.js runtime", true),
+            ("a word said apart from the dotted name", "en", host, "site hosting", true),
+            ("a word after a dot that ends a sentence", "en", sentences, "compile step", true),
+            ("a word before a dot that ends a sentence", "en", host, "load balancing", true),
+            ("a word after a dot beside a script written without spaces", "ja", japanese, "Transformer", true),
         ] {
             // The base reply's topic is the talk's first word, so only `topic` decides.
             let mut reply = good();

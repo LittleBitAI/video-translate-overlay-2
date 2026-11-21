@@ -214,7 +214,10 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   word, as is a Hangul syllable and its letters. A word
   ends at a sign or space, and where Han, kana, Thai, Lao, Myanmar or Khmer
   meets another script, so `Transformerの仕組み` holds the word
-  `transformer`. A topic word in one of those scripts (Han except Hanja in
+  `transformer`. A dot between letters or digits of scripts written with
+  spaces does not end one: `example.com` is one word, so the topic
+  `COM interop` shares no word with `The example.com site loads.`, while a
+  dot that ends a sentence joins nothing. A topic word in one of those scripts (Han except Hanja in
   a talk written in Hangul) has no word end to compare by. In a talk
   written with spaces (most of the transcript's letters in other scripts)
   it must be said as written: an English talk quoting `ベイズ推定` has
