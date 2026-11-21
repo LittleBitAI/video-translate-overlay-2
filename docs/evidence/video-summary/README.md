@@ -107,36 +107,38 @@ the overlay's status chip. At 1280×720 the player fills the window height, so
 the 요약 button is reached with a short scroll.
 
 These captures were taken before review round 1 and committed in `9d02521`. Round 1 changed no layout. The only screen change makes a refused
-다시 요약 re-read the stored summary's cost. The same four states were
-captured again at the head below, and the run asserts each one in
+다시 요약 re-read the stored summary's cost. Each verification run
+captures the same four states again and asserts each one in its
 `report.json`.
 
-## Execution record at `70f30c8` (review round 1)
+## Where the current record is
 
-This section and [`report.json`](report.json) are round 1's record, made at
-`70f30c8`. A record cannot sit inside the commit it describes, and a
-record committed after it describes an older head
-(`docs/research/review-video-summary-f4-1.md`). So a later record is made
-with the same script and commands at the final pushed head of a round, with
-`GET /build` naming that head, and filed in that round's report at that
-head, with its output inline; no commit follows it.
+A record cannot sit inside the commit it describes, and a record committed
+after it describes an older head (`docs/research/review-video-summary-f4-1.md`,
+`docs/research/review-video-summary-f4-2.md`). So no execution record is
+committed here. Each review round's record is made at that round's final
+pushed head, with no commit after it, by the steps below:
 
-Environment: Windows 11 Home 10.0.26200, Node v24.18.0, Playwright 1.61.0
-(headless Chromium), rustc 1.98.1. Taken 2026-11-20 23:43 +0900.
-
-### API and browser: `report.json`
-
-The steps were:
-
-1. Started the stand-in server from an empty data folder:
+1. Start the stand-in server from an empty data folder:
    `PORT=8793 APP_DATA_DIR=<empty dir> node scripts/live.mjs --stand-ins`.
-2. Ran `node scripts/verification/video-summary.mjs http://127.0.0.1:8793 <out>`.
+2. Run `node scripts/verification/video-summary.mjs http://127.0.0.1:8793 <out>`.
+   It seeds `e2e/seed.json`, waits until the seeded video is ready, and
+   writes `<out>/report.json`, which holds the head `GET /build` named, the
+   environment and each check's expected and observed values.
 
-The server's `GET /build` answered head
-`70f30c897b87e3e8ce16be42e4577ab9ea93290a` (pid 35636). The script seeds
-`e2e/seed.json`, waits until the seeded video is ready, then records each
-check as expected vs observed in [`report.json`](report.json). Result:
-21/21 checks passed.
+The generated `report.json` and the focused commands' raw output go into that
+round's report, in full. The report is the current record; this folder keeps
+only the paid run and the captures the person inspected.
+
+## Round 1's record at `70f30c8` (history)
+
+Round 1 ran the same steps at `70f30c8`
+(`GET /build` head `70f30c897b87e3e8ce16be42e4577ab9ea93290a`, pid 35636),
+on Windows 11 Home 10.0.26200, Node v24.18.0, Playwright 1.61.0 (headless
+Chromium) and rustc 1.98.1, at 2026-11-20 23:43 +0900. 21/21 checks passed.
+Its `report.json` was committed here until round 5, which removed it because
+it named a head older than the one under review. The code has changed since
+then, so the table below records history, not the current head.
 
 | Where | Check | Observed |
 | --- | --- | --- |
@@ -174,9 +176,9 @@ The 54 library tests include these round-1 tests:
 - `summary::tests::each_field_is_held_to_its_language`
 - `commands::tests::the_api_document_names_each_operation_once_and_declares_its_path_parameters`
 
-### Reused results
+## Reused results
 
-The paid run above is reused, not repeated. It ran at `7bc20c8`, before
+The paid run above is reused in every round, not repeated. It ran at `7bc20c8`, before
 round 1 changed two things:
 
 - The system prompt now asks for each prerequisite as a Korean phrase and for

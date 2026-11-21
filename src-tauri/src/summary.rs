@@ -107,29 +107,40 @@ fn in_scripts(text: &str, own: &[Script]) -> bool {
 }
 
 /// A text's words of three or more letters (two for a Korean word, whose
-/// syllables are letters), lowercased, a plural `s` dropped.
+/// syllables are letters), lowercased, a plural `s` dropped. A word ends at
+/// a character that is not a letter or digit, and where a script written
+/// without spaces ([`unspaced`]) meets another: `Transformerの仕組み` holds
+/// the word `transformer`.
 fn words(text: &str) -> std::collections::HashSet<String> {
-    text.split(|c: char| !c.is_alphanumeric()).filter(|w| w.chars().count() >= if hangul(w) { 2 } else { 3 })
+    let mut runs: Vec<String> = Vec::new();
+    let mut last: Option<bool> = None;
+    for c in text.chars() {
+        let kind = c.is_alphanumeric().then(|| unspaced(script(c)));
+        if kind.is_some() && kind != last { runs.push(String::new()); }
+        if kind.is_some() { runs.last_mut().unwrap().push(c); }
+        last = kind;
+    }
+    runs.into_iter().filter(|w| w.chars().count() >= if hangul(w) { 2 } else { 3 })
         .map(|w| { let w = w.to_lowercase(); match w.strip_suffix('s') { Some(s) if s.chars().count() >= 3 => s.to_string(), _ => w } })
         .collect()
 }
 
-/// Whether a topic is in the talk's own words, for a talk written with
-/// spaces between words: one of its words is in the title, glossary or
-/// transcript (`source`), or for a Korean word, begins one there (the
-/// transcript writes `신경망을` for the topic `신경망`). A same-script
-/// translation (French words for an English talk) shares none. A topic with
-/// no such word (`C++`, `AI`, `Go`) must be said whole ([`said_whole`]) in
-/// the title, glossary or transcript (`said`), in any talk; one with no
-/// letter or digit says nothing and fails. Other topics of a talk written
-/// without spaces (Han without Hangul, kana, Thai, Lao, Myanmar, Khmer)
-/// pass: it has no words to compare.
+/// Whether a topic is in the talk's own words: one of its words is in the
+/// title, glossary or transcript (`source`), or for a Korean word, begins
+/// one there (the transcript writes `신경망을` for the topic `신경망`). A
+/// same-script translation (French words for an English talk) shares none.
+/// Each word is judged by its own script, whatever else the talk writes in:
+/// a word in a script written without spaces (Han, except Hanja in a talk
+/// written in Hangul, kana, Thai, Lao, Myanmar, Khmer) passes, as nothing
+/// shows where its words end. A topic with no word (`C++`, `AI`, `Go`) must
+/// be said whole ([`said_whole`]) in the title, glossary or transcript
+/// (`said`); one with no letter or digit says nothing and fails.
 fn in_talk(topic: &str, own: &[Script], source: &std::collections::HashSet<String>, said: &str) -> bool {
     let words_of = words(topic);
     if words_of.is_empty() { return topic.chars().any(char::is_alphanumeric) && said_whole(topic, said); }
-    // Han in a Korean talk is Hanja beside Hangul, which is written with spaces.
-    let spaceless = own.iter().any(|&s| unspaced(s) && !(s == Script::Han && own.contains(&Script::Hangul)));
-    spaceless || words_of.iter().any(|w| source.contains(w) || (hangul(w) && source.iter().any(|s| s.starts_with(w.as_str()))))
+    // A word is all in scripts without spaces or all in others (`words`). Han beside Hangul is Hanja, written with spaces.
+    let spaceless = |w: &str| w.chars().all(|c| { let s = script(c); unspaced(s) && !(s == Script::Han && own.contains(&Script::Hangul)) });
+    words_of.iter().any(|w| spaceless(w) || source.contains(w) || (hangul(w) && source.iter().any(|s| s.starts_with(w.as_str()))))
 }
 
 /// Scripts written without spaces between words: Han, kana, and the blocks
@@ -452,8 +463,11 @@ mod tests {
     /// The property: a reply passes only if every prose item holds Korean,
     /// every topic and next topic is in the talk's scripts (Latin names and
     /// Greek notation allowed in any) whatever code its language was given,
-    /// and every topic shares a word with what a talk written with spaces
-    /// said. Expected results are written out, not computed by the rule.
+    /// and every topic shares a word with what the talk said, each word
+    /// judged by its own script: one in a script written without spaces
+    /// counts as shared, even in a talk mostly written with spaces, and a
+    /// quoted term in such a script exempts no other word. Expected results
+    /// are written out, not computed by the rule.
     #[test]
     fn each_field_is_held_to_its_language() {
         // None is a talk whose language was not recognized; "xx", "ar" and "hi" are codes no table names.
@@ -473,7 +487,12 @@ mod tests {
         let hangul_stem = "확률론";
         let arabic = "الشبكات العصبية";
         let devanagari = "तंत्रिका नेटवर्क";
-        for (language, field, item, kept) in [
+        let unsaid_pair = "quantum optics";
+        // A talk written with spaces quoting a term in a script without them, and the other way round.
+        let quoted = "Attention uses ベイズ推定 and weights.";
+        let embedded = "Transformerの仕組みを説明します。";
+        let han_run = "今天讲解语言模型训练。";
+        let by_language = [
             (Some("en"), "key_points", latin, false),
             (Some("en"), "key_points", hangul, true),
             (Some("en"), "prerequisites", latin, false),
@@ -527,14 +546,29 @@ mod tests {
             (None, "topics", hangul, false),
             (None, "next_topics", kana, false),
             (None, "topics", latin, true),
-        ] {
+        ]
+        .map(|(language, field, item, kept)| (language, source(language), field, item, kept));
+        let mixed = [
+            // Each topic word is compared by its own script: a quoted term does not exempt the talk's Latin topics.
+            (Some("en"), quoted, "topics", unsaid_pair, false),
+            (Some("en"), quoted, "topics", "weights", true),
+            (Some("en"), quoted, "topics", "ベイズ", true),
+            // Its two Han letters are under a tenth of the talk's letters, so Han is not the talk's script.
+            (Some("en"), quoted, "topics", "ベイズ推定", false),
+            (Some("ja"), embedded, "topics", "Transformer", true),
+            (Some("ja"), embedded, "topics", unsaid_pair, false),
+            (Some("zh"), han_run, "topics", "深度学习方法", true),
+        ];
+        let mut wrong = Vec::new();
+        for (language, transcript, field, item, kept) in by_language.into_iter().chain(mixed) {
             // The rest of the reply passes for this talk (its topic is the talk's first word), so only `item` decides.
             let mut reply = good();
-            reply["topics"] = json!([source(language).split_whitespace().next().unwrap()]);
-            assert!(check(&reply, language, source(language), "").is_ok(), "{language:?}: the base reply");
+            reply["topics"] = json!([transcript.split_whitespace().next().unwrap()]);
+            assert!(check(&reply, language, transcript, "").is_ok(), "{language:?} {transcript:?}: the base reply");
             reply[field] = json!([item]);
-            assert_eq!(check(&reply, language, source(language), "").is_ok(), kept, "{language:?} {field} {item:?}");
+            if check(&reply, language, transcript, "").is_ok() != kept { wrong.push(format!("{language:?} {transcript:?} {field} {item:?} kept={kept}")); }
         }
+        assert!(wrong.is_empty(), "rows with the wrong result:\n{}", wrong.join("\n"));
     }
 
     #[test]

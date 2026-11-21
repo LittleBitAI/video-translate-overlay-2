@@ -117,7 +117,7 @@ At the final pushed head H, with no commit after it: (1) git rev-parse HEAD = gh
 
 ## Result
 
-pending — the fix records what it observed here, with the tests and the commit.
+Observed in the commit that fills this Result (parent `7f246c4`). At `7f246c4`, `git ls-files docs/evidence/video-summary/report.json` still listed the round-1 file, which names head `70f30c8` and is 8,049 bytes. This commit deletes it. The evidence README's 'Execution record at 70f30c8' section becomes 'Where the current record is', which says no execution record is committed and each round's report carries the generated `report.json` and the raw focused output in full. A 'Round 1's record at 70f30c8 (history)' section follows it. This commit is the final head H of round 5, and no commit follows it. Experiment steps (1) to (3) are carried out in round 5's report at H: the head check, the generated `report.json` verbatim with its sha256, and the raw focused output. That observation cannot be written into H itself. Whether the packet carries the full JSON untruncated is what the next round's packet shows. The page stays a draft.
 
 ## Unresolved limits
 

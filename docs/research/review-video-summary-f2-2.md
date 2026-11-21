@@ -109,7 +109,9 @@ Before the fix, add rows to the tests. To each_field_is_held_to_its_language or 
 
 ## Result
 
-pending — the fix records what it observed here, with the tests and the commit.
+Observed in the commit that fills this Result (parent `7f246c4`; its rule code is that of `2c0cc1d`). The experiment's rows were added to `summary::tests::each_field_is_held_to_its_language` before the rule changed. That test now collects every row with the wrong result instead of stopping at the first. At the old rule it failed with three rows. Two were the predicted ones: `quantum optics` was kept in the English talk that quotes `ベイズ推定`, and in the Japanese `Transformerの仕組み` talk. The third was a wrong prediction: `ベイズ推定` in the English talk is refused at the old rule and the new one alike. The reason is the script allowance, not the word check: its two Han letters are 2 of 28, under a tenth, so Han is not one of the talk's scripts. The row now expects refusal and says why, and a kana-only row (`ベイズ`, kept) covers the quoted script. The other predicted rows held as expected: `weights`, ja `Transformer` and zh `深度学习方法` were kept.
+
+The fix follows the hypothesis. In_talk's talk-level flag is gone. A topic word counts as shared without a match only if all its characters are in a script written without spaces, Hanja beside Hangul excepted. words() now also ends a word where such a script meets another. After it, `cargo test --lib summary::` gives 13 passed, and every earlier row of both tables keeps its result. With the split in words() disabled, only the ja `Transformer` row went wrong, so that row guards the split. The design text changed with the code: backend.md and api.yaml now describe the rule per word, not per talk. The full gate was not run here: the session leaves it to the server. The residual limit stays open and is documented in backend.md: a topic in a script without spaces that the talk never says is accepted when that script is a tenth of the talk's letters (`ベイズ` in a talk that quotes kana).
 
 ## Unresolved limits
 

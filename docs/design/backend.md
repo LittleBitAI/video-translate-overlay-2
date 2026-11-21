@@ -200,14 +200,22 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   Also Han for `ko`, kana and
   Han for `ja`, Han for `zh` and Cyrillic for `ru` and its neighbours.
   Scripts without a name in `summary::script` are told apart by 128-code-point
-  block. For a talk written with spaces between words (every one but those
-  whose own scripts are Han without Hangul, kana, Thai, Lao, Myanmar or
-  Khmer), every topic must also share a word with the title, the glossary's
+  block. Every topic must also share a word with the title, the glossary's
   source terms or the transcript (not the glossary's Korean targets): a word
   of three or more letters, or a Korean word of two or
-  more syllables that begins a word there (`신경망` in `신경망을`). So a
-  same-script translation (French words for an English talk) and a Korean
-  topic the Korean talk never says are refused. A topic with no such word
+  more syllables that begins a word there (`신경망` in `신경망을`). A word
+  ends at a sign or space, and where Han, kana, Thai, Lao, Myanmar or Khmer
+  meets another script, so `Transformerの仕組み` holds the word
+  `transformer`. Each topic word is judged by its own script, not by the
+  talk's: a word in one of those scripts (Han except Hanja in a talk written
+  in Hangul) counts as shared, as nothing shows where its words end, and
+  every other word must be found. So an English talk that quotes a Japanese
+  term still has its Latin topics checked, and a Japanese talk has its Latin
+  ones checked too. A same-script translation (French words for an English
+  talk) and a Korean topic the Korean talk never says are refused. A topic
+  in those scripts that the talk never says is accepted when the talk writes
+  in that script (a tenth of its letters): an accepted limit, as the check
+  has no dictionary. A topic with no such word
   (`AI`, `Go`, `C++`), in any talk, must be said whole in the title,
   glossary or transcript: as written, case and all, and not inside a longer
   word. A neighbour continues the word only if it is a letter or digit of
@@ -215,8 +223,8 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   not in `MAIN`). In Han, kana, Thai, Lao, Myanmar or Khmer nothing marks a
   word end without a dictionary, so `模型` is said in `语言模型训练`, and a
   short topic inside a longer compound of those scripts is accepted too: an
-  accepted limit. `summary::unspaced` names those scripts once, for this and
-  for the talks the word check skips. A topic with no
+  accepted limit. `summary::unspaced` names those scripts once, for this,
+  for where a word ends and for the topic words the word check skips. A topic with no
   letter or digit is refused. A short topic the talk happens to say in
   another sense (the verb "go" written `Go` at a sentence start) is not told
   apart: an accepted limit. Next topics, which come
