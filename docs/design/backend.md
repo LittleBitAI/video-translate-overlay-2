@@ -210,7 +210,13 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   topic the Korean talk never says are refused. A topic with no such word
   (`AI`, `Go`, `C++`), in any talk, must be said whole in the title,
   glossary or transcript: as written, case and all, and not inside a longer
-  run of the same script (`AI` in `AIの`, not in `MAIN`). A topic with no
+  word. A neighbour continues the word only if it is a letter or digit of
+  the same script and that script is written with spaces (`AI` in `AIの`,
+  not in `MAIN`). In Han, kana, Thai, Lao, Myanmar or Khmer nothing marks a
+  word end without a dictionary, so `模型` is said in `语言模型训练`, and a
+  short topic inside a longer compound of those scripts is accepted too: an
+  accepted limit. `summary::unspaced` names those scripts once, for this and
+  for the talks the word check skips. A topic with no
   letter or digit is refused. A short topic the talk happens to say in
   another sense (the verb "go" written `Go` at a sentence start) is not told
   apart: an accepted limit. Next topics, which come
@@ -253,7 +259,10 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   projects the same `sync-<hash>` job id). While a press is out, from before
   it waits its turn behind another video's call until its result is written,
   P19 `GET` adds `pending: true` for that library and video, also beside a
-  stored summary during 다시 요약. A call that stores nothing (a reply breaking a
+  stored summary during 다시 요약. A read looks for a press before and after
+  it reads the row; if one was out at either look, or one started or ended
+  between them, it answers pending, so a read overlapping any part of a call
+  is never taken as final. A call that stores nothing (a reply breaking a
   value rule, a refused key, an unreachable Gemini) leaves its message in
   `failure` until the next call starts or a summary is stored. `GET` reports it,
   so a screen opened while the call was out shows the error and 다시 시도.

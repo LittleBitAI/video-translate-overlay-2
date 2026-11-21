@@ -127,21 +127,31 @@ fn words(text: &str) -> std::collections::HashSet<String> {
 fn in_talk(topic: &str, own: &[Script], source: &std::collections::HashSet<String>, said: &str) -> bool {
     let words_of = words(topic);
     if words_of.is_empty() { return topic.chars().any(char::is_alphanumeric) && said_whole(topic, said); }
-    let spaceless = own.contains(&Script::Kana) || (own.contains(&Script::Han) && !own.contains(&Script::Hangul))
-        || own.iter().any(|s| matches!(s, Script::Block(0x1C | 0x1D | 0x20 | 0x21 | 0x2F)));
+    // Han in a Korean talk is Hanja beside Hangul, which is written with spaces.
+    let spaceless = own.iter().any(|&s| unspaced(s) && !(s == Script::Han && own.contains(&Script::Hangul)));
     spaceless || words_of.iter().any(|w| source.contains(w) || (hangul(w) && source.iter().any(|s| s.starts_with(w.as_str()))))
 }
 
+/// Scripts written without spaces between words: Han, kana, and the blocks
+/// of Thai (U+0E00), Lao (U+0E80), Myanmar (U+1000, U+1080) and Khmer
+/// (U+1780). Without a dictionary nothing in them shows where a word ends.
+fn unspaced(s: Script) -> bool {
+    matches!(s, Script::Han | Script::Kana | Script::Block(0x1C | 0x1D | 0x20 | 0x21 | 0x2F))
+}
+
 /// Whether `text` holds `topic` as written (case and all), not inside a
-/// longer run of the same script: `AI` is said in `AI uses` and in `AIの`,
-/// not in `MAIN`; `Go` not in `Google`.
+/// longer word: a neighbour continues the word only if it is a letter or
+/// digit of the same script and that script is written with spaces. `AI`
+/// is said in `AI uses` and in `AIの`, not in `MAIN`; `Go` not in `Google`;
+/// `模型` is said between other Han characters, which mark no word end.
 fn said_whole(topic: &str, text: &str) -> bool {
     let kind = |c: char| c.is_alphanumeric().then(|| script(c));
     let (first, last) = (topic.chars().next().and_then(kind), topic.chars().next_back().and_then(kind));
+    let continues = |neighbour: Option<Script>, edge: Option<Script>| neighbour.is_some_and(|n| Some(n) == edge && !unspaced(n));
     text.match_indices(topic).any(|(i, _)| {
         let before = text[..i].chars().next_back().and_then(kind);
         let after = text[i + topic.len()..].chars().next().and_then(kind);
-        (before.is_none() || before != first) && (after.is_none() || after != last)
+        !continues(before, first) && !continues(after, last)
     })
 }
 
@@ -239,30 +249,39 @@ static CALLING: Mutex<()> = Mutex::new(());
 
 /// The library file and video whose summary call is out, so a screen opened
 /// meanwhile can say a summary is coming and look again.
-/// One entry per request, from before it waits its turn behind another
-/// video's call: a press queued behind it is pending too.
-static PENDING: Mutex<Vec<(std::path::PathBuf, String)>> = Mutex::new(Vec::new());
+/// Per library file and video: how many presses are out (each from before
+/// it waits its turn behind another video's call, so a queued press is
+/// pending too) and how many have started or ended, so a read can tell
+/// whether one began or finished while it looked.
+static PENDING: Mutex<Vec<(std::path::PathBuf, String, usize, u64)>> = Mutex::new(Vec::new());
 
 struct Pending((std::path::PathBuf, String));
 
 impl Pending {
+    fn change(entry: &(std::path::PathBuf, String), out: isize) {
+        let mut all = PENDING.lock().unwrap_or_else(|p| p.into_inner());
+        match all.iter_mut().find(|(p, k, _, _)| *p == entry.0 && *k == entry.1) {
+            Some(e) => { e.2 = e.2.saturating_add_signed(out); e.3 += 1; }
+            None => all.push((entry.0.clone(), entry.1.clone(), out.max(0) as usize, 1)),
+        }
+    }
+
     fn start(library: &crate::library_scope::Library<'_>, key: &str) -> Result<Pending, ApiError> {
         let entry = (library.run_original(|store| Ok(store.path().to_path_buf()))?, key.to_string());
-        PENDING.lock().unwrap_or_else(|p| p.into_inner()).push(entry.clone());
+        Pending::change(&entry, 1);
         Ok(Pending(entry))
     }
 
-    fn is(library: &crate::library_scope::Library<'_>, key: &str) -> Result<bool, ApiError> {
+    /// Whether a press is out for the video, and how many have started or ended so far.
+    fn look(library: &crate::library_scope::Library<'_>, key: &str) -> Result<(bool, u64), ApiError> {
         let path = library.run_original(|store| Ok(store.path().to_path_buf()))?;
-        Ok(PENDING.lock().unwrap_or_else(|p| p.into_inner()).iter().any(|(p, k)| *p == path && k == key))
+        let all = PENDING.lock().unwrap_or_else(|p| p.into_inner());
+        Ok(all.iter().find(|(p, k, _, _)| *p == path && k == key).map_or((false, 0), |e| (e.2 > 0, e.3)))
     }
 }
 
 impl Drop for Pending {
-    fn drop(&mut self) {
-        let mut pending = PENDING.lock().unwrap_or_else(|p| p.into_inner());
-        if let Some(i) = pending.iter().position(|e| *e == self.0) { pending.remove(i); }
-    }
+    fn drop(&mut self) { Pending::change(&self.0, -1); }
 }
 
 fn reply(key: &str, stored: &crate::store::Summary, reused: bool) -> ApiResult {
@@ -282,13 +301,16 @@ pub(crate) fn summary_in(library: &crate::library_scope::Library<'_>, key: &str,
     match action {
         "get" => {
             // A call is out for it: the screen shows the loading state and asks again.
-            // Looked at before the row: a call marks itself pending before it opens
-            // its token and stops being pending only after its result is written, so
-            // "not pending" here means the row read next holds every finished call.
-            let pending = Pending::is(library, key)?;
+            // A call marks itself pending before it opens its token and stops only after
+            // its result is written. Looked at before and after the row: if a call was
+            // out at either look, or one started or ended between them, the row may not
+            // hold what it did, so the answer is pending and the next read is clean.
+            let before = Pending::look(library, key)?;
             #[cfg(test)]
             flow_tests::pause("read", library);
             let row = row(library)?;
+            let after = Pending::look(library, key)?;
+            let pending = before.0 || after.0 || before.1 != after.1;
             let failure = row.as_ref().and_then(|r| r.failure.clone());
             let mut answer = match row.as_ref().filter(|r| r.body.is_some()) {
                 Some(s) => reply(key, s, true)?,
@@ -439,7 +461,6 @@ mod tests {
         let notation = "β decay";
         let plural = "Transformers";
         let unsaid = "quantum chromodynamics";
-        let no_word = "C++";
         let accented = "réseaux de neurones";
         let unaccented = "descente de gradient";
         let hangul = "선형대수 기초";
@@ -461,8 +482,6 @@ mod tests {
             (Some("en"), "topics", latin, true),
             (Some("en"), "topics", notation, true),
             (Some("en"), "topics", plural, true),
-            // Too short for a word, and this talk never says it (a_short_topic_must_be_said_whole).
-            (Some("en"), "topics", no_word, false),
             (Some("en"), "topics", unsaid, false),
             (Some("en"), "topics", accented, false),
             (Some("en"), "topics", hangul, false),
@@ -537,6 +556,7 @@ mod tests {
         let unsaid = "Attention uses weights.";
         let spaceless = "確率論の基礎とAIの話です。";
         let korean = "AI 기초를 배웁니다.";
+        let han_run = "今天讲解语言模型训练。";
         for (name, language, transcript, topic, kept) in [
             ("said in a spaced talk", "en", spaced, "AI", true),
             ("never said", "en", spaced, "Go", false),
@@ -548,6 +568,11 @@ mod tests {
             ("no letter or digit", "en", named, "++", false),
             ("said in a talk without spaces", "ja", spaceless, "AI", true),
             ("never said in a talk without spaces", "ja", spaceless, "Go", false),
+            // In a script written without spaces a same-script neighbour says nothing about where a word ends.
+            ("said between Han characters", "zh", han_run, "模型", true),
+            ("never said between Han characters", "zh", han_run, "数据", false),
+            ("said in its own script in a talk without spaces", "ja", spaceless, "確率", true),
+            ("never said in its own script in a talk without spaces", "ja", spaceless, "統計", false),
             ("said before a Korean word", "ko", korean, "AI", true),
         ] {
             // The base reply's topic is the talk's first word, so only `topic` decides.

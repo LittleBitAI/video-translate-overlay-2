@@ -182,18 +182,18 @@ fn a_read_during_and_after_a_call_tells_what_the_call_did() {
     }
 }
 
-/// The property at both edges of a call: a read never looks final while the
-/// call is out. A read that overlaps the call's end (the call writes its
-/// result and stops being pending between the read's two looks) and a read
-/// at the moment the call opens its token both say pending, and the read
-/// after the call shows what it did.
+/// The property: a read that overlaps any part of a call never looks
+/// final. Whether the call ends during the read (writes its result between
+/// the read's looks), starts during it, runs whole during it, or opens its
+/// token at the read, the read says pending, and the read after the call
+/// shows what it did.
 #[test]
-fn a_read_at_either_edge_of_a_call_says_pending() {
+fn a_read_overlapping_any_part_of_a_call_says_pending() {
     let read = |core: &Core| library_request(core, Some(generation(core)), "video_summary", &json!({"video_key": key(), "summary_action": "get"}));
     let broken = { let mut r = reply(); r["topics"] = json!([]); r };
     let newer = { let mut r = reply(); r["gist"] = json!("어텐션을 다시 설명합니다."); r };
     let (old, new) = (Some("어텐션을 설명합니다."), Some("어텐션을 다시 설명합니다."));
-    for edge in ["end", "start"] {
+    for edge in ["end", "start", "begins during the read", "runs whole during the read"] {
         for (name, stored_before, action, answer, after_gist, failed) in [
             ("a first summary", false, "make", reply(), old, false),
             ("a first summary whose reply breaks a rule", false, "make", broken.clone(), None, true),
@@ -210,8 +210,23 @@ fn a_read_at_either_edge_of_a_call_says_pending() {
                 let (done, finished) = mpsc::channel();
                 let (reached, opened) = mpsc::channel();
                 let (resume, held) = mpsc::channel::<()>();
-                if edge == "start" { at("opened", &core, move || { reached.send(()).unwrap(); held.recv().unwrap(); }); }
                 let core_ref = &core;
+                if edge == "start" {
+                    at("opened", &core, move || { reached.send(()).unwrap(); held.recv().unwrap(); });
+                } else if edge.contains("during the read") {
+                    // The read looks for a call (none), then the call starts before it reads the row.
+                    at("read", &core, move || { reached.send(()).unwrap(); held.recv().unwrap(); });
+                    let reading = scope.spawn(move || read(core_ref).unwrap());
+                    opened.recv().unwrap();
+                    let mut post = Some(scope.spawn(move || library_request(core_ref, Some(generation(core_ref)), "video_summary", &json!({"video_key": key(), "summary_action": action}))));
+                    called.recv().unwrap();
+                    let whole = edge == "runs whole during the read";
+                    if whole { go.send(()).unwrap(); let _ = post.take().unwrap().join().unwrap(); }
+                    resume.send(()).unwrap();
+                    let seen = reading.join().unwrap();
+                    if !whole { go.send(()).unwrap(); let _ = post.take().unwrap().join().unwrap(); }
+                    return seen;
+                }
                 let post = scope.spawn(move || {
                     let core = core_ref;
                     let r = library_request(core, Some(generation(core)), "video_summary", &json!({"video_key": key(), "summary_action": action}));

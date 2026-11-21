@@ -128,7 +128,7 @@ Before editing, confirm the stale binding at the current head: `git diff --name-
 
 ## Result
 
-pending — the fix records what it observed here, with the tests and the commit.
+Observed 2026-11-21, draft, not verified. Before editing: `git diff --name-only ee936b1 f8b93f0` listed `docs/research/review-video-summary-f2-1.md` beside the three `docs/evidence/video-summary/` files. `git rev-parse f8b93f0:docs/research` gave 99e3cab53cc4074cea64aa089998d657bd2ffdbc, not the 883c1b1fb42f4cd85890ede1fb200f672f25aefb that receipts/ee936b1 recorded. So committing this research page alone already broke the committed receipts' binding, as the hypothesis predicted. `gh pr view 23` gave head bd3658889b24c2df9fca3cbb3e1e01de482ad7fc at that point. The fix follows the page: the committed receipts folder is removed, and docs/evidence/video-summary/README.md says a later record is filed in the round report at the final pushed head. The round's fix commit holds the code, the tests, the docs and both research Results. After it is pushed, the focused commands and the verification script run at that head, with `GET /build` naming it, and the report is filed there with no commit after it. Whether that equality holds (PR head = `GET /build` head = report head) is shown in that report; this page cannot record it, being part of the commit. Committed in the round's fix commit, on top of 219ef2f.
 
 ## Unresolved limits
 

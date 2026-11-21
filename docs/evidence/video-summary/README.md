@@ -114,14 +114,12 @@ captured again at the head below, and the run asserts each one in
 ## Execution record at `70f30c8` (review round 1)
 
 This section and [`report.json`](report.json) are round 1's record, made at
-`70f30c8`. A record cannot sit inside the commit it describes. So a later
-record is made with the same script and commands at a pushed head, then
-committed under `receipts/<head>/` in a commit that changes only evidence
-files: [`receipts/ee936b1`](receipts/ee936b1/README.md) holds the record of
-`ee936b1056e24542a85b3b48b698067eb2cb83db` (its `report.json`, the focused
-command output, and the id of every path outside
-`docs/evidence/video-summary/` at the tested head, which a later head must
-match to run, build and test what was tested there).
+`70f30c8`. A record cannot sit inside the commit it describes, and a
+record committed after it describes an older head
+(`docs/research/review-video-summary-f4-1.md`). So a later record is made
+with the same script and commands at the final pushed head of a round, with
+`GET /build` naming that head, and filed in that round's report at that
+head, with its output inline; no commit follows it.
 
 Environment: Windows 11 Home 10.0.26200, Node v24.18.0, Playwright 1.61.0
 (headless Chromium), rustc 1.98.1. Taken 2026-11-20 23:43 +0900.

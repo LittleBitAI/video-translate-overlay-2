@@ -97,7 +97,7 @@ Add rows to `a_short_topic_must_be_said_whole`: (zh, `今天讲解语言模型�
 
 ## Result
 
-pending — the fix records what it observed here, with the tests and the commit.
+Observed 2026-11-21, draft, not verified. Rows added to `summary::tests::a_short_topic_must_be_said_whole` before the fix: a Chinese topic said between Han characters (true), a Chinese topic not said (false), a Japanese topic in its own script said (true), and a Japanese one not said (false). At the code of bd36588 the test failed on the first new row, "said between Han characters, left: false right: true", as predicted. The fix adds `summary::unspaced` (Han, kana, and blocks 0x1C, 0x1D, 0x20, 0x21, 0x2F) and uses it in both `said_whole` (a neighbour continues a word only if it is the same script and not unspaced) and `in_talk`'s check for talks without spaces. Han counts there only without Hangul, as before. After it, all 18 rows pass, every earlier row with its earlier result (the `Go` rows in an English and a Japanese talk stay refused); `cargo test --lib summary::` passes 13 of 13. The block numbers were re-checked: U+0E00>>7 = 0x1C (Thai), U+0E80 = 0x1D (Lao), U+1000 and U+1080 = 0x20 and 0x21 (Myanmar), U+1780 = 0x2F (Khmer). The optional Thai rows were dropped: Thai topics of three or more letters take `in_talk`'s no-spaces pass and never reach `said_whole`, so they would not test this rule. The full gate was not run in this session: the session's rules leave it to the server, and the focused parts of it are in the round report. Committed in the round's fix commit, on top of 219ef2f.
 
 ## Unresolved limits
 
