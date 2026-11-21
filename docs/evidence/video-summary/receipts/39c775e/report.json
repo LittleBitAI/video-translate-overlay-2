@@ -1,14 +1,14 @@
 {
   "build": {
-    "head": "37f3f269cf508de34f54e54a5b7741052d500155",
-    "pid": 18980
+    "head": "39c775e19a086a3210ac8912484566ec666b0d98",
+    "pid": 27064
   },
   "environment": {
     "node": "v24.18.0",
     "platform": "win32 x64",
     "playwright": "1.61.0"
   },
-  "taken_at": "2026-11-20T23:30:41.111Z",
+  "taken_at": "2026-11-21T00:02:32.746Z",
   "video_key": "kCc8FmEb1nY",
   "checks": [
     {
