@@ -180,15 +180,30 @@ fn written_without_spaces(transcript: &str, own: &[Script]) -> bool {
 /// `ベイズ推定`); a talk written without spaces (`without_spaces`) has no
 /// words to compare it with, and it passes. A term too short to be a word
 /// ([`term`]: `x86`, `AI`) counts if said whole ([`said_whole`]) in the title,
-/// glossary or transcript (`said`), beside other words or alone; so does the
-/// whole topic (`C++`, `Go`) if it has a letter. A number never counts.
+/// glossary or transcript (`said`), beside other words or alone; so does a
+/// name written with signs ([`signed`]: `C++`, `C#`, `Wi-Fi`), and the whole
+/// topic (`Go`) if it has a letter. A number never counts.
 fn in_talk(topic: &str, own: &[Script], without_spaces: bool, source: &std::collections::HashSet<String>, said: &str) -> bool {
     // A word is all in scripts without spaces or all in others (`words`).
     words(topic).iter().any(|w| match w.chars().all(|c| spaceless(c, own)) {
         true => without_spaces || said.contains(w.as_str()),
         false => source.contains(w) || (hangul(w) && source.iter().any(|s| s.starts_with(w.as_str()))),
     }) || runs(topic).iter().any(|r| term(r) && said_whole(r, said))
+        || topic.split_whitespace().filter_map(signed).any(|n| said_whole(n, said))
         || (topic.chars().any(char::is_alphabetic) && said_whole(topic, said))
+}
+
+/// A space-free piece of a topic that is a name written with signs, its
+/// sentence punctuation at either end left off: it holds a sign other than an
+/// apostrophe (`C++`, `C#`, `Wi-Fi`, `U.S`), a letter, and a capital or a
+/// digit. `it's`, `e.g` and `well-known` are none: an apostrophe, or no
+/// capital or digit, marks an ordinary word.
+fn signed(piece: &str) -> Option<&str> {
+    let name = piece.trim_matches(|c: char| ",.;:!?\"'()[]{}“”‘’«»".contains(c));
+    let sign = name.chars().any(|c| !c.is_alphanumeric());
+    let apostrophe = name.contains(['\'', '’']);
+    let capital_or_digit = name.chars().any(|c| c.is_uppercase() || c.is_numeric());
+    (sign && !apostrophe && capital_or_digit && name.chars().any(char::is_alphabetic)).then_some(name)
 }
 
 /// Scripts written without spaces between words: Han, kana, and the blocks
@@ -201,11 +216,13 @@ fn unspaced(s: Script) -> bool {
 /// Whether `text` holds `topic` as written (case and all), not inside a
 /// longer word: a neighbour continues the word only if both it and the
 /// topic's edge are letters or digits of scripts written with spaces, and
-/// they share a script or one is a digit. `AI` is said in `AI uses` and in
-/// `AIの`, not in `MAIN` or `AI2`; `Go` not in `Google`; `x8` not in `x86`;
-/// `模型` is said between other Han characters, which mark no word end.
+/// they share a script or one is a digit; a `+` or `#` neighbour continues a
+/// name (`C++`, `C#`). `AI` is said in `AI uses` and in `AIの`, not in `MAIN`
+/// or `AI2`; `Go` not in `Google`; `x8` not in `x86`; `C` and `C+` not in
+/// `C++`; `模型` is said between other Han characters, which mark no word end.
 fn said_whole(topic: &str, text: &str) -> bool {
     let continues = |neighbour: Option<char>, edge: Option<char>| match (neighbour, edge) {
+        (Some('+' | '#'), Some(_)) => true,
         (Some(n), Some(e)) if n.is_alphanumeric() && e.is_alphanumeric() => {
             let (sn, se) = (script(n), script(e));
             !unspaced(sn) && !unspaced(se) && (sn == se || n.is_numeric() || e.is_numeric())
@@ -725,6 +742,35 @@ mod tests {
             ("a number with a lowercase ending", "2nd alpha", false),
             ("a short lowercase word the talk says", "we alpha", false),
             ("a capitals term the talk says in another case", "ON alpha", false),
+        ] {
+            let mut reply = good();
+            reply["topics"] = json!([topic]);
+            assert_eq!(check(&reply, Some("en"), talk, "").is_ok(), kept, "{name}");
+        }
+    }
+
+    /// The property: a name written with signs (a sign other than an
+    /// apostrophe, a letter, a capital or digit) counts when the talk says it
+    /// whole, beside words the talk never says or alone; sentence punctuation
+    /// at its ends is not part of it. A name the talk never says, says only
+    /// inside a longer name or in another case, and an ordinary word with
+    /// signs (an apostrophe, or no capital or digit) do not count.
+    #[test]
+    fn a_name_with_signs_counts_said_whole_inside_a_phrase() {
+        let talk = "With C++ templates and C# delegates, Wi-Fi links reach the U.S. grid; it's slow, e.g. at night.";
+        for (name, topic, kept) in [
+            ("a name ending in signs, beside an unsaid word", "C++ alpha", true),
+            ("a name ending in a sign, beside an unsaid word", "C# alpha", true),
+            ("a hyphenated name with capitals, beside an unsaid word", "Wi-Fi alpha", true),
+            ("a dotted name, with its closing dot, beside an unsaid word", "U.S. alpha", true),
+            ("a name ending in signs, followed by a comma in the topic", "C++, alpha", true),
+            ("a name ending in signs, alone", "C++", true),
+            ("a name with signs never said", "F# alpha", false),
+            ("a name said only inside a longer one", "C+ alpha", false),
+            ("a letter said only before signs", "C alpha", false),
+            ("a name said in another case", "c++ alpha", false),
+            ("a word with an apostrophe", "it's alpha", false),
+            ("a dotted lowercase abbreviation", "e.g. alpha", false),
         ] {
             let mut reply = good();
             reply["topics"] = json!([topic]);
