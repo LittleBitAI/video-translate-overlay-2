@@ -235,9 +235,10 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   word still counts if it names something (`summary::term`): letters and
   digits (`x86`, `3D`, `2.5D`), but not a measurement (`summary::measure`:
   a whole or decimal number with only a lowercase ending, such as `2nd`,
-  `100ms` or `0.5ms`), or two or more capitals (`AI`). A measurement
-  counts by no route: not as a term, a name with signs, or the whole
-  topic. Said whole in the title,
+  `100ms`, `0.5ms` or `0.5sec`, sentence punctuation at either end left
+  off), or two or more capitals (`AI`). A measurement counts by no route:
+  not as a shared word however long its unit, a term, a name with signs,
+  or the whole topic (`0.5ms,` included). Said whole in the title,
   glossary or transcript, it makes the topic the talk's alone or beside
   words the talk never says (`x86 assembly` in a talk saying `x86`). A
   number (`2024`) or a short lowercase word (`we`) never counts. A name

@@ -115,14 +115,16 @@ fn in_scripts(text: &str, own: &[Script]) -> bool {
 
 /// A text's words of three or more letters (two for a Korean word, whose
 /// syllables are letters), lowercased, a plural `s` dropped; digits count
-/// toward none, so a number alone is no word. A word ends at
+/// toward none, so a number alone is no word, nor is a measurement
+/// ([`measure`]: `0.5sec`) however long its unit. A word ends at
 /// a character that is not a letter or digit, except a dot inside a dotted
 /// name ([`runs`]: `example.com` is one word), and where a script written
 /// without spaces ([`unspaced`]) meets another: `Transformerの仕組み` holds
 /// the word `transformer`.
 fn words(text: &str) -> std::collections::HashSet<String> {
     // Letters, not digits, make a word: `2024` is none, `GPT4` is one, `x86` too short.
-    runs(text).into_iter().filter(|w| w.chars().filter(|c| c.is_alphabetic()).count() >= if hangul(w) { 2 } else { 3 })
+    // A measurement (`0.5sec`) is a quantity, not a word, however long its unit.
+    runs(text).into_iter().filter(|w| w.chars().filter(|c| c.is_alphabetic()).count() >= if hangul(w) { 2 } else { 3 } && !measure(w))
         // A dotted name (`Lib.js`) is an identifier, not a plural: it keeps every letter.
         .map(|w| { let w = w.to_lowercase(); match w.strip_suffix('s') { Some(s) if s.chars().count() >= 3 && !w.contains('.') => s.to_string(), _ => w } })
         .collect()
@@ -161,9 +163,11 @@ fn term(run: &str) -> bool {
 }
 
 /// Whether a text is a number, whole or decimal, with nothing or only a
-/// lowercase ending after it (`2024`, `2nd`, `100ms`, `0.5ms`): a quantity,
-/// never a name. `3D` and `2.5D` are names.
+/// lowercase ending after it (`2024`, `2nd`, `100ms`, `0.5sec`): a quantity,
+/// never a name, with sentence punctuation at either end left off
+/// (`0.5ms,`, `(0.5ms)`). `3D` and `2.5D` are names.
 fn measure(text: &str) -> bool {
+    let text = text.trim_matches(|c: char| PUNCTUATION.contains(c));
     text.starts_with(|c: char| c.is_numeric())
         && text.trim_start_matches(|c: char| c.is_numeric() || c == '.').chars().all(char::is_lowercase)
 }
@@ -209,13 +213,16 @@ fn in_talk(topic: &str, own: &[Script], without_spaces: bool, source: &std::coll
         || (topic.chars().any(char::is_alphabetic) && !measure(topic) && said_whole(topic, said))
 }
 
+/// Sentence punctuation, left off the ends of a piece ([`pieces`]) or a measurement ([`measure`]).
+const PUNCTUATION: &str = ",.;:!?\"'()[]{}“”‘’«»";
+
 /// A text's pieces as written: split at spaces and at the letters of a
 /// script written without spaces ([`unspaced`]), sentence punctuation at
 /// either end left off. `the U.S. grid` holds `U.S`, `U.S.B.` holds `U.S.B`,
 /// and `C++のテンプレート` holds `C++`.
 fn pieces(text: &str) -> impl Iterator<Item = &str> {
     text.split(|c: char| c.is_whitespace() || (c.is_alphabetic() && unspaced(script(c))))
-        .map(|p| p.trim_matches(|c: char| ",.;:!?\"'()[]{}“”‘’«»".contains(c)))
+        .map(|p| p.trim_matches(|c: char| PUNCTUATION.contains(c)))
         .filter(|p| !p.is_empty())
 }
 
@@ -801,6 +808,7 @@ mod tests {
     fn a_number_never_counts_and_a_short_term_counts_said_whole() {
         let talk = "In 2024 we studied attention with GPT4 on x86 code, a 3D model for AI on the 2nd day.";
         let measures = "The timer uses a 0.5ms-based delay, a 2.5ms step and a 2.5D view.";
+        let units = "The delay is 0.5sec and the link runs at 100kbps (0.5ms), measured once; it is 0.5ms, again.";
         for (name, transcript, topic, kept) in [
             ("a number the talk says, alone", talk, "2024", false),
             ("a number the talk says, beside unsaid words", talk, "2024 alpha beta", false),
@@ -819,6 +827,10 @@ mod tests {
             ("a decimal number with a lowercase ending, said whole, beside an unsaid word", measures, "2.5ms quantum", false),
             ("a decimal number with a lowercase ending, alone, said whole", measures, "2.5ms", false),
             ("a decimal number with a capital ending, beside an unsaid word", measures, "2.5D alpha", true),
+            ("a decimal number with a long lowercase ending, said whole, beside an unsaid word", units, "0.5sec quantum", false),
+            ("a whole number with a long lowercase ending, said whole, beside an unsaid word", units, "100kbps quantum", false),
+            ("a decimal number with a lowercase ending and a closing comma, alone", units, "0.5ms,", false),
+            ("a decimal number with a lowercase ending in brackets, alone", units, "(0.5ms)", false),
             ("a short lowercase word the talk says", talk, "we alpha", false),
             ("a capitals term the talk says in another case", talk, "ON alpha", false),
         ] {
