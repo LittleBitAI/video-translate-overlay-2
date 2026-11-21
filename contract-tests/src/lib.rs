@@ -700,6 +700,45 @@ fn gemini_reply(req: &HttpRequest, opts: GeminiOptions, log: &Mutex<Vec<GeminiCa
 
 // ---------------------------------------------------------------- contract host
 
+/// The commit checked out where these tests run, or None without git.
+fn checkout_head() -> Option<String> {
+    let out = Command::new("git").args(["rev-parse", "HEAD"]).current_dir(env!("CARGO_MANIFEST_DIR")).output().ok()?;
+    out.status.success().then(|| String::from_utf8_lossy(&out.stdout).trim().to_string())
+}
+
+/// Whether a host that says it was built at `host` may stand for the
+/// checkout at `checkout`: only the same commit, so a stale binary named by
+/// `VTO_CONTRACT_HOST` fails the run instead of passing for another head.
+/// Without git there is nothing to compare, and the launch record alone
+/// names the build.
+fn built_at_checkout(host: &str, checkout: Option<&str>) -> Result<(), String> {
+    match checkout {
+        Some(checkout) if host != checkout => Err(format!("built at {host:?}, not at the checkout {checkout}: rebuild it with `cargo build --workspace --bin vto-contract-host`")),
+        _ => Ok(()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// The property: a launched host passes for the checkout only if it was
+    /// built at that very commit; with no checkout to compare, it passes.
+    #[test]
+    fn a_host_built_at_another_commit_is_refused() {
+        let at = "94b4ea5a4264aeb84f334fdea2f2ca690b1b7a19";
+        let other = "7f246c4f71e64f53697edc2add7add8dee5f914d";
+        for (name, host, checkout, ok) in [
+            ("the checkout's build", at, Some(at), true),
+            ("an older build", other, Some(at), false),
+            ("a build that could not read its commit", "unknown", Some(at), false),
+            ("a host that names no build", "", Some(at), false),
+            ("an abbreviated commit", &at[..7], Some(at), false),
+            ("no git where the tests run", at, None, true),
+        ] {
+            assert_eq!(super::built_at_checkout(host, checkout).is_ok(), ok, "{name}");
+        }
+    }
+}
+
 pub struct Host {
     child: Child,
     stdin: ChildStdin,
@@ -734,7 +773,13 @@ impl Host {
                 }
             }
         });
-        Host { child, stdin, lines: rx }
+        let mut host = Host { child, stdin, lines: rx };
+        // The launch record: which build of the backend this run's checks exercise.
+        let build = host.request(json!({"op": "build"}));
+        let head = build["head"].as_str().unwrap_or("").to_string();
+        eprintln!("contract host launched: exe={exe} head={head} pid={}", build["pid"]);
+        if let Err(why) = built_at_checkout(&head, checkout_head().as_deref()) { panic!("{exe}: {why}"); }
+        host
     }
 
     fn request(&mut self, req: Value) -> Value {

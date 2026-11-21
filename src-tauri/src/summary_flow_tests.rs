@@ -366,6 +366,38 @@ fn a_queued_press_spends_only_on_the_entry_it_was_made_on() {
     }
 }
 
+/// The property: a summary is checked against the language of the transcript
+/// it summarizes. A re-make that recorded another language on the video and
+/// then failed leaves the selected saved version to be summarized, and that
+/// version's language holds the reply: a next topic in the re-make's script
+/// is refused, whatever language the re-make recorded, or none.
+#[test]
+fn a_failed_re_make_lends_its_language_to_no_summary() {
+    use crate::sync::{Change, Cue as Saved, Deletions, Translation, Video};
+    for (recorded, item) in [(Some("ja"), "ベイズ推定"), (Some("ko"), "확률론"), (Some("ru"), "теория вероятностей"), (None, "ベイズ推定")] {
+        let dir = temp();
+        let answer = Arc::new(Mutex::new(reply()));
+        let (core, called, go) = core_answering(&dir, answer.clone());
+        let video = Video { key: key(), page_url: PAGE.into(), title: "Attention".into() };
+        let cues = vec![Saved { start_ms: 0, end_ms: 900, source_text: "Attention is a weighted sum.".into(), text_ko: "어텐션은 가중합입니다.".into() }];
+        let scope = core.account.capture_library().unwrap();
+        let store = core.account.with_library(&scope, |journal| {
+            let journal = journal.expect("an account library");
+            journal.write(Change::Translation { translation: Translation { video, duration_ms: 60_000, source_language: Some("en".into()), terms: vec![], model: "m".into(), cost_krw: 1.0, cues } }, Deletions::new())?;
+            journal.library()
+        }).unwrap();
+        store.begin_remake("remake-a", &key(), "audio.wav", "m").unwrap();
+        if let Some(language) = recorded { store.set_language(&key(), language).unwrap(); }
+        store.fail("remake-a", "stopped").unwrap();
+        assert!(summarize(&core, &called, &go, |_| {}).is_ok(), "{recorded:?}: the base reply");
+        answer.lock().unwrap()["next_topics"] = json!([item]);
+        assert_eq!(press(&core, "again", &called, &go, |_| {}).unwrap_err(), "summary_invalid", "{recorded:?}");
+        drop(store);
+        drop(core);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}
+
 #[test]
 fn signing_out_during_the_call_keeps_the_reply_and_its_usage_in_the_account_that_paid() {
     let dir = temp();

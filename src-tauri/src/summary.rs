@@ -125,22 +125,41 @@ fn words(text: &str) -> std::collections::HashSet<String> {
         .collect()
 }
 
+/// Whether a letter is in a script written without spaces in a talk with
+/// `own` scripts. Han beside Hangul is Hanja, in a script written with spaces.
+fn spaceless(c: char, own: &[Script]) -> bool {
+    let s = script(c);
+    unspaced(s) && !(s == Script::Han && own.contains(&Script::Hangul))
+}
+
+/// Whether a talk is written without spaces between words: most letters of
+/// its `transcript` are in scripts written without spaces ([`spaceless`]).
+/// A Japanese lecture is; an English one quoting a Japanese term is not.
+fn written_without_spaces(transcript: &str, own: &[Script]) -> bool {
+    let (all, without) = transcript.chars().filter(|c| c.is_alphabetic())
+        .fold((0usize, 0usize), |(all, without), c| (all + 1, without + usize::from(spaceless(c, own))));
+    without * 2 > all
+}
+
 /// Whether a topic is in the talk's own words: one of its words is in the
 /// title, glossary or transcript (`source`), or for a Korean word, begins
 /// one there (the transcript writes `신경망을` for the topic `신경망`). A
 /// same-script translation (French words for an English talk) shares none.
-/// Each word is judged by its own script, whatever else the talk writes in:
-/// a word in a script written without spaces (Han, except Hanja in a talk
-/// written in Hangul, kana, Thai, Lao, Myanmar, Khmer) passes, as nothing
-/// shows where its words end. A topic with no word (`C++`, `AI`, `Go`) must
-/// be said whole ([`said_whole`]) in the title, glossary or transcript
-/// (`said`); one with no letter or digit says nothing and fails.
-fn in_talk(topic: &str, own: &[Script], source: &std::collections::HashSet<String>, said: &str) -> bool {
+/// A word in a script written without spaces (Han except Hanja, kana, Thai,
+/// Lao, Myanmar, Khmer), where nothing shows where words end, must be said
+/// as written in a talk written with spaces (`ベイズ` in a talk quoting
+/// `ベイズ推定`); a talk written without spaces (`without_spaces`) has no
+/// words to compare it with, and it passes. A topic with no word (`C++`,
+/// `AI`, `Go`) must be said whole ([`said_whole`]) in the title, glossary or
+/// transcript (`said`); one with no letter or digit says nothing and fails.
+fn in_talk(topic: &str, own: &[Script], without_spaces: bool, source: &std::collections::HashSet<String>, said: &str) -> bool {
     let words_of = words(topic);
     if words_of.is_empty() { return topic.chars().any(char::is_alphanumeric) && said_whole(topic, said); }
-    // A word is all in scripts without spaces or all in others (`words`). Han beside Hangul is Hanja, written with spaces.
-    let spaceless = |w: &str| w.chars().all(|c| { let s = script(c); unspaced(s) && !(s == Script::Han && own.contains(&Script::Hangul)) });
-    words_of.iter().any(|w| spaceless(w) || source.contains(w) || (hangul(w) && source.iter().any(|s| s.starts_with(w.as_str()))))
+    // A word is all in scripts without spaces or all in others (`words`).
+    words_of.iter().any(|w| match w.chars().all(|c| spaceless(c, own)) {
+        true => without_spaces || said.contains(w.as_str()),
+        false => source.contains(w) || (hangul(w) && source.iter().any(|s| s.starts_with(w.as_str()))),
+    })
 }
 
 /// Scripts written without spaces between words: Han, kana, and the blocks
@@ -179,6 +198,7 @@ pub fn check(reply: &Value, language: Option<&str>, transcript: &str, names: &st
     let own = own_scripts(language, transcript);
     let said = format!("{names}\n{transcript}");
     let source = words(&said);
+    let without_spaces = written_without_spaces(transcript, &own);
     let gist = one_line(reply["gist"].as_str().unwrap_or(""));
     if gist.is_empty() { return Err("empty gist".into()); }
     if !hangul(&gist) { return Err("gist is not Korean".into()); }
@@ -195,7 +215,7 @@ pub fn check(reply: &Value, language: Option<&str>, transcript: &str, names: &st
         if !korean && !kept.iter().all(|t| in_scripts(t, &own)) {
             return Err(format!("{field} is not in the talk's language"));
         }
-        if field == "topics" && !kept.iter().all(|t| in_talk(t, &own, &source, &said)) {
+        if field == "topics" && !kept.iter().all(|t| in_talk(t, &own, without_spaces, &source, &said)) {
             return Err("a topic is not in the talk's words".into());
         }
         Ok(kept)
@@ -362,16 +382,18 @@ pub(crate) fn summary_in(library: &crate::library_scope::Library<'_>, key: &str,
         if processing || store.ready_job(key)?.is_none() {
             return Err(err(409, "not_ready", "자막이 다 만들어진 영상만 요약할 수 있습니다."));
         }
-        let (terms, transcript) = match store.covered_by_remake(key)? {
-            Some(saved) => (json!(saved.terms), saved.cues.into_iter().map(|c| c.source_text).collect::<Vec<_>>()),
+        // The transcript, its glossary and its language all come from one version: a re-make
+        // that has not finished rewrote the video row's, and the selected saved version is summarized.
+        let (terms, transcript, language) = match store.covered_by_remake(key)? {
+            Some(saved) => (json!(saved.terms), saved.cues.into_iter().map(|c| c.source_text).collect::<Vec<_>>(), saved.source_language),
             None => {
                 let terms = video.terms.as_deref().and_then(|t| serde_json::from_str(t).ok()).unwrap_or_else(|| json!([]));
-                (terms, store.cues(key)?.into_iter().map(|c| c.source_text).collect())
+                (terms, store.cues(key)?.into_iter().map(|c| c.source_text).collect(), video.source_language)
             }
         };
         let replaced = || err(410, "video_replaced", "요약을 누른 뒤 영상이 삭제되거나 다시 만들어져 요약하지 않았습니다. 다시 눌러 주세요.");
         if !store.open_summary_call(key, &call, entry.as_deref().ok_or_else(replaced)?)? { return Err(replaced()); }
-        Ok((video.title, video.source_language, terms, transcript))
+        Ok((video.title, language, terms, transcript))
     })?;
     #[cfg(test)]
     flow_tests::pause("opened", library);
@@ -454,6 +476,8 @@ mod tests {
             Some("fr") => "Les réseaux de neurones apprennent des poids.",
             Some("ru") => "Теория вероятностей и статистика.",
             Some("ko") => "선형대수 기초를 먼저 배우고 확률론의 기초로 넘어갑니다. PyTorch 기초도 다룹니다.",
+            Some("ja") => "確率論の基礎として、Bayesian inferenceとベイズ推定の考え方を説明します。",
+            Some("zh") => "概率论是统计学的基础。",
             Some("ar") => "الشبكات العصبية تتعلم الأوزان من البيانات.",
             Some("hi") => "तंत्रिका नेटवर्क भार सीखते हैं।",
             _ => "Attention is a weighted sum. The transformer uses Bayesian inference; beta decay, or β decay, is physics.",
@@ -463,11 +487,11 @@ mod tests {
     /// The property: a reply passes only if every prose item holds Korean,
     /// every topic and next topic is in the talk's scripts (Latin names and
     /// Greek notation allowed in any) whatever code its language was given,
-    /// and every topic shares a word with what the talk said, each word
-    /// judged by its own script: one in a script written without spaces
-    /// counts as shared, even in a talk mostly written with spaces, and a
-    /// quoted term in such a script exempts no other word. Expected results
-    /// are written out, not computed by the rule.
+    /// and every topic shares a word with what the talk said. A topic word in
+    /// a script written without spaces is held to the talk as written when
+    /// the talk is written with spaces, and passes in a talk written without
+    /// them; a quoted term in such a script exempts no other word. Expected
+    /// results are written out, not computed by the rule.
     #[test]
     fn each_field_is_held_to_its_language() {
         // None is a talk whose language was not recognized; "xx", "ar" and "hi" are codes no table names.
@@ -490,7 +514,7 @@ mod tests {
         let unsaid_pair = "quantum optics";
         // A talk written with spaces quoting a term in a script without them, and the other way round.
         let quoted = "Attention uses ベイズ推定 and weights.";
-        let embedded = "Transformerの仕組みを説明します。";
+        let embedded = "Transformerの仕組みを順番に説明します。";
         let han_run = "今天讲解语言模型训练。";
         let by_language = [
             (Some("en"), "key_points", latin, false),
@@ -552,7 +576,11 @@ mod tests {
             // Each topic word is compared by its own script: a quoted term does not exempt the talk's Latin topics.
             (Some("en"), quoted, "topics", unsaid_pair, false),
             (Some("en"), quoted, "topics", "weights", true),
+            // In a talk written with spaces, a word in a script without them must be said as written.
             (Some("en"), quoted, "topics", "ベイズ", true),
+            (Some("en"), quoted, "topics", "カタカナ", false),
+            // A talk written without spaces has no words to hold such a topic to.
+            (Some("ja"), source(Some("ja")), "topics", "カタカナ", true),
             // Its two Han letters are under a tenth of the talk's letters, so Han is not the talk's script.
             (Some("en"), quoted, "topics", "ベイズ推定", false),
             (Some("ja"), embedded, "topics", "Transformer", true),

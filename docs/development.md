@@ -119,6 +119,8 @@ npm ci --prefer-offline --no-audit --no-fund && node scripts/contract-tests.mjs 
 
 계약 테스트는 외부 서비스와 기기 기능 일부를 가짜로 바꿔 돌립니다. 통과해도 실제 Gemini 응답이나 유튜브 접속이 성공한다는 보장은 아닙니다.
 
+계약 테스트는 `VTO_CONTRACT_HOST`가 가리키는 `vto-contract-host`를 띄울 때마다 그 바이너리가 빌드된 커밋과 pid를 `contract host launched: exe=… head=… pid=…` 한 줄로 남깁니다. 그 커밋이 지금 체크아웃한 커밋과 다르면 테스트가 실패합니다. 예전에 빌드한 호스트로는 통과하지 않으니 `cargo build --workspace --bin vto-contract-host`로 다시 빌드하세요. 커밋하지 않은 변경은 이 비교로 가려지지 않습니다.
+
 ## 버전별 검증 기록(0.1.1~0.1.6)
 
 ### 0.1.6

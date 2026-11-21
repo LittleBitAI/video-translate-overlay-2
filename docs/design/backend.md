@@ -180,7 +180,10 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   work order is `{"task":"summary","title","terms","transcript"}`: the video's
   title, the job's glossary (`video.terms`, or the selected saved version's
   terms while a re-make's draft fills the cue table), and every cue's source
-  text in cue order. No Korean cue text, no times, no audio. The glossary is an
+  text in cue order. The language the reply is checked against comes from
+  the same version: a re-make that has not finished rewrote the video row's
+  `source_language`, so the selected saved version's own language is used
+  with its cues, as P8 serves it. No Korean cue text, no times, no audio. The glossary is an
   addition to title and transcript: the transcript comes from speech
   recognition and misspells names, and the list already exists.
 - **Output form.** `generationConfig.responseJsonSchema` fixes six fields:
@@ -206,16 +209,18 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   more syllables that begins a word there (`신경망` in `신경망을`). A word
   ends at a sign or space, and where Han, kana, Thai, Lao, Myanmar or Khmer
   meets another script, so `Transformerの仕組み` holds the word
-  `transformer`. Each topic word is judged by its own script, not by the
-  talk's: a word in one of those scripts (Han except Hanja in a talk written
-  in Hangul) counts as shared, as nothing shows where its words end, and
-  every other word must be found. So an English talk that quotes a Japanese
-  term still has its Latin topics checked, and a Japanese talk has its Latin
-  ones checked too. A same-script translation (French words for an English
-  talk) and a Korean topic the Korean talk never says are refused. A topic
-  in those scripts that the talk never says is accepted when the talk writes
-  in that script (a tenth of its letters): an accepted limit, as the check
-  has no dictionary. A topic with no such word
+  `transformer`. A topic word in one of those scripts (Han except Hanja in
+  a talk written in Hangul) has no word end to compare by. In a talk
+  written with spaces (most of the transcript's letters in other scripts)
+  it must be said as written: an English talk quoting `ベイズ推定` has
+  `ベイズ` and not `カタカナ`. In a talk written without spaces (most of
+  its letters in those scripts) it passes: the spec holds only talks
+  written with spaces to the talk's words, and without a dictionary a
+  Chinese topic may join words the talk says apart. Every other word must
+  be found, so an English talk that quotes a Japanese term still has its
+  Latin topics checked, and a Japanese talk has its Latin ones checked too.
+  A same-script translation (French words for an English talk) and a Korean
+  topic the Korean talk never says are refused. A topic with no such word
   (`AI`, `Go`, `C++`), in any talk, must be said whole in the title,
   glossary or transcript: as written, case and all, and not inside a longer
   word. A neighbour continues the word only if it is a letter or digit of

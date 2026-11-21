@@ -286,6 +286,8 @@ fn main() {
                 Ok(()) => json!({"ok": true}),
                 Err(e) => json!({"ok": false, "error": e}),
             },
+            // The commit this binary was built at, as the app's `GET /build` answers it.
+            "build" => json!({"head": env!("VTO_BUILD_HEAD"), "pid": std::process::id()}),
             "commands" => json!({"commands": commands::COMMANDS}),
             "transcription_calls" => json!({"count": transcription_calls.load(Ordering::SeqCst)}),
             "network" => {
