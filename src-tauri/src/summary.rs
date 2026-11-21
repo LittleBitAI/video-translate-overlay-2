@@ -162,14 +162,21 @@ fn term(run: &str) -> bool {
     }
 }
 
-/// Whether a text is a number, whole or decimal, with nothing or only a
-/// lowercase ending after it (`2024`, `2nd`, `100ms`, `0.5sec`): a quantity,
-/// never a name, with sentence punctuation at either end left off
-/// (`0.5ms,`, `(0.5ms)`). `3D` and `2.5D` are names.
+/// Whether a text is a quantity, never a name: a number as it is written
+/// (a sign before it, `-0.5`, `−2`, `±2`; a dot, comma, apostrophe, thin
+/// space or underscore between its digits, `1,000`), then at most one space
+/// and a unit with no capital, digit or space (`2nd`, `100ms`, `0.5 sec`,
+/// `5 km/h`), sentence punctuation at either end left off (`0.5ms,`).
+/// `3D`, `2.5D` and `1e-9s` are names.
 fn measure(text: &str) -> bool {
     let text = text.trim_matches(|c: char| PUNCTUATION.contains(c));
-    text.starts_with(|c: char| c.is_numeric())
-        && text.trim_start_matches(|c: char| c.is_numeric() || c == '.').chars().all(char::is_lowercase)
+    let chars: Vec<char> = text.trim_start_matches(['+', '-', '−', '±', '~', '≈']).chars().collect();
+    let between = |c: char| matches!(c, '.' | ',' | '\'' | '’' | '_' | '\u{2009}' | '\u{202F}');
+    let mut i = 0;
+    while i < chars.len() && (chars[i].is_numeric() || (i > 0 && between(chars[i]) && chars.get(i + 1).is_some_and(|c| c.is_numeric()))) { i += 1; }
+    let unit = &chars[i..];
+    let unit = unit.strip_prefix(&[' '][..]).unwrap_or(unit);
+    i > 0 && !unit.iter().any(|c| c.is_whitespace() || c.is_uppercase() || c.is_ascii_digit())
 }
 
 /// Whether a letter is in a script written without spaces in a talk with
@@ -808,6 +815,7 @@ mod tests {
     fn a_number_never_counts_and_a_short_term_counts_said_whole() {
         let talk = "In 2024 we studied attention with GPT4 on x86 code, a 3D model for AI on the 2nd day.";
         let measures = "The timer uses a 0.5ms-based delay, a 2.5ms step and a 2.5D view.";
+        let formats = "The offset is -0.5ms, then −2ms; the delay is 1,000ms, then 0.5 ms, then ±2 ms, at 5 km/h.";
         let units = "The delay is 0.5sec and the link runs at 100kbps (0.5ms), measured once; it is 0.5ms, again.";
         for (name, transcript, topic, kept) in [
             ("a number the talk says, alone", talk, "2024", false),
@@ -831,7 +839,12 @@ mod tests {
             ("a whole number with a long lowercase ending, said whole, beside an unsaid word", units, "100kbps quantum", false),
             ("a decimal number with a lowercase ending and a closing comma, alone", units, "0.5ms,", false),
             ("a decimal number with a lowercase ending in brackets, alone", units, "(0.5ms)", false),
-            ("a short lowercase word the talk says", talk, "we alpha", false),
+            ("a signed decimal number with a lowercase ending, beside an unsaid word", formats, "-0.5ms quantum", false),
+            ("a number with a minus sign and a lowercase ending, beside an unsaid word", formats, "−2ms quantum", false),
+            ("a number grouped with commas and a lowercase ending, beside an unsaid word", formats, "1,000ms quantum", false),
+            ("a decimal number, a space and a lowercase ending, alone", formats, "0.5 ms", false),
+            ("a signed number, a space and a lowercase ending, alone", formats, "±2 ms", false),
+            ("a number, a space and a lowercase unit with a slash, alone", formats, "5 km/h", false),            ("a short lowercase word the talk says", talk, "we alpha", false),
             ("a capitals term the talk says in another case", talk, "ON alpha", false),
         ] {
             let mut reply = good();

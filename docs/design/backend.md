@@ -234,9 +234,11 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   topic the Korean talk never says are refused. A term too short to be a
   word still counts if it names something (`summary::term`): letters and
   digits (`x86`, `3D`, `2.5D`), but not a measurement (`summary::measure`:
-  a whole or decimal number with only a lowercase ending, such as `2nd`,
-  `100ms`, `0.5ms` or `0.5sec`, sentence punctuation at either end left
-  off), or two or more capitals (`AI`). A measurement counts by no route:
+  a number as it is written, with a sign before it (`-0.5`, `−2`, `±2`)
+  and a dot, comma, apostrophe, thin space or underscore between its
+  digits (`1,000`), then at most one space and a unit with no capital,
+  digit or space, such as `2nd`, `100ms`, `0.5 sec` or `5 km/h`, sentence
+  punctuation at either end left off), or two or more capitals (`AI`). A measurement counts by no route:
   not as a shared word however long its unit, a term, a name with signs,
   or the whole topic (`0.5ms,` included). Said whole in the title,
   glossary or transcript, it makes the topic the talk's alone or beside
