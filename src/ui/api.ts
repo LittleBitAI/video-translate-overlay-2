@@ -35,7 +35,7 @@ export const inApp = (): boolean => !!invoke();
 
 const UNREACHABLE: Reply = { status: 0, body: { error: 'unreachable', message: '앱에 닿지 않습니다. 잠시 뒤에 다시 해 주세요.' } };
 
-const LIBRARY_COMMANDS = new Set(['browser_open', 'get_browser', 'get_library', 'library_action', 'create_job', 'get_job', 'get_subtitles']);
+const LIBRARY_COMMANDS = new Set(['browser_open', 'get_browser', 'get_library', 'library_action', 'create_job', 'get_job', 'get_subtitles', 'video_summary']);
 let accountGeneration: number | undefined;
 let accountEpoch = 0;
 window.addEventListener('vto-account-changed', () => { accountGeneration = undefined; accountEpoch++; });
@@ -71,9 +71,11 @@ export async function request(method: string, path: string, body?: Record<string
 
 async function viaIpc(call: Invoke, method: string, path: string, body?: Record<string, unknown>): Promise<Reply> {
   const subs = /^\/videos\/([^/]+)\/subtitles$/.exec(path);
-  const cmd = subs && method === 'GET' ? 'get_subtitles' : COMMANDS[`${method} ${path}`];
+  const summary = /^\/videos\/([^/]+)\/summary$/.exec(path);
+  const cmd = subs && method === 'GET' ? 'get_subtitles' : summary && (method === 'GET' || method === 'POST') ? 'video_summary' : COMMANDS[`${method} ${path}`];
   if (!cmd) return { status: 404, body: { error: 'no_route', message: `${method} ${path}` } };
   let args: Record<string, unknown> = subs ? { video_key: decodeURIComponent(subs[1]) } : path === '/library/data' && method === 'POST' ? { action: body } : (body ?? {});
+  if (summary) args = { video_key: decodeURIComponent(summary[1]), summary_action: method === 'GET' ? 'get' : body?.again ? 'again' : 'make' };
   if (path === '/playback') args = {...args, playback_action:method === 'GET' ? 'get' : 'set'};
   const scoped = LIBRARY_COMMANDS.has(cmd);
   const epoch = accountEpoch;

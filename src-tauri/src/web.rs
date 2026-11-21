@@ -170,6 +170,7 @@ pub fn call(core: &Core, cmd: &str, a: &Value) -> ApiResult {
         "get_job" if !a["playback_action"].is_null() => api::library_request(core, a["account_generation"].as_u64(), cmd, a),
         "get_job" => api::get_job(core, &s("page_url")),
         "get_subtitles" => api::get_subtitles(core, &s("video_key")),
+        "video_summary" => api::library_request(core, a["account_generation"].as_u64(), cmd, a),
         other => Err(err(404, "no_route", other.to_string())),
     }
 }

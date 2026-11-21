@@ -54,6 +54,37 @@ image height with a 48 px minimum to leave player controls accessible. Cue
 selection still uses the player's source clock; sizing never edits subtitles or
 their timestamps.
 
+### Lecture summary (요약)
+
+Below the player, a 강의 요약 section (`src/ui/Summary.svelte`,
+`data-feature="video-summary"`) appears once the job the overlay follows is
+`ready`, and for a failed job whose subtitles the overlay still plays: a failed
+re-make leaves the selected saved version, which P8 serves and P19 summarizes
+(the overlay reports this through `onplaying`). A running job, a failed first
+translation with no subtitles, an untranslated link opened from the library,
+and a page with no job do not show it. Wherever the subtitles play, the
+overlay shows the video's cost as P7 reports it (the summary's included),
+re-read every second: `자막 준비됨 · …원` for a ready job, and under the
+failed re-make's reason a `든 비용 …원` line. The section's width is capped at
+48 rem; its heading uses the 20 px pane size and the summary's headings 16 px
+semibold. The person chose this placement over a right-hand column on wide
+windows and a button on the overlay's status chip, after inspecting the
+captures in [the evidence](../evidence/video-summary/README.md). At 1280×720
+the player fills the window height, so the section is reached by scrolling.
+
+| State | What shows |
+| --- | --- |
+| Opening | P19 `GET` for a stored summary, no Gemini call; the section is `aria-busy`. When the answer is `pending` (요약 or 다시 요약 was pressed on a screen since left), the section shows the loading state, even over a stored summary, and asks again every second until the call ends. It then shows the new summary, or the answer's `failure` as the error with 다시 시도 beside any stored summary. A read that gets no answer (a 5xx, or the app unreachable) says nothing about the summary: the section keeps what it shows (checking, or waiting for the call) and asks again a second later |
+| None stored | 요약 (primary, 44 px) and a note that Gemini summarizes the title and source subtitles for a few won, added to the video's cost |
+| Loading | 요약하는 중 (disabled) and a status line: leaving the screen does not lose the summary; it shows when the video is opened again |
+| Summary | The Markdown from P19 drawn as text: `##` lines as headings, `-` lines as list items, other lines as paragraphs, never as HTML. Then 요약 비용 and 다시 요약 (outlined), which asks with `again` |
+| Error | A yellow-bordered alert with the API's message (or the settings wording without a key) and 다시 시도, which repeats the failed request. The section then reads P19 `GET` again, so an earlier summary stays shown with its 요약 비용 including the refused, still billed reply |
+
+The section keeps a request generation: a reply for a section that was left
+or that has asked again is dropped without touching its state. The backend
+has stored it, so the next opening reads it. Account changes retire the whole
+watch view as before.
+
 ## 기능을 둔 자리
 
 | 기능 | 주인이 고른 칸 | 놓인 화면 |
@@ -62,6 +93,7 @@ their timestamps.
 | 영상감지 버튼 누르기 (`detect-video`) | 늘 쓴다 | S1 |
 | 진행 상태와 비용 보기 (`job-progress`) | 늘 쓴다 | S1 |
 | 자막 보기 (`watch-subtitles`) | 늘 쓴다 | S1 |
+| 강의 요약 (`video-summary`) | 가끔 쓴다 | S1, below the player |
 | 개인키 넣기 (`set-api-key`) | 가끔 쓴다 | S2 |
 | 개인키 지우기 (`delete-api-key`) | 드물게 쓴다 | S2 |
 | 유튜브 로그아웃 (`youtube-logout`) | 드물게 쓴다 | S2 |

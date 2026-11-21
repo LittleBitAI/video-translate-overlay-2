@@ -87,8 +87,14 @@ impl Client {
 
     /// Sends one work order and returns the JSON object the model answered.
     pub fn order(&self, order: &Value) -> Result<(Value, Usage), Error> {
-        let body = json!({
-            "systemInstruction": {"parts": [{"text": SYSTEM}]},
+        self.order_with(SYSTEM, order, None)
+    }
+
+    /// [`Client::order`] under another system prompt, with an optional
+    /// response JSON schema that Gemini's structured output holds the reply to.
+    pub fn order_with(&self, system: &str, order: &Value, schema: Option<&Value>) -> Result<(Value, Usage), Error> {
+        let mut body = json!({
+            "systemInstruction": {"parts": [{"text": system}]},
             "contents": [{"role": "user", "parts": [{"text": order.to_string()}]}],
             "generationConfig": {
                 "responseMimeType": "application/json",
@@ -97,8 +103,11 @@ impl Client {
                 // ponytail: minimal thinking keeps output tokens (billed) low; raise it if quality needs it.
                 "thinkingConfig": {"thinkingLevel": "minimal"}
             }
-        })
-        .to_string();
+        });
+        if let Some(schema) = schema {
+            body["generationConfig"]["responseJsonSchema"] = schema.clone();
+        }
+        let body = body.to_string();
         let r = http::send(Request::post(&self.url(":generateContent"), body.as_bytes()).header("x-goog-api-key", &self.key).header("Content-Type", "application/json"))
             .map_err(|e| Error::Transient(e.0))?;
         let status = r.status;

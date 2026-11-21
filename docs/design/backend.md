@@ -168,6 +168,189 @@ erDiagram
 | P7 | GET | `/jobs` | 주소로 찾은 영상의 가장 최근 작업이 어디까지 왔는지 진행 상태를 준다. 어느 단계인지, 그 단계가 몇 퍼센트 됐는지, 실패했다면 그 까닭, 번역 모듈에 쓴 양으로 셈한 비용이 들어 있다. 앱을 껐다 켠 뒤에도 같은 주소로 물으면 이어진 작업이 나온다. |
 | P8 | GET | `/videos/{video_key}/subtitles` | 작업이 끝난 영상의 자막을 통째로 준다. 조각마다 본편 처음부터 잰 시작 시각과 끝 시각이 붙어 있어 오버레이가 재생 위치에 맞는 조각을 고른다. 광고를 가려낼 때 쓸 본편 길이도 함께 준다. 작업이 끝나기 전에는 자막을 주지 않는다. |
 | P9 | GET | `/browser` | P1이 마지막으로 연 주소와 해당 영상의 작업. Google 로그인에서 원래 영상으로 돌아오면 영상 주소로 갱신한다. 늦은 로그인 결과는 새로 연 주소를 덮지 않는다. 작업이 없으면 null. |
+| P19 | GET, POST | `/videos/{video_key}/summary` | The 요약 button: the stored summary (GET), or a summary of a video whose subtitles are ready (POST; `again` asks Gemini even when one is stored). Local app screens only. See [Video summary](#video-summary-p19). |
+
+### Video summary (P19)
+
+A ready video can be summarized on request; nothing summarizes on its own when
+a translation finishes. The call is `src-tauri/src/summary.rs`.
+
+- **Input.** One `gemini-3.1-flash-lite` `generateContent` request under its own
+  system prompt (`summary::SYSTEM`; the translation prompts are unchanged). The
+  work order is `{"task":"summary","title","terms","transcript"}`: the video's
+  title, the job's glossary (`video.terms`, or the selected saved version's
+  terms while a re-make's draft fills the cue table), and every cue's source
+  text in cue order. The language the reply is checked against comes from
+  the same version: a re-make that has not finished rewrote the video row's
+  `source_language`, so the selected saved version's own language is used
+  with its cues, as P8 serves it. No Korean cue text, no times, no audio. The glossary is an
+  addition to title and transcript: the transcript comes from speech
+  recognition and misspells names, and the list already exists.
+- **Output form.** `generationConfig.responseJsonSchema` fixes six fields:
+  `gist` (one Korean sentence), `key_points` (Korean), `topics` (the lecture's
+  language), `level` (`beginner` / `intermediate` / `advanced`),
+  `prerequisites` (Korean) and `next_topics` (the lecture's language, as search
+  phrases for the later recommendation step). Structured output guarantees the
+  syntax only; Gemini's documentation says length and uniqueness keywords are
+  not enforced. So `summary::check` validates values in code: a non-empty gist,
+  and a gist, key points and prerequisites that each contain Hangul; topics
+  and next topics written in the talk's scripts: every letter Latin (names),
+  Greek (notation such as β) or in one of the talk's own scripts. Those are
+  every script that makes up a tenth or more of the letters of the
+  transcript, whatever language code speech recognition gave (or none, or
+  one no table names, such as `ar`); the title and the glossary's Korean
+  targets do not count, as they can be in another language than the talk.
+  Also Han for `ko`, kana and
+  Han for `ja`, Han for `zh` and Cyrillic for `ru` and its neighbours.
+  Scripts without a name in `summary::script` are told apart by 128-code-point
+  block. Every topic must also share a word with the title, the glossary's
+  source terms or the transcript (not the glossary's Korean targets): a word
+  of three or more letters (digits are not letters, so `2024` shares no
+  word), or a Korean word of two or
+  more syllables that begins a word there (`신경망` in `신경망을`). The
+  transcript, title, glossary and reply are compared in Unicode's composed
+  form (NFC, `summary::nfc`), and the reply's values are stored in it, so
+  `é` written as one character and as `e` with a combining accent is one
+  word, as is a Hangul syllable and its letters. A word
+  ends at a sign or space, and where Han, kana, Thai, Lao, Myanmar or Khmer
+  meets another script, so `Transformerの仕組み` holds the word
+  `transformer`. A dot between letters or digits of scripts written with
+  spaces does not end one: `example.com` is one word, so the topic
+  `COM interop` shares no word with `The example.com site loads.`, while a
+  dot that ends a sentence joins nothing. A dotted name keeps every letter
+  (no plural `s` is dropped), so `Lib.j` is not `Lib.js`, and a Korean
+  topic word counts as the start of a word there only when that word is
+  not a dotted name. A topic word in one of those scripts (Han except Hanja in
+  a talk written in Hangul) has no word end to compare by. In a talk
+  written with spaces (most of the transcript's letters in other scripts)
+  it must be said as written: an English talk quoting `ベイズ推定` has
+  `ベイズ` and not `カタカナ`. In a talk written without spaces (most of
+  its letters in those scripts) it passes: the spec holds only talks
+  written with spaces to the talk's words, and without a dictionary a
+  Chinese topic may join words the talk says apart. Every other word must
+  be found, so an English talk that quotes a Japanese term still has its
+  Latin topics checked, and a Japanese talk has its Latin ones checked too.
+  A same-script translation (French words for an English talk) and a Korean
+  topic the Korean talk never says are refused. A term too short to be a
+  word still counts if it names something (`summary::term`): letters and
+  digits (`x86`, `3D`, `2.5D`), but not a measurement (`summary::measure`:
+  a number as it is written, with a sign before it (`-0.5`, `−2`, `±2`)
+  and a dot, comma, apostrophe, thin space or underscore between its
+  digits (`1,000`), then a unit written on it with no capital, digit or
+  space (`2nd`, `100ms`, `0.5sec`), or one space and units from the closed
+  list `summary::UNITS` joined by `/` (`0.5 sec`, `5 km/h`), sentence
+  punctuation at either end left off), or two or more capitals (`AI`). A
+  lowercase word one space after a number that is not on that list is a
+  word of its own: `12 layers` says `layers`, so `layer count` shares its
+  word; a spaced unit missing from the list reads as a word too. The title,
+  glossary and transcript, and each topic, are read with every spaced
+  measurement written over in zeros (`summary::unmeasured`) before any route
+  looks at them, so `sec` is not said in `0.5 sec` and `100 bytes` offers
+  no word `byte`. A unit written on its number (`0.5sec`) stays one run,
+  which no route counts, and a term such as `1e-9s` is left whole and
+  counts where it is said. A measurement thus counts by no route: not as a
+  shared word, a term, a name with signs, or the whole topic (`0.5ms,`
+  included), while a zero, not a space, keeps `C++` unsaid in `C++17`.
+  Said whole in the title,
+  glossary or transcript, it makes the topic the talk's alone or beside
+  words the talk never says (`x86 assembly` in a talk saying `x86`). A
+  number (`2024`) or a short lowercase word (`we`) never counts. A name
+  written with signs (`summary::signed`: a piece of the topic holding a
+  sign other than an apostrophe, a letter, and a capital or digit, such as
+  `C++`, `C#`, `Wi-Fi` or `U.S`) counts when a piece of the title, glossary
+  or transcript is that same name, so `C++ metaprogramming` passes in a
+  talk saying `C++`, and `U.S. policy` fails in a talk saying only `U.S.B.`;
+  `it's` and `e.g` are ordinary words and do not count. A piece
+  (`summary::pieces`) is what lies between spaces and letters of the
+  scripts written without spaces, its sentence punctuation at either end
+  left off, so `C++のテンプレート` holds `C++`. A whole topic with a letter (`Go`, `C++`), in
+  any talk, counts too when said whole. Said whole means as written, case
+  and all, and not inside a longer word. A neighbour continues the word
+  only if both it and the term's edge are letters or digits of scripts
+  written with spaces and they share a script or one is a digit, or if the
+  neighbour is `+` or `#`, which continue a name, or if the term ends or
+  begins with a sign and the neighbour is a letter or digit of a script
+  written with spaces (`AI` in `AIの`, not in `MAIN` or `AI2`; `x8` not in
+  `x86`; `C` and `C+` not in `C++`; `U.S.` not in `U.S.B.`). A neighbouring
+  dot with such a letter or digit beyond it joins a dotted name, so `U.S`
+  and `AI` are not said in `U.S.B.` or `AI.X`; an apostrophe or hyphen
+  does not join, so `AI` is said in `AI's` and `AI-based`. In Han,
+  kana, Thai, Lao, Myanmar or Khmer nothing marks a
+  word end without a dictionary, so `模型` is said in `语言模型训练`, and a
+  short topic inside a longer compound of those scripts is accepted too: an
+  accepted limit. `summary::unspaced` names those scripts once, for this,
+  for where a word ends and for the topic words the word check skips. A topic with no
+  letter is refused. A short topic the talk happens to say in
+  another sense (the verb "go" written `Go` at a sentence start) is not told
+  apart: an accepted limit. Next topics, which come
+  after the talk, are held only to the scripts, so a same-alphabet
+  translation (`descente de gradient` for an English talk) is accepted; the
+  prompt and schema ask for the talk's language, and the code guarantees
+  only its scripts. Requiring the talk's words would refuse real follow-on
+  subjects the talk never names. A language detector was measured and not
+  adopted: `docs/research/review-video-summary-f3-1.md`. At least one topic and
+  one key point; a known level. Text is put on one line and blank or repeated list items are
+  dropped. A reply that fails is not stored, the earlier summary (if any)
+  stays, and the API answers `502 summary_invalid`.
+- **Rendering.** `summary::markdown` renders the stored JSON by a fixed
+  template (six `##` sections, `-` lists, `없음` for an empty list, model text
+  Markdown-escaped). It takes only the JSON: the same JSON always gives the same
+  Markdown and no model is called. A second model call to polish the JSON into
+  Markdown was rejected.
+- **Storage.** Table `summary (video_key PRIMARY KEY, body, input_amount,
+  output_amount, cost_krw, updated_at, call, failure, video_entry)` in
+  the account library. `video_entry` is the `entry` of the video row the
+  summary was made for: a random id the row gets the first time a summary is
+  pressed for it, kept by in-place updates. A row made again under the same
+  key, by this build or by an older one that knows no `entry`, starts without
+  one, so it is another entry whatever its key, job id or creation time. The
+  summary row counts (P19, P7's cost, a new call) only while the entries
+  match. A build without summaries deletes a video but not its summary row,
+  so an old summary and its cost are never served for the video made again,
+  and a new call drops such a row first instead of reviving its body. A
+  press reads the entry before it waits behind another video's call, and
+  its token opens only on that entry: if the video was deleted and made
+  again meanwhile, nothing is sent to Gemini and P19 answers
+  `410 video_replaced`. `body`
+  is the checked JSON, NULL until one reply passed. Usage and cost accumulate
+  over every call. A video marked for deletion is refused with `410` before
+  any Gemini call. Before the call, its random token is put in `call`. The
+  result is written only if the row still holds that token and the video is
+  not being deleted. Deleting the video drops the row and the token with it,
+  so a call whose video was deleted records nothing and answers `410`, even
+  if the entry came back under the same ids meanwhile (a synced restore
+  projects the same `sync-<hash>` job id). While a press is out, from before
+  it waits its turn behind another video's call until its result is written,
+  P19 `GET` adds `pending: true` for that library and video, also beside a
+  stored summary during 다시 요약. A read looks for a press before and after
+  it reads the row; if one was out at either look, or one started or ended
+  between them, it answers pending, so a read overlapping any part of a call
+  is never taken as final. A call that stores nothing (a reply breaking a
+  value rule, a refused key, an unreachable Gemini) leaves its message in
+  `failure` until the next call starts or a summary is stored. `GET` reports it,
+  so a screen opened while the call was out shows the error and 다시 시도.
+  The result is written
+  into the library the request started in, even if the account changed
+  during the call, so the account that paid keeps the summary and its usage;
+  the retired screen then gets `409 account_changed`. Confirmed video deletion
+  removes the row.
+  Summaries are not synchronized between devices yet (a separate change).
+- **Cost.** Reported usage (`promptTokenCount`; candidates plus thoughts)
+  times the translation's unit prices and exchange rate in `gemini.rs`, for a
+  valid reply or not, since both are billed. P7 adds the summary's usage and
+  cost to the video's `input_amount`, `output_amount` and `cost_krw`, so the
+  overlay's 든 비용 includes it, and reports `summary_cost_krw` separately. The
+  job's own `cost_krw` (T9, T10, retranslation's starting cost) is unchanged.
+  One summary of the hour-long reference lecture cost 6.7 KRW (16,201 input and
+  380 output tokens; [evidence](../evidence/video-summary/README.md)).
+- **When.** `make` answers a stored summary without a call; `again` always
+  calls. Only a video with a ready job and no running job may be summarized
+  (`409 not_ready` otherwise). One summary call runs at a time per process.
+  The request runs to the end in the backend whether or not the screen that
+  asked is still open, so a reply after the screen was left is stored.
+- **Who.** `video_summary` is granted to the app's own screen
+  (`capabilities/main.json`) only. Site pages keep P6-P8, so a page cannot spend
+  the key.
 
 ## 시나리오와 확인할 테스트
 
@@ -195,6 +378,7 @@ erDiagram
 - R23 유튜브 로그인은 구글의 로그인 화면에서 하고, 앱은 비밀번호를 받거나 저장하지 않는다. → `test_clearing_site_data_ends_youtube_login`
 - R24 긴 영상을 처리하는 동안 진행 상태에 작업이 얼마나 나아갔는지 보이고, 자체 모델은 빠르기보다 정확도를 먼저 보고 고른다. → `test_write_percent_and_ongoing_notice`
 - R25 이미 자막을 만든 영상에서 영상감지 버튼을 누르면 다시 처리하지 않고 저장해 둔 자막이 바로 뜬다. → `test_repeat_detect_reuses_saved_subtitles`
+- R26 A video whose subtitles are ready can be summarized with 요약: a schema-constrained JSON summary from its title, source transcript and glossary, stored, shown as Markdown rendered by code, its cost added to the video's. → `test_summary_request_carries_title_source_transcript_terms_and_schema`, `test_a_reply_that_breaks_a_value_rule_is_not_stored_but_is_metered`, `test_only_a_ready_video_on_the_app_screen_can_be_summarized`
 - R14 라이브 방송을 번역하는 기능은 이번에 만들지 않는다. (지켜야 할 조건, 시나리오 아님)
 
 <details><summary>흐름, 요청·응답, 용어집</summary>

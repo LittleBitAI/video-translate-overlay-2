@@ -231,12 +231,91 @@ impl Store {
             db.execute("DELETE FROM playlist_entry WHERE video_key=?", p![key])?;
             db.execute("DELETE FROM cue WHERE video_key=?", p![key])?;
             db.execute("DELETE FROM playback WHERE video_key=?", p![key])?;
+            db.execute("DELETE FROM summary WHERE video_key=?", p![key])?;
             db.execute("DELETE FROM job WHERE video_key=?", p![key])?;
             db.execute("DELETE FROM video WHERE video_key=?", p![key])?;
             if let Some(url) = inspected_url {
                 db.execute("DELETE FROM browser WHERE id=1 AND url=?", p![url])?;
             }
             db.execute("UPDATE deleted_video SET complete=1 WHERE video_key=?", p![key])?;
+            Ok(())
+        })
+    }
+
+    /// The video's summary row: the stored JSON (if one reply passed) and all summary calls' usage and cost.
+    /// Only a row made for this video row counts (see `summary.video_entry`).
+    pub(crate) fn summary(&self, key: &str) -> R<Option<Summary>> {
+        Ok(self.db.query_one(
+            "SELECT s.body,s.input_amount,s.output_amount,s.cost_krw,s.failure FROM summary s
+             JOIN video v ON v.video_key=s.video_key AND v.entry=s.video_entry WHERE s.video_key=?",
+            p![key],
+        )?
+            .map(|r| Summary { body: r[0].opt_text(), input: r[1].int(), output: r[2].int(), cost_krw: r[3].real(), failure: r[4].opt_text() }))
+    }
+
+    /// The video row's entry id, given a random one if it has none yet;
+    /// `None` without a video. A row made again under the same key, by this
+    /// build or an older one, starts without one and so is another entry.
+    pub(crate) fn summary_entry(&self, key: &str) -> R<Option<String>> {
+        let mut random = [0u8; 16];
+        getrandom::fill(&mut random).map_err(|e| e.to_string())?;
+        let fresh: String = random.iter().map(|b| format!("{b:02x}")).collect();
+        self.library_write(|db| {
+            db.execute("UPDATE video SET entry=? WHERE video_key=? AND entry IS NULL", p![fresh, key])?;
+            Ok(db.query_one("SELECT entry FROM video WHERE video_key=?", p![key])?.and_then(|r| r[0].opt_text()))
+        })
+    }
+
+    /// Puts `call`, the token of a summary call about to go out, on the
+    /// video's summary row (made with no usage when there is none yet), if
+    /// the video is still the entry `entry` the press was made on; `false`,
+    /// and nothing written, if it is not. A row left from an earlier video
+    /// row under the same key is dropped first, so its summary and cost
+    /// never join the new video's.
+    pub(crate) fn open_summary_call(&self, key: &str, call: &str, entry: &str) -> R<bool> {
+        self.library_write(|db| {
+            db.execute(
+                "DELETE FROM summary WHERE video_key=? AND video_entry IS NOT (SELECT entry FROM video WHERE video_key=?)",
+                p![key, key],
+            )?;
+            Ok(db.execute(
+                &format!("INSERT INTO summary (video_key,updated_at,call,video_entry) SELECT ?,{NOW},?,entry FROM video WHERE video_key=? AND entry=?
+                          ON CONFLICT(video_key) DO UPDATE SET call=excluded.call, failure=NULL"),
+                p![key, call, key, entry],
+            )? > 0)
+        })
+    }
+
+    /// Adds call `call`'s usage and cost, and stores `body` when it passed
+    /// the checks (a failed reply keeps the earlier summary). Nothing is
+    /// written, `false`, unless the row still holds `call` and the video is
+    /// not being deleted: deleting the video during the call dropped the row
+    /// and its token, and an entry made again under the same ids (a restore
+    /// projects the same job id) has no such token.
+    /// `failure` is the message of a reply that broke a value rule; a stored reply clears it.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn record_summary(&self, key: &str, call: &str, input: i64, output: i64, cost: f64, body: Option<&str>, failure: Option<&str>) -> R<bool> {
+        if !cost.is_finite() || cost < 0.0 { return Err("invalid usage cost".into()); }
+        self.library_write(|db| {
+            let live = db.query_one(
+                "SELECT 1 FROM summary s JOIN video v ON v.video_key=s.video_key AND v.entry=s.video_entry WHERE s.video_key=? AND s.call=?
+                 AND NOT EXISTS(SELECT 1 FROM deleted_video WHERE video_key=s.video_key AND complete=0)",
+                p![key, call],
+            )?;
+            if live.is_none() { return Ok(false); }
+            db.execute(
+                &format!("UPDATE summary SET body=COALESCE(?,body), input_amount=input_amount+?, output_amount=output_amount+?,
+                 cost_krw=cost_krw+?, updated_at={NOW}, call=NULL, failure=? WHERE video_key=?"),
+                p![body, input, output, cost, failure, key],
+            )?;
+            Ok(true)
+        })
+    }
+
+    /// Ends call `call` with nothing stored and nothing billed: `message` says why.
+    pub(crate) fn fail_summary(&self, key: &str, call: &str, message: &str) -> R<()> {
+        self.library_write(|db| {
+            db.execute(&format!("UPDATE summary SET call=NULL, failure=?, updated_at={NOW} WHERE video_key=? AND call=?"), p![message, key, call])?;
             Ok(())
         })
     }
