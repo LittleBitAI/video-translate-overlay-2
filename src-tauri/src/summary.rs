@@ -189,21 +189,31 @@ fn in_talk(topic: &str, own: &[Script], without_spaces: bool, source: &std::coll
         true => without_spaces || said.contains(w.as_str()),
         false => source.contains(w) || (hangul(w) && source.iter().any(|s| s.starts_with(w.as_str()))),
     }) || runs(topic).iter().any(|r| term(r) && said_whole(r, said))
-        || topic.split_whitespace().filter_map(signed).any(|n| said_whole(n, said))
+        || pieces(topic).filter(|p| signed(p)).any(|p| pieces(said).any(|s| s == p))
         || (topic.chars().any(char::is_alphabetic) && said_whole(topic, said))
 }
 
-/// A space-free piece of a topic that is a name written with signs, its
-/// sentence punctuation at either end left off: it holds a sign other than an
-/// apostrophe (`C++`, `C#`, `Wi-Fi`, `U.S`), a letter, and a capital or a
-/// digit. `it's`, `e.g` and `well-known` are none: an apostrophe, or no
-/// capital or digit, marks an ordinary word.
-fn signed(piece: &str) -> Option<&str> {
-    let name = piece.trim_matches(|c: char| ",.;:!?\"'()[]{}“”‘’«»".contains(c));
-    let sign = name.chars().any(|c| !c.is_alphanumeric());
-    let apostrophe = name.contains(['\'', '’']);
-    let capital_or_digit = name.chars().any(|c| c.is_uppercase() || c.is_numeric());
-    (sign && !apostrophe && capital_or_digit && name.chars().any(char::is_alphabetic)).then_some(name)
+/// A text's pieces as written: split at spaces and at the letters of a
+/// script written without spaces ([`unspaced`]), sentence punctuation at
+/// either end left off. `the U.S. grid` holds `U.S`, `U.S.B.` holds `U.S.B`,
+/// and `C++のテンプレート` holds `C++`.
+fn pieces(text: &str) -> impl Iterator<Item = &str> {
+    text.split(|c: char| c.is_whitespace() || (c.is_alphabetic() && unspaced(script(c))))
+        .map(|p| p.trim_matches(|c: char| ",.;:!?\"'()[]{}“”‘’«»".contains(c)))
+        .filter(|p| !p.is_empty())
+}
+
+/// Whether a piece ([`pieces`]) is a name written with signs: it holds a
+/// sign other than an apostrophe (`C++`, `C#`, `Wi-Fi`, `U.S`), a letter,
+/// and a capital or a digit. `it's`, `e.g` and `well-known` are none: an
+/// apostrophe, or no capital or digit, marks an ordinary word. Such a name
+/// counts only where a piece of the talk is the same name, so `U.S` is not
+/// said in `U.S.B.` nor `C+` in `C++`.
+fn signed(piece: &str) -> bool {
+    let sign = piece.chars().any(|c| !c.is_alphanumeric());
+    let apostrophe = piece.contains(['\'', '’']);
+    let capital_or_digit = piece.chars().any(|c| c.is_uppercase() || c.is_numeric());
+    sign && !apostrophe && capital_or_digit && piece.chars().any(char::is_alphabetic)
 }
 
 /// Scripts written without spaces between words: Han, kana, and the blocks
@@ -758,23 +768,29 @@ mod tests {
     #[test]
     fn a_name_with_signs_counts_said_whole_inside_a_phrase() {
         let talk = "With C++ templates and C# delegates, Wi-Fi links reach the U.S. grid; it's slow, e.g. at night.";
-        for (name, topic, kept) in [
-            ("a name ending in signs, beside an unsaid word", "C++ alpha", true),
-            ("a name ending in a sign, beside an unsaid word", "C# alpha", true),
-            ("a hyphenated name with capitals, beside an unsaid word", "Wi-Fi alpha", true),
-            ("a dotted name, with its closing dot, beside an unsaid word", "U.S. alpha", true),
-            ("a name ending in signs, followed by a comma in the topic", "C++, alpha", true),
-            ("a name ending in signs, alone", "C++", true),
-            ("a name with signs never said", "F# alpha", false),
-            ("a name said only inside a longer one", "C+ alpha", false),
-            ("a letter said only before signs", "C alpha", false),
-            ("a name said in another case", "c++ alpha", false),
-            ("a word with an apostrophe", "it's alpha", false),
-            ("a dotted lowercase abbreviation", "e.g. alpha", false),
+        let longer = "A U.S.B. device sends data.";
+        let unspaced_after = "C++のテンプレートを使います。";
+        for (name, language, transcript, topic, kept) in [
+            ("a name ending in signs, beside an unsaid word", "en", talk, "C++ alpha", true),
+            ("a name ending in a sign, beside an unsaid word", "en", talk, "C# alpha", true),
+            ("a hyphenated name with capitals, beside an unsaid word", "en", talk, "Wi-Fi alpha", true),
+            ("a dotted name, with its closing dot, beside an unsaid word", "en", talk, "U.S. alpha", true),
+            ("a name ending in signs, followed by a comma in the topic", "en", talk, "C++, alpha", true),
+            ("a name ending in signs, alone", "en", talk, "C++", true),
+            ("a name said before a script written without spaces", "ja", unspaced_after, "C++ alpha", true),
+            ("a dotted name said whole in a talk holding it", "en", longer, "U.S.B. alpha", true),
+            ("a dotted name said only as the start of a longer one", "en", longer, "U.S. alpha", false),
+            ("a dotted name longer than the one said", "en", talk, "U.S.B. alpha", false),
+            ("a name with signs never said", "en", talk, "F# alpha", false),
+            ("a name said only inside a longer one", "en", talk, "C+ alpha", false),
+            ("a letter said only before signs", "en", talk, "C alpha", false),
+            ("a name said in another case", "en", talk, "c++ alpha", false),
+            ("a word with an apostrophe", "en", talk, "it's alpha", false),
+            ("a dotted lowercase abbreviation", "en", talk, "e.g. alpha", false),
         ] {
             let mut reply = good();
             reply["topics"] = json!([topic]);
-            assert_eq!(check(&reply, Some("en"), talk, "").is_ok(), kept, "{name}");
+            assert_eq!(check(&reply, Some(language), transcript, "").is_ok(), kept, "{name}");
         }
     }
 

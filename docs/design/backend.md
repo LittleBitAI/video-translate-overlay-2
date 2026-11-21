@@ -232,12 +232,15 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   glossary or transcript, it makes the topic the talk's alone or beside
   words the talk never says (`x86 assembly` in a talk saying `x86`). A
   number (`2024`) or a short lowercase word (`we`) never counts. A name
-  written with signs (`summary::signed`: a space-free piece of the topic,
-  its sentence punctuation at either end left off, holding a sign other
-  than an apostrophe, a letter, and a capital or digit, such as `C++`, `C#`,
-  `Wi-Fi` or `U.S`) counts the same way when said whole, so
-  `C++ metaprogramming` passes in a talk saying `C++`; `it's` and `e.g` are
-  ordinary words and do not. A whole topic with a letter (`Go`, `C++`), in
+  written with signs (`summary::signed`: a piece of the topic holding a
+  sign other than an apostrophe, a letter, and a capital or digit, such as
+  `C++`, `C#`, `Wi-Fi` or `U.S`) counts when a piece of the title, glossary
+  or transcript is that same name, so `C++ metaprogramming` passes in a
+  talk saying `C++`, and `U.S. policy` fails in a talk saying only `U.S.B.`;
+  `it's` and `e.g` are ordinary words and do not count. A piece
+  (`summary::pieces`) is what lies between spaces and letters of the
+  scripts written without spaces, its sentence punctuation at either end
+  left off, so `C++のテンプレート` holds `C++`. A whole topic with a letter (`Go`, `C++`), in
   any talk, counts too when said whole. Said whole means as written, case
   and all, and not inside a longer word. A neighbour continues the word
   only if both it and the term's edge are letters or digits of scripts
