@@ -72,6 +72,9 @@ check('api', 'P7 after again', round(translated.cost_krw + 2 * one), round(after
 const browser = await chromium.launch();
 const INVALID = { error: 'summary_invalid', message: '요약 답이 규칙에 맞지 않아 저장하지 않았습니다. 다시 시도해 주세요.' };
 const HEADINGS = ['한 줄 요약', '핵심 내용', '다루는 주제', '난이도', '먼저 알면 좋은 것', '다음에 볼 주제'];
+// A summary's gist: the paragraph under 한 줄 요약, in P19's Markdown and on the screen.
+const gist = (markdown) => markdown?.match(/^## 한 줄 요약\n\n(.+)$/m)?.[1] ?? null;
+const shownGist = (page) => page.locator('[data-feature="video-summary"] h3:text-is("한 줄 요약") + p').innerText();
 for (const [w, h] of [[1280, 720], [384, 854]]) {
   const size = `${w}x${h}`;
   const shot = async (page, state) => { await page.waitForTimeout(300); await page.screenshot({ path: join(out, `${size}-${state}.png`), fullPage: true }); };
@@ -147,6 +150,9 @@ for (const [w, h] of [[1280, 720], [384, 854]]) {
   await page.goto(base + '/');
   await page.getByRole('button', { name: '다시 요약' }).waitFor();
   const spent = (await job()).summary_cost_krw;
+  // The stand-in numbers each summary's gist, so the one stored before the call differs from the call's.
+  const before = gist((await call('GET', path)).body?.markdown);
+  const shownBefore = await shownGist(page);
   const sent = page.waitForRequest((q) => q.method() === 'POST' && q.url().endsWith('/summary'));
   await page.getByRole('button', { name: '다시 요약' }).click();
   await sent;
@@ -162,6 +168,12 @@ for (const [w, h] of [[1280, 720], [384, 854]]) {
   await page.getByRole('button', { name: '다시 요약' }).waitFor({ timeout: 15000 });
   const r2 = page.locator('[data-feature="video-summary"]');
   check(size, 'reopened: then shows the summary the call stored, with no POST of its own', [HEADINGS, 0], [await r2.locator('h3').allInnerTexts(), reposts.length]);
+  // The stored gist after the call, the one shown before it and the one shown now, each read whole.
+  const stored = gist((await call('GET', path)).body?.markdown);
+  const shownAfter = await shownGist(page);
+  check(size, 'reopened: the gist shown is the one the call stored, not the one shown before it',
+    { shown_before: before, shown_after: stored, differ: true },
+    { shown_before: shownBefore, shown_after: shownAfter, differ: !!before && !!stored && before !== stored });
   check(size, 'reopened: the call that outlived its screen was metered once', round(spent + one), round((await job()).summary_cost_krw));
   await close(page);
   // Six documents: the loading page, the error page, the stored-summary page, and the reopen

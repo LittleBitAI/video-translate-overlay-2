@@ -120,6 +120,15 @@ fn in_scripts(text: &str, own: &[Script]) -> bool {
 /// without spaces ([`unspaced`]) meets another: `Transformerの仕組み` holds
 /// the word `transformer`.
 fn words(text: &str) -> std::collections::HashSet<String> {
+    // Letters, not digits, make a word: `2024` is none, `GPT4` is one, `x86` too short.
+    runs(text).into_iter().filter(|w| w.chars().filter(|c| c.is_alphabetic()).count() >= if hangul(w) { 2 } else { 3 })
+        .map(|w| { let w = w.to_lowercase(); match w.strip_suffix('s') { Some(s) if s.chars().count() >= 3 => s.to_string(), _ => w } })
+        .collect()
+}
+
+/// A text's runs of letters and digits, as written, split where a script
+/// written without spaces ([`unspaced`]) meets another.
+fn runs(text: &str) -> Vec<String> {
     let mut runs: Vec<String> = Vec::new();
     let mut last: Option<bool> = None;
     for c in text.chars() {
@@ -128,10 +137,21 @@ fn words(text: &str) -> std::collections::HashSet<String> {
         if kind.is_some() { runs.last_mut().unwrap().push(c); }
         last = kind;
     }
-    // Letters, not digits, make a word: `2024` is none, `GPT4` is one, `x86` too short.
-    runs.into_iter().filter(|w| w.chars().filter(|c| c.is_alphabetic()).count() >= if hangul(w) { 2 } else { 3 })
-        .map(|w| { let w = w.to_lowercase(); match w.strip_suffix('s') { Some(s) if s.chars().count() >= 3 => s.to_string(), _ => w } })
-        .collect()
+    runs
+}
+
+/// Whether a run names a term even when too short to be a word: it holds
+/// letters and digits (`x86`, `3D`), except a number with a lowercase
+/// ending (`2nd`, `100ms`), or two or more letters, all capitals (`AI`). A
+/// number (`2024`) or a short lowercase word (`we`, `on`) names none.
+fn term(run: &str) -> bool {
+    let letters: Vec<char> = run.chars().filter(|c| c.is_alphabetic()).collect();
+    let after_number = run.trim_start_matches(|c: char| c.is_numeric());
+    match (letters.is_empty(), run.chars().any(char::is_numeric)) {
+        (true, _) => false,
+        (false, true) => after_number.len() == run.len() || !after_number.chars().all(char::is_lowercase),
+        (false, false) => letters.len() >= 2 && letters.iter().all(|c| c.is_uppercase()),
+    }
 }
 
 /// Whether a letter is in a script written without spaces in a talk with
@@ -158,17 +178,17 @@ fn written_without_spaces(transcript: &str, own: &[Script]) -> bool {
 /// Lao, Myanmar, Khmer), where nothing shows where words end, must be said
 /// as written in a talk written with spaces (`ベイズ` in a talk quoting
 /// `ベイズ推定`); a talk written without spaces (`without_spaces`) has no
-/// words to compare it with, and it passes. A topic with no word (`C++`,
-/// `AI`, `Go`) must be said whole ([`said_whole`]) in the title, glossary or
-/// transcript (`said`); one with no letter or digit says nothing and fails.
+/// words to compare it with, and it passes. A term too short to be a word
+/// ([`term`]: `x86`, `AI`) counts if said whole ([`said_whole`]) in the title,
+/// glossary or transcript (`said`), beside other words or alone; so does the
+/// whole topic (`C++`, `Go`) if it has a letter. A number never counts.
 fn in_talk(topic: &str, own: &[Script], without_spaces: bool, source: &std::collections::HashSet<String>, said: &str) -> bool {
-    let words_of = words(topic);
-    if words_of.is_empty() { return topic.chars().any(char::is_alphanumeric) && said_whole(topic, said); }
     // A word is all in scripts without spaces or all in others (`words`).
-    words_of.iter().any(|w| match w.chars().all(|c| spaceless(c, own)) {
+    words(topic).iter().any(|w| match w.chars().all(|c| spaceless(c, own)) {
         true => without_spaces || said.contains(w.as_str()),
         false => source.contains(w) || (hangul(w) && source.iter().any(|s| s.starts_with(w.as_str()))),
-    })
+    }) || runs(topic).iter().any(|r| term(r) && said_whole(r, said))
+        || (topic.chars().any(char::is_alphabetic) && said_whole(topic, said))
 }
 
 /// Scripts written without spaces between words: Han, kana, and the blocks
@@ -179,18 +199,22 @@ fn unspaced(s: Script) -> bool {
 }
 
 /// Whether `text` holds `topic` as written (case and all), not inside a
-/// longer word: a neighbour continues the word only if it is a letter or
-/// digit of the same script and that script is written with spaces. `AI`
-/// is said in `AI uses` and in `AIの`, not in `MAIN`; `Go` not in `Google`;
+/// longer word: a neighbour continues the word only if both it and the
+/// topic's edge are letters or digits of scripts written with spaces, and
+/// they share a script or one is a digit. `AI` is said in `AI uses` and in
+/// `AIの`, not in `MAIN` or `AI2`; `Go` not in `Google`; `x8` not in `x86`;
 /// `模型` is said between other Han characters, which mark no word end.
 fn said_whole(topic: &str, text: &str) -> bool {
-    let kind = |c: char| c.is_alphanumeric().then(|| script(c));
-    let (first, last) = (topic.chars().next().and_then(kind), topic.chars().next_back().and_then(kind));
-    let continues = |neighbour: Option<Script>, edge: Option<Script>| neighbour.is_some_and(|n| Some(n) == edge && !unspaced(n));
+    let continues = |neighbour: Option<char>, edge: Option<char>| match (neighbour, edge) {
+        (Some(n), Some(e)) if n.is_alphanumeric() && e.is_alphanumeric() => {
+            let (sn, se) = (script(n), script(e));
+            !unspaced(sn) && !unspaced(se) && (sn == se || n.is_numeric() || e.is_numeric())
+        }
+        _ => false,
+    };
+    let (first, last) = (topic.chars().next(), topic.chars().next_back());
     text.match_indices(topic).any(|(i, _)| {
-        let before = text[..i].chars().next_back().and_then(kind);
-        let after = text[i + topic.len()..].chars().next().and_then(kind);
-        !continues(before, first) && !continues(after, last)
+        !continues(text[..i].chars().next_back(), first) && !continues(text[i + topic.len()..].chars().next(), last)
     })
 }
 
@@ -529,7 +553,6 @@ mod tests {
         let han_run = "今天讲解语言模型训练。";
         let (fr_decomposed, ko_decomposed) = (nfd(source(Some("fr"))), nfd(source(Some("ko"))));
         let accented_decomposed = nfd("réseaux");
-        let numbered = "In 2024 we studied attention with GPT4 on x86 code.";
         assert!(fr_decomposed.contains("re\u{301}seaux") && ko_decomposed.contains('\u{1112}'), "the decomposed forms differ from the composed ones");
         let by_language = [
             (Some("en"), "key_points", latin, false),
@@ -607,16 +630,6 @@ mod tests {
             (Some("fr"), fr_decomposed.as_str(), "topics", "poissons rouges", false),
             (Some("ko"), ko_decomposed.as_str(), "topics", hangul_stem, true),
             (Some("ko"), ko_decomposed.as_str(), "topics", hangul_unsaid, false),
-            // A word is its letters: a number the talk says shares no word, and a short name
-            // with digits is held to being said whole.
-            (Some("en"), numbered, "topics", "2024 quantum optics", false),
-            (Some("en"), numbered, "topics", "attention 2024", true),
-            (Some("en"), numbered, "topics", "2024", true),
-            (Some("en"), numbered, "topics", "1999", false),
-            (Some("en"), numbered, "topics", "GPT4", true),
-            (Some("en"), numbered, "topics", "x86", true),
-            (Some("en"), numbered, "topics", "x86 assembly", false),
-            (Some("en"), numbered, "topics", "x64", false),
         ];
         let mut wrong = Vec::new();
         for (language, transcript, field, item, kept) in by_language.into_iter().chain(mixed) {
@@ -649,8 +662,8 @@ mod tests {
 
     /// The property: a topic too short to share a word with the talk passes
     /// only if the talk says it whole, as written, not inside a longer run of
-    /// the same script, in a talk written with spaces or without; a topic
-    /// with no letter or digit never passes.
+    /// the same script or beside a digit of one, in a talk written with
+    /// spaces or without; a topic with no letter never passes.
     #[test]
     fn a_short_topic_must_be_said_whole() {
         let spaced = "Modern AI uses attention.";
@@ -666,6 +679,7 @@ mod tests {
             ("said in another case", "en", spaced, "ai", false),
             ("only inside a longer word", "en", inside, "AI", false),
             ("only at the start of a longer word", "en", inside, "Go", false),
+            ("only before a digit of a longer name", "en", "The AI2 model uses attention.", "AI", false),
             ("said with its signs", "en", named, "C++", true),
             ("with signs, never said", "en", unsaid, "C++", false),
             ("no letter or digit", "en", named, "++", false),
@@ -684,6 +698,37 @@ mod tests {
             assert!(check(&reply, Some(language), transcript, "").is_ok(), "{name}: the base reply");
             reply["topics"] = json!([topic]);
             assert_eq!(check(&reply, Some(language), transcript, "").is_ok(), kept, "{name}");
+        }
+    }
+
+    /// The property: a number never makes a topic the talk's, alone or
+    /// beside words the talk never says. A term too short to be a word that
+    /// mixes letters and digits or is all capitals counts when the talk says
+    /// it whole, alone or beside unsaid words; a number with a lowercase
+    /// ending, a short lowercase word and a term said only inside a longer
+    /// one do not.
+    #[test]
+    fn a_number_never_counts_and_a_short_term_counts_said_whole() {
+        let talk = "In 2024 we studied attention with GPT4 on x86 code, a 3D model for AI on the 2nd day.";
+        for (name, topic, kept) in [
+            ("a number the talk says, alone", "2024", false),
+            ("a number the talk says, beside unsaid words", "2024 alpha beta", false),
+            ("a number never said", "1999", false),
+            ("a number beside a word the talk says", "attention 2024", true),
+            ("a word of letters and digits the talk says", "GPT4", true),
+            ("a short letters-and-digits term, alone", "x86", true),
+            ("a short letters-and-digits term, beside an unsaid word", "x86 alpha", true),
+            ("a short term beginning with a number and a capital, beside an unsaid word", "3D alpha", true),
+            ("a capitals term, beside an unsaid word", "AI alpha", true),
+            ("a short letters-and-digits term never said", "x64 alpha", false),
+            ("a short term said only inside a longer one", "x8 alpha", false),
+            ("a number with a lowercase ending", "2nd alpha", false),
+            ("a short lowercase word the talk says", "we alpha", false),
+            ("a capitals term the talk says in another case", "ON alpha", false),
+        ] {
+            let mut reply = good();
+            reply["topics"] = json!([topic]);
+            assert_eq!(check(&reply, Some("en"), talk, "").is_ok(), kept, "{name}");
         }
     }
 

@@ -206,7 +206,7 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   block. Every topic must also share a word with the title, the glossary's
   source terms or the transcript (not the glossary's Korean targets): a word
   of three or more letters (digits are not letters, so `2024` shares no
-  word and `x86` must be said whole), or a Korean word of two or
+  word), or a Korean word of two or
   more syllables that begins a word there (`신경망` in `신경망을`). The
   transcript, title, glossary and reply are compared in Unicode's composed
   form (NFC, `summary::nfc`), and the reply's values are stored in it, so
@@ -225,17 +225,24 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   be found, so an English talk that quotes a Japanese term still has its
   Latin topics checked, and a Japanese talk has its Latin ones checked too.
   A same-script translation (French words for an English talk) and a Korean
-  topic the Korean talk never says are refused. A topic with no such word
-  (`AI`, `Go`, `C++`), in any talk, must be said whole in the title,
-  glossary or transcript: as written, case and all, and not inside a longer
-  word. A neighbour continues the word only if it is a letter or digit of
-  the same script and that script is written with spaces (`AI` in `AIの`,
-  not in `MAIN`). In Han, kana, Thai, Lao, Myanmar or Khmer nothing marks a
+  topic the Korean talk never says are refused. A term too short to be a
+  word still counts if it names something (`summary::term`): letters and
+  digits (`x86`, `3D`), but not a number with a lowercase ending (`2nd`,
+  `100ms`), or two or more capitals (`AI`). Said whole in the title,
+  glossary or transcript, it makes the topic the talk's alone or beside
+  words the talk never says (`x86 assembly` in a talk saying `x86`). A
+  number (`2024`) or a short lowercase word (`we`) never counts. A whole
+  topic with a letter (`Go`, `C++`), in any talk, counts too when said
+  whole. Said whole means as written, case and all, and not inside a longer
+  word. A neighbour continues the word only if both it and the term's edge
+  are letters or digits of scripts written with spaces and they share a
+  script or one is a digit (`AI` in `AIの`, not in `MAIN` or `AI2`; `x8` not
+  in `x86`). In Han, kana, Thai, Lao, Myanmar or Khmer nothing marks a
   word end without a dictionary, so `模型` is said in `语言模型训练`, and a
   short topic inside a longer compound of those scripts is accepted too: an
   accepted limit. `summary::unspaced` names those scripts once, for this,
   for where a word ends and for the topic words the word check skips. A topic with no
-  letter or digit is refused. A short topic the talk happens to say in
+  letter is refused. A short topic the talk happens to say in
   another sense (the verb "go" written `Go` at a sentence start) is not told
   apart: an accepted limit. Next topics, which come
   after the talk, are held only to the scripts, so a same-alphabet

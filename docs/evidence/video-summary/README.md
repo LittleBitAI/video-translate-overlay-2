@@ -135,7 +135,10 @@ pushed head, with no commit after it, by the steps below:
    leaves the screen while the stand-in Gemini (3 s per summary) holds the
    call, opens the video again, and checks that the first read says
    `pending`, the screen waits, the stored summary then appears with no
-   POST of its own, and the call was metered once.
+   POST of its own, and the call was metered once. The stand-in numbers each
+   summary's gist (`N번째 요약: …`), so the run also checks that the gist
+   shown after reopening is the one the call stored and differs from the
+   gist shown before 다시 요약 was pressed.
 
 The generated `report.json` and the focused commands' raw output go into that
 round's report, in full. The report is the current record; this folder keeps
