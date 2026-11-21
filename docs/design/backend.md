@@ -217,7 +217,10 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   `transformer`. A dot between letters or digits of scripts written with
   spaces does not end one: `example.com` is one word, so the topic
   `COM interop` shares no word with `The example.com site loads.`, while a
-  dot that ends a sentence joins nothing. A topic word in one of those scripts (Han except Hanja in
+  dot that ends a sentence joins nothing. A dotted name keeps every letter
+  (no plural `s` is dropped), so `Lib.j` is not `Lib.js`, and a Korean
+  topic word counts as the start of a word there only when that word is
+  not a dotted name. A topic word in one of those scripts (Han except Hanja in
   a talk written in Hangul) has no word end to compare by. In a talk
   written with spaces (most of the transcript's letters in other scripts)
   it must be said as written: an English talk quoting `ベイズ推定` has
@@ -230,8 +233,11 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   A same-script translation (French words for an English talk) and a Korean
   topic the Korean talk never says are refused. A term too short to be a
   word still counts if it names something (`summary::term`): letters and
-  digits (`x86`, `3D`), but not a number with a lowercase ending (`2nd`,
-  `100ms`), or two or more capitals (`AI`). Said whole in the title,
+  digits (`x86`, `3D`, `2.5D`), but not a measurement (`summary::measure`:
+  a whole or decimal number with only a lowercase ending, such as `2nd`,
+  `100ms` or `0.5ms`), or two or more capitals (`AI`). A measurement
+  counts by no route: not as a term, a name with signs, or the whole
+  topic. Said whole in the title,
   glossary or transcript, it makes the topic the talk's alone or beside
   words the talk never says (`x86 assembly` in a talk saying `x86`). A
   number (`2024`) or a short lowercase word (`we`) never counts. A name

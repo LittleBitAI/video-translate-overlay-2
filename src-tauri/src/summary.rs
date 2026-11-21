@@ -123,7 +123,8 @@ fn in_scripts(text: &str, own: &[Script]) -> bool {
 fn words(text: &str) -> std::collections::HashSet<String> {
     // Letters, not digits, make a word: `2024` is none, `GPT4` is one, `x86` too short.
     runs(text).into_iter().filter(|w| w.chars().filter(|c| c.is_alphabetic()).count() >= if hangul(w) { 2 } else { 3 })
-        .map(|w| { let w = w.to_lowercase(); match w.strip_suffix('s') { Some(s) if s.chars().count() >= 3 => s.to_string(), _ => w } })
+        // A dotted name (`Lib.js`) is an identifier, not a plural: it keeps every letter.
+        .map(|w| { let w = w.to_lowercase(); match w.strip_suffix('s') { Some(s) if s.chars().count() >= 3 && !w.contains('.') => s.to_string(), _ => w } })
         .collect()
 }
 
@@ -147,17 +148,24 @@ fn runs(text: &str) -> Vec<String> {
 }
 
 /// Whether a run names a term even when too short to be a word: it holds
-/// letters and digits (`x86`, `3D`), except a number with a lowercase
-/// ending (`2nd`, `100ms`), or two or more letters, all capitals (`AI`). A
-/// number (`2024`) or a short lowercase word (`we`, `on`) names none.
+/// letters and digits (`x86`, `3D`), except a measurement ([`measure`]), or
+/// two or more letters, all capitals (`AI`). A number (`2024`) or a short
+/// lowercase word (`we`, `on`) names none.
 fn term(run: &str) -> bool {
     let letters: Vec<char> = run.chars().filter(|c| c.is_alphabetic()).collect();
-    let after_number = run.trim_start_matches(|c: char| c.is_numeric());
     match (letters.is_empty(), run.chars().any(char::is_numeric)) {
         (true, _) => false,
-        (false, true) => after_number.len() == run.len() || !after_number.chars().all(char::is_lowercase),
+        (false, true) => !measure(run),
         (false, false) => letters.len() >= 2 && letters.iter().all(|c| c.is_uppercase()),
     }
+}
+
+/// Whether a text is a number, whole or decimal, with nothing or only a
+/// lowercase ending after it (`2024`, `2nd`, `100ms`, `0.5ms`): a quantity,
+/// never a name. `3D` and `2.5D` are names.
+fn measure(text: &str) -> bool {
+    text.starts_with(|c: char| c.is_numeric())
+        && text.trim_start_matches(|c: char| c.is_numeric() || c == '.').chars().all(char::is_lowercase)
 }
 
 /// Whether a letter is in a script written without spaces in a talk with
@@ -188,15 +196,17 @@ fn written_without_spaces(transcript: &str, own: &[Script]) -> bool {
 /// ([`term`]: `x86`, `AI`) counts if said whole ([`said_whole`]) in the title,
 /// glossary or transcript (`said`), beside other words or alone; so does a
 /// name written with signs ([`signed`]: `C++`, `C#`, `Wi-Fi`), and the whole
-/// topic (`Go`) if it has a letter. A number never counts.
+/// topic (`Go`) if it has a letter. A number never counts, nor a measurement
+/// ([`measure`]: `2nd`, `0.5ms`) by any of these routes.
 fn in_talk(topic: &str, own: &[Script], without_spaces: bool, source: &std::collections::HashSet<String>, said: &str) -> bool {
     // A word is all in scripts without spaces or all in others (`words`).
     words(topic).iter().any(|w| match w.chars().all(|c| spaceless(c, own)) {
         true => without_spaces || said.contains(w.as_str()),
-        false => source.contains(w) || (hangul(w) && source.iter().any(|s| s.starts_with(w.as_str()))),
+        // A Korean word begins a word of the talk, not a dotted name.
+        false => source.contains(w) || (hangul(w) && source.iter().any(|s| !s.contains('.') && s.starts_with(w.as_str()))),
     }) || runs(topic).iter().any(|r| term(r) && said_whole(r, said))
-        || pieces(topic).filter(|p| signed(p)).any(|p| pieces(said).any(|s| s == p))
-        || (topic.chars().any(char::is_alphabetic) && said_whole(topic, said))
+        || pieces(topic).filter(|p| signed(p) && !measure(p)).any(|p| pieces(said).any(|s| s == p))
+        || (topic.chars().any(char::is_alphabetic) && !measure(topic) && said_whole(topic, said))
 }
 
 /// A text's pieces as written: split at spaces and at the letters of a
@@ -758,9 +768,13 @@ mod tests {
         let lib = "Install Lib.js today.";
         let sentences = "It loads. Then compiles everything.";
         let japanese = "モデル.Transformerの仕組みです。";
+        let korean = "자료는 신경망.com 에서 받습니다.";
         for (name, language, transcript, topic, kept) in [
             ("a word said only as the end of a dotted name", "en", host, "COM interop", false),
             ("a word said only as the start of a dotted name", "en", lib, "lib runtime", false),
+            ("a dotted name one letter short of the one said", "en", lib, "Lib.j runtime", false),
+            ("a Korean word said only as the start of a dotted name", "ko", korean, "신경망 구조", false),
+            ("a Korean word beginning a word said apart from it", "ko", korean, "자료 구조", true),
             ("the whole dotted name", "en", host, "example.com", true),
             ("the whole dotted name beside an unsaid word", "en", lib, "Lib.js runtime", true),
             ("a word said apart from the dotted name", "en", host, "site hosting", true),
@@ -786,25 +800,31 @@ mod tests {
     #[test]
     fn a_number_never_counts_and_a_short_term_counts_said_whole() {
         let talk = "In 2024 we studied attention with GPT4 on x86 code, a 3D model for AI on the 2nd day.";
-        for (name, topic, kept) in [
-            ("a number the talk says, alone", "2024", false),
-            ("a number the talk says, beside unsaid words", "2024 alpha beta", false),
-            ("a number never said", "1999", false),
-            ("a number beside a word the talk says", "attention 2024", true),
-            ("a word of letters and digits the talk says", "GPT4", true),
-            ("a short letters-and-digits term, alone", "x86", true),
-            ("a short letters-and-digits term, beside an unsaid word", "x86 alpha", true),
-            ("a short term beginning with a number and a capital, beside an unsaid word", "3D alpha", true),
-            ("a capitals term, beside an unsaid word", "AI alpha", true),
-            ("a short letters-and-digits term never said", "x64 alpha", false),
-            ("a short term said only inside a longer one", "x8 alpha", false),
-            ("a number with a lowercase ending", "2nd alpha", false),
-            ("a short lowercase word the talk says", "we alpha", false),
-            ("a capitals term the talk says in another case", "ON alpha", false),
+        let measures = "The timer uses a 0.5ms-based delay, a 2.5ms step and a 2.5D view.";
+        for (name, transcript, topic, kept) in [
+            ("a number the talk says, alone", talk, "2024", false),
+            ("a number the talk says, beside unsaid words", talk, "2024 alpha beta", false),
+            ("a number never said", talk, "1999", false),
+            ("a number beside a word the talk says", talk, "attention 2024", true),
+            ("a word of letters and digits the talk says", talk, "GPT4", true),
+            ("a short letters-and-digits term, alone", talk, "x86", true),
+            ("a short letters-and-digits term, beside an unsaid word", talk, "x86 alpha", true),
+            ("a short term beginning with a number and a capital, beside an unsaid word", talk, "3D alpha", true),
+            ("a capitals term, beside an unsaid word", talk, "AI alpha", true),
+            ("a short letters-and-digits term never said", talk, "x64 alpha", false),
+            ("a short term said only inside a longer one", talk, "x8 alpha", false),
+            ("a number with a lowercase ending", talk, "2nd alpha", false),
+            ("a number with a lowercase ending, alone, said whole", talk, "2nd", false),
+            ("a decimal number with a lowercase ending, said before a hyphen", measures, "0.5ms quantum", false),
+            ("a decimal number with a lowercase ending, said whole, beside an unsaid word", measures, "2.5ms quantum", false),
+            ("a decimal number with a lowercase ending, alone, said whole", measures, "2.5ms", false),
+            ("a decimal number with a capital ending, beside an unsaid word", measures, "2.5D alpha", true),
+            ("a short lowercase word the talk says", talk, "we alpha", false),
+            ("a capitals term the talk says in another case", talk, "ON alpha", false),
         ] {
             let mut reply = good();
             reply["topics"] = json!([topic]);
-            assert_eq!(check(&reply, Some("en"), talk, "").is_ok(), kept, "{name}");
+            assert_eq!(check(&reply, Some("en"), transcript, "").is_ok(), kept, "{name}");
         }
     }
 
