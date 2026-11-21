@@ -47,8 +47,15 @@ pub fn order(title: &str, terms: &Value, transcript: &[String]) -> Value {
     json!({"task": "summary", "title": title, "terms": terms, "transcript": transcript})
 }
 
+/// `s` on one line, in Unicode's composed form (NFC), as it is stored.
 fn one_line(s: &str) -> String {
-    s.split_whitespace().collect::<Vec<_>>().join(" ")
+    nfc(s).split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// `s` in Unicode's composed form (NFC): canonically equivalent spellings,
+/// such as `é` as one character or as `e` and a combining accent, become one.
+fn nfc(s: &str) -> String {
+    icu_normalizer::ComposingNormalizerBorrowed::new_nfc().normalize(s).into_owned()
 }
 
 fn hangul(s: &str) -> bool {
@@ -195,6 +202,8 @@ fn said_whole(topic: &str, text: &str) -> bool {
 /// are dropped. `transcript` is what the talk said; `names` its title and
 /// the glossary's source terms, whose words count as the talk's too.
 pub fn check(reply: &Value, language: Option<&str>, transcript: &str, names: &str) -> Result<Value, String> {
+    // The talk's text and the reply's (through `one_line`) are compared in one Unicode form.
+    let (transcript, names) = (&nfc(transcript), nfc(names));
     let own = own_scripts(language, transcript);
     let said = format!("{names}\n{transcript}");
     let source = words(&said);
@@ -516,6 +525,9 @@ mod tests {
         let quoted = "Attention uses ベイズ推定 and weights.";
         let embedded = "Transformerの仕組みを順番に説明します。";
         let han_run = "今天讲解语言模型训练。";
+        let (fr_decomposed, ko_decomposed) = (nfd(source(Some("fr"))), nfd(source(Some("ko"))));
+        let accented_decomposed = nfd("réseaux");
+        assert!(fr_decomposed.contains("re\u{301}seaux") && ko_decomposed.contains('\u{1112}'), "the decomposed forms differ from the composed ones");
         let by_language = [
             (Some("en"), "key_points", latin, false),
             (Some("en"), "key_points", hangul, true),
@@ -586,6 +598,12 @@ mod tests {
             (Some("ja"), embedded, "topics", "Transformer", true),
             (Some("ja"), embedded, "topics", unsaid_pair, false),
             (Some("zh"), han_run, "topics", "深度学习方法", true),
+            // Canonically equivalent spellings are one word, the talk's or the topic's decomposed.
+            (Some("fr"), fr_decomposed.as_str(), "topics", "réseaux", true),
+            (Some("fr"), source(Some("fr")), "topics", accented_decomposed.as_str(), true),
+            (Some("fr"), fr_decomposed.as_str(), "topics", "poissons rouges", false),
+            (Some("ko"), ko_decomposed.as_str(), "topics", hangul_stem, true),
+            (Some("ko"), ko_decomposed.as_str(), "topics", hangul_unsaid, false),
         ];
         let mut wrong = Vec::new();
         for (language, transcript, field, item, kept) in by_language.into_iter().chain(mixed) {
@@ -604,6 +622,16 @@ mod tests {
         let c = check(&good(), Some("en"), source(Some("en")), "").unwrap();
         assert_eq!(c["key_points"], json!(["어텐션은 가중합입니다."]));
         assert_eq!(c["topics"], json!(["attention", "transformer"]));
+        // Two spellings of one word are one item, stored composed.
+        let mut reply = good();
+        reply["topics"] = json!([nfd("réseaux"), "réseaux"]);
+        let c = check(&reply, Some("fr"), source(Some("fr")), "").unwrap();
+        assert_eq!(c["topics"], json!(["réseaux"]));
+    }
+
+    /// `s` decomposed (NFD): `é` as `e` and a combining accent, a Hangul syllable as its letters.
+    fn nfd(s: &str) -> String {
+        icu_normalizer::DecomposingNormalizerBorrowed::new_nfd().normalize(s).into_owned()
     }
 
     /// The property: a topic too short to share a word with the talk passes

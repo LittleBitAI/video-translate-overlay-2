@@ -2,9 +2,14 @@
 // (`PORT=… APP_DATA_DIR=<empty dir> node scripts/live.mjs --stand-ins`).
 // It seeds e2e/seed.json, then records isolated P19 requests and browser
 // actions at 1280x720 and 384x854, each as expected vs observed, and the
-// server's build head. Usage: node scripts/verification/video-summary.mjs <base-url> <out-dir>
+// server's build head. It ties the server, every page Chromium loaded and the
+// checkout it runs in to one commit, and leaves and reopens the video while a
+// stand-in summary call is out (the stand-in takes 3 s to summarize).
+// Usage: node scripts/verification/video-summary.mjs <base-url> <out-dir>
 // Writes <out-dir>/report.json and <out-dir>/<size>-<state>.png; exits 1 if any check fails.
 import { chromium } from 'playwright';
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -22,6 +27,11 @@ const call = async (method, path, body, headers = {}) => {
 };
 
 const build = (await call('GET', '/build')).body;
+// The checkout this script runs in, and what it has not committed (the wiki's files are not built).
+const git = (...a) => execFileSync('git', a, { encoding: 'utf8' });
+const checkout = { head: git('rev-parse', 'HEAD').trim(), uncommitted: git('status', '--porcelain').split('\n').filter((l) => l && !l.slice(3).startsWith('.wiki/')) };
+check('build', 'the server was built at the checkout, which has nothing uncommitted', [checkout.head, []], [build?.head, checkout.uncommitted]);
+const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
 for (const step of JSON.parse(readFileSync('e2e/seed.json', 'utf8'))) await call(step.method, step.path, step.body);
 const PAGE = 'https://www.youtube.com/watch?v=kCc8FmEb1nY';
 const job = async () => (await call('GET', `/jobs?page_url=${encodeURIComponent(PAGE)}`)).body;
@@ -109,11 +119,48 @@ for (const [w, h] of [[1280, 720], [384, 854]]) {
   check(size, 'summary: its cost line', true, (await s.innerText()).includes('요약 비용'), (await s.innerText()).includes('요약 비용'));
   await shot(page, 'summary');
   await page.close();
+
+  // Through the backend and the stand-in Gemini: 다시 요약 pressed, the screen left while
+  // the call is out, the video opened again. Every page load records the commit its
+  // screens were built at and the bytes of the scripts and styles it was served.
+  page = await browser.newPage({ viewport: { width: w, height: h } });
+  const heads = [];
+  const assets = [];
+  page.on('response', (q) => {
+    const p = new URL(q.url()).pathname;
+    if (!q.url().startsWith(base) || !/\.(js|css)$/.test(p)) return;
+    q.body().then((b) => assets.push([p, sha(b), sha(readFileSync(join('dist', p)))]), () => assets.push([p, 'unread', '']));
+  });
+  const load = async () => { await page.goto(base + '/'); heads.push(await page.locator('meta[name="wiki-build-head"]').getAttribute('content')); };
+  await load();
+  await page.getByRole('button', { name: '다시 요약' }).waitFor();
+  const spent = (await job()).summary_cost_krw;
+  const sent = page.waitForRequest((q) => q.method() === 'POST' && q.url().endsWith('/summary'));
+  await page.getByRole('button', { name: '다시 요약' }).click();
+  await sent;
+  await page.goto(base + '/preferences');
+  const reread = page.waitForResponse((q) => q.request().method() === 'GET' && q.url().endsWith('/summary'));
+  const reposts = [];
+  page.on('request', (q) => { if (q.method() === 'POST' && q.url().endsWith('/summary')) reposts.push(q.url()); });
+  await load();
+  const first = await (await reread).json().catch(() => null);
+  const waiting = await page.getByRole('button', { name: '요약하는 중' }).waitFor({ timeout: 2000 }).then(() => true, () => false);
+  check(size, 'reopened while the call is out: the first read says pending and the screen waits', [true, true], [first?.pending === true, waiting]);
+  await shot(page, 'reopened');
+  await page.getByRole('button', { name: '다시 요약' }).waitFor({ timeout: 15000 });
+  const r2 = page.locator('[data-feature="video-summary"]');
+  check(size, 'reopened: then shows the summary the call stored, with no POST of its own', [HEADINGS, 0], [await r2.locator('h3').allInnerTexts(), reposts.length]);
+  check(size, 'reopened: the call that outlived its screen was metered once', round(spent + one), round((await job()).summary_cost_krw));
+  check(size, 'screens: every page was built at the server head', heads.map(() => build?.head), heads);
+  check(size, 'screens: every script and style served is dist/ as built', true, assets.length > 0 && assets.every(([, got, built]) => got === built), assets.length > 0 && assets.every(([, got, built]) => got === built));
+  await page.close();
 }
 await browser.close();
 
 const report = {
   build,
+  checkout,
+  screens: { built_at: readFileSync(join('dist', 'index.html'), 'utf8').match(/name="wiki-build-head" content="([^"]*)"/)?.[1] ?? null },
   environment: { node: process.version, platform: `${process.platform} ${process.arch}`, playwright: JSON.parse(readFileSync('node_modules/playwright/package.json', 'utf8')).version },
   taken_at: new Date().toISOString(),
   video_key: key,

@@ -190,6 +190,7 @@ mod stand_in {
         let (status, kind, bytes) = if path == "/lecture.wav" {
             ("200 OK", "audio/wav", wav())
         } else if method == "POST" && path.ends_with(":generateContent") {
+            if order(&body)["task"] == "summary" { std::thread::sleep(SUMMARY_TAKES); }
             ("200 OK", "application/json", reply(&body).to_string().into_bytes())
         } else if method == "GET" && path.starts_with("/v1beta/models/") {
             ("200 OK", "application/json", json!({"name": path.trim_start_matches("/v1beta/")}).to_string().into_bytes())
@@ -203,10 +204,19 @@ mod stand_in {
         s.flush()
     }
 
+    /// How long a summary takes: seconds, as a real call does, so a screen can
+    /// be left and opened again while it is out (scripts/verification/video-summary.mjs).
+    const SUMMARY_TAKES: std::time::Duration = std::time::Duration::from_secs(3);
+
+    /// The work order a generateContent request carries.
+    fn order(body: &[u8]) -> Value {
+        let req: Value = serde_json::from_slice(body).unwrap_or_default();
+        serde_json::from_str(req["contents"][0]["parts"][0]["text"].as_str().unwrap_or("")).unwrap_or_default()
+    }
+
     /// Gemini's answer to a glossary, translation or summary order.
     pub(super) fn reply(body: &[u8]) -> Value {
-        let req: Value = serde_json::from_slice(body).unwrap_or_default();
-        let order: Value = serde_json::from_str(req["contents"][0]["parts"][0]["text"].as_str().unwrap_or("")).unwrap_or_default();
+        let order = order(body);
         let answer = if order["task"] == "glossary" {
             json!({"terms": [{"source": "attention", "target": "어텐션"}, {"source": "token", "target": "토큰"}, {"source": "transformer", "target": "트랜스포머"}]})
         } else if order["task"] == "summary" {

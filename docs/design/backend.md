@@ -206,7 +206,11 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   block. Every topic must also share a word with the title, the glossary's
   source terms or the transcript (not the glossary's Korean targets): a word
   of three or more letters, or a Korean word of two or
-  more syllables that begins a word there (`신경망` in `신경망을`). A word
+  more syllables that begins a word there (`신경망` in `신경망을`). The
+  transcript, title, glossary and reply are compared in Unicode's composed
+  form (NFC, `summary::nfc`), and the reply's values are stored in it, so
+  `é` written as one character and as `e` with a combining accent is one
+  word, as is a Hangul syllable and its letters. A word
   ends at a sign or space, and where Han, kana, Thai, Lao, Myanmar or Khmer
   meets another script, so `Transformerの仕組み` holds the word
   `transformer`. A topic word in one of those scripts (Han except Hanja in

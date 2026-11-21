@@ -124,7 +124,15 @@ pushed head, with no commit after it, by the steps below:
 2. Run `node scripts/verification/video-summary.mjs http://127.0.0.1:8793 <out>`.
    It seeds `e2e/seed.json`, waits until the seeded video is ready, and
    writes `<out>/report.json`, which holds the head `GET /build` named, the
-   environment and each check's expected and observed values.
+   checkout's head and anything it has not committed, the commit `dist/`
+   was built at, the environment and each check's expected and observed
+   values. Every page Chromium loads must carry the server's head in its
+   `wiki-build-head` meta, and every script and style it is served must be
+   `dist/` byte for byte. At each window size the run presses 다시 요약,
+   leaves the screen while the stand-in Gemini (3 s per summary) holds the
+   call, opens the video again, and checks that the first read says
+   `pending`, the screen waits, the stored summary then appears with no
+   POST of its own, and the call was metered once.
 
 The generated `report.json` and the focused commands' raw output go into that
 round's report, in full. The report is the current record; this folder keeps

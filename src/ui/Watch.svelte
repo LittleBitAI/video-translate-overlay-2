@@ -11,8 +11,10 @@
   /** P9: what the app last opened (`null`: nothing yet), and its job when P9 gave it. */
   let opened = $state<string | null>(null);
   let openedJob = $state<Job | null | undefined>(undefined);
-  /** The job the stage's overlay shows now: 요약 is offered once its subtitles are ready. */
+  /** The job the stage's overlay shows now, and whether it plays subtitles: 요약 is offered for a
+      ready job, and for a failed re-make whose saved subtitles still play. */
   let stageJob = $state<Job | null>(null);
+  let playing = $state(false);
   let screen = $state<'loading' | 'error' | 'ready'>('loading');
   let address = $state('');
   let opening = $state(false);
@@ -187,8 +189,8 @@
     </section>
   {:else if opened}
     {#key opened}
-      <Stage url={opened} job={openedJob} onjob={(j) => (stageJob = j)} />
-      {#if stageJob?.stage === 'ready'}
+      <Stage url={opened} job={openedJob} onjob={(j) => (stageJob = j)} onplaying={(p) => (playing = p)} />
+      {#if stageJob && (stageJob.stage === 'ready' || playing)}
         {#key stageJob.video_key}
           <Summary videoKey={stageJob.video_key} />
         {/key}

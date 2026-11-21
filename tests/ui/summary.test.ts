@@ -14,14 +14,14 @@ const CUES = { video_key: 'vk', duration_ms: 60_000, source_language: 'en', cues
 const MARKDOWN = '## 한 줄 요약\n\n어텐션을 설명합니다.\n\n## 핵심 내용\n\n- 첫째\n- 둘째\n\n## 다루는 주제\n\n- attention\n\n## 난이도\n\n중급\n\n## 먼저 알면 좋은 것\n\n없음\n\n## 다음에 볼 주제\n\n- C\\+\\+ \\*pointers\\*\n';
 const MADE = { video_key: 'vk', summary: {}, markdown: MARKDOWN, cost_krw: 3.2, reused: false };
 
-/** A ready video at FILE; `summary` answers P19. */
-function serve(summary: (c: Call) => Answer | Promise<Answer>, stage = 'ready') {
+/** A ready video at FILE; `summary` answers P19, `subtitles` P8. */
+function serve(summary: (c: Call) => Answer | Promise<Answer>, stage = 'ready', subtitles: Answer = [200, CUES]) {
   api((c) => {
     if (c.path === '/browser') return [200, { url: FILE, job: job(stage) }];
     if (c.path === '/jobs') return [200, job(stage)];
     if (c.path.endsWith('/summary')) return summary(c);
     if (c.path === '/library/data') return [200, { videos: [], playlists: [], legacy_available: false }];
-    return [200, CUES];
+    return subtitles;
   });
 }
 
@@ -66,13 +66,23 @@ test('a stored summary is shown on opening, with no POST', async () => {
   expect(() => button(s1, '요약')).toThrow();
 });
 
-test.each(['translating', 'failed'])('a %s video does not offer 요약', async (stage) => {
-  serve(() => [200, MADE], stage);
+// The property: 요약 is offered exactly when the video's subtitles play, whatever the latest job's stage.
+const NOT_READY: Answer = [409, { error: 'not_ready', message: '자막을 만드는 중입니다.' }];
+test.each([
+  { name: 'a translating video', stage: 'translating', subtitles: NOT_READY, offered: false },
+  { name: 'a failed first translation, with no subtitles', stage: 'failed', subtitles: NOT_READY, offered: false },
+  { name: 'a failed re-make, whose saved subtitles still play', stage: 'failed', subtitles: [200, CUES] as Answer, offered: true },
+])('$name: 요약 offered $offered', async ({ stage, subtitles, offered }) => {
+  serve(() => [200, { ...MADE, reused: true }], stage, subtitles);
   const s1 = open('/');
   await vi.waitFor(() => expect(features(s1)).toContain('job-progress'));
-  await new Promise((r) => setTimeout(r, 200));
-  expect(features(s1)).not.toContain('video-summary');
-  expect(summaryCalls()).toEqual([]);
+  if (offered) {
+    await vi.waitFor(() => expect(text(section(s1))).toContain('어텐션을 설명합니다.'));
+  } else {
+    await new Promise((r) => setTimeout(r, 200));
+    expect(features(s1)).not.toContain('video-summary');
+    expect(summaryCalls()).toEqual([]);
+  }
 });
 
 test('an untranslated link (no job) does not offer 요약', async () => {

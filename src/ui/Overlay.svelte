@@ -45,8 +45,10 @@
     initial?: Job | null;
     /** Told the job this overlay shows each time it changes (`null`: none). */
     onjob?: (job: Job | null) => void;
+    /** Told whether this overlay plays the video's subtitles: a ready job's, or a failed job's saved ones. */
+    onplaying?: (playing: boolean) => void;
   };
-  let { pageUrl, title = '', mediaUrl = null, timeMs = 0, durationMs = 0, video, prepare, remote = false, initial, onjob }: Props = $props();
+  let { pageUrl, title = '', mediaUrl = null, timeMs = 0, durationMs = 0, video, prepare, remote = false, initial, onjob, onplaying }: Props = $props();
 
   let overlay = $state<HTMLDivElement>();
   $effect(() => {
@@ -103,6 +105,7 @@
   $effect(() => onjob?.(job));
   const active = $derived(!!job && job.stage in STAGE);
   const ready = $derived((job?.stage === 'ready' || job?.stage === 'failed') && cues.length > 0);
+  $effect(() => onplaying?.(ready));
   const ad = $derived(mainMs > 0 && durationMs > 0 && Math.abs(durationMs - mainMs) > AD_TOLERANCE_MS);
   const cue = $derived(ready && !ad ? findCue(cues, timeMs) : undefined);
 

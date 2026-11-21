@@ -58,7 +58,10 @@ their timestamps.
 
 Below the player, a 강의 요약 section (`src/ui/Summary.svelte`,
 `data-feature="video-summary"`) appears once the job the overlay follows is
-`ready`. A running or failed job, an untranslated link opened from the library,
+`ready`, and for a failed job whose subtitles the overlay still plays: a failed
+re-make leaves the selected saved version, which P8 serves and P19 summarizes
+(the overlay reports this through `onplaying`). A running job, a failed first
+translation with no subtitles, an untranslated link opened from the library,
 and a page with no job do not show it. The section's width is capped at
 48 rem; its heading uses the 20 px pane size and the summary's headings 16 px
 semibold. The person chose this placement over a right-hand column on wide
