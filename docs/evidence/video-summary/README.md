@@ -126,9 +126,12 @@ pushed head, with no commit after it, by the steps below:
    writes `<out>/report.json`, which holds the head `GET /build` named, the
    checkout's head and anything it has not committed, the commit `dist/`
    was built at, the environment and each check's expected and observed
-   values. Every page Chromium loads must carry the server's head in its
-   `wiki-build-head` meta, and every script and style it is served must be
-   `dist/` byte for byte. At each window size the run presses 다시 요약,
+   values. Every page the browser checks use (button and loading, error,
+   stored summary, leave and reopen) records each document it loads: the
+   served HTML must carry the server's head in its `wiki-build-head` meta,
+   and that document and every script and style it is served must be
+   `dist/` byte for byte. All those reads finish before a page closes and
+   before the checks are recorded. At each window size the run presses 다시 요약,
    leaves the screen while the stand-in Gemini (3 s per summary) holds the
    call, opens the video again, and checks that the first read says
    `pending`, the screen waits, the stored summary then appears with no

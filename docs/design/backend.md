@@ -205,7 +205,8 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   Scripts without a name in `summary::script` are told apart by 128-code-point
   block. Every topic must also share a word with the title, the glossary's
   source terms or the transcript (not the glossary's Korean targets): a word
-  of three or more letters, or a Korean word of two or
+  of three or more letters (digits are not letters, so `2024` shares no
+  word and `x86` must be said whole), or a Korean word of two or
   more syllables that begins a word there (`신경망` in `신경망을`). The
   transcript, title, glossary and reply are compared in Unicode's composed
   form (NFC, `summary::nfc`), and the reply's values are stored in it, so

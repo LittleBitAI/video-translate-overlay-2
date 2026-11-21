@@ -75,9 +75,30 @@ const HEADINGS = ['한 줄 요약', '핵심 내용', '다루는 주제', '난이
 for (const [w, h] of [[1280, 720], [384, 854]]) {
   const size = `${w}x${h}`;
   const shot = async (page, state) => { await page.waitForTimeout(300); await page.screenshot({ path: join(out, `${size}-${state}.png`), fullPage: true }); };
+  // Every page below is opened here. Each document it loads gives the commit its
+  // screens were built at, read from the served HTML, and each document, script
+  // and style is compared byte for byte with dist/. The reads finish before a page closes.
+  const heads = [];
+  const assets = [];
+  const reads = [];
+  const opened = async () => {
+    const page = await browser.newPage({ viewport: { width: w, height: h } });
+    page.on('response', (q) => {
+      const u = new URL(q.url());
+      const doc = q.request().resourceType() === 'document';
+      if (u.origin !== new URL(base).origin || (!doc && !/\.(js|css)$/.test(u.pathname))) return;
+      const built = join('dist', doc ? 'index.html' : u.pathname);
+      reads.push(q.body().then((b) => {
+        if (doc) heads.push(b.toString('utf8').match(/name="wiki-build-head" content="([^"]*)"/)?.[1] ?? null);
+        assets.push([u.pathname, sha(b), sha(readFileSync(built))]);
+      }, () => { if (doc) heads.push('unread'); assets.push([u.pathname, 'unread', '']); }));
+    });
+    return page;
+  };
+  const close = async (page) => { await Promise.all(reads); await page.close(); };
   // P19 answered in the page: GET as "none stored yet", POST by `post`.
   const routed = async (post) => {
-    const page = await browser.newPage({ viewport: { width: w, height: h } });
+    const page = await opened();
     await page.route('**/videos/*/summary', (route) => route.request().method() === 'GET'
       ? route.fulfill({ status: 404, contentType: 'application/json', body: '{"error":"no_summary"}' }) : post(route));
     await page.goto(base + '/');
@@ -98,7 +119,7 @@ for (const [w, h] of [[1280, 720], [384, 854]]) {
   check(size, 'loading: the button is disabled and the section busy', [true, 'true'],
     [await page.getByRole('button', { name: '요약하는 중' }).isDisabled(), await section.getAttribute('aria-busy')]);
   await shot(page, 'loading');
-  await page.close();
+  await close(page);
 
   page = await routed((route) => route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify(INVALID) }));
   await page.getByRole('button', { name: '요약', exact: true }).click();
@@ -106,10 +127,10 @@ for (const [w, h] of [[1280, 720], [384, 854]]) {
   await alert.waitFor();
   check(size, 'error: the message and 다시 시도', [true, true], [(await alert.innerText()).includes(INVALID.message), await alert.getByRole('button', { name: '다시 시도' }).isVisible()]);
   await shot(page, 'error');
-  await page.close();
+  await close(page);
 
   // Through the backend: the summary stored above is shown with no POST.
-  page = await browser.newPage({ viewport: { width: w, height: h } });
+  page = await opened();
   const posts = [];
   page.on('request', (q) => { if (q.method() === 'POST' && q.url().endsWith('/summary')) posts.push(q.url()); });
   await page.goto(base + '/');
@@ -118,21 +139,12 @@ for (const [w, h] of [[1280, 720], [384, 854]]) {
   check(size, 'summary: the stored summary as six headings, no POST', [HEADINGS, 0], [await s.locator('h3').allInnerTexts(), posts.length]);
   check(size, 'summary: its cost line', true, (await s.innerText()).includes('요약 비용'), (await s.innerText()).includes('요약 비용'));
   await shot(page, 'summary');
-  await page.close();
+  await close(page);
 
   // Through the backend and the stand-in Gemini: 다시 요약 pressed, the screen left while
-  // the call is out, the video opened again. Every page load records the commit its
-  // screens were built at and the bytes of the scripts and styles it was served.
-  page = await browser.newPage({ viewport: { width: w, height: h } });
-  const heads = [];
-  const assets = [];
-  page.on('response', (q) => {
-    const p = new URL(q.url()).pathname;
-    if (!q.url().startsWith(base) || !/\.(js|css)$/.test(p)) return;
-    q.body().then((b) => assets.push([p, sha(b), sha(readFileSync(join('dist', p)))]), () => assets.push([p, 'unread', '']));
-  });
-  const load = async () => { await page.goto(base + '/'); heads.push(await page.locator('meta[name="wiki-build-head"]').getAttribute('content')); };
-  await load();
+  // the call is out, the video opened again.
+  page = await opened();
+  await page.goto(base + '/');
   await page.getByRole('button', { name: '다시 요약' }).waitFor();
   const spent = (await job()).summary_cost_krw;
   const sent = page.waitForRequest((q) => q.method() === 'POST' && q.url().endsWith('/summary'));
@@ -142,7 +154,7 @@ for (const [w, h] of [[1280, 720], [384, 854]]) {
   const reread = page.waitForResponse((q) => q.request().method() === 'GET' && q.url().endsWith('/summary'));
   const reposts = [];
   page.on('request', (q) => { if (q.method() === 'POST' && q.url().endsWith('/summary')) reposts.push(q.url()); });
-  await load();
+  await page.goto(base + '/');
   const first = await (await reread).json().catch(() => null);
   const waiting = await page.getByRole('button', { name: '요약하는 중' }).waitFor({ timeout: 2000 }).then(() => true, () => false);
   check(size, 'reopened while the call is out: the first read says pending and the screen waits', [true, true], [first?.pending === true, waiting]);
@@ -151,9 +163,12 @@ for (const [w, h] of [[1280, 720], [384, 854]]) {
   const r2 = page.locator('[data-feature="video-summary"]');
   check(size, 'reopened: then shows the summary the call stored, with no POST of its own', [HEADINGS, 0], [await r2.locator('h3').allInnerTexts(), reposts.length]);
   check(size, 'reopened: the call that outlived its screen was metered once', round(spent + one), round((await job()).summary_cost_krw));
-  check(size, 'screens: every page was built at the server head', heads.map(() => build?.head), heads);
-  check(size, 'screens: every script and style served is dist/ as built', true, assets.length > 0 && assets.every(([, got, built]) => got === built), assets.length > 0 && assets.every(([, got, built]) => got === built));
-  await page.close();
+  await close(page);
+  // Six documents: the loading page, the error page, the stored-summary page, and the reopen
+  // page's three loads (the video, the preferences screen it leaves for, the video again).
+  check(size, 'screens: every document of every page above was built at the server head', Array(6).fill(build?.head), heads);
+  const same = assets.length > 0 && assets.every(([, got, built]) => got === built);
+  check(size, 'screens: every document, script and style those pages were served is dist/ as built', true, same, { same, served: assets.length });
 }
 await browser.close();
 

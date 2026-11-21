@@ -62,7 +62,10 @@ Below the player, a 강의 요약 section (`src/ui/Summary.svelte`,
 re-make leaves the selected saved version, which P8 serves and P19 summarizes
 (the overlay reports this through `onplaying`). A running job, a failed first
 translation with no subtitles, an untranslated link opened from the library,
-and a page with no job do not show it. The section's width is capped at
+and a page with no job do not show it. Wherever the subtitles play, the
+overlay shows the video's cost as P7 reports it (the summary's included),
+re-read every second: `자막 준비됨 · …원` for a ready job, and under the
+failed re-make's reason a `든 비용 …원` line. The section's width is capped at
 48 rem; its heading uses the 20 px pane size and the summary's headings 16 px
 semibold. The person chose this placement over a right-hand column on wide
 windows and a button on the overlay's status chip, after inspecting the

@@ -277,6 +277,10 @@
         <p class="text-accent">진행 상태를 불러오지 못했습니다. 영상감지 버튼을 다시 눌러 주세요.</p>
       {:else if job}
         <p class="text-accent">작업이 멈췄습니다. {STOPPED[job.failure_reason ?? ''] ?? job.failure_reason ?? ''}</p>
+        {#if ready}
+          <!-- A failed re-make: the saved subtitles still play, and the video's cost (its summary's included) is P7's. -->
+          <p><span class={label}>든 비용</span> <span class={value}>{won(job.cost_krw)}</span></p>
+        {/if}
       {/if}
     </div>
   {:else if look === 'done'}

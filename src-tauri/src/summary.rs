@@ -114,7 +114,8 @@ fn in_scripts(text: &str, own: &[Script]) -> bool {
 }
 
 /// A text's words of three or more letters (two for a Korean word, whose
-/// syllables are letters), lowercased, a plural `s` dropped. A word ends at
+/// syllables are letters), lowercased, a plural `s` dropped; digits count
+/// toward none, so a number alone is no word. A word ends at
 /// a character that is not a letter or digit, and where a script written
 /// without spaces ([`unspaced`]) meets another: `Transformerの仕組み` holds
 /// the word `transformer`.
@@ -127,7 +128,8 @@ fn words(text: &str) -> std::collections::HashSet<String> {
         if kind.is_some() { runs.last_mut().unwrap().push(c); }
         last = kind;
     }
-    runs.into_iter().filter(|w| w.chars().count() >= if hangul(w) { 2 } else { 3 })
+    // Letters, not digits, make a word: `2024` is none, `GPT4` is one, `x86` too short.
+    runs.into_iter().filter(|w| w.chars().filter(|c| c.is_alphabetic()).count() >= if hangul(w) { 2 } else { 3 })
         .map(|w| { let w = w.to_lowercase(); match w.strip_suffix('s') { Some(s) if s.chars().count() >= 3 => s.to_string(), _ => w } })
         .collect()
 }
@@ -527,6 +529,7 @@ mod tests {
         let han_run = "今天讲解语言模型训练。";
         let (fr_decomposed, ko_decomposed) = (nfd(source(Some("fr"))), nfd(source(Some("ko"))));
         let accented_decomposed = nfd("réseaux");
+        let numbered = "In 2024 we studied attention with GPT4 on x86 code.";
         assert!(fr_decomposed.contains("re\u{301}seaux") && ko_decomposed.contains('\u{1112}'), "the decomposed forms differ from the composed ones");
         let by_language = [
             (Some("en"), "key_points", latin, false),
@@ -604,6 +607,16 @@ mod tests {
             (Some("fr"), fr_decomposed.as_str(), "topics", "poissons rouges", false),
             (Some("ko"), ko_decomposed.as_str(), "topics", hangul_stem, true),
             (Some("ko"), ko_decomposed.as_str(), "topics", hangul_unsaid, false),
+            // A word is its letters: a number the talk says shares no word, and a short name
+            // with digits is held to being said whole.
+            (Some("en"), numbered, "topics", "2024 quantum optics", false),
+            (Some("en"), numbered, "topics", "attention 2024", true),
+            (Some("en"), numbered, "topics", "2024", true),
+            (Some("en"), numbered, "topics", "1999", false),
+            (Some("en"), numbered, "topics", "GPT4", true),
+            (Some("en"), numbered, "topics", "x86", true),
+            (Some("en"), numbered, "topics", "x86 assembly", false),
+            (Some("en"), numbered, "topics", "x64", false),
         ];
         let mut wrong = Vec::new();
         for (language, transcript, field, item, kept) in by_language.into_iter().chain(mixed) {

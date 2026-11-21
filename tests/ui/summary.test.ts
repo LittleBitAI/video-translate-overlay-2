@@ -85,6 +85,28 @@ test.each([
   }
 });
 
+// The property: wherever the video's subtitles play, the overlay shows the video's cost as P7 reports
+// it, the summary's included, and follows it when a summary call adds to it.
+test.each([
+  { name: 'a ready video', stage: 'ready' },
+  { name: 'a failed re-make, whose saved subtitles still play', stage: 'failed' },
+])('$name: the overlay shows the video cost with the summary added', async ({ stage }) => {
+  let cost = 12.5;
+  api((c) => {
+    if (c.path === '/browser') return [200, { url: FILE, job: { ...job(stage), cost_krw: cost } }];
+    if (c.path === '/jobs') return [200, { ...job(stage), cost_krw: cost }];
+    if (c.path.endsWith('/summary')) return c.method === 'GET' ? [404, { error: 'no_summary' }] : ((cost = 15.7), [200, MADE]);
+    if (c.path === '/library/data') return [200, { videos: [], playlists: [], legacy_available: false }];
+    return [200, CUES];
+  });
+  const s1 = open('/');
+  const status = () => text($(s1, '[data-feature="job-progress"]')!);
+  await vi.waitFor(() => expect(status()).toContain('12.5원'));
+  button(s1, '요약').click();
+  await vi.waitFor(() => expect(text(section(s1))).toContain('요약 비용 3.2원'));
+  await vi.waitFor(() => expect(status()).toContain('15.7원'), { timeout: 3_000 });
+});
+
 test('an untranslated link (no job) does not offer 요약', async () => {
   api((c) => (c.path === '/browser' ? [200, { url: FILE, job: null }] : [404, { error: 'no_job' }]));
   const s1 = open('/');
