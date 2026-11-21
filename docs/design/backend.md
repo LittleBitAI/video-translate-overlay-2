@@ -236,13 +236,19 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   digits (`x86`, `3D`, `2.5D`), but not a measurement (`summary::measure`:
   a number as it is written, with a sign before it (`-0.5`, `−2`, `±2`)
   and a dot, comma, apostrophe, thin space or underscore between its
-  digits (`1,000`), then at most one space and a unit with no capital,
-  digit or space, such as `2nd`, `100ms`, `0.5 sec` or `5 km/h`, sentence
-  punctuation at either end left off), or two or more capitals (`AI`). A measurement counts by no route:
-  not as a shared word however long its unit, its unit one space after
-  its number not as a word either (`sec` in `0.5 sec`, in the topic and
-  in the talk alike; `step` in `2nd step` stays a word), a term, a name with signs,
-  or the whole topic (`0.5ms,` included). Said whole in the title,
+  digits (`1,000`), then a unit written on it with no capital, digit or
+  space (`2nd`, `100ms`, `0.5sec`), or one space and units from the closed
+  list `summary::UNITS` joined by `/` (`0.5 sec`, `5 km/h`), sentence
+  punctuation at either end left off), or two or more capitals (`AI`). A
+  lowercase word one space after a number that is not on that list is a
+  word of its own: `12 layers` says `layers`, so `layer count` shares its
+  word; a spaced unit missing from the list reads as a word too. The title,
+  glossary and transcript are read with every measurement written over in
+  zeros (`summary::unmeasured`) before any route looks at them, so a
+  measurement counts by no route: not as a shared word, a term, a name with
+  signs, or the whole topic (`sec` is not said in `0.5 sec`, `0.5ms,`
+  included), while a zero, not a space, keeps `C++` unsaid in `C++17`.
+  Said whole in the title,
   glossary or transcript, it makes the topic the talk's alone or beside
   words the talk never says (`x86 assembly` in a talk saying `x86`). A
   number (`2024`) or a short lowercase word (`we`) never counts. A name

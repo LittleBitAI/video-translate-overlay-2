@@ -1092,7 +1092,13 @@ impl Drop for App {
         self.host.take();
         self.media.stop();
         self.gemini.stop();
-        let _ = fs::remove_dir_all(&self.dir);
+        // A failing test keeps its folder and prints the host's log, so the failure can be read afterwards.
+        if thread::panicking() {
+            let log = fs::read(self.stderr_path()).unwrap_or_default();
+            eprintln!("contract test failed: its app data is kept in {:?}; host log:\n{}", self.dir, String::from_utf8_lossy(&log));
+        } else {
+            let _ = fs::remove_dir_all(&self.dir);
+        }
     }
 }
 

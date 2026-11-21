@@ -116,22 +116,15 @@ fn in_scripts(text: &str, own: &[Script]) -> bool {
 /// A text's words of three or more letters (two for a Korean word, whose
 /// syllables are letters), lowercased, a plural `s` dropped; digits count
 /// toward none, so a number alone is no word, nor is a measurement
-/// ([`measure`]: `0.5sec`) however long its unit, nor a unit one space after
-/// its number (`sec` in `0.5 sec`; `step` in `2nd step` is a word). A word ends at
+/// ([`measure`]: `0.5sec`) however long its unit. A word ends at
 /// a character that is not a letter or digit, except a dot inside a dotted
 /// name ([`runs`]: `example.com` is one word), and where a script written
 /// without spaces ([`unspaced`]) meets another: `Transformerの仕組み` holds
 /// the word `transformer`.
 fn words(text: &str) -> std::collections::HashSet<String> {
-    let found = runs_at(text);
-    // The unit of a measurement spaced from its number (`0.5 sec`) is part of that quantity.
-    let unit = |k: usize| k > 0 && {
-        let ((before, number), (at, unit)) = (&found[k - 1], &found[k]);
-        &text[before + number.len()..*at] == " " && number.starts_with(|c: char| c.is_numeric()) && measure(&format!("{number} {unit}"))
-    };
     // Letters, not digits, make a word: `2024` is none, `GPT4` is one, `x86` too short.
     // A measurement (`0.5sec`) is a quantity, not a word, however long its unit.
-    found.iter().enumerate().filter(|&(k, _)| !unit(k)).map(|(_, (_, w))| w.clone())
+    runs(text).into_iter()
         .filter(|w| w.chars().filter(|c| c.is_alphabetic()).count() >= if hangul(w) { 2 } else { 3 } && !measure(w))
         // A dotted name (`Lib.js`) is an identifier, not a plural: it keeps every letter.
         .map(|w| { let w = w.to_lowercase(); match w.strip_suffix('s') { Some(s) if s.chars().count() >= 3 && !w.contains('.') => s.to_string(), _ => w } })
@@ -175,11 +168,24 @@ fn term(run: &str) -> bool {
     }
 }
 
+/// Units written one space after their number (`0.5 sec`, `5 km/h`). A
+/// lowercase word after a number that is not one of these is a word of its
+/// own: `12 layers` says `layers`.
+// ponytail: a closed list; a unit missing from it, spaced from its number, reads as a word. Add units here as talks show them.
+const UNITS: &[&str] = &[
+    "s", "sec", "secs", "second", "seconds", "ms", "msec", "us", "µs", "μs", "ns", "ps", "min", "mins", "minute", "minutes",
+    "h", "hr", "hrs", "hour", "hours", "day", "days", "week", "weeks", "month", "months", "year", "years",
+    "b", "bit", "bits", "byte", "bytes", "kb", "mb", "gb", "tb", "kib", "mib", "gib", "bps", "kbps", "mbps", "gbps",
+    "hz", "khz", "mhz", "ghz", "nm", "µm", "μm", "mm", "cm", "m", "km", "ft", "mg", "g", "kg", "lb", "lbs", "oz", "ml", "l",
+    "px", "pt", "dpi", "ppi", "fps", "rpm", "w", "kw", "kwh", "wh", "v", "mv", "percent",
+];
+
 /// Whether a text is a quantity, never a name: a number as it is written
 /// (a sign before it, `-0.5`, `−2`, `±2`; a dot, comma, apostrophe, thin
-/// space or underscore between its digits, `1,000`), then at most one space
-/// and a unit with no capital, digit or space (`2nd`, `100ms`, `0.5 sec`,
-/// `5 km/h`), sentence punctuation at either end left off (`0.5ms,`).
+/// space or underscore between its digits, `1,000`), then a unit written on
+/// it with no capital, digit or space (`2nd`, `100ms`, `0.5sec`), or one
+/// space and units of [`UNITS`] joined by `/` (`0.5 sec`, `5 km/h`; not
+/// `12 layers`), sentence punctuation at either end left off (`0.5ms,`).
 /// `3D`, `2.5D` and `1e-9s` are names.
 fn measure(text: &str) -> bool {
     let text = text.trim_matches(|c: char| PUNCTUATION.contains(c));
@@ -187,9 +193,36 @@ fn measure(text: &str) -> bool {
     let between = |c: char| matches!(c, '.' | ',' | '\'' | '’' | '_' | '\u{2009}' | '\u{202F}');
     let mut i = 0;
     while i < chars.len() && (chars[i].is_numeric() || (i > 0 && between(chars[i]) && chars.get(i + 1).is_some_and(|c| c.is_numeric()))) { i += 1; }
-    let unit = &chars[i..];
-    let unit = unit.strip_prefix(&[' '][..]).unwrap_or(unit);
-    i > 0 && !unit.iter().any(|c| c.is_whitespace() || c.is_uppercase() || c.is_ascii_digit())
+    let unit: String = chars[i..].iter().collect();
+    i > 0 && match unit.strip_prefix(' ') {
+        Some(spaced) => spaced.split('/').all(|u| UNITS.contains(&u)),
+        None => !unit.chars().any(|c| c.is_whitespace() || c.is_uppercase() || c.is_ascii_digit()),
+    }
+}
+
+/// `text` with every measurement in it ([`measure`]: `0.5ms`, `0.5 sec`,
+/// `5 km/h`) written over in zeros, so no route reads its unit as a word or
+/// a name (`sec` is not said in `0.5 sec`) and a neighbour still sees a
+/// digit there (`C++` is not said in `C++17`). A bare number is left as it is.
+fn unmeasured(text: &str) -> String {
+    let found = runs_at(text);
+    let mut spans: Vec<(usize, usize)> = Vec::new();
+    for (k, (at, run)) in found.iter().enumerate() {
+        if !run.starts_with(|c: char| c.is_numeric()) { continue; }
+        let end = at + run.len();
+        if run.chars().any(char::is_alphabetic) {
+            if measure(run) { spans.push((*at, end)); }
+            continue;
+        }
+        // A number: units may follow, one space after it, then joined by `/`.
+        let (mut last, mut gap) = (end, " ");
+        for (next_at, next) in &found[k + 1..] {
+            if &text[last..*next_at] != gap || !UNITS.contains(&next.as_str()) { break; }
+            (last, gap) = (next_at + next.len(), "/");
+        }
+        if last > end { spans.push((*at, last)); }
+    }
+    text.char_indices().map(|(i, c)| if spans.iter().any(|&(a, b)| a <= i && i < b) { '0' } else { c }).collect()
 }
 
 /// Whether a letter is in a script written without spaces in a talk with
@@ -311,7 +344,8 @@ pub fn check(reply: &Value, language: Option<&str>, transcript: &str, names: &st
     // The talk's text and the reply's (through `one_line`) are compared in one Unicode form.
     let (transcript, names) = (&nfc(transcript), nfc(names));
     let own = own_scripts(language, transcript);
-    let said = format!("{names}\n{transcript}");
+    // Every route reads the talk with its measurements written over ([`unmeasured`]).
+    let said = unmeasured(&format!("{names}\n{transcript}"));
     let source = words(&said);
     let without_spaces = written_without_spaces(transcript, &own);
     let gist = one_line(reply["gist"].as_str().unwrap_or(""));
@@ -829,7 +863,8 @@ mod tests {
         let talk = "In 2024 we studied attention with GPT4 on x86 code, a 3D model for AI on the 2nd day.";
         let measures = "The timer uses a 0.5ms-based delay, a 2.5ms step and a 2.5D view.";
         let formats = "The offset is -0.5ms, then −2ms; the delay is 1,000ms, then 0.5 ms, then ±2 ms, at 5 km/h.";
-        let spaced = "The delay is 0.5 sec, then 100 seconds on the 2nd step.";
+        let spaced = "The delay is 0.5 sec, then 100 seconds on the 2nd step, then it resets.";
+        let counts = "The model uses 12 layers, each tuned per sec of input.";
         let units = "The delay is 0.5sec and the link runs at 100kbps (0.5ms), measured once; it is 0.5ms, again.";
         for (name, transcript, topic, kept) in [
             ("a number the talk says, alone", talk, "2024", false),
@@ -863,6 +898,12 @@ mod tests {
             ("a unit said only after a number and a space, beside an unsaid word", spaced, "sec quantum", false),
             ("a whole number, a space and a long unit, beside an unsaid word", spaced, "100 seconds quantum", false),
             ("a word said after an ordinal and a space, beside an unsaid word", spaced, "step quantum", true),
+            ("a unit alone, said only one space after a number", spaced, "sec", false),
+            ("a unit alone, said only on its number", units, "sec", false),
+            ("a word said after a count, its plural dropped, beside an unsaid word", counts, "layer count", true),
+            ("a word said after a count, alone", counts, "layers", true),
+            ("a count and its word, alone", counts, "12 layers", true),
+            ("a unit said apart from any number, alone", counts, "sec", true),
             ("a word said apart from any number, beside an unsaid word", spaced, "delay quantum", true),            ("a short lowercase word the talk says", talk, "we alpha", false),
             ("a capitals term the talk says in another case", talk, "ON alpha", false),
         ] {
