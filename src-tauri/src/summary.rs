@@ -200,20 +200,19 @@ fn measure(text: &str) -> bool {
     }
 }
 
-/// `text` with every measurement in it ([`measure`]: `0.5ms`, `0.5 sec`,
-/// `5 km/h`) written over in zeros, so no route reads its unit as a word or
-/// a name (`sec` is not said in `0.5 sec`) and a neighbour still sees a
-/// digit there (`C++` is not said in `C++17`). A bare number is left as it is.
+/// `text` with every measurement spaced from its number ([`measure`]:
+/// `0.5 sec`, `5 km/h`) written over in zeros, so no route reads its unit as
+/// a word or a name (`sec` is not said in `0.5 sec`) and a neighbour still
+/// sees a digit there (`C++` is not said in `C++17`). A unit written on its
+/// number (`0.5sec`) is one run, which [`words`] and [`term`] refuse and
+/// [`said_whole`] does not split, and a term such as `1e-9s` is left whole.
 fn unmeasured(text: &str) -> String {
     let found = runs_at(text);
     let mut spans: Vec<(usize, usize)> = Vec::new();
     for (k, (at, run)) in found.iter().enumerate() {
-        if !run.starts_with(|c: char| c.is_numeric()) { continue; }
+        // Only a number of digits alone takes a spaced unit.
+        if !run.starts_with(|c: char| c.is_numeric()) || run.chars().any(char::is_alphabetic) { continue; }
         let end = at + run.len();
-        if run.chars().any(char::is_alphabetic) {
-            if measure(run) { spans.push((*at, end)); }
-            continue;
-        }
         // A number: units may follow, one space after it, then joined by `/`.
         let (mut last, mut gap) = (end, " ");
         for (next_at, next) in &found[k + 1..] {
@@ -256,6 +255,8 @@ fn written_without_spaces(transcript: &str, own: &[Script]) -> bool {
 /// topic (`Go`) if it has a letter. A number never counts, nor a measurement
 /// ([`measure`]: `2nd`, `0.5ms`) by any of these routes.
 fn in_talk(topic: &str, own: &[Script], without_spaces: bool, source: &std::collections::HashSet<String>, said: &str) -> bool {
+    // The topic is read as the talk is ([`unmeasured`]): `100 bytes` offers no word `byte`.
+    let topic = &unmeasured(topic);
     // A word is all in scripts without spaces or all in others (`words`).
     words(topic).iter().any(|w| match w.chars().all(|c| spaceless(c, own)) {
         true => without_spaces || said.contains(w.as_str()),
@@ -865,6 +866,8 @@ mod tests {
         let formats = "The offset is -0.5ms, then −2ms; the delay is 1,000ms, then 0.5 ms, then ±2 ms, at 5 km/h.";
         let spaced = "The delay is 0.5 sec, then 100 seconds on the 2nd step, then it resets.";
         let counts = "The model uses 12 layers, each tuned per sec of input.";
+        let bits = "A byte has eight bits.";
+        let exponent = "The threshold is 1e-9s.";
         let units = "The delay is 0.5sec and the link runs at 100kbps (0.5ms), measured once; it is 0.5ms, again.";
         for (name, transcript, topic, kept) in [
             ("a number the talk says, alone", talk, "2024", false),
@@ -904,6 +907,12 @@ mod tests {
             ("a word said after a count, alone", counts, "layers", true),
             ("a count and its word, alone", counts, "12 layers", true),
             ("a unit said apart from any number, alone", counts, "sec", true),
+            ("a count of a listed unit, its unit said only apart from a number, alone", bits, "100 bytes", false),
+            ("a count of a listed unit, beside an unsaid word", bits, "100 bytes quantum", false),
+            ("a listed unit said apart from any number, beside an unsaid word", bits, "byte order", true),
+            ("a term with a sign between its digits, alone, said whole", exponent, "1e-9s", true),
+            ("a term with a sign between its digits, beside an unsaid word, said whole", exponent, "1e-9s quantum", true),
+            ("a term with a sign between its digits, never said", exponent, "2e-9s", false),
             ("a word said apart from any number, beside an unsaid word", spaced, "delay quantum", true),            ("a short lowercase word the talk says", talk, "we alpha", false),
             ("a capitals term the talk says in another case", talk, "ON alpha", false),
         ] {
