@@ -119,15 +119,30 @@ fn words(text: &str) -> std::collections::HashSet<String> {
 /// transcript (`source`), or for a Korean word, begins one there (the
 /// transcript writes `신경망을` for the topic `신경망`). A same-script
 /// translation (French words for an English talk) shares none. A topic with
-/// no word to judge (`C++`, `AI`) passes, and so does every topic of a talk
-/// written without spaces (Han without Hangul, kana, Thai, Lao, Myanmar,
-/// Khmer), which has no words to compare.
-fn in_talk(topic: &str, own: &[Script], source: &std::collections::HashSet<String>) -> bool {
+/// no such word (`C++`, `AI`, `Go`) must be said whole ([`said_whole`]) in
+/// the title, glossary or transcript (`said`), in any talk; one with no
+/// letter or digit says nothing and fails. Other topics of a talk written
+/// without spaces (Han without Hangul, kana, Thai, Lao, Myanmar, Khmer)
+/// pass: it has no words to compare.
+fn in_talk(topic: &str, own: &[Script], source: &std::collections::HashSet<String>, said: &str) -> bool {
+    let words_of = words(topic);
+    if words_of.is_empty() { return topic.chars().any(char::is_alphanumeric) && said_whole(topic, said); }
     let spaceless = own.contains(&Script::Kana) || (own.contains(&Script::Han) && !own.contains(&Script::Hangul))
         || own.iter().any(|s| matches!(s, Script::Block(0x1C | 0x1D | 0x20 | 0x21 | 0x2F)));
-    if spaceless { return true; }
-    let topic = words(topic);
-    topic.is_empty() || topic.iter().any(|w| source.contains(w) || (hangul(w) && source.iter().any(|s| s.starts_with(w.as_str()))))
+    spaceless || words_of.iter().any(|w| source.contains(w) || (hangul(w) && source.iter().any(|s| s.starts_with(w.as_str()))))
+}
+
+/// Whether `text` holds `topic` as written (case and all), not inside a
+/// longer run of the same script: `AI` is said in `AI uses` and in `AIの`,
+/// not in `MAIN`; `Go` not in `Google`.
+fn said_whole(topic: &str, text: &str) -> bool {
+    let kind = |c: char| c.is_alphanumeric().then(|| script(c));
+    let (first, last) = (topic.chars().next().and_then(kind), topic.chars().next_back().and_then(kind));
+    text.match_indices(topic).any(|(i, _)| {
+        let before = text[..i].chars().next_back().and_then(kind);
+        let after = text[i + topic.len()..].chars().next().and_then(kind);
+        (before.is_none() || before != first) && (after.is_none() || after != last)
+    })
 }
 
 /// The reply's values as stored, or why they break a value rule. Every
@@ -141,7 +156,8 @@ fn in_talk(topic: &str, own: &[Script], source: &std::collections::HashSet<Strin
 /// the glossary's source terms, whose words count as the talk's too.
 pub fn check(reply: &Value, language: Option<&str>, transcript: &str, names: &str) -> Result<Value, String> {
     let own = own_scripts(language, transcript);
-    let source = words(&format!("{names}\n{transcript}"));
+    let said = format!("{names}\n{transcript}");
+    let source = words(&said);
     let gist = one_line(reply["gist"].as_str().unwrap_or(""));
     if gist.is_empty() { return Err("empty gist".into()); }
     if !hangul(&gist) { return Err("gist is not Korean".into()); }
@@ -158,7 +174,7 @@ pub fn check(reply: &Value, language: Option<&str>, transcript: &str, names: &st
         if !korean && !kept.iter().all(|t| in_scripts(t, &own)) {
             return Err(format!("{field} is not in the talk's language"));
         }
-        if field == "topics" && !kept.iter().all(|t| in_talk(t, &own, &source)) {
+        if field == "topics" && !kept.iter().all(|t| in_talk(t, &own, &source, &said)) {
             return Err("a topic is not in the talk's words".into());
         }
         Ok(kept)
@@ -445,7 +461,8 @@ mod tests {
             (Some("en"), "topics", latin, true),
             (Some("en"), "topics", notation, true),
             (Some("en"), "topics", plural, true),
-            (Some("en"), "topics", no_word, true),
+            // Too short for a word, and this talk never says it (a_short_topic_must_be_said_whole).
+            (Some("en"), "topics", no_word, false),
             (Some("en"), "topics", unsaid, false),
             (Some("en"), "topics", accented, false),
             (Some("en"), "topics", hangul, false),
@@ -506,6 +523,40 @@ mod tests {
         let c = check(&good(), Some("en"), source(Some("en")), "").unwrap();
         assert_eq!(c["key_points"], json!(["어텐션은 가중합입니다."]));
         assert_eq!(c["topics"], json!(["attention", "transformer"]));
+    }
+
+    /// The property: a topic too short to share a word with the talk passes
+    /// only if the talk says it whole, as written, not inside a longer run of
+    /// the same script, in a talk written with spaces or without; a topic
+    /// with no letter or digit never passes.
+    #[test]
+    fn a_short_topic_must_be_said_whole() {
+        let spaced = "Modern AI uses attention.";
+        let inside = "The MAIN loop and Google use attention.";
+        let named = "C++ and attention.";
+        let unsaid = "Attention uses weights.";
+        let spaceless = "確率論の基礎とAIの話です。";
+        let korean = "AI 기초를 배웁니다.";
+        for (name, language, transcript, topic, kept) in [
+            ("said in a spaced talk", "en", spaced, "AI", true),
+            ("never said", "en", spaced, "Go", false),
+            ("said in another case", "en", spaced, "ai", false),
+            ("only inside a longer word", "en", inside, "AI", false),
+            ("only at the start of a longer word", "en", inside, "Go", false),
+            ("said with its signs", "en", named, "C++", true),
+            ("with signs, never said", "en", unsaid, "C++", false),
+            ("no letter or digit", "en", named, "++", false),
+            ("said in a talk without spaces", "ja", spaceless, "AI", true),
+            ("never said in a talk without spaces", "ja", spaceless, "Go", false),
+            ("said before a Korean word", "ko", korean, "AI", true),
+        ] {
+            // The base reply's topic is the talk's first word, so only `topic` decides.
+            let mut reply = good();
+            reply["topics"] = json!([transcript.split_whitespace().next().unwrap()]);
+            assert!(check(&reply, Some(language), transcript, "").is_ok(), "{name}: the base reply");
+            reply["topics"] = json!([topic]);
+            assert_eq!(check(&reply, Some(language), transcript, "").is_ok(), kept, "{name}");
+        }
     }
 
     /// The property: only what the talk said decides its scripts. A title or

@@ -182,6 +182,46 @@ test.each([
   expect(summaryCalls().filter((c) => c.method === 'POST')).toHaveLength(1);
 });
 
+// The property: a read that gets no answer (a 5xx, or the app unreachable) says nothing about the
+// summary. A screen reopened during a call keeps waiting, asks again, and shows what the call did
+// with no user action, wherever the failed read falls.
+test.each([
+  { name: 'a 503 on a poll while waiting', at: 2, status: 503 },
+  { name: 'a 500 on a poll while waiting', at: 2, status: 500 },
+  { name: 'an unreachable app on a poll while waiting', at: 2, status: 0 },
+  { name: 'a 503 on the first read after reopening', at: 1, status: 503 },
+])('reopened during a call, $name: keeps waiting, then shows the summary', async ({ at, status }) => {
+  let stored: any = null;
+  let release: (() => void) | undefined;
+  let reads = -1; // reads since reopening, -1 before
+  serve((c) => {
+    if (c.method === 'GET') {
+      if (reads >= 0 && ++reads === at) {
+        if (status === 0) throw new TypeError('network down');
+        return [status, { error: 'temporary' }];
+      }
+      return stored ? [200, { ...stored, reused: true }] : release ? [200, { video_key: 'vk', cost_krw: 0, pending: true }] : [404, { error: 'no_summary' }];
+    }
+    return new Promise((r) => (release = () => { stored = MADE; release = undefined; r([200, MADE]); }));
+  });
+  const s1 = open('/');
+  await vi.waitFor(() => expect(button(s1, '요약')).toBeTruthy());
+  button(s1, '요약').click();
+  await vi.waitFor(() => expect(release).toBeTruthy());
+  go('/library');
+  flushSync();
+  reads = 0;
+  go('/');
+  flushSync();
+  // A read after the failed one, made by the screen itself.
+  await vi.waitFor(() => expect(reads).toBeGreaterThan(at), { timeout: 4000 });
+  await vi.waitFor(() => expect(button(s1, '요약하는 중').disabled).toBe(true));
+  release!();
+  await vi.waitFor(() => expect(text(section(s1))).toContain('어텐션을 설명합니다.'), { timeout: 4000 });
+  expect($(section(s1), '[role="alert"]')).toBeNull();
+  expect(summaryCalls().filter((c) => c.method === 'POST')).toHaveLength(1);
+});
+
 test('without a key, the error says to add one in the settings', async () => {
   serve((c) => (c.method === 'GET' ? [404, {}] : [428, { error: 'no_key' }]));
   const s1 = open('/');

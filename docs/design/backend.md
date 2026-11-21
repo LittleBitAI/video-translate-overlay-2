@@ -207,7 +207,13 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   of three or more letters, or a Korean word of two or
   more syllables that begins a word there (`신경망` in `신경망을`). So a
   same-script translation (French words for an English talk) and a Korean
-  topic the Korean talk never says are refused. Next topics, which come
+  topic the Korean talk never says are refused. A topic with no such word
+  (`AI`, `Go`, `C++`), in any talk, must be said whole in the title,
+  glossary or transcript: as written, case and all, and not inside a longer
+  run of the same script (`AI` in `AIの`, not in `MAIN`). A topic with no
+  letter or digit is refused. A short topic the talk happens to say in
+  another sense (the verb "go" written `Go` at a sentence start) is not told
+  apart: an accepted limit. Next topics, which come
   after the talk, are held only to the scripts, so a same-alphabet
   translation (`descente de gradient` for an English talk) is accepted; the
   prompt and schema ask for the talk's language, and the code guarantees

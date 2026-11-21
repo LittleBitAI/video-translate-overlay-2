@@ -45,6 +45,13 @@
     const mine = ++generation;
     const r = await request('GET', path);
     if (gone || mine !== generation) return;
+    // No answer (the app unreachable, or a 5xx): it says nothing about the summary, so the screen keeps
+    // what it shows (waiting for a call, or checking) and asks again.
+    // ponytail: a fixed one-second retry for as long as reads fail; back off if a long outage matters.
+    if (r.status === 0 || r.status >= 500) {
+      timer = setTimeout(read, PENDING_MS);
+      return;
+    }
     // 404: not made yet, or not readable now. 요약 asks, and answers a stored one without a Gemini call.
     const b = r.status === 200 ? (r.body ?? {}) : {};
     const stored = typeof b.markdown === 'string';

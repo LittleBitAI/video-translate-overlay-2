@@ -68,7 +68,7 @@ the player fills the window height, so the section is reached by scrolling.
 
 | State | What shows |
 | --- | --- |
-| Opening | P19 `GET` for a stored summary, no Gemini call; the section is `aria-busy`. When the answer is `pending` (요약 or 다시 요약 was pressed on a screen since left), the section shows the loading state, even over a stored summary, and asks again every second until the call ends. It then shows the new summary, or the answer's `failure` as the error with 다시 시도 beside any stored summary |
+| Opening | P19 `GET` for a stored summary, no Gemini call; the section is `aria-busy`. When the answer is `pending` (요약 or 다시 요약 was pressed on a screen since left), the section shows the loading state, even over a stored summary, and asks again every second until the call ends. It then shows the new summary, or the answer's `failure` as the error with 다시 시도 beside any stored summary. A read that gets no answer (a 5xx, or the app unreachable) says nothing about the summary: the section keeps what it shows (checking, or waiting for the call) and asks again a second later |
 | None stored | 요약 (primary, 44 px) and a note that Gemini summarizes the title and source subtitles for a few won, added to the video's cost |
 | Loading | 요약하는 중 (disabled) and a status line: leaving the screen does not lose the summary; it shows when the video is opened again |
 | Summary | The Markdown from P19 drawn as text: `##` lines as headings, `-` lines as list items, other lines as paragraphs, never as HTML. Then 요약 비용 and 다시 요약 (outlined), which asks with `again` |
