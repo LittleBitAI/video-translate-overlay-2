@@ -140,6 +140,30 @@ pushed head, with no commit after it, by the steps below:
    shown after reopening is the one the call stored and differs from the
    gist shown before 다시 요약 was pressed.
 
+The focused offline checks are these commands, each quoted in the report
+exactly as it was run, each with its own output. With `VTO_CONTRACT_HOST` set
+to the built `target/debug/vto-contract-host.exe`, from the repository root:
+
+```sh
+cargo test --manifest-path contract-tests/Cargo.toml --test summary -- --nocapture --test-threads=1
+cargo test --manifest-path contract-tests/Cargo.toml --test translation -- --nocapture --test-threads=1
+cargo test --manifest-path contract-tests/Cargo.toml --test harness -- --nocapture
+```
+
+Each contract run prints a `contract host launched: … head=… pid=…` line
+for every host it starts, and the harness run also prints the folder it
+kept and its host's log. In `src-tauri`, with one filter per command, since
+cargo takes only one filter before `--`:
+
+```sh
+cargo test --lib summary::
+cargo test --lib commands::tests::the_api_document_names_each_operation_once_and_declares_its_path_parameters
+cargo test --lib store::library_tests::a_summary_counts_only_for_the_video_row_it_was_made_for
+cargo test --bin vto-web
+```
+
+Then `npx vitest run -c vitest.ui.config.ts tests/ui/summary.test.ts tests/ui/watch.test.ts tests/ui/subtitles.test.svelte.ts tests/ui/library-layout.test.ts`.
+
 The generated `report.json` and the focused commands' raw output go into that
 round's report, in full. A round that reuses an earlier run made at the same
 head carries that run's `report.json` again, in full, never a digest or a

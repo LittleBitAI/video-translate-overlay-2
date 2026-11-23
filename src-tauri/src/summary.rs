@@ -200,24 +200,29 @@ fn measure(text: &str) -> bool {
     }
 }
 
-/// `text` with every measurement spaced from its number ([`measure`]:
-/// `0.5 sec`, `5 km/h`) written over in zeros, so no route reads its unit as
-/// a word or a name (`sec` is not said in `0.5 sec`) and a neighbour still
-/// sees a digit there (`C++` is not said in `C++17`). A unit written on its
-/// number (`0.5sec`) is one run, which [`words`] and [`term`] refuse and
-/// [`said_whole`] does not split, and a term such as `1e-9s` is left whole.
+/// `text` with every measurement that spans more than one run ([`measure`]:
+/// `0.5 sec`, `5 km/h`, `5km/hour`, `5/hour`) written over in zeros, so no
+/// route reads its unit as a word or a name (`hour` is not said in
+/// `5km/hour`) and a neighbour still sees a digit there (`C++` is not said in
+/// `C++17`). A unit written on its number alone (`0.5sec`) is one run, which
+/// [`words`] and [`term`] refuse and [`said_whole`] does not split, and a
+/// term such as `1e-9s` is left whole.
 fn unmeasured(text: &str) -> String {
     let found = runs_at(text);
     let mut spans: Vec<(usize, usize)> = Vec::new();
     for (k, (at, run)) in found.iter().enumerate() {
-        // Only a number of digits alone takes a spaced unit.
-        if !run.starts_with(|c: char| c.is_numeric()) || run.chars().any(char::is_alphabetic) { continue; }
+        if !run.starts_with(|c: char| c.is_numeric()) { continue; }
+        // Only a number of digits alone takes a spaced unit; any number takes
+        // units joined by `/` while the whole still reads as a measurement.
+        let digits = !run.chars().any(char::is_alphabetic);
         let end = at + run.len();
-        // A number: units may follow, one space after it, then joined by `/`.
-        let (mut last, mut gap) = (end, " ");
+        let mut last = end;
         for (next_at, next) in &found[k + 1..] {
-            if &text[last..*next_at] != gap || !UNITS.contains(&next.as_str()) { break; }
-            (last, gap) = (next_at + next.len(), "/");
+            let gap = &text[last..*next_at];
+            let spaced = digits && last == end && gap == " " && UNITS.contains(&next.as_str());
+            let joined = gap == "/" && measure(&text[*at..next_at + next.len()]);
+            if !(spaced || joined) { break; }
+            last = next_at + next.len();
         }
         if last > end { spans.push((*at, last)); }
     }
@@ -868,6 +873,9 @@ mod tests {
         let counts = "The model uses 12 layers, each tuned per sec of input.";
         let bits = "A byte has eight bits.";
         let exponent = "The threshold is 1e-9s.";
+        let setup = "Allow one hour for setup.";
+        let speed = "The speed is 5km/hour.";
+        let rate = "The rate is 5/hour.";
         let units = "The delay is 0.5sec and the link runs at 100kbps (0.5ms), measured once; it is 0.5ms, again.";
         for (name, transcript, topic, kept) in [
             ("a number the talk says, alone", talk, "2024", false),
@@ -913,7 +921,14 @@ mod tests {
             ("a term with a sign between its digits, alone, said whole", exponent, "1e-9s", true),
             ("a term with a sign between its digits, beside an unsaid word, said whole", exponent, "1e-9s quantum", true),
             ("a term with a sign between its digits, never said", exponent, "2e-9s", false),
-            ("a word said apart from any number, beside an unsaid word", spaced, "delay quantum", true),            ("a short lowercase word the talk says", talk, "we alpha", false),
+            ("a word said apart from any number, beside an unsaid word", spaced, "delay quantum", true),
+            ("an attached measurement with a slash unit, alone, its unit said apart from any number", setup, "5km/hour", false),
+            ("an attached measurement with a slash unit, beside an unsaid word", setup, "5km/hour quantum", false),
+            ("a number and a slash unit, alone, its unit said apart from any number", setup, "5/hour", false),
+            ("a listed unit said apart from any number, beside an unsaid word, in a talk with no measurement", setup, "hour scheduling", true),
+            ("a unit said only inside an attached measurement with a slash, beside an unsaid word", speed, "hour scheduling", false),
+            ("a unit said only after a number and a slash, beside an unsaid word", rate, "hour scheduling", false),
+            ("a short lowercase word the talk says", talk, "we alpha", false),
             ("a capitals term the talk says in another case", talk, "ON alpha", false),
         ] {
             let mut reply = good();

@@ -243,10 +243,12 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   lowercase word one space after a number that is not on that list is a
   word of its own: `12 layers` says `layers`, so `layer count` shares its
   word; a spaced unit missing from the list reads as a word too. The title,
-  glossary and transcript, and each topic, are read with every spaced
-  measurement written over in zeros (`summary::unmeasured`) before any route
-  looks at them, so `sec` is not said in `0.5 sec` and `100 bytes` offers
-  no word `byte`. A unit written on its number (`0.5sec`) stays one run,
+  glossary and transcript, and each topic, are read with every measurement
+  that spans more than one run written over in zeros (`summary::unmeasured`)
+  before any route looks at them: a spaced one, and one whose units are
+  joined to it by `/` (`5km/hour`, `5/hour`). So `sec` is not said in
+  `0.5 sec`, `100 bytes` offers no word `byte`, and `hour` is neither said
+  in `5km/hour` nor offered by it. A unit written on its number (`0.5sec`) stays one run,
   which no route counts, and a term such as `1e-9s` is left whole and
   counts where it is said. A measurement thus counts by no route: not as a
   shared word, a term, a name with signs, or the whole topic (`0.5ms,`
