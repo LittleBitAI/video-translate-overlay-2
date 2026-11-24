@@ -217,9 +217,10 @@ fn measure(text: &str) -> bool {
 /// `C++17`). A unit written on its number alone (`0.5sec`) is one run, which
 /// [`words`] and [`term`] refuse and [`said_whole`] does not split, and a
 /// term such as `1e-9s` is left whole. A measurement begins a token: its
-/// number follows the start, a space, an opening bracket or quote, or a sign,
-/// so a number inside a link or path (`http://192.0.2.1/month`,
-/// `example.com/5/days`) takes no unit and its path keeps its words.
+/// number, or a sign before it, follows the start, a space, or an opening
+/// bracket or quote, so a number inside a link, path or word
+/// (`http://192.0.2.1/month`, `example.com/5/days`, `archive-5/days`) takes
+/// no unit and its path keeps its words.
 // ponytail: a number glued to other signs (`t=100 seconds`) is not masked, so its unit may count as a word.
 fn unmeasured(text: &str) -> String {
     let found = runs_at(text);
@@ -233,8 +234,11 @@ fn unmeasured(text: &str) -> String {
             if !(c.is_numeric() || (SEPARATORS.contains(&c) && digit_before)) { break; }
             start -= c.len_utf8();
         }
-        let before = text[..start].chars().next_back();
-        if before.is_some_and(|c| !c.is_whitespace() && !"([{\"'“‘«".contains(c) && !SIGNS.contains(&c)) { continue; }
+        // A sign before it belongs to the number only where the sign itself
+        // begins the token (` -0.5`, `(±2`), not inside a word (`archive-5`).
+        let signed = text[..start].trim_end_matches(SIGNS);
+        let before = signed.chars().next_back();
+        if before.is_some_and(|c| !c.is_whitespace() && !"([{\"'“‘«".contains(c)) { continue; }
         // Only a number of digits alone takes a spaced unit; any number takes
         // units joined by `/`; each while the whole still reads as a measurement.
         let digits = !run.chars().any(char::is_alphabetic);
@@ -906,6 +910,8 @@ mod tests {
         let rate = "The rate is 5/hour.";
         let paths = "Open 10.0.0.1/login, then 2024/report and 5kg/widget.";
         let links = "Open http://192.0.2.1/month, then 192.0.2.1/hours, then https://example.com/5/days, then 192.0.2.1 seconds.";
+        let joined = "Open https://example.com/archive-5/days, then build~2 weeks and item+3 years.";
+        let signed = "It drifts by -5/hour, then (±2 weeks) and ~3 years.";
         let grouped = "The batch holds 1.000.000 bytes, then 1,000 seconds pass.";
         let units = "The delay is 0.5sec and the link runs at 100kbps (0.5ms), measured once; it is 0.5ms, again.";
         for (name, transcript, topic, kept) in [
@@ -966,6 +972,12 @@ mod tests {
             ("a listed unit said after a bare address and a slash, beside an unsaid word", links, "hours selector", true),
             ("a listed unit said as a path after a number inside a link, beside an unsaid word", links, "days selector", true),
             ("a listed unit said one space after an address, beside an unsaid word", links, "seconds selector", true),
+            ("a listed unit said after a number signed inside a word and a slash, beside an unsaid word", joined, "days selector", true),
+            ("a listed unit said one space after a number signed inside a word, beside an unsaid word", joined, "weeks selector", true),
+            ("a listed unit said one space after a number joined to a word by a sign, beside an unsaid word", joined, "years selector", true),
+            ("a unit said only after a signed number beginning a token and a slash, beside an unsaid word", signed, "hour selector", false),
+            ("a unit said only after a signed number in brackets, beside an unsaid word", signed, "weeks selector", false),
+            ("a unit said only after a signed number beginning a token, beside an unsaid word", signed, "years selector", false),
             ("a unit said only after a number grouped with dots, beside an unsaid word", grouped, "byte selector", false),
             ("a unit said only after a number grouped with a comma, beside an unsaid word", grouped, "seconds selector", false),
             ("a short lowercase word the talk says", talk, "we alpha", false),
