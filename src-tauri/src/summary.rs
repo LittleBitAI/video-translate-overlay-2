@@ -438,9 +438,12 @@ pub fn check(reply: &Value, language: Option<&str>, transcript: &str, names: &st
 /// names; the glossary's targets are Korean translations, neither the talk's
 /// words nor its scripts.
 fn judge(reply: &Value, language: Option<&str>, title: &str, terms: &Value, transcript: &[String]) -> Result<Value, String> {
+    // Cues are one talk, so a cue break is a word space (`100` | `bytes` is
+    // one measurement); the title and each term are names of their own, so
+    // `;` parts them and no measurement runs from one into the next.
     let names = std::iter::once(title)
         .chain(terms.as_array().into_iter().flatten().filter_map(|t| t["source"].as_str()))
-        .collect::<Vec<_>>().join("\n");
+        .collect::<Vec<_>>().join(";\n");
     check(reply, language, &transcript.join("\n"), &names)
 }
 
@@ -1094,6 +1097,7 @@ mod tests {
         let other_title = "어텐션 가중합 계산 방식 강의";
         let translated = json!([{"source": "attention", "target": "어텐션 가중합 계산 방식"}]);
         let unsaid_term = json!([{"source": "softmax", "target": "소프트맥스"}]);
+        let unit_term = json!([{"source": "bytes", "target": "바이트"}]);
         let none = json!([]);
         let korean = "확률론";
         for (name, title, terms, field, item, kept) in [
@@ -1105,6 +1109,7 @@ mod tests {
             ("a glossary source term the transcript lacks, as a topic", plain_title, &unsaid_term, "topics", "softmax", true),
             ("a glossary target's word as a topic", plain_title, &unsaid_term, "topics", "소프트맥스", false),
             ("the title's word as a topic", "Attention lecture", &none, "topics", "lecture", true),
+            ("a glossary source term that is a unit, after a title ending on a number", "Attention part 100", &unit_term, "topics", "byte ordering", true),
         ] {
             let mut reply = good();
             reply["topics"] = json!(["attention"]);

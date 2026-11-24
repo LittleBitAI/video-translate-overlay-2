@@ -240,7 +240,8 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   space (`2nd`, `100ms`, `0.5sec`), or white space and units from the closed
   list `summary::UNITS` joined by `/` (`0.5 sec`, `5 km/h`; the white space
   may be a no-break space, or the line break `judge` puts between two cues,
-  so a measurement split across cues is still one), marks that are
+  so a measurement split across cues is still one; the title and each
+  glossary term are parted by `;`, so none runs into the next), marks that are
   not letters or digits at either end left off), or two or more capitals (`AI`). A
   lowercase word one space after a number that is not on that list is a
   word of its own: `12 layers` says `layers`, so `layer count` shares its
