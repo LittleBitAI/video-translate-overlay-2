@@ -5302,6 +5302,8 @@ version = "0.1.9"
 dependencies = [
  "aes",
  "getrandom 0.3.4",
+ "icu_normalizer",
+ "icu_properties",
  "if-addrs",
  "libsqlite3-sys",
  "mdns-sd",

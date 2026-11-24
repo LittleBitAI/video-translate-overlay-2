@@ -91,7 +91,10 @@
 //! * `{"task":"glossary", …the whole transcript…}` → the reply text is
 //!   `{"terms":[{"source":"…","target":"…"}]}`;
 //! * `{"task":"translate","glossary":[{"source","target"}],
-//!   "segments":[{"id":1,"text":"…"}]}` → `{"segments":[{"id":1,"ko":"…"}]}`.
+//!   "segments":[{"id":1,"text":"…"}]}` → `{"segments":[{"id":1,"ko":"…"}]}`;
+//! * `{"task":"summary","title":"…","terms":[…],"transcript":["…"]}` → a
+//!   summary object with every field of the request's response schema, its
+//!   topics the glossary terms named in the transcript.
 //!
 //! Replies carry `usageMetadata` with `promptTokenCount`,
 //! `candidatesTokenCount` and `thoughtsTokenCount`; thoughts bill as output.
@@ -448,6 +451,10 @@ pub struct GeminiCall {
     pub order: Option<Value>,
     /// The request's system instruction.
     pub system: String,
+    /// The request's `generationConfig` (its response schema, if any).
+    pub generation_config: Value,
+    /// The request body as sent.
+    pub body: String,
     pub prompt_tokens: u64,
     /// Candidates plus thoughts: everything billed at the output rate.
     pub output_tokens: u64,
@@ -462,6 +469,9 @@ pub struct GeminiOptions {
     /// drops the last part, `extra` adds an id, `duplicate` answers the first id
     /// twice. Each Korean text of such a reply starts with `BROKEN`.
     pub parts_fault: Option<&'static str>,
+    /// Every summary reply is valid JSON that breaks one value rule:
+    /// `empty_topics`, `bad_level` or `empty_gist`.
+    pub summary_fault: Option<&'static str>,
 }
 
 /// Mishearings the fake's glossary reports when the transcript holds them.
@@ -551,6 +561,8 @@ fn gemini_reply(req: &HttpRequest, opts: GeminiOptions, log: &Mutex<Vec<GeminiCa
         task: None,
         order: None,
         system: String::new(),
+        generation_config: Value::Null,
+        body: String::from_utf8_lossy(&req.body).into_owned(),
         prompt_tokens: 0,
         output_tokens: 0,
     };
@@ -634,6 +646,26 @@ fn gemini_reply(req: &HttpRequest, opts: GeminiOptions, log: &Mutex<Vec<GeminiCa
             };
             json!({ "segments": segs }).to_string()
         }
+        (Some("summary"), Some(o)) => {
+            let all = o["transcript"].to_string();
+            let topics: Vec<&str> = TERMS.iter().filter(|(src, _, _)| find_ci(&all, src).is_some()).map(|(src, _, _)| *src).collect();
+            let mut s = json!({
+                "gist": format!("{} 강의를 요약합니다.", o["title"].as_str().unwrap_or("")),
+                "key_points": ["첫 번째 핵심입니다.", "두 번째 핵심입니다."],
+                "topics": topics,
+                "level": "intermediate",
+                "prerequisites": ["선형대수"],
+                "next_topics": ["multi-head attention"],
+            });
+            match opts.summary_fault {
+                Some("empty_topics") => s["topics"] = json!([]),
+                Some("bad_level") => s["level"] = json!("expert"),
+                Some("empty_gist") => s["gist"] = json!(""),
+                Some(other) => panic!("unknown summary fault {other}"),
+                None => {}
+            }
+            s.to_string()
+        }
         _ => "OK".to_string(),
     };
     let (prompt, candidates, thoughts) = if opts.huge_usage {
@@ -645,6 +677,7 @@ fn gemini_reply(req: &HttpRequest, opts: GeminiOptions, log: &Mutex<Vec<GeminiCa
     };
     call.task = task;
     call.order = order;
+    call.generation_config = body["generationConfig"].clone();
     call.system = system.join("\n");
     call.prompt_tokens = prompt;
     call.output_tokens = candidates + thoughts;
@@ -666,6 +699,45 @@ fn gemini_reply(req: &HttpRequest, opts: GeminiOptions, log: &Mutex<Vec<GeminiCa
 }
 
 // ---------------------------------------------------------------- contract host
+
+/// The commit checked out where these tests run, or None without git.
+fn checkout_head() -> Option<String> {
+    let out = Command::new("git").args(["rev-parse", "HEAD"]).current_dir(env!("CARGO_MANIFEST_DIR")).output().ok()?;
+    out.status.success().then(|| String::from_utf8_lossy(&out.stdout).trim().to_string())
+}
+
+/// Whether a host that says it was built at `host` may stand for the
+/// checkout at `checkout`: only the same commit, so a stale binary named by
+/// `VTO_CONTRACT_HOST` fails the run instead of passing for another head.
+/// Without git there is nothing to compare, and the launch record alone
+/// names the build.
+fn built_at_checkout(host: &str, checkout: Option<&str>) -> Result<(), String> {
+    match checkout {
+        Some(checkout) if host != checkout => Err(format!("built at {host:?}, not at the checkout {checkout}: rebuild it with `cargo build --workspace --bin vto-contract-host`")),
+        _ => Ok(()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// The property: a launched host passes for the checkout only if it was
+    /// built at that very commit; with no checkout to compare, it passes.
+    #[test]
+    fn a_host_built_at_another_commit_is_refused() {
+        let at = "94b4ea5a4264aeb84f334fdea2f2ca690b1b7a19";
+        let other = "7f246c4f71e64f53697edc2add7add8dee5f914d";
+        for (name, host, checkout, ok) in [
+            ("the checkout's build", at, Some(at), true),
+            ("an older build", other, Some(at), false),
+            ("a build that could not read its commit", "unknown", Some(at), false),
+            ("a host that names no build", "", Some(at), false),
+            ("an abbreviated commit", &at[..7], Some(at), false),
+            ("no git where the tests run", at, None, true),
+        ] {
+            assert_eq!(super::built_at_checkout(host, checkout).is_ok(), ok, "{name}");
+        }
+    }
+}
 
 pub struct Host {
     child: Child,
@@ -701,7 +773,13 @@ impl Host {
                 }
             }
         });
-        Host { child, stdin, lines: rx }
+        let mut host = Host { child, stdin, lines: rx };
+        // The launch record: which build of the backend this run's checks exercise.
+        let build = host.request(json!({"op": "build"}));
+        let head = build["head"].as_str().unwrap_or("").to_string();
+        eprintln!("contract host launched: exe={exe} head={head} pid={}", build["pid"]);
+        if let Err(why) = built_at_checkout(&head, checkout_head().as_deref()) { panic!("{exe}: {why}"); }
+        host
     }
 
     fn request(&mut self, req: Value) -> Value {
@@ -1014,7 +1092,13 @@ impl Drop for App {
         self.host.take();
         self.media.stop();
         self.gemini.stop();
-        let _ = fs::remove_dir_all(&self.dir);
+        // A failing test keeps its folder and prints the host's log, so the failure can be read afterwards.
+        if thread::panicking() {
+            let log = fs::read(self.stderr_path()).unwrap_or_default();
+            eprintln!("contract test failed: its app data is kept in {:?}; host log:\n{}", self.dir, String::from_utf8_lossy(&log));
+        } else {
+            let _ = fs::remove_dir_all(&self.dir);
+        }
     }
 }
 

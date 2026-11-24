@@ -74,6 +74,22 @@ CREATE TABLE IF NOT EXISTS browser (
 );
 CREATE TABLE IF NOT EXISTS playback (
   video_key TEXT PRIMARY KEY, position_ms INTEGER NOT NULL
+);
+-- The 요약 button's checked JSON (NULL until one reply passed), and every summary call's usage and cost.
+CREATE TABLE IF NOT EXISTS summary (
+  video_key TEXT PRIMARY KEY,
+  body TEXT,
+  input_amount INTEGER NOT NULL DEFAULT 0,
+  output_amount INTEGER NOT NULL DEFAULT 0,
+  cost_krw REAL NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL,
+  -- The token of the summary call that is out. Deleting the video drops the row and with it the token.
+  call TEXT,
+  -- Why the last call stored nothing, until a later call starts or stores a summary.
+  failure TEXT,
+  -- The entry of the video row the summary was made for (video.entry). A build without summaries deletes the
+  -- video but not this row, and the same key can come back as a new video row: the row counts only while this matches.
+  video_entry TEXT
 )
 ";
 
@@ -143,6 +159,16 @@ pub struct Video {
     pub mishearings: Option<String>,
 }
 
+/// A video's row in `summary`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Summary {
+    pub body: Option<String>,
+    pub input: i64,
+    pub output: i64,
+    pub cost_krw: f64,
+    pub failure: Option<String>,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Cue {
     pub seq: i64,
@@ -155,7 +181,8 @@ pub struct Cue {
 /// Adds the columns a file made by an older build lacks; its jobs keep plan 1.
 /// Only `job` and `video` grow: every build inserts into them by column name,
 /// so an older build still reads and writes a file this one opened. (`cue` is
-/// filled by position in older builds and must keep its columns.)
+/// filled by position in older builds and must keep its columns. `summary`
+/// is unknown to builds before it.)
 pub(crate) fn add_columns(db: &Db) -> R<()> {
     for (table, name, decl) in [
         ("job", "plan", "plan INTEGER NOT NULL DEFAULT 1"),
@@ -163,6 +190,11 @@ pub(crate) fn add_columns(db: &Db) -> R<()> {
         ("job", "tail", "tail TEXT"),
         ("video", "mishearings", "mishearings TEXT"),
         ("video", "mishearings_of", "mishearings_of TEXT"),
+        // A random id a video row gets when a summary is first pressed for it. A row an older build makes
+        // (again) under the same key has none, so it is a new entry whatever its key and created_at.
+        ("video", "entry", "entry TEXT"),
+        // Files that already had summaries from an earlier build of this branch; their rows (NULL) count for no video.
+        ("summary", "video_entry", "video_entry TEXT"),
     ] {
         let have = db.query_one(&format!("SELECT 1 FROM pragma_table_info('{table}') WHERE name=?"), p![name])?.is_some();
         if !have {

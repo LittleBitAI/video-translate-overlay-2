@@ -68,3 +68,50 @@ fn legacy_completed_rows_keep_timing_and_deletion_removes_all_owned_rows() {
     drop(s);
     std::fs::remove_dir_all(dir).unwrap();
 }
+
+/// The property: a summary row counts only for the video row it was made
+/// for. A build without summaries deletes a video but leaves its summary
+/// row, and the same key can come back as a new video row; that row's
+/// summary and cost are not served, a call pressed on the old entry opens
+/// no token on it, and a new call starts from nothing instead of reviving
+/// the old body. Neither the key nor the creation time makes two rows one
+/// entry; only the row's own entry id does, which in-place updates keep.
+#[test]
+fn a_summary_counts_only_for_the_video_row_it_was_made_for() {
+    // What a build without summaries does to the video's own rows when it deletes it.
+    const OLD_DELETE: &str = "DELETE FROM cue WHERE video_key='v'; DELETE FROM job WHERE video_key='v'; DELETE FROM video WHERE video_key='v';";
+    const BACK: &str = "INSERT INTO video (video_key,page_url,site,title,duration_ms,created_at) VALUES ('v','https://example.org/a','other','Lecture',";
+    // (form, what happens after the first summary, the old summary is served, the video is still the pressed entry)
+    let forms = [
+        ("nothing happened", None, true, true),
+        ("the video row updated in place", Some("UPDATE video SET title='Renamed', terms='[]' WHERE video_key='v'".to_string()), true, true),
+        ("deleted and translated again by an older build", Some(format!("{OLD_DELETE}{BACK}1000,'later')")), false, false),
+        ("deleted and added to a topic again by an older build", Some(format!("{OLD_DELETE}{BACK}0,'later')")), false, false),
+        ("deleted and made again in the same clock tick", Some(format!("{OLD_DELETE}{BACK}1000,'first')")), false, false),
+        ("a summary row from an earlier build of this branch", Some("UPDATE summary SET video_entry=NULL".to_string()), false, true),
+    ];
+    for (name, step, kept, same) in forms {
+        let dir = std::env::temp_dir().join(format!("vto-summary-row-{}-{}", std::process::id(),
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let s = Store::open(&dir.join("app.sqlite3")).unwrap();
+        s.db.exec(&format!("{BACK}1000,'first')")).unwrap();
+        let pressed = s.summary_entry("v").unwrap().unwrap();
+        assert!(s.open_summary_call("v", "c1", &pressed).unwrap());
+        assert!(s.record_summary("v", "c1", 10, 5, 1.5, Some("{\"gist\":\"old\"}"), None).unwrap());
+        if let Some(step) = step { s.db.exec(&step).unwrap(); }
+        let read = s.summary("v").unwrap();
+        assert_eq!(read.as_ref().map(|r| (r.body.as_deref(), r.cost_krw)), kept.then_some((Some("{\"gist\":\"old\"}"), 1.5)), "{name}: read");
+        // A call pressed on the entry as it was opens a token only if it is still that entry.
+        assert_eq!(s.open_summary_call("v", "stale", &pressed).unwrap(), same, "{name}: a press on the old entry");
+        // A new call on the video as it is now, whose reply breaks a rule: nothing stored, its usage billed.
+        let now = s.summary_entry("v").unwrap().unwrap();
+        assert_eq!(now == pressed, same, "{name}: entry");
+        assert!(s.open_summary_call("v", "c2", &now).unwrap());
+        assert!(s.record_summary("v", "c2", 1, 1, 0.25, None, Some("broken")).unwrap(), "{name}");
+        let after = s.summary("v").unwrap().unwrap();
+        assert_eq!((after.body.is_some(), after.cost_krw), (kept, if kept { 1.75 } else { 0.25 }), "{name}: after a new call");
+        drop(s);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}

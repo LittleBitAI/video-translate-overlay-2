@@ -107,6 +107,13 @@ impl Library<'_> {
             .map_err(unavailable)?
     }
 
+    /// `operation` on the library this request started in, without the
+    /// account check: only for a result the account already paid for, which
+    /// must land in its own library even if the account changed meanwhile.
+    pub(crate) fn run_original<T>(&self, operation: impl FnOnce(&Store) -> Result<T, ApiError>) -> Result<T, ApiError> {
+        operation(&self.store)
+    }
+
     pub(crate) fn import_legacy(&self) -> Result<usize, ApiError> {
         self.core.account.with_library(&self.scope, |journal| Ok(match journal {
             Some(journal) => journal.import_legacy(&self.core.store).map_err(|_| api::err(503, "import_failed", "보관함을 가져오지 못했습니다. 원본은 유지했습니다. 다시 시도해 주세요.")),

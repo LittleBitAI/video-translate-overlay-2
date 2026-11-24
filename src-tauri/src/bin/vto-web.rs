@@ -190,6 +190,7 @@ mod stand_in {
         let (status, kind, bytes) = if path == "/lecture.wav" {
             ("200 OK", "audio/wav", wav())
         } else if method == "POST" && path.ends_with(":generateContent") {
+            if order(&body)["task"] == "summary" { std::thread::sleep(SUMMARY_TAKES); }
             ("200 OK", "application/json", reply(&body).to_string().into_bytes())
         } else if method == "GET" && path.starts_with("/v1beta/models/") {
             ("200 OK", "application/json", json!({"name": path.trim_start_matches("/v1beta/")}).to_string().into_bytes())
@@ -203,12 +204,33 @@ mod stand_in {
         s.flush()
     }
 
-    /// Gemini's answer to a glossary or translation order.
-    pub(super) fn reply(body: &[u8]) -> Value {
+    /// How long a summary takes: seconds, as a real call does, so a screen can
+    /// be left and opened again while it is out (scripts/verification/video-summary.mjs).
+    const SUMMARY_TAKES: std::time::Duration = std::time::Duration::from_secs(3);
+
+    /// The work order a generateContent request carries.
+    fn order(body: &[u8]) -> Value {
         let req: Value = serde_json::from_slice(body).unwrap_or_default();
-        let order: Value = serde_json::from_str(req["contents"][0]["parts"][0]["text"].as_str().unwrap_or("")).unwrap_or_default();
+        serde_json::from_str(req["contents"][0]["parts"][0]["text"].as_str().unwrap_or("")).unwrap_or_default()
+    }
+
+    /// Gemini's answer to a glossary, translation or summary order.
+    pub(super) fn reply(body: &[u8]) -> Value {
+        let order = order(body);
         let answer = if order["task"] == "glossary" {
             json!({"terms": [{"source": "attention", "target": "어텐션"}, {"source": "token", "target": "토큰"}, {"source": "transformer", "target": "트랜스포머"}]})
+        } else if order["task"] == "summary" {
+            // Each summary is numbered, so a screen can tell the one a call stored from an earlier one.
+            static SUMMARIES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+            let n = SUMMARIES.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+            json!({
+                "gist": format!("{n}번째 요약: 어텐션이 문장 속 토큰들을 서로 어떻게 이어 주는지 설명하는 짧은 강의입니다."),
+                "key_points": ["각 토큰은 쿼리, 키, 값을 만듭니다.", "쿼리와 키의 유사도로 다른 토큰에 줄 가중치를 정합니다.", "가중치로 값을 더해 새 표현을 얻습니다."],
+                "topics": ["attention", "transformer", "token"],
+                "level": "beginner",
+                "prerequisites": ["행렬 곱셈", "신경망의 기초"],
+                "next_topics": ["multi-head attention", "positional encoding"],
+            })
         } else {
             let segs: Vec<Value> = order["segments"]
                 .as_array()
@@ -280,5 +302,8 @@ mod tests {
         assert!(!gemini::parse_terms(&ask(gemini::glossary_order("t", &[]))).is_empty());
         let asked = vec![(7, "Attention is all you need.".to_string())];
         assert_eq!(gemini::parse_translations(&ask(gemini::translate_order(&[], &[], &asked)), &asked), vec![(7, "어텐션만 있으면 됩니다.".to_string())]);
+        // Two summaries differ, so a screen showing the later one is told from one showing the earlier.
+        let summary = json!({"task": "summary"});
+        assert_ne!(ask(summary.clone())["gist"], ask(summary)["gist"]);
     }
 }

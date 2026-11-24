@@ -21,6 +21,7 @@
     "allow-get-job",
     "allow-get-subtitles",
     "allow-get-library",
-    "allow-library-action"
+    "allow-library-action",
+    "allow-video-summary"
   ]
 }
