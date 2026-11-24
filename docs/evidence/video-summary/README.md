@@ -151,8 +151,11 @@ cargo test --manifest-path contract-tests/Cargo.toml --test harness -- --nocaptu
 ```
 
 Each contract run prints a `contract host launched: … head=… pid=…` line
-for every host it starts, and the harness run also prints the folder it
-kept and its host's log. In `src-tauri`, with one filter per command, since
+for every host it starts. The harness run's raw output shows, in order,
+the failing case's launch line, its deliberate panic (`the test fails on
+purpose`), the folder it kept with its host's log, then the passing case's
+launch line; the test itself fails if a case's host did not answer its
+launch or the failure is any other panic. In `src-tauri`, with one filter per command, since
 cargo takes only one filter before `--`:
 
 ```sh

@@ -184,8 +184,10 @@ const UNITS: &[&str] = &[
 /// (a sign before it, `-0.5`, `−2`, `±2`; a dot, comma, apostrophe, thin
 /// space or underscore between its digits, `1,000`), then a unit written on
 /// it with no capital, digit or space (`2nd`, `100ms`, `0.5sec`), or one
-/// space and units of [`UNITS`] joined by `/` (`0.5 sec`, `5 km/h`; not
-/// `12 layers`), sentence punctuation at either end left off (`0.5ms,`).
+/// space and a unit of [`UNITS`] (`0.5 sec`; not `12 layers`), either one
+/// followed only by units of [`UNITS`] after a `/` (`5 km/h`, `5km/hour`,
+/// `5/hour`; not `10.0.0.1/login`), sentence punctuation at either end left
+/// off (`0.5ms,`).
 /// `3D`, `2.5D` and `1e-9s` are names.
 fn measure(text: &str) -> bool {
     let text = text.trim_matches(|c: char| PUNCTUATION.contains(c));
@@ -196,7 +198,11 @@ fn measure(text: &str) -> bool {
     let unit: String = chars[i..].iter().collect();
     i > 0 && match unit.strip_prefix(' ') {
         Some(spaced) => spaced.split('/').all(|u| UNITS.contains(&u)),
-        None => !unit.chars().any(|c| c.is_whitespace() || c.is_uppercase() || c.is_ascii_digit()),
+        None => {
+            let mut parts = unit.split('/');
+            parts.next().is_some_and(|u| !u.chars().any(|c| c.is_whitespace() || c.is_uppercase() || c.is_ascii_digit()))
+                && parts.all(|u| UNITS.contains(&u))
+        }
     }
 }
 
@@ -876,6 +882,7 @@ mod tests {
         let setup = "Allow one hour for setup.";
         let speed = "The speed is 5km/hour.";
         let rate = "The rate is 5/hour.";
+        let paths = "Open 10.0.0.1/login, then 2024/report and 5kg/widget.";
         let units = "The delay is 0.5sec and the link runs at 100kbps (0.5ms), measured once; it is 0.5ms, again.";
         for (name, transcript, topic, kept) in [
             ("a number the talk says, alone", talk, "2024", false),
@@ -928,6 +935,9 @@ mod tests {
             ("a listed unit said apart from any number, beside an unsaid word, in a talk with no measurement", setup, "hour scheduling", true),
             ("a unit said only inside an attached measurement with a slash, beside an unsaid word", speed, "hour scheduling", false),
             ("a unit said only after a number and a slash, beside an unsaid word", rate, "hour scheduling", false),
+            ("a word said after a dotted number and a slash, beside an unsaid word", paths, "login page", true),
+            ("a word said after a whole number and a slash, beside an unsaid word", paths, "report page", true),
+            ("a word said after an attached measurement and a slash, beside an unsaid word", paths, "widget page", true),
             ("a short lowercase word the talk says", talk, "we alpha", false),
             ("a capitals term the talk says in another case", talk, "ON alpha", false),
         ] {

@@ -246,7 +246,9 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   glossary and transcript, and each topic, are read with every measurement
   that spans more than one run written over in zeros (`summary::unmeasured`)
   before any route looks at them: a spaced one, and one whose units are
-  joined to it by `/` (`5km/hour`, `5/hour`). So `sec` is not said in
+  joined to it by `/` (`5km/hour`, `5/hour`). Only a listed unit follows a
+  `/` in a measurement, so a path after a number is words of the talk
+  (`10.0.0.1/login` says `login`, as `2024/report` says `report`). So `sec` is not said in
   `0.5 sec`, `100 bytes` offers no word `byte`, and `hour` is neither said
   in `5km/hour` nor offered by it. A unit written on its number (`0.5sec`) stays one run,
   which no route counts, and a term such as `1e-9s` is left whole and
