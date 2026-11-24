@@ -237,8 +237,10 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   a number as it is written, with a sign before it (`-0.5`, `−2`, `±2`)
   and a dot, comma, apostrophe, thin space or underscore between its
   digits (`1,000`), then a unit written on it with no capital, digit or
-  space (`2nd`, `100ms`, `0.5sec`), or one space and units from the closed
-  list `summary::UNITS` joined by `/` (`0.5 sec`, `5 km/h`), marks that are
+  space (`2nd`, `100ms`, `0.5sec`), or white space and units from the closed
+  list `summary::UNITS` joined by `/` (`0.5 sec`, `5 km/h`; the white space
+  may be a no-break space, or the line break `judge` puts between two cues,
+  so a measurement split across cues is still one), marks that are
   not letters or digits at either end left off), or two or more capitals (`AI`). A
   lowercase word one space after a number that is not on that list is a
   word of its own: `12 layers` says `layers`, so `layer count` shares its

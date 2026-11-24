@@ -185,8 +185,9 @@ const UNITS: &[&str] = &[
 /// space or underscore between its digits, `1,000`; one written twice or more
 /// only between groups of three digits, `1.000.000`, so `192.0.2.1` and
 /// `1.2.3` are no numbers), then a unit written on it with no capital, digit
-/// or space (`2nd`, `100ms`, `0.5sec`), or one space and a unit of [`UNITS`]
-/// (`0.5 sec`; not `12 layers`), either one followed only by units of
+/// or space (`2nd`, `100ms`, `0.5sec`), or white space (a space, a line break
+/// such as the one between two cues, a no-break space) and a unit of [`UNITS`]
+/// (`0.5 sec`, `0.5\nsec`; not `12 layers`), either one followed only by units of
 /// [`UNITS`] after a `/` (`5 km/h`, `5km/hour`, `5/hour`; not
 /// `10.0.0.1/login`), any marks that are not letters or digits at either end
 /// left off (`0.5ms,`, `«0.5ms»`, `‹0.5ms›`). `3D`, `2.5D` and `1e-9s` are
@@ -200,9 +201,11 @@ fn measure(text: &str) -> bool {
         number.matches(sep).count() < 2 || number.split(sep).skip(1).all(|g| g.chars().take_while(|c| c.is_numeric()).count() == 3)
     });
     let unit: String = chars[i..].iter().collect();
-    i > 0 && grouped && match unit.strip_prefix(' ') {
-        Some(spaced) => spaced.split('/').all(|u| UNITS.contains(&u)),
-        None => {
+    // Any white space parts a spaced unit from its number: a space, a line break between cues, a no-break space.
+    let spaced = unit.trim_start_matches(char::is_whitespace);
+    i > 0 && grouped && match spaced.len() < unit.len() {
+        true => spaced.split('/').all(|u| UNITS.contains(&u)),
+        false => {
             let mut parts = unit.split('/');
             parts.next().is_some_and(|u| !u.chars().any(|c| c.is_whitespace() || c.is_uppercase() || c.is_ascii_digit()))
                 && parts.all(|u| UNITS.contains(&u))
@@ -249,7 +252,8 @@ fn unmeasured(text: &str) -> String {
         for (next_at, next) in &found[k + 1..] {
             let gap = &text[last..*next_at];
             let whole = measure(&text[start..next_at + next.len()]);
-            let spaced = digits && last == end && gap == " " && whole;
+            // White space of any kind is the gap: `judge` joins cues with a line break.
+            let spaced = digits && last == end && !gap.is_empty() && gap.chars().all(char::is_whitespace) && whole;
             let joined = gap == "/" && whole;
             if !(spaced || joined) { break; }
             last = next_at + next.len();
@@ -926,6 +930,7 @@ mod tests {
         let grouped = "The batch holds 1.000.000 bytes, then 1,000 seconds pass.";
         let marks = "It took «4 months», ‹2 weeks›, „3 years“, 「5 days」 and ¿10 hours? at ‹4ms› each, but example.org/«7 seconds stays.";
         let rooted = "Open /2024/months, then /5/days, then /7 hours, then \\3 weeks and /\"6 years.";
+        let gaps = "The buffer holds 100\nbytes, then 0.5\u{a0}sec and 2\u{202F}weeks pass, then 4  months.";
         let units = "The delay is 0.5sec and the link runs at 100kbps (0.5ms), measured once; it is 0.5ms, again.";
         for (name, transcript, topic, kept) in [
             ("a number the talk says, alone", talk, "2024", false),
@@ -1009,6 +1014,10 @@ mod tests {
             ("a listed unit said one space after a number in a root-relative path, beside an unsaid word", rooted, "hours selector", true),
             ("a listed unit said one space after a number behind a backslash, beside an unsaid word", rooted, "weeks selector", true),
             ("a listed unit said one space after a quoted number behind a slash, beside an unsaid word", rooted, "years selector", true),
+            ("a unit said only after a number and a line break, beside an unsaid word", gaps, "byte selector", false),
+            ("a unit said only after a number and a no-break space, beside an unsaid word", gaps, "sec quantum", false),
+            ("a unit said only after a number and a narrow no-break space, beside an unsaid word", gaps, "weeks selector", false),
+            ("a unit said only after a number and two spaces, beside an unsaid word", gaps, "months selector", false),
             ("a unit said only after a number grouped with dots, beside an unsaid word", grouped, "byte selector", false),
             ("a unit said only after a number grouped with a comma, beside an unsaid word", grouped, "seconds selector", false),
             ("a short lowercase word the talk says", talk, "we alpha", false),
@@ -1102,6 +1111,31 @@ mod tests {
             assert!(judge(&reply, Some("en"), title, terms, &said).is_ok(), "{name}: the base reply");
             reply[field] = json!([item]);
             assert_eq!(judge(&reply, Some("en"), title, terms, &said).is_ok(), kept, "{name}");
+        }
+    }
+
+    /// The property: a cue break is a word space. A sentence split between
+    /// two cues gives a topic the same verdict as the sentence in one cue, so
+    /// a measurement split by a cue break is still a measurement and its unit
+    /// lends no word, while a word that is no unit keeps counting. Run through
+    /// `judge`, which the call uses.
+    #[test]
+    fn a_cue_break_reads_as_the_space_it_replaces() {
+        for (name, first, second, topic, kept) in [
+            ("a count of a listed unit split from its unit", "The buffer holds 100", "bytes before it fills.", "byte ordering", false),
+            ("a decimal number split from a short unit", "The delay is 0.5", "sec per step.", "sec quantum", false),
+            ("a number split from a unit with a slash", "It moves at 5", "km/hour on average.", "hour scheduling", false),
+            ("a grouped number split from its unit", "The batch holds 1,000", "seconds of audio.", "seconds selector", false),
+            ("a count split from a word that is no unit", "The model uses 12", "layers in total.", "layer count", true),
+            ("a number inside a path split from a listed unit", "Open /2024", "months later.", "months selector", true),
+            ("a sentence ending on a number, a listed unit beginning the next", "Count to 100.", "Bytes are small.", "byte ordering", true),
+        ] {
+            let mut reply = good();
+            reply["topics"] = json!([topic]);
+            let whole = vec![format!("{first} {second}")];
+            let split = vec![first.to_string(), second.to_string()];
+            assert_eq!(judge(&reply, Some("en"), "Lecture", &json!([]), &whole).is_ok(), kept, "{name}, in one cue");
+            assert_eq!(judge(&reply, Some("en"), "Lecture", &json!([]), &split).is_ok(), kept, "{name}, across two cues");
         }
     }
 
