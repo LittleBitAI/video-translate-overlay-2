@@ -182,21 +182,25 @@ const UNITS: &[&str] = &[
 
 /// Whether a text is a quantity, never a name: a number as it is written
 /// (a sign before it, `-0.5`, `−2`, `±2`; a dot, comma, apostrophe, thin
-/// space or underscore between its digits, `1,000`), then a unit written on
-/// it with no capital, digit or space (`2nd`, `100ms`, `0.5sec`), or one
-/// space and a unit of [`UNITS`] (`0.5 sec`; not `12 layers`), either one
-/// followed only by units of [`UNITS`] after a `/` (`5 km/h`, `5km/hour`,
-/// `5/hour`; not `10.0.0.1/login`), sentence punctuation at either end left
-/// off (`0.5ms,`).
+/// space or underscore between its digits, `1,000`; one written twice or more
+/// only between groups of three digits, `1.000.000`, so `192.0.2.1` and
+/// `1.2.3` are no numbers), then a unit written on it with no capital, digit
+/// or space (`2nd`, `100ms`, `0.5sec`), or one space and a unit of [`UNITS`]
+/// (`0.5 sec`; not `12 layers`), either one followed only by units of
+/// [`UNITS`] after a `/` (`5 km/h`, `5km/hour`, `5/hour`; not
+/// `10.0.0.1/login`), sentence punctuation at either end left off (`0.5ms,`).
 /// `3D`, `2.5D` and `1e-9s` are names.
 fn measure(text: &str) -> bool {
     let text = text.trim_matches(|c: char| PUNCTUATION.contains(c));
-    let chars: Vec<char> = text.trim_start_matches(['+', '-', '−', '±', '~', '≈']).chars().collect();
-    let between = |c: char| matches!(c, '.' | ',' | '\'' | '’' | '_' | '\u{2009}' | '\u{202F}');
+    let chars: Vec<char> = text.trim_start_matches(SIGNS).chars().collect();
     let mut i = 0;
-    while i < chars.len() && (chars[i].is_numeric() || (i > 0 && between(chars[i]) && chars.get(i + 1).is_some_and(|c| c.is_numeric()))) { i += 1; }
+    while i < chars.len() && (chars[i].is_numeric() || (i > 0 && SEPARATORS.contains(&chars[i]) && chars.get(i + 1).is_some_and(|c| c.is_numeric()))) { i += 1; }
+    let number: String = chars[..i].iter().collect();
+    let grouped = SEPARATORS.iter().all(|&sep| {
+        number.matches(sep).count() < 2 || number.split(sep).skip(1).all(|g| g.chars().take_while(|c| c.is_numeric()).count() == 3)
+    });
     let unit: String = chars[i..].iter().collect();
-    i > 0 && match unit.strip_prefix(' ') {
+    i > 0 && grouped && match unit.strip_prefix(' ') {
         Some(spaced) => spaced.split('/').all(|u| UNITS.contains(&u)),
         None => {
             let mut parts = unit.split('/');
@@ -212,25 +216,39 @@ fn measure(text: &str) -> bool {
 /// `5km/hour`) and a neighbour still sees a digit there (`C++` is not said in
 /// `C++17`). A unit written on its number alone (`0.5sec`) is one run, which
 /// [`words`] and [`term`] refuse and [`said_whole`] does not split, and a
-/// term such as `1e-9s` is left whole.
+/// term such as `1e-9s` is left whole. A measurement begins a token: its
+/// number follows the start, a space, an opening bracket or quote, or a sign,
+/// so a number inside a link or path (`http://192.0.2.1/month`,
+/// `example.com/5/days`) takes no unit and its path keeps its words.
+// ponytail: a number glued to other signs (`t=100 seconds`) is not masked, so its unit may count as a word.
 fn unmeasured(text: &str) -> String {
     let found = runs_at(text);
     let mut spans: Vec<(usize, usize)> = Vec::new();
     for (k, (at, run)) in found.iter().enumerate() {
         if !run.starts_with(|c: char| c.is_numeric()) { continue; }
+        // The number this run ends begins where its digits and separators do (`1,000`).
+        let mut start = *at;
+        while let Some(c) = text[..start].chars().next_back() {
+            let digit_before = text[..start - c.len_utf8()].chars().next_back().is_some_and(char::is_numeric);
+            if !(c.is_numeric() || (SEPARATORS.contains(&c) && digit_before)) { break; }
+            start -= c.len_utf8();
+        }
+        let before = text[..start].chars().next_back();
+        if before.is_some_and(|c| !c.is_whitespace() && !"([{\"'“‘«".contains(c) && !SIGNS.contains(&c)) { continue; }
         // Only a number of digits alone takes a spaced unit; any number takes
-        // units joined by `/` while the whole still reads as a measurement.
+        // units joined by `/`; each while the whole still reads as a measurement.
         let digits = !run.chars().any(char::is_alphabetic);
         let end = at + run.len();
         let mut last = end;
         for (next_at, next) in &found[k + 1..] {
             let gap = &text[last..*next_at];
-            let spaced = digits && last == end && gap == " " && UNITS.contains(&next.as_str());
-            let joined = gap == "/" && measure(&text[*at..next_at + next.len()]);
+            let whole = measure(&text[start..next_at + next.len()]);
+            let spaced = digits && last == end && gap == " " && whole;
+            let joined = gap == "/" && whole;
             if !(spaced || joined) { break; }
             last = next_at + next.len();
         }
-        if last > end { spans.push((*at, last)); }
+        if last > end { spans.push((start, last)); }
     }
     text.char_indices().map(|(i, c)| if spans.iter().any(|&(a, b)| a <= i && i < b) { '0' } else { c }).collect()
 }
@@ -280,6 +298,10 @@ fn in_talk(topic: &str, own: &[Script], without_spaces: bool, source: &std::coll
 
 /// Sentence punctuation, left off the ends of a piece ([`pieces`]) or a measurement ([`measure`]).
 const PUNCTUATION: &str = ",.;:!?\"'()[]{}“”‘’«»";
+/// Signs written between the digits of a number (`0.5`, `1,000`, `1'000`, `1_000`).
+const SEPARATORS: [char; 7] = ['.', ',', '\'', '’', '_', '\u{2009}', '\u{202F}'];
+/// Signs written before a number (`-0.5`, `−2`, `±2`, `~3`).
+const SIGNS: [char; 6] = ['+', '-', '−', '±', '~', '≈'];
 
 /// A text's pieces as written: split at spaces and at the letters of a
 /// script written without spaces ([`unspaced`]), sentence punctuation at
@@ -883,6 +905,8 @@ mod tests {
         let speed = "The speed is 5km/hour.";
         let rate = "The rate is 5/hour.";
         let paths = "Open 10.0.0.1/login, then 2024/report and 5kg/widget.";
+        let links = "Open http://192.0.2.1/month, then 192.0.2.1/hours, then https://example.com/5/days, then 192.0.2.1 seconds.";
+        let grouped = "The batch holds 1.000.000 bytes, then 1,000 seconds pass.";
         let units = "The delay is 0.5sec and the link runs at 100kbps (0.5ms), measured once; it is 0.5ms, again.";
         for (name, transcript, topic, kept) in [
             ("a number the talk says, alone", talk, "2024", false),
@@ -938,6 +962,12 @@ mod tests {
             ("a word said after a dotted number and a slash, beside an unsaid word", paths, "login page", true),
             ("a word said after a whole number and a slash, beside an unsaid word", paths, "report page", true),
             ("a word said after an attached measurement and a slash, beside an unsaid word", paths, "widget page", true),
+            ("a listed unit said as a path after an address inside a link, beside an unsaid word", links, "month selector", true),
+            ("a listed unit said after a bare address and a slash, beside an unsaid word", links, "hours selector", true),
+            ("a listed unit said as a path after a number inside a link, beside an unsaid word", links, "days selector", true),
+            ("a listed unit said one space after an address, beside an unsaid word", links, "seconds selector", true),
+            ("a unit said only after a number grouped with dots, beside an unsaid word", grouped, "byte selector", false),
+            ("a unit said only after a number grouped with a comma, beside an unsaid word", grouped, "seconds selector", false),
             ("a short lowercase word the talk says", talk, "we alpha", false),
             ("a capitals term the talk says in another case", talk, "ON alpha", false),
         ] {

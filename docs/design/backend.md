@@ -248,7 +248,13 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   before any route looks at them: a spaced one, and one whose units are
   joined to it by `/` (`5km/hour`, `5/hour`). Only a listed unit follows a
   `/` in a measurement, so a path after a number is words of the talk
-  (`10.0.0.1/login` says `login`, as `2024/report` says `report`). So `sec` is not said in
+  (`10.0.0.1/login` says `login`, as `2024/report` says `report`). A
+  separator written twice or more in a number stands only between groups of
+  three digits (`1.000.000`), so an address such as `192.0.2.1` is no number
+  and takes no unit (`192.0.2.1/month` says `month`). And a measurement
+  begins a token: its number follows the start, a space, an opening bracket
+  or quote, or a sign, so a number inside a link or path takes no unit
+  (`example.com/5/days` says `days`). So `sec` is not said in
   `0.5 sec`, `100 bytes` offers no word `byte`, and `hour` is neither said
   in `5km/hour` nor offered by it. A unit written on its number (`0.5sec`) stays one run,
   which no route counts, and a term such as `1e-9s` is left whole and
