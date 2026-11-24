@@ -252,10 +252,11 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   separator written twice or more in a number stands only between groups of
   three digits (`1.000.000`), so an address such as `192.0.2.1` is no number
   and takes no unit (`192.0.2.1/month` says `month`). And a measurement
-  begins a token: its number, or a sign before it, follows the start, a
-  space, or an opening bracket or quote, so a number inside a link, path or
-  word takes no unit (`example.com/5/days` and `archive-5/days` say `days`;
-  `-5/hour` and `(±2 weeks)` are measurements). So `sec` is not said in
+  begins its token: between the last space and its number stand only opening
+  brackets or quotes, then signs, so a number anywhere inside a link, path
+  or word takes no unit (`example.com/5/days`, `archive-5/days` and
+  `archive/'25/days` say `days`; `-5/hour`, `(±2 weeks)` and `"4 months"`
+  are measurements). So `sec` is not said in
   `0.5 sec`, `100 bytes` offers no word `byte`, and `hour` is neither said
   in `5km/hour` nor offered by it. A unit written on its number (`0.5sec`) stays one run,
   which no route counts, and a term such as `1e-9s` is left whole and

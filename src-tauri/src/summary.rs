@@ -216,11 +216,11 @@ fn measure(text: &str) -> bool {
 /// `5km/hour`) and a neighbour still sees a digit there (`C++` is not said in
 /// `C++17`). A unit written on its number alone (`0.5sec`) is one run, which
 /// [`words`] and [`term`] refuse and [`said_whole`] does not split, and a
-/// term such as `1e-9s` is left whole. A measurement begins a token: its
-/// number, or a sign before it, follows the start, a space, or an opening
-/// bracket or quote, so a number inside a link, path or word
-/// (`http://192.0.2.1/month`, `example.com/5/days`, `archive-5/days`) takes
-/// no unit and its path keeps its words.
+/// term such as `1e-9s` is left whole. A measurement begins its token: only
+/// opening brackets or quotes, then signs, stand between the last space and
+/// its number, so a number anywhere inside a link, path or word
+/// (`http://192.0.2.1/month`, `example.com/5/days`, `archive-5/days`,
+/// `archive/'25/days`) takes no unit and its path keeps its words.
 // ponytail: a number glued to other signs (`t=100 seconds`) is not masked, so its unit may count as a word.
 fn unmeasured(text: &str) -> String {
     let found = runs_at(text);
@@ -234,11 +234,12 @@ fn unmeasured(text: &str) -> String {
             if !(c.is_numeric() || (SEPARATORS.contains(&c) && digit_before)) { break; }
             start -= c.len_utf8();
         }
-        // A sign before it belongs to the number only where the sign itself
-        // begins the token (` -0.5`, `(±2`), not inside a word (`archive-5`).
-        let signed = text[..start].trim_end_matches(SIGNS);
-        let before = signed.chars().next_back();
-        if before.is_some_and(|c| !c.is_whitespace() && !"([{\"'“‘«".contains(c)) { continue; }
+        // The number begins its token: between the last space and it stand
+        // only opening brackets or quotes, then signs (`-0.5`, `(±2`, `"3`).
+        // Anything else there (`archive-5`, `example.org/archive/'25`) puts
+        // it inside a word, link or path.
+        let token = text[..start].rsplit(char::is_whitespace).next().unwrap_or("");
+        if !token.trim_end_matches(SIGNS).trim_start_matches(OPENING).is_empty() { continue; }
         // Only a number of digits alone takes a spaced unit; any number takes
         // units joined by `/`; each while the whole still reads as a measurement.
         let digits = !run.chars().any(char::is_alphabetic);
@@ -304,6 +305,8 @@ fn in_talk(topic: &str, own: &[Script], without_spaces: bool, source: &std::coll
 const PUNCTUATION: &str = ",.;:!?\"'()[]{}“”‘’«»";
 /// Signs written between the digits of a number (`0.5`, `1,000`, `1'000`, `1_000`).
 const SEPARATORS: [char; 7] = ['.', ',', '\'', '’', '_', '\u{2009}', '\u{202F}'];
+/// Brackets and quotes that open a token (`(2 ms)`, `"3 weeks"`).
+const OPENING: [char; 7] = ['(', '[', '{', '"', '\'', '“', '‘'];
 /// Signs written before a number (`-0.5`, `−2`, `±2`, `~3`).
 const SIGNS: [char; 6] = ['+', '-', '−', '±', '~', '≈'];
 
@@ -912,6 +915,7 @@ mod tests {
         let links = "Open http://192.0.2.1/month, then 192.0.2.1/hours, then https://example.com/5/days, then 192.0.2.1 seconds.";
         let joined = "Open https://example.com/archive-5/days, then build~2 weeks and item+3 years.";
         let signed = "It drifts by -5/hour, then (±2 weeks) and ~3 years.";
+        let quoted = "Open https://example.org/archive/'25/days, then example.org/list(5/hours) and a/\"3 weeks, but it took \"4 months\" and '2 years' there.";
         let grouped = "The batch holds 1.000.000 bytes, then 1,000 seconds pass.";
         let units = "The delay is 0.5sec and the link runs at 100kbps (0.5ms), measured once; it is 0.5ms, again.";
         for (name, transcript, topic, kept) in [
@@ -978,6 +982,11 @@ mod tests {
             ("a unit said only after a signed number beginning a token and a slash, beside an unsaid word", signed, "hour selector", false),
             ("a unit said only after a signed number in brackets, beside an unsaid word", signed, "weeks selector", false),
             ("a unit said only after a signed number beginning a token, beside an unsaid word", signed, "years selector", false),
+            ("a listed unit said after a quote and a number inside a link, beside an unsaid word", quoted, "days selector", true),
+            ("a listed unit said after a bracket and a number inside a path, beside an unsaid word", quoted, "hour selector", true),
+            ("a listed unit said one space after a quoted number inside a path, beside an unsaid word", quoted, "weeks selector", true),
+            ("a unit said only after a double-quoted number opening a token, beside an unsaid word", quoted, "months selector", false),
+            ("a unit said only after a single-quoted number opening a token, beside an unsaid word", quoted, "years selector", false),
             ("a unit said only after a number grouped with dots, beside an unsaid word", grouped, "byte selector", false),
             ("a unit said only after a number grouped with a comma, beside an unsaid word", grouped, "seconds selector", false),
             ("a short lowercase word the talk says", talk, "we alpha", false),

@@ -92,16 +92,21 @@ test.each([
   { name: 'a failed re-make, whose saved subtitles still play', stage: 'failed' },
 ])('$name: the overlay shows the video cost with the summary added', async ({ stage }) => {
   let cost = 12.5;
+  // The summary lookup answers only after the cost is on screen, so the button comes after it.
+  let lookedUp: (a: Answer) => void = () => {};
   api((c) => {
     if (c.path === '/browser') return [200, { url: FILE, job: { ...job(stage), cost_krw: cost } }];
     if (c.path === '/jobs') return [200, { ...job(stage), cost_krw: cost }];
-    if (c.path.endsWith('/summary')) return c.method === 'GET' ? [404, { error: 'no_summary' }] : ((cost = 15.7), [200, MADE]);
+    if (c.path.endsWith('/summary')) return c.method === 'GET' ? new Promise((r) => (lookedUp = r)) : ((cost = 15.7), [200, MADE]);
     if (c.path === '/library/data') return [200, { videos: [], playlists: [], legacy_available: false }];
     return [200, CUES];
   });
   const s1 = open('/');
   const status = () => text($(s1, '[data-feature="job-progress"]')!);
   await vi.waitFor(() => expect(status()).toContain('12.5원'));
+  await vi.waitFor(() => expect(summaryCalls().map((c) => c.method)).toEqual(['GET']));
+  lookedUp([404, { error: 'no_summary' }]);
+  await vi.waitFor(() => expect(button(s1, '요약')).toBeTruthy());
   button(s1, '요약').click();
   await vi.waitFor(() => expect(text(section(s1))).toContain('요약 비용 3.2원'));
   await vi.waitFor(() => expect(status()).toContain('15.7원'), { timeout: 3_000 });
