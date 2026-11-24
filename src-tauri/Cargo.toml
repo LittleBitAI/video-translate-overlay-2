@@ -52,6 +52,8 @@ serde_json = { version = "1", features = ["float_roundtrip"] }
 url = "2"
 # Already built for `url` (through idna); the summary check compares text in NFC.
 icu_normalizer = { version = "2", default-features = false, features = ["compiled_data"] }
+# Already built for icu_normalizer; the summary check tells a quote or opening bracket from a path's `/` by line-break class.
+icu_properties = { version = "2", default-features = false, features = ["compiled_data"] }
 sha2 = "0.10"
 getrandom = "0.3"
 # OIDC signature, issuer, audience, expiry and nonce verification; HTTP uses the existing client.

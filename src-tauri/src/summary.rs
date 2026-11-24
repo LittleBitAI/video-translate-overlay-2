@@ -216,12 +216,12 @@ fn measure(text: &str) -> bool {
 /// `5km/hour`) and a neighbour still sees a digit there (`C++` is not said in
 /// `C++17`). A unit written on its number alone (`0.5sec`) is one run, which
 /// [`words`] and [`term`] refuse and [`said_whole`] does not split, and a
-/// term such as `1e-9s` is left whole. A measurement begins its token: no
-/// letter or digit stands between the last space and its number, whatever
-/// brackets, quotes or signs do (`(±2`, `"3`, `«4`, `「5`), so a number
-/// anywhere inside a link, path or word (`http://192.0.2.1/month`,
-/// `example.com/5/days`, `archive-5/days`, `archive/'25/days`) takes no unit
-/// and its path keeps its words.
+/// term such as `1e-9s` is left whole. A measurement begins its token: only
+/// opening marks ([`opening`]), then signs, stand between the last space and
+/// its number (`(±2`, `"3`, `«4`, `「5`, `¿10`), so a number anywhere inside
+/// a link, path or word (`http://192.0.2.1/month`, `example.com/5/days`,
+/// `archive-5/days`, `archive/'25/days`, `/2024/months`) takes no unit and
+/// its path keeps its words.
 // ponytail: a number glued to other signs (`t=100 seconds`) is not masked, so its unit may count as a word.
 fn unmeasured(text: &str) -> String {
     let found = runs_at(text);
@@ -235,11 +235,12 @@ fn unmeasured(text: &str) -> String {
             if !(c.is_numeric() || (SEPARATORS.contains(&c) && digit_before)) { break; }
             start -= c.len_utf8();
         }
-        // The number begins its token: no letter or digit stands between the
-        // last space and it (`-0.5`, `(±2`, `«4`). One there (`archive-5`,
-        // `example.org/archive/'25`) puts it inside a word, link or path.
+        // The number begins its token: between the last space and it stand
+        // only opening marks ([`opening`]), then signs (`-0.5`, `(±2`, `«4`).
+        // Anything else there (`archive-5`, `example.org/archive/'25`, `/2024`)
+        // puts it inside a word, link or path.
         let token = text[..start].rsplit(char::is_whitespace).next().unwrap_or("");
-        if token.chars().any(char::is_alphanumeric) { continue; }
+        if !token.trim_end_matches(SIGNS).trim_start_matches(opening).is_empty() { continue; }
         // Only a number of digits alone takes a spaced unit; any number takes
         // units joined by `/`; each while the whole still reads as a measurement.
         let digits = !run.chars().any(char::is_alphabetic);
@@ -305,6 +306,16 @@ fn in_talk(topic: &str, own: &[Script], without_spaces: bool, source: &std::coll
 const PUNCTUATION: &str = ",.;:!?\"'()[]{}“”‘’«»";
 /// Signs written between the digits of a number (`0.5`, `1,000`, `1'000`, `1_000`).
 const SEPARATORS: [char; 7] = ['.', ',', '\'', '’', '_', '\u{2009}', '\u{202F}'];
+/// Signs written before a number (`-0.5`, `−2`, `±2`, `~3`).
+const SIGNS: [char; 6] = ['+', '-', '−', '±', '~', '≈'];
+
+/// Whether a mark opens a phrase: a quote or an opening bracket by Unicode's
+/// line-break classes QU and OP (`"`, `'`, `«`, `‹`, `„`, `(`, `「`, `¿`).
+/// A path's `/` (class SY) or `\` opens none.
+fn opening(c: char) -> bool {
+    use icu_properties::{props::LineBreak, CodePointMapData};
+    matches!(CodePointMapData::<LineBreak>::new().get(c), LineBreak::OpenPunctuation | LineBreak::Quotation)
+}
 
 /// A text's pieces as written: split at spaces and at the letters of a
 /// script written without spaces ([`unspaced`]), sentence punctuation at
@@ -914,6 +925,7 @@ mod tests {
         let quoted = "Open https://example.org/archive/'25/days, then example.org/list(5/hours) and a/\"3 weeks, but it took \"4 months\" and '2 years' there.";
         let grouped = "The batch holds 1.000.000 bytes, then 1,000 seconds pass.";
         let marks = "It took «4 months», ‹2 weeks›, „3 years“, 「5 days」 and ¿10 hours? at ‹4ms› each, but example.org/«7 seconds stays.";
+        let rooted = "Open /2024/months, then /5/days, then /7 hours, then \\3 weeks and /\"6 years.";
         let units = "The delay is 0.5sec and the link runs at 100kbps (0.5ms), measured once; it is 0.5ms, again.";
         for (name, transcript, topic, kept) in [
             ("a number the talk says, alone", talk, "2024", false),
@@ -992,6 +1004,11 @@ mod tests {
             ("an attached measurement in single angle quotes, said whole, alone", marks, "‹4ms›", false),
             ("an attached measurement in single angle quotes, said whole, beside an unsaid word", marks, "‹4ms› selector", false),
             ("a listed unit said one space after an angle-quoted number inside a path, beside an unsaid word", marks, "seconds selector", true),
+            ("a listed unit said as a path after a number in a root-relative path, beside an unsaid word", rooted, "months selector", true),
+            ("a listed unit said as a path after a small number in a root-relative path, beside an unsaid word", rooted, "days selector", true),
+            ("a listed unit said one space after a number in a root-relative path, beside an unsaid word", rooted, "hours selector", true),
+            ("a listed unit said one space after a number behind a backslash, beside an unsaid word", rooted, "weeks selector", true),
+            ("a listed unit said one space after a quoted number behind a slash, beside an unsaid word", rooted, "years selector", true),
             ("a unit said only after a number grouped with dots, beside an unsaid word", grouped, "byte selector", false),
             ("a unit said only after a number grouped with a comma, beside an unsaid word", grouped, "seconds selector", false),
             ("a short lowercase word the talk says", talk, "we alpha", false),
@@ -1000,6 +1017,19 @@ mod tests {
             let mut reply = good();
             reply["topics"] = json!([topic]);
             assert_eq!(check(&reply, Some("en"), transcript, "").is_ok(), kept, "{name}");
+        }
+    }
+
+    /// The property: a quote or an opening bracket opens a phrase before a
+    /// number, in any script's style; a mark that joins the parts of a path,
+    /// link or name opens none.
+    #[test]
+    fn only_quotes_and_opening_brackets_open_a_number() {
+        for c in ['"', '\'', '“', '‘', '«', '‹', '»', '„', '‚', '(', '[', '{', '「', '『', '【', '〈', '¿', '¡'] {
+            assert!(opening(c), "{c:?} opens");
+        }
+        for c in ['/', '\\', ':', '.', '=', '@', '#', '&', '%', '_', '|', '-', '+', '~', 'a', '0', ')', '」'] {
+            assert!(!opening(c), "{c:?} opens none");
         }
     }
 
