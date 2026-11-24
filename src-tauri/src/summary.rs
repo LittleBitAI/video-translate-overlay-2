@@ -188,11 +188,11 @@ const UNITS: &[&str] = &[
 /// or space (`2nd`, `100ms`, `0.5sec`), or one space and a unit of [`UNITS`]
 /// (`0.5 sec`; not `12 layers`), either one followed only by units of
 /// [`UNITS`] after a `/` (`5 km/h`, `5km/hour`, `5/hour`; not
-/// `10.0.0.1/login`), sentence punctuation at either end left off (`0.5ms,`).
-/// `3D`, `2.5D` and `1e-9s` are names.
+/// `10.0.0.1/login`), any marks that are not letters or digits at either end
+/// left off (`0.5ms,`, `«0.5ms»`, `‹0.5ms›`). `3D`, `2.5D` and `1e-9s` are
+/// names.
 fn measure(text: &str) -> bool {
-    let text = text.trim_matches(|c: char| PUNCTUATION.contains(c));
-    let chars: Vec<char> = text.trim_start_matches(SIGNS).chars().collect();
+    let chars: Vec<char> = text.trim_matches(|c: char| !c.is_alphanumeric()).chars().collect();
     let mut i = 0;
     while i < chars.len() && (chars[i].is_numeric() || (i > 0 && SEPARATORS.contains(&chars[i]) && chars.get(i + 1).is_some_and(|c| c.is_numeric()))) { i += 1; }
     let number: String = chars[..i].iter().collect();
@@ -216,11 +216,12 @@ fn measure(text: &str) -> bool {
 /// `5km/hour`) and a neighbour still sees a digit there (`C++` is not said in
 /// `C++17`). A unit written on its number alone (`0.5sec`) is one run, which
 /// [`words`] and [`term`] refuse and [`said_whole`] does not split, and a
-/// term such as `1e-9s` is left whole. A measurement begins its token: only
-/// opening brackets or quotes, then signs, stand between the last space and
-/// its number, so a number anywhere inside a link, path or word
-/// (`http://192.0.2.1/month`, `example.com/5/days`, `archive-5/days`,
-/// `archive/'25/days`) takes no unit and its path keeps its words.
+/// term such as `1e-9s` is left whole. A measurement begins its token: no
+/// letter or digit stands between the last space and its number, whatever
+/// brackets, quotes or signs do (`(±2`, `"3`, `«4`, `「5`), so a number
+/// anywhere inside a link, path or word (`http://192.0.2.1/month`,
+/// `example.com/5/days`, `archive-5/days`, `archive/'25/days`) takes no unit
+/// and its path keeps its words.
 // ponytail: a number glued to other signs (`t=100 seconds`) is not masked, so its unit may count as a word.
 fn unmeasured(text: &str) -> String {
     let found = runs_at(text);
@@ -234,12 +235,11 @@ fn unmeasured(text: &str) -> String {
             if !(c.is_numeric() || (SEPARATORS.contains(&c) && digit_before)) { break; }
             start -= c.len_utf8();
         }
-        // The number begins its token: between the last space and it stand
-        // only opening brackets or quotes, then signs (`-0.5`, `(±2`, `"3`).
-        // Anything else there (`archive-5`, `example.org/archive/'25`) puts
-        // it inside a word, link or path.
+        // The number begins its token: no letter or digit stands between the
+        // last space and it (`-0.5`, `(±2`, `«4`). One there (`archive-5`,
+        // `example.org/archive/'25`) puts it inside a word, link or path.
         let token = text[..start].rsplit(char::is_whitespace).next().unwrap_or("");
-        if !token.trim_end_matches(SIGNS).trim_start_matches(OPENING).is_empty() { continue; }
+        if token.chars().any(char::is_alphanumeric) { continue; }
         // Only a number of digits alone takes a spaced unit; any number takes
         // units joined by `/`; each while the whole still reads as a measurement.
         let digits = !run.chars().any(char::is_alphabetic);
@@ -301,14 +301,10 @@ fn in_talk(topic: &str, own: &[Script], without_spaces: bool, source: &std::coll
         || (topic.chars().any(char::is_alphabetic) && !measure(topic) && said_whole(topic, said))
 }
 
-/// Sentence punctuation, left off the ends of a piece ([`pieces`]) or a measurement ([`measure`]).
+/// Sentence punctuation, left off the ends of a piece ([`pieces`]).
 const PUNCTUATION: &str = ",.;:!?\"'()[]{}“”‘’«»";
 /// Signs written between the digits of a number (`0.5`, `1,000`, `1'000`, `1_000`).
 const SEPARATORS: [char; 7] = ['.', ',', '\'', '’', '_', '\u{2009}', '\u{202F}'];
-/// Brackets and quotes that open a token (`(2 ms)`, `"3 weeks"`).
-const OPENING: [char; 7] = ['(', '[', '{', '"', '\'', '“', '‘'];
-/// Signs written before a number (`-0.5`, `−2`, `±2`, `~3`).
-const SIGNS: [char; 6] = ['+', '-', '−', '±', '~', '≈'];
 
 /// A text's pieces as written: split at spaces and at the letters of a
 /// script written without spaces ([`unspaced`]), sentence punctuation at
@@ -917,6 +913,7 @@ mod tests {
         let signed = "It drifts by -5/hour, then (±2 weeks) and ~3 years.";
         let quoted = "Open https://example.org/archive/'25/days, then example.org/list(5/hours) and a/\"3 weeks, but it took \"4 months\" and '2 years' there.";
         let grouped = "The batch holds 1.000.000 bytes, then 1,000 seconds pass.";
+        let marks = "It took «4 months», ‹2 weeks›, „3 years“, 「5 days」 and ¿10 hours? at ‹4ms› each, but example.org/«7 seconds stays.";
         let units = "The delay is 0.5sec and the link runs at 100kbps (0.5ms), measured once; it is 0.5ms, again.";
         for (name, transcript, topic, kept) in [
             ("a number the talk says, alone", talk, "2024", false),
@@ -987,6 +984,14 @@ mod tests {
             ("a listed unit said one space after a quoted number inside a path, beside an unsaid word", quoted, "weeks selector", true),
             ("a unit said only after a double-quoted number opening a token, beside an unsaid word", quoted, "months selector", false),
             ("a unit said only after a single-quoted number opening a token, beside an unsaid word", quoted, "years selector", false),
+            ("a unit said only after a number in angle quotes, beside an unsaid word", marks, "months selector", false),
+            ("a unit said only after a number in single angle quotes, beside an unsaid word", marks, "weeks selector", false),
+            ("a unit said only after a number in low-high quotes, beside an unsaid word", marks, "years selector", false),
+            ("a unit said only after a number in corner brackets, beside an unsaid word", marks, "days selector", false),
+            ("a unit said only after a number behind an inverted question mark, beside an unsaid word", marks, "hours selector", false),
+            ("an attached measurement in single angle quotes, said whole, alone", marks, "‹4ms›", false),
+            ("an attached measurement in single angle quotes, said whole, beside an unsaid word", marks, "‹4ms› selector", false),
+            ("a listed unit said one space after an angle-quoted number inside a path, beside an unsaid word", marks, "seconds selector", true),
             ("a unit said only after a number grouped with dots, beside an unsaid word", grouped, "byte selector", false),
             ("a unit said only after a number grouped with a comma, beside an unsaid word", grouped, "seconds selector", false),
             ("a short lowercase word the talk says", talk, "we alpha", false),

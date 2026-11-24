@@ -238,8 +238,8 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   and a dot, comma, apostrophe, thin space or underscore between its
   digits (`1,000`), then a unit written on it with no capital, digit or
   space (`2nd`, `100ms`, `0.5sec`), or one space and units from the closed
-  list `summary::UNITS` joined by `/` (`0.5 sec`, `5 km/h`), sentence
-  punctuation at either end left off), or two or more capitals (`AI`). A
+  list `summary::UNITS` joined by `/` (`0.5 sec`, `5 km/h`), marks that are
+  not letters or digits at either end left off), or two or more capitals (`AI`). A
   lowercase word one space after a number that is not on that list is a
   word of its own: `12 layers` says `layers`, so `layer count` shares its
   word; a spaced unit missing from the list reads as a word too. The title,
@@ -252,11 +252,12 @@ a translation finishes. The call is `src-tauri/src/summary.rs`.
   separator written twice or more in a number stands only between groups of
   three digits (`1.000.000`), so an address such as `192.0.2.1` is no number
   and takes no unit (`192.0.2.1/month` says `month`). And a measurement
-  begins its token: between the last space and its number stand only opening
-  brackets or quotes, then signs, so a number anywhere inside a link, path
-  or word takes no unit (`example.com/5/days`, `archive-5/days` and
-  `archive/'25/days` say `days`; `-5/hour`, `(±2 weeks)` and `"4 months"`
-  are measurements). So `sec` is not said in
+  begins its token: no letter or digit stands between the last space and its
+  number, whatever brackets, quotes or signs do, so a number anywhere inside
+  a link, path or word takes no unit (`example.com/5/days`, `archive-5/days`
+  and `archive/'25/days` say `days`; `-5/hour`, `(±2 weeks)`, `"4 months"`,
+  `«4 months»` and `「5 days」` are measurements, and so is `‹4ms›`).
+  So `sec` is not said in
   `0.5 sec`, `100 bytes` offers no word `byte`, and `hour` is neither said
   in `5km/hour` nor offered by it. A unit written on its number (`0.5sec`) stays one run,
   which no route counts, and a term such as `1e-9s` is left whole and

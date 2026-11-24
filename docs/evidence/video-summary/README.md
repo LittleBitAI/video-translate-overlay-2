@@ -168,7 +168,12 @@ cargo test --bin vto-web
 Then `npx vitest run -c vitest.ui.config.ts tests/ui/summary.test.ts tests/ui/watch.test.ts tests/ui/subtitles.test.svelte.ts tests/ui/library-layout.test.ts`.
 
 The generated `report.json` and the focused commands' raw output go into that
-round's report, in full. A round that reuses an earlier run made at the same
+round's report, in full. A command run more than once in a round (a rerun
+after a failure) gives every run: its exact invocation, its exit code and
+its raw output. Each `test <name> ... ok` or `FAILED` line in it sits beside
+the launch lines of that test's hosts, so a named test such as T9 or T10 is
+tied to its own result and to hosts that report the head. The report names
+each test by the name its output prints. A round that reuses an earlier run made at the same
 head carries that run's `report.json` again, in full, never a digest or a
 pointer to an earlier round's report: the reviewer reads only the current
 round's packet. The report is the current record; this folder keeps only the
